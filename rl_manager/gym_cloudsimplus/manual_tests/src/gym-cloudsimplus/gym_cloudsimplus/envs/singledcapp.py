@@ -3,6 +3,7 @@ import os
 import json
 from gym import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
+
 import numpy as np
 
 # Available actions
@@ -10,9 +11,8 @@ ACTION_NOTHING = 0
 ACTION_ADD_VM = 1
 ACTION_REMOVE_VM = 2
 
-address = os.getenv('CLOUDSIM_GATEWAY_HOST', 'gateway')
+address = os.getenv('CLOUDSIM_GATEWAY_HOST', 'cloudsimplus-gateway')
 port = os.getenv('CLOUDSIM_GATEWAY_PORT', '25333')
-
 parameters = GatewayParameters(address=address,
                                port=int(port),
                                auto_convert=True)
@@ -56,16 +56,14 @@ class SingleDCAppEnv(gym.Env):
                            1.0,
                            1.0])
         )
-        # mandatory args
         params = {
-            'INITIAL_VM_COUNT': kwargs.get('initial_vm_count', '1'),
+            'INITIAL_VM_COUNT': kwargs.get('initial_vm_count'),
             'SOURCE_OF_JOBS': 'PARAMS',
             'JOBS': kwargs.get('jobs_as_json', '[]'),
             'SIMULATION_SPEEDUP': kwargs.get('simulation_speedup', '1.0'),
             'SPLIT_LARGE_JOBS': kwargs.get('split_large_jobs', 'false'),
         }
 
-        # optional arg
         if 'queue_wait_penalty' in kwargs:
             params['QUEUE_WAIT_PENALTY'] = kwargs['queue_wait_penalty']
 
