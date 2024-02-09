@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="pl.edu.agh.csg.CloudletDescriptorTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2024-02-09T22:17:06" hostname="pop-os" time="0.008">
-  <properties/>
-  <testcase name="serializesDeserializesToJSON" classname="pl.edu.agh.csg.CloudletDescriptorTest" time="0.003"/>
-  <testcase name="serializesDeserializesListToJSON" classname="pl.edu.agh.csg.CloudletDescriptorTest" time="0.005"/>
-  <system-out><![CDATA[[CloudletDescriptor{jobId=1, submissionDelay=2, mi=3, numberOfCores=4}, CloudletDescriptor{jobId=5, submissionDelay=6, mi=7, numberOfCores=8}]
-]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
