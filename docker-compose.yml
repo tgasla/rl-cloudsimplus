@@ -1,0 +1,56 @@
+version: '3.1'
+services:
+  gateway:
+    image: gateway:1.9.1
+    container_name: gateway
+    restart: always
+    environment:
+      CLOUDSIM_GATEWAY_HOST: gateway
+      CLOUDSIM_GATEWAY_PORT: 25333
+      JAVA_OPTS: "-Xms8G -Xmx32G -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external"
+      TEST_FILE: KTH-SP2-1996-2.1-cln.swf
+    ports:
+      - 25333:25333
+      
+  database:
+    image: postgres
+    container_name: database
+    restart: always
+    environment:
+      POSTGRES_USER: samm
+      POSTGRES_PASSWORD: samm_secret
+      POSTGRES_DB: samm_db
+    ports:
+      - 5432:5432
+
+  manager:
+    image: manager:0.10
+    container_name: manager
+    restart: always
+    build: rl_manager
+    depends_on:
+      - gateway
+      - database
+    environment:
+      CLOUDSIM_GATEWAY_HOST: gateway
+      CLOUDSIM_GATEWAY_PORT: 25333
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: samm
+      POSTGRES_PASSWORD: samm_secret
+      POSTGRES_DB: samm_db
+      TEST_CASE: model
+      BATCH_SIZE: 128
+      EPISODES_CNT: 25
+      #TEST_CASE: run 
+    volumes:
+      # - ./model-storage:/storage
+      - ./rl_manager/tests:/mgr/tests
+    command: python3 tests/a2c.py
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

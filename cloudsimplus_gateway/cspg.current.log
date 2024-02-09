@@ -1,0 +1,735 @@
+22:17:06.854 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation parameters: 
+22:17:06.856 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialSVmCount: 2
+22:17:06.856 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialMVmCount: 1
+22:17:06.856 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialLVmCount: 1
+22:17:06.856 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> simulationSpeedUp: 1.0
+22:17:06.857 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> queueWaitPenalty: 1.0E-5
+22:17:06.857 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> splitLargeJobs: true
+22:17:06.857 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Deserialized 1 jobs
+22:17:06.857 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation settings dump
+22:17:06.861 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - SimulationSettings{
+vmRunningHourlyCost=0.2
+, hostPeMips=10000
+, hostBw=50000
+, hostRam=65536
+, hostSize=16000
+, hostPeCnt=14
+, defaultInitialVmCount=10
+, queueWaitPenalty=1.0E-5
+, datacenterHostsCnt=3000
+, basicVmRam=8192
+, basicVmPeCount=2
+, maxVmsPerSize=3000
+, printJobsPeriodically=false
+, payingForTheFullHour=false
+}
+22:17:06.861 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitting large jobs
+22:17:06.862 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitted: 1 into 100
+22:17:06.864 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Creating simulation: Sim0
+22:17:06.864 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Reset initiated
+22:17:06.888 [Test worker] INFO  CloudSim - 
+================== Starting CloudSim Plus 5.0.4 ==================
+
+22:17:06.889 [Test worker] INFO  DatacenterSimple - LoggingDatacenter2 is starting...
+22:17:06.889 [Test worker] INFO  CloudSim - Entities started.
+22:17:06.890 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:06.906 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 0 (S) has been allocated to Host 0/DC 2
+22:17:06.916 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 1 (S) has been allocated to Host 0/DC 2
+22:17:06.926 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 2 (M) has been allocated to Host 0/DC 2
+22:17:06.931 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 3 (L) has been allocated to Host 1/DC 2
+22:17:06.935 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:06.946 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:06.948 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:06.948 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:06.950 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.950 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.951 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.955 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.955 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.955 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.956 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.956 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.956 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.956 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.957 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.957 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.957 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.957 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.958 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 86
+22:17:06.962 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.963 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.963 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.963 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.963 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.963 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.964 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.964 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.964 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.964 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.965 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.965 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.965 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.965 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 72
+22:17:06.968 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.969 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.969 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.969 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.969 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.969 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.969 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.970 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.970 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.970 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.970 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.970 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.970 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.970 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 58
+22:17:06.973 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.973 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.973 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.974 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.974 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.974 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.974 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.974 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.974 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.975 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.975 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.975 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.975 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 44
+22:17:06.977 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.977 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.977 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.977 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.978 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.978 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.978 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.978 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.978 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.979 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.979 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.979 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.980 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.980 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 30
+22:17:06.984 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.984 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.984 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.985 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.985 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.985 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.985 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.985 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.986 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.986 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.986 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.986 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.987 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.987 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 16
+22:17:06.991 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 2
+22:17:06.994 [Test worker] INFO  VmAllocationPolicyAbstract - 71.60: VmAllocationPolicySimple: Vm 8 (S) has been allocated to Host 0/DC 2
+22:17:06.995 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:06.996 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 2
+22:17:06.996 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 2
+22:17:06.996 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 2
+22:17:06.996 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 2
+22:17:06.997 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:06.997 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 2
+22:17:06.997 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 2
+22:17:06.999 [Test worker] INFO  VmAllocationPolicyAbstract - 79.03: VmAllocationPolicySimple: Vm 7 (S) has been allocated to Host 0/DC 2
+22:17:07.000 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.000 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.000 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 2
+22:17:07.001 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.001 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.001 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.002 [Test worker] WARN  pl.edu.agh.csg.CloudSimProxy - Can't kill a VM - only one running
+22:17:07.002 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.004 [Test worker] INFO  VmAllocationPolicyAbstract - 85.98: VmAllocationPolicySimple: Vm 4 (S) has been allocated to Host 0/DC 2
+22:17:07.004 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.004 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.004 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.008 [Test worker] INFO  VmAllocationPolicyAbstract - 88.70: VmAllocationPolicySimple: Vm 9 (S) has been allocated to Host 0/DC 2
+22:17:07.008 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.012 [Test worker] INFO  VmAllocationPolicyAbstract - 89.76: VmAllocationPolicySimple: Vm 14 (S) has been allocated to Host 0/DC 2
+22:17:07.012 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.016 [Test worker] INFO  VmAllocationPolicyAbstract - 90.49: VmAllocationPolicySimple: Vm 6 (S) has been allocated to Host 1/DC 2
+22:17:07.016 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.017 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.017 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - End of simulation, some reality check stats:
+22:17:07.018 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - All jobs: 100
+22:17:07.018 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - SUCCESS: 100
+22:17:07.018 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still queued
+22:17:07.018 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still executed
+22:17:07.018 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - Simulation History
+22:17:07.018 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - reward: [-4.48E-4, -3.92E-4, -4.48E-4, -4.48E-4, -0.001448, -0.0013080000000000001, -0.0013640000000000002, -0.0013640000000000002, -0.0013640000000000002, -0.0013640000000000002, -0.00142, -0.00142, -0.00142, -0.00142, -0.0014759999999999999, -0.0014759999999999999, -0.001336, -0.001336, -0.001392, -0.001392, -0.001392, -0.001392, -0.0014479999999999999, -0.0014479999999999999, -0.0014479999999999999, -0.0014479999999999999, -0.0015039999999999997, -0.0013639999999999998, -0.0013639999999999998, -0.0013639999999999998, -0.0014199999999999998, -0.0014199999999999998, -0.0014199999999999998, -0.0014199999999999998, -0.0014759999999999997, -0.0014759999999999997, -0.0014759999999999997, -0.0014759999999999997, -0.0013919999999999996, -0.0013919999999999996, -0.0013919999999999996, -0.0013919999999999996, -0.0014479999999999996, -0.0014479999999999996, -0.0014479999999999996, -0.0014479999999999996, -0.0015039999999999997, -0.0015039999999999997, -0.0015039999999999997, -0.0013639999999999998, -0.0014199999999999998, -0.0014199999999999998, -0.0014199999999999998, -0.0014199999999999998, -0.0014759999999999999, -0.0014759999999999999, -0.0014759999999999999, -0.0014759999999999999, -0.001532, -0.001532, -0.0013919999999999998, -0.0013919999999999998, -0.0014479999999999999, -0.0014479999999999999, -0.0014479999999999999, -0.0014479999999999999, -0.001504, -0.001504, -0.001504, -0.001504, -0.00156, -0.00142, -0.0014, -0.001344, -0.0014, -0.0014, -0.0014, -0.0014, -0.001456, -0.001456, -0.001456, -0.0014, -0.001456, -0.001456, -0.001456, -0.001456, -0.001512, -0.001512, -0.001512, -0.001456, -0.001512, -0.001512, -0.001512]
+22:17:07.018 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - small_vms: [2, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 18, 19, 19, 19, 19, 20, 20, 20, 19, 20, 20, 20, 20, 21, 21, 21, 20, 21, 21, 21]
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - resourceCost: [4.48E-4, 3.92E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 5.04E-4, 5.04E-4, 5.04E-4, 5.04E-4, 5.6E-4, 5.6E-4, 5.6E-4, 5.6E-4, 6.159999999999999E-4, 6.159999999999999E-4, 6.159999999999999E-4, 6.159999999999999E-4, 6.719999999999999E-4, 6.719999999999999E-4, 6.719999999999999E-4, 6.719999999999999E-4, 7.279999999999998E-4, 7.279999999999998E-4, 7.279999999999998E-4, 7.279999999999998E-4, 7.839999999999998E-4, 7.839999999999998E-4, 7.839999999999998E-4, 7.839999999999998E-4, 8.399999999999997E-4, 8.399999999999997E-4, 8.399999999999997E-4, 8.399999999999997E-4, 8.959999999999997E-4, 8.959999999999997E-4, 8.959999999999997E-4, 8.959999999999997E-4, 9.519999999999996E-4, 9.519999999999996E-4, 9.519999999999996E-4, 9.519999999999996E-4, 0.0010079999999999996, 0.0010079999999999996, 0.0010079999999999996, 0.0010079999999999996, 0.0010639999999999996, 0.0010639999999999996, 0.0010639999999999996, 0.0010639999999999996, 0.0011199999999999997, 0.0011199999999999997, 0.0011199999999999997, 0.0011199999999999997, 0.0011759999999999997, 0.0011759999999999997, 0.0011759999999999997, 0.0011759999999999997, 0.0012319999999999998, 0.0012319999999999998, 0.0012319999999999998, 0.0012319999999999998, 0.0012879999999999999, 0.0012879999999999999, 0.0012879999999999999, 0.0012879999999999999, 0.001344, 0.001344, 0.001344, 0.001344, 0.0014, 0.0014, 0.0014, 0.001344, 0.0014, 0.0014, 0.0014, 0.0014, 0.001456, 0.001456, 0.001456, 0.0014, 0.001456, 0.001456, 0.001456, 0.001456, 0.001512, 0.001512, 0.001512, 0.001456, 0.001512, 0.001512, 0.001512]
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - action: [0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0]
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - medium_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - large_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - All jobs: 100
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - SUCCESS: 100
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still queued
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still executed
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Simulation is synchronous - doing nothing
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation parameters: 
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialSVmCount: 10
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialMVmCount: 1
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialLVmCount: 1
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> simulationSpeedUp: 1.0
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> queueWaitPenalty: 1.0E-5
+22:17:07.019 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> splitLargeJobs: true
+22:17:07.020 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Deserialized 5 jobs
+22:17:07.020 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation settings dump
+22:17:07.020 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - SimulationSettings{
+vmRunningHourlyCost=0.2
+, hostPeMips=10000
+, hostBw=50000
+, hostRam=65536
+, hostSize=16000
+, hostPeCnt=14
+, defaultInitialVmCount=10
+, queueWaitPenalty=1.0E-5
+, datacenterHostsCnt=3000
+, basicVmRam=8192
+, basicVmPeCount=2
+, maxVmsPerSize=3000
+, printJobsPeriodically=false
+, payingForTheFullHour=false
+}
+22:17:07.020 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitting large jobs
+22:17:07.020 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitted: 5 into 20
+22:17:07.020 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Creating simulation: Sim0
+22:17:07.020 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Reset initiated
+22:17:07.026 [Test worker] INFO  CloudSim - 
+================== Starting CloudSim Plus 5.0.4 ==================
+
+22:17:07.026 [Test worker] INFO  DatacenterSimple - LoggingDatacenter2 is starting...
+22:17:07.026 [Test worker] INFO  CloudSim - Entities started.
+22:17:07.026 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 4
+22:17:07.030 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 0 (S) has been allocated to Host 0/DC 2
+22:17:07.034 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 1 (S) has been allocated to Host 0/DC 2
+22:17:07.038 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 2 (S) has been allocated to Host 0/DC 2
+22:17:07.041 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 3 (S) has been allocated to Host 0/DC 2
+22:17:07.045 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 4 (S) has been allocated to Host 1/DC 2
+22:17:07.050 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 5 (S) has been allocated to Host 1/DC 2
+22:17:07.053 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 6 (S) has been allocated to Host 1/DC 2
+22:17:07.055 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 7 (S) has been allocated to Host 1/DC 2
+22:17:07.057 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 8 (S) has been allocated to Host 2/DC 2
+22:17:07.060 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 9 (S) has been allocated to Host 2/DC 2
+22:17:07.062 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 10 (M) has been allocated to Host 2/DC 2
+22:17:07.064 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 11 (L) has been allocated to Host 3/DC 2
+22:17:07.064 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.065 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.065 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.065 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.065 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.065 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.066 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.066 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.066 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.066 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.066 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.067 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.067 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.067 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.067 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.067 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.068 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.068 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.068 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.068 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.068 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.069 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.069 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.069 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.069 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.069 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.069 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.069 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.069 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.070 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.070 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.070 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.070 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.070 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.070 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.070 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.071 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.071 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.071 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.071 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.071 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.071 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.071 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.072 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.072 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.072 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.073 [Test worker] INFO  CloudSim - 46.10: Processing last events before simulation shutdown.
+22:17:07.073 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 11 (L) destroyed on Host 3/DC 2. 
+22:17:07.073 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 10 (M) destroyed on Host 2/DC 2. 
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 9 (S) destroyed on Host 2/DC 2. 
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 8 (S) destroyed on Host 2/DC 2. 
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 6 (S) destroyed on Host 1/DC 2. 
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 5 (S) destroyed on Host 1/DC 2. 
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 4 (S) destroyed on Host 1/DC 2. 
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 3 (S) destroyed on Host 0/DC 2. 
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 2 (S) destroyed on Host 0/DC 2. 
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 1 (S) destroyed on Host 0/DC 2. 
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter: Vm 0 (S) destroyed on Host 0/DC 2. 
+22:17:07.074 [Test worker] INFO  CloudSim - Simulation: No more future events
+
+22:17:07.074 [Test worker] INFO  CloudInformationService - CloudInformationService0: Notify all CloudSim Plus entities to shutdown.
+
+22:17:07.074 [Test worker] INFO  DatacenterSimple - 46.10: LoggingDatacenter2 is shutting down...
+22:17:07.075 [Test worker] INFO  CloudSim - 
+================== Simulation finished at time 46.10 ==================
+
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - End of simulation, some reality check stats:
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - All jobs: 20
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - SUCCESS: 20
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still queued
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still executed
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - Simulation History
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - reward: [-8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -9.36E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -8.96E-4, -9.36E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.8E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.8E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -8.4E-4, -0.0]
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - small_vms: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - resourceCost: [8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.96E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 8.4E-4, 0.0]
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - action: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - medium_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - large_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Simulation is synchronous - doing nothing
+22:17:07.075 [Test worker] INFO  p.e.a.csg.MultiSimulationEnvironment - pong
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation parameters: 
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialSVmCount: 1
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialMVmCount: 1
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialLVmCount: 1
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> simulationSpeedUp: 1.0
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> queueWaitPenalty: 1.0E-5
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> splitLargeJobs: true
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Deserialized 1 jobs
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation settings dump
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - SimulationSettings{
+vmRunningHourlyCost=0.2
+, hostPeMips=10000
+, hostBw=50000
+, hostRam=65536
+, hostSize=16000
+, hostPeCnt=14
+, defaultInitialVmCount=10
+, queueWaitPenalty=1.0E-5
+, datacenterHostsCnt=3000
+, basicVmRam=8192
+, basicVmPeCount=2
+, maxVmsPerSize=3000
+, printJobsPeriodically=false
+, payingForTheFullHour=false
+}
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitting large jobs
+22:17:07.075 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitted: 1 into 4
+22:17:07.076 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Creating simulation: Sim0
+22:17:07.076 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Reset initiated
+22:17:07.079 [Test worker] INFO  CloudSim - 
+================== Starting CloudSim Plus 5.0.4 ==================
+
+22:17:07.079 [Test worker] INFO  DatacenterSimple - LoggingDatacenter2 is starting...
+22:17:07.079 [Test worker] INFO  CloudSim - Entities started.
+22:17:07.079 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.082 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 0 (S) has been allocated to Host 0/DC 2
+22:17:07.084 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 1 (M) has been allocated to Host 0/DC 2
+22:17:07.087 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 2 (L) has been allocated to Host 0/DC 2
+22:17:07.087 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.087 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Simulation is synchronous - doing nothing
+22:17:07.087 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation parameters: 
+22:17:07.087 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialSVmCount: 1
+22:17:07.087 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialMVmCount: 1
+22:17:07.087 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialLVmCount: 1
+22:17:07.087 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> simulationSpeedUp: 1.0
+22:17:07.087 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> queueWaitPenalty: 1.0E-5
+22:17:07.087 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> splitLargeJobs: true
+22:17:07.088 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Deserialized 10 jobs
+22:17:07.088 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation settings dump
+22:17:07.088 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - SimulationSettings{
+vmRunningHourlyCost=0.2
+, hostPeMips=10000
+, hostBw=50000
+, hostRam=65536
+, hostSize=16000
+, hostPeCnt=14
+, defaultInitialVmCount=10
+, queueWaitPenalty=1.0E-5
+, datacenterHostsCnt=3000
+, basicVmRam=8192
+, basicVmPeCount=2
+, maxVmsPerSize=3000
+, printJobsPeriodically=false
+, payingForTheFullHour=false
+}
+22:17:07.088 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitting large jobs
+22:17:07.088 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitted: 10 into 40
+22:17:07.088 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Creating simulation: Sim0
+22:17:07.088 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Reset initiated
+22:17:07.091 [Test worker] INFO  CloudSim - 
+================== Starting CloudSim Plus 5.0.4 ==================
+
+22:17:07.091 [Test worker] INFO  DatacenterSimple - LoggingDatacenter2 is starting...
+22:17:07.091 [Test worker] INFO  CloudSim - Entities started.
+22:17:07.091 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 4
+22:17:07.094 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 0 (S) has been allocated to Host 0/DC 2
+22:17:07.096 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 1 (M) has been allocated to Host 0/DC 2
+22:17:07.099 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 2 (L) has been allocated to Host 0/DC 2
+22:17:07.099 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.099 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.099 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.099 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.100 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 10.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.101 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 20.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.102 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.103 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 30.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.104 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 40.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.105 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.106 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.107 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.107 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.107 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.107 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.107 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.107 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.107 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.111 [Test worker] INFO  VmAllocationPolicyAbstract - 97.75: VmAllocationPolicySimple: Vm 3 (S) has been allocated to Host 1/DC 2
+22:17:07.111 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 50.0% Waiting list size: 0
+22:17:07.111 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.111 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.112 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 60.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.113 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 70.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.114 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 80.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.115 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 90.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.116 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.117 [Test worker] INFO  CloudSim - 191.10: Processing last events before simulation shutdown.
+22:17:07.117 [Test worker] INFO  DatacenterSimple - 191.10: LoggingDatacenter: Vm 3 (S) destroyed on Host 1/DC 2. 
+22:17:07.117 [Test worker] INFO  DatacenterSimple - 191.10: LoggingDatacenter: Vm 2 (L) destroyed on Host 0/DC 2. 
+22:17:07.117 [Test worker] INFO  DatacenterSimple - 191.10: LoggingDatacenter: Vm 1 (M) destroyed on Host 0/DC 2. 
+22:17:07.117 [Test worker] INFO  DatacenterSimple - 191.10: LoggingDatacenter: Vm 0 (S) destroyed on Host 0/DC 2. 
+22:17:07.117 [Test worker] INFO  CloudSim - Simulation: No more future events
+
+22:17:07.117 [Test worker] INFO  CloudInformationService - CloudInformationService0: Notify all CloudSim Plus entities to shutdown.
+
+22:17:07.118 [Test worker] INFO  DatacenterSimple - 191.10: LoggingDatacenter2 is shutting down...
+22:17:07.118 [Test worker] INFO  CloudSim - 
+================== Simulation finished at time 191.10 ==================
+
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - End of simulation, some reality check stats:
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - All jobs: 40
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - SUCCESS: 40
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still queued
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still executed
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - Simulation History
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - reward: [-3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -4.32E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.88E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.88E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.88E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.88E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.88E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.88E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.88E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.88E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -4.48E-4, -0.0]
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - small_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - resourceCost: [3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 4.48E-4, 0.0]
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - action: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - medium_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - large_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Simulation is synchronous - doing nothing
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation parameters: 
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialSVmCount: 1
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialMVmCount: 1
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialLVmCount: 1
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> simulationSpeedUp: 1.0
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> queueWaitPenalty: 1.0E-5
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> splitLargeJobs: true
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Deserialized 1 jobs
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation settings dump
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - SimulationSettings{
+vmRunningHourlyCost=0.2
+, hostPeMips=10000
+, hostBw=50000
+, hostRam=65536
+, hostSize=16000
+, hostPeCnt=14
+, defaultInitialVmCount=10
+, queueWaitPenalty=1.0E-5
+, datacenterHostsCnt=3000
+, basicVmRam=8192
+, basicVmPeCount=2
+, maxVmsPerSize=3000
+, printJobsPeriodically=false
+, payingForTheFullHour=false
+}
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitting large jobs
+22:17:07.118 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitted: 1 into 6
+22:17:07.119 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Creating simulation: Sim0
+22:17:07.119 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Reset initiated
+22:17:07.123 [Test worker] INFO  CloudSim - 
+================== Starting CloudSim Plus 5.0.4 ==================
+
+22:17:07.123 [Test worker] INFO  DatacenterSimple - LoggingDatacenter2 is starting...
+22:17:07.123 [Test worker] INFO  CloudSim - Entities started.
+22:17:07.123 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.127 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 0 (S) has been allocated to Host 0/DC 2
+22:17:07.132 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 1 (M) has been allocated to Host 0/DC 2
+22:17:07.136 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 2 (L) has been allocated to Host 0/DC 2
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.137 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.138 [Test worker] INFO  CloudSim - 21.10: Processing last events before simulation shutdown.
+22:17:07.138 [Test worker] INFO  DatacenterSimple - 21.10: LoggingDatacenter: Vm 2 (L) destroyed on Host 0/DC 2. 
+22:17:07.138 [Test worker] INFO  DatacenterSimple - 21.10: LoggingDatacenter: Vm 1 (M) destroyed on Host 0/DC 2. 
+22:17:07.138 [Test worker] INFO  DatacenterSimple - 21.10: LoggingDatacenter: Vm 0 (S) destroyed on Host 0/DC 2. 
+22:17:07.138 [Test worker] INFO  CloudSim - Simulation: No more future events
+
+22:17:07.138 [Test worker] INFO  CloudInformationService - CloudInformationService0: Notify all CloudSim Plus entities to shutdown.
+
+22:17:07.138 [Test worker] INFO  DatacenterSimple - 21.10: LoggingDatacenter2 is shutting down...
+22:17:07.138 [Test worker] INFO  CloudSim - 
+================== Simulation finished at time 21.10 ==================
+
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - End of simulation, some reality check stats:
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - All jobs: 6
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - SUCCESS: 6
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still queued
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still executed
+22:17:07.138 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - Simulation History
+22:17:07.139 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - reward: [-3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -4.52E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -3.92E-4, -0.0]
+22:17:07.139 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - small_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+22:17:07.139 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - resourceCost: [3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 3.92E-4, 0.0]
+22:17:07.139 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - action: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+22:17:07.139 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - medium_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+22:17:07.139 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - large_vms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+22:17:07.139 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Simulation is synchronous - doing nothing
+22:17:07.141 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation parameters: 
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialSVmCount: 1
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialMVmCount: 1
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> initialLVmCount: 1
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> simulationSpeedUp: 60.0
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> queueWaitPenalty: 1.0E-5
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - -> splitLargeJobs: true
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Deserialized 1 jobs
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Simulation settings dump
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - SimulationSettings{
+vmRunningHourlyCost=0.2
+, hostPeMips=10000
+, hostBw=50000
+, hostRam=65536
+, hostSize=16000
+, hostPeCnt=14
+, defaultInitialVmCount=10
+, queueWaitPenalty=1.0E-5
+, datacenterHostsCnt=5
+, basicVmRam=8192
+, basicVmPeCount=2
+, maxVmsPerSize=3000
+, printJobsPeriodically=false
+, payingForTheFullHour=false
+}
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitting large jobs
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.SimulationFactory - Splitted: 1 into 1
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Creating simulation: Sim0
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Reset initiated
+22:17:07.142 [Test worker] INFO  CloudSim - 
+================== Starting CloudSim Plus 5.0.4 ==================
+
+22:17:07.142 [Test worker] INFO  DatacenterSimple - LoggingDatacenter2 is starting...
+22:17:07.142 [Test worker] INFO  CloudSim - Entities started.
+22:17:07.142 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 0.0% Waiting list size: 0
+22:17:07.142 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 0 (S) has been allocated to Host 0/DC 2
+22:17:07.143 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 1 (M) has been allocated to Host 0/DC 2
+22:17:07.143 [Test worker] INFO  VmAllocationPolicyAbstract - 0.00: VmAllocationPolicySimple: Vm 2 (L) has been allocated to Host 0/DC 2
+22:17:07.143 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Simulation progress: submitted: 100.0% Waiting list size: 0
+22:17:07.144 [Test worker] INFO  VmAllocationPolicyAbstract - 1.55: VmAllocationPolicySimple: Vm 3 (S) has been allocated to Host 1/DC 2
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - End of simulation, some reality check stats:
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - All jobs: 1
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - SUCCESS: 1
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still queued
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.CloudSimProxy - Jobs which are still executed
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - Simulation History
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - reward: [-0.02748, -0.030240000000000003]
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - small_vms: [2, 3]
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - resourceCost: [0.02688, 0.030240000000000003]
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - action: [1, 1]
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - medium_vms: [1, 1]
+22:17:07.144 [Test worker] INFO  pl.edu.agh.csg.SimulationHistory - large_vms: [1, 1]
+22:17:07.145 [Test worker] INFO  pl.edu.agh.csg.WrappedSimulation - Sim0 Simulation is synchronous - doing nothing

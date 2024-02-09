@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="pl.edu.agh.csg.VmCostTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2024-02-09T22:17:07" hostname="pop-os" time="0.001">
+  <properties/>
+  <testcase name="testCostFor11VMs" classname="pl.edu.agh.csg.VmCostTest" time="0.0"/>
+  <testcase name="testCostOfNoMachinesIsZero" classname="pl.edu.agh.csg.VmCostTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
