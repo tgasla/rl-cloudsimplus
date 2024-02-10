@@ -31,7 +31,7 @@ modeling and simulation of cloud computing infrastructure and services.
 
 You can find it [here](http://cloudsimplus.org/). Source code is available [here](https://github.com/manoelcampos/cloudsim-plus)
 
-* The code was based on the work done by [pkoperek](https://github.com/pkoperek) in these projects:
+* The code was based on the work done by [pkoperek](https://github.com/pkoperek) in these following projects:
   * [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
   * [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
   * [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)
