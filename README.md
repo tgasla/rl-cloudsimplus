@@ -18,7 +18,7 @@ sudo make build
 `docker compose up --build`
 
 * If you want the manager image to have NVIDIA GPU access use:
-  `docker compose up --profile gpu
+  `docker compose up --profile gpu`
 
 ## Acknowledgements
 
