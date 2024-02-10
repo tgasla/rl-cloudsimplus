@@ -19,7 +19,7 @@ sudo make build
 * If you want to see only the manager output use:
   `docker compose manager run`
 
-* If you want the manager image to have NVIDIA GPU access add the following flag to the `docker compose` command
+* If you want the manager image to have NVIDIA CUDA GPU access add the following flag to the `docker compose` command
   `--profile gpu`
 
 ### 4. Stop application
