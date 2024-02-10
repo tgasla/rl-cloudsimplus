@@ -1,20 +1,24 @@
 ## Running
 
-### Environment variables
+### 1. Build gateway image
+```
+cd cloudsimplus_gateway
+sudo make build
+```
 
-* `TEST_CASE` - denotes the test case which should be ran as experiment.
-  Defaults to `model`. Available values: `model`, `dcnull`.
+### 2. Build manager image
+```
+cd rl_manager
+sudo make build
+```
+### 3. Start application
+`docker compose up`
 
-### docker-compose
+* You can also build manager image when starting application using:
+`docker compose up --build`
 
-Running a simple test with 
-* `docker-compose run manager`
-
-### kubernetes
-
-* `kubectl create -f dqn.yml` - create/deploy
-* `kubectl logs <POD>` - view logs of the pod
-* `kubectl delete -f dqn.yml` - delete the deployment
+* If you want the manager image to have NVIDIA GPU access use:
+  `docker compose up --profile gpu
 
 ## Acknowledgements
 
