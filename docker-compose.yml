@@ -23,7 +23,8 @@ services:
     ports:
       - 5432:5432
 
-  manager:
+  manager: &cpu
+    profiles: [""]
     image: manager:0.10
     container_name: manager
     restart: always
@@ -47,6 +48,10 @@ services:
       # - ./model-storage:/storage
       - ./rl_manager/tests:/mgr/tests
     command: python3 tests/a2c.py
+
+  manager_gpu:
+    <<: *cpu
+    profiles: ["gpu"]
     deploy:
       resources:
         reservations:
