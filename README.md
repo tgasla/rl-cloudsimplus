@@ -14,13 +14,12 @@ sudo make build
 ### 3. Start application
 `docker compose up`
 
-* You can also build manager image adding the `--build flag` to the `docker compose` command
+* You can also build manager image adding the `--build` flag to the `docker compose` command
 
 * If you want to see only the manager output use:
   `docker compose manager run`
 
-* If you want the manager image to have NVIDIA CUDA GPU access add the following flag to the `docker compose` command
-  `--profile gpu`
+* If you want the manager image to have NVIDIA CUDA GPU access add the `--profile gpu` flag to the `docker compose` command
 
 ### 4. Stop application
 `docker compose down`
