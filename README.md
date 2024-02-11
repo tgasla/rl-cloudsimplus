@@ -1,31 +1,44 @@
 # 1. Prerequisites
-## 1.1 Install Docker
+
+## Linux Debian 12/11/10
+### 1.1 Install Docker
 https://docs.docker.com/get-docker/
 
-## 1.2 Install Docker Compose
+### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
 
-## 1.3 Install OpenJDK Java 17 JDK and JRE
-### 1.3.1 On Linux Debian 12/11/10
-`sudo apt install openjdk-17-jdk openjdk-17-jre`
+### 1.3 Install Java 17 
 
-### 1.3.2 Make sure that the environment variable JAVA_HOME is set to the right path
+You can install OpenJDK Java 17 JDK and JRE
+`sudo apt-get install openjdk-17-jdk openjdk-17-jre`
+
+or you can also try Azul Zulu
+`https://www.azul.com/downloads/?version=java-17-lts#zulu`
+
+### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
 `echo export JAVA_HOME=/usr/lib/jvm/java-17-openjdk >> ~/.bash_profile`
 
-### 1.3.3 Select the correct Gradle version
+### 1.5 Select the correct Gradle version
 ```
 cd cloudsimplus_gateway
 .sudo /gradlew wrapper --gradle-version 7.3 --distribution-type all
 ```
 
-## 1.3 On MacOS >= 11
-### 1.3.1 1nstall OpenJDK 17 using brew
+## MacOS >= 11
+### 1.1 Install Docker
+https://docs.docker.com/get-docker/
+
+### 1.2 Install Docker Compose
+https://docs.docker.com/compose/install/
+
+### 1.3 1nstall Java 17
+You can install OpenJDK Java 17 using brew
 `brew install openjdk@17`
 
-### 1.3.1 Or you can also try Azul Zulu
+or you can also try Azul Zulu
 `https://www.azul.com/downloads/?version=java-17-lts#zulu`
 
-### 1.3.2 Make sure that the environment variable JAVA_HOME is set to the right path
+### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
 - If you are using zsh:
 
 `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.zprofile`
@@ -34,7 +47,7 @@ cd cloudsimplus_gateway
   
 `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.bash_profile`
 
-### 1.3.3 Select the correct Gradle version
+### 1.5 Select the correct Gradle version
 ```
 cd cloudsimplus_gateway
 sudo ./gradlew wrapper --gradle-version 7.3 --distribution-type all
@@ -56,12 +69,13 @@ sudo make build
 # 3. Start application
 `docker compose up`
 
-* You can also build manager image adding the `--build` flag to the `docker compose` command
+- You can also build manager image adding the `--build` flag to the `docker compose` command
 
-* If you want to see only the manager output use:
+- If you want to see only the manager output use:
   `docker compose manager run`
 
-* If you want the manager image to have NVIDIA CUDA GPU access add the `--profile gpu` flag to the `docker compose` command
+- If you want the manager image to have GPU access:
+  - For NVIDIA CUDA GPU you need to download the `nvidia-container-toolkit` by running `sudo apt-get install nvidia-container-toolkit` if you are using Debian and then add the `--profile gpu` flag to the `docker compose` command.
 
 # 4. Stop application
 `docker compose down`
@@ -73,7 +87,7 @@ modeling and simulation of cloud computing infrastructure and services.
 
 You can find it [here](http://cloudsimplus.org/). Source code is available [here](https://github.com/manoelcampos/cloudsim-plus)
 
-* The code was based on the work done by [pkoperek](https://github.com/pkoperek) in these following projects:
-  * [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
-  * [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
-  * [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)
+- The code was based on the work done by [pkoperek](https://github.com/pkoperek) in these following projects:
+  - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
+  - [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
+  - [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)
