@@ -27,7 +27,7 @@ cd cloudsimplus_gateway
 .sudo /gradlew wrapper --gradle-version 7.3 --distribution-type all
 ```
 
-## MacOS >= 11
+## MacOS 14/13/12/11
 ### 1.1 Install Docker
 https://docs.docker.com/get-docker/
 
