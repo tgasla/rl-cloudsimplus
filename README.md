@@ -26,10 +26,12 @@ cd cloudsimplus_gateway
 `https://www.azul.com/downloads/?version=java-17-lts#zulu`
 
 ### 1.3.2 Make sure that the environment variable JAVA_HOME is set to the right path
-- If you are using zsh
+- If you are using zsh:
+
 `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.zprofile`
 
-- If you are using bash
+- If you are using bash:
+  
 `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.bash_profile`
 
 ### 1.3.3 Select the correct Gradle version
