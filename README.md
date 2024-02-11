@@ -15,7 +15,7 @@ https://docs.docker.com/compose/install/
 #### Select the correct Gradle version
 ```
 cd cloudsimplus_gateway
-./gradlew wrapper --gradle-version 7.3 --distribution-type all
+.sudo /gradlew wrapper --gradle-version 7.3 --distribution-type all
 ```
 
 ### On MacOS >= 11
@@ -35,7 +35,7 @@ cd cloudsimplus_gateway
 #### Select the correct Gradle version
 ```
 cd cloudsimplus_gateway
-./gradlew wrapper --gradle-version 7.3 --distribution-type all
+sudo ./gradlew wrapper --gradle-version 7.3 --distribution-type all
 ```
 
 # 2. Running
