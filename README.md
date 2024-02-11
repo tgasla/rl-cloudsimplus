@@ -1,4 +1,4 @@
-## Prerequisites
+# Prerequisites
 ### Install OpenJDK Java 17 JDK and JRE
 #### On Linux Debian 12/11/10
 `sudo apt install openjdk-17-jdk openjdk-17-jre`
