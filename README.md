@@ -10,12 +10,15 @@ https://docs.docker.com/compose/install/
 ### 1.3 Install Java 17 
 
 You can install OpenJDK Java 17 JDK and JRE
+
 `sudo apt-get install openjdk-17-jdk openjdk-17-jre`
 
 or you can also try Azul Zulu
+
 `https://www.azul.com/downloads/?version=java-17-lts#zulu`
 
 ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
+
 `echo export JAVA_HOME=/usr/lib/jvm/java-17-openjdk >> ~/.bash_profile`
 
 ### 1.5 Select the correct Gradle version
@@ -36,6 +39,7 @@ You can install OpenJDK Java 17 using brew
 `brew install openjdk@17`
 
 or you can also try Azul Zulu
+
 `https://www.azul.com/downloads/?version=java-17-lts#zulu`
 
 ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
