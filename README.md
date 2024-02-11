@@ -1,9 +1,9 @@
 # 1. Prerequisites
 ## Install Docker
-`https://docs.docker.com/get-docker/`
+https://docs.docker.com/get-docker/
 
 ## Install Docker Compose
-`https://docs.docker.com/compose/install/`
+https://docs.docker.com/compose/install/
 
 ## Install OpenJDK Java 17 JDK and JRE
 ### On Linux Debian 12/11/10
