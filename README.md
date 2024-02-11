@@ -38,7 +38,7 @@ cd cloudsimplus_gateway
 sudo ./gradlew wrapper --gradle-version 7.3 --distribution-type all
 ```
 
-# 2. Running
+# 2. Build images
 
 ## Build gateway image
 ```
@@ -51,7 +51,7 @@ sudo make build
 cd rl_manager
 sudo make build
 ```
-## Start application
+# 3. Start application
 `docker compose up`
 
 * You can also build manager image adding the `--build` flag to the `docker compose` command
@@ -61,7 +61,7 @@ sudo make build
 
 * If you want the manager image to have NVIDIA CUDA GPU access add the `--profile gpu` flag to the `docker compose` command
 
-## Stop application
+# 4. Stop application
 `docker compose down`
 
 # Acknowledgements
