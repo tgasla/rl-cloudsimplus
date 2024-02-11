@@ -36,6 +36,7 @@ https://docs.docker.com/compose/install/
 
 ### 1.3 1nstall Java 17
 You can install OpenJDK Java 17 using brew
+
 `brew install openjdk@17`
 
 or you can also try Azul Zulu
