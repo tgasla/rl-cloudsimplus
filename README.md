@@ -67,7 +67,7 @@ sudo make build
 
 ## 2.2 Build manager image
 ```
-cd rl_manager
+cd ../rl_manager
 sudo make build
 ```
 # 3. Start application
