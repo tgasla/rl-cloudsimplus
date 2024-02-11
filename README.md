@@ -9,30 +9,30 @@ https://docs.docker.com/compose/install/
 ### 1.3.1 On Linux Debian 12/11/10
 `sudo apt install openjdk-17-jdk openjdk-17-jre`
 
-#### 1.3.2 Make sure that the environment variable JAVA_HOME is set to the right path
+### 1.3.2 Make sure that the environment variable JAVA_HOME is set to the right path
 `echo export JAVA_HOME=/usr/lib/jvm/java-17-openjdk >> ~/.bash_profile`
 
-#### 1.3.3 Select the correct Gradle version
+### 1.3.3 Select the correct Gradle version
 ```
 cd cloudsimplus_gateway
 .sudo /gradlew wrapper --gradle-version 7.3 --distribution-type all
 ```
 
-### 1.3 On MacOS >= 11
-#### 1.3.1 1nstall OpenJDK 17 using brew
+## 1.3 On MacOS >= 11
+### 1.3.1 1nstall OpenJDK 17 using brew
 `brew install openjdk@17`
 
-#### 1.3.1 Or you can also try Azul Zulu
+### 1.3.1 Or you can also try Azul Zulu
 `https://www.azul.com/downloads/?version=java-17-lts#zulu`
 
-#### 1.3.2 Make sure that the environment variable JAVA_HOME is set to the right path
+### 1.3.2 Make sure that the environment variable JAVA_HOME is set to the right path
 - If you are using zsh
 `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.zprofile`
 
 - If you are using bash
 `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.bash_profile`
 
-#### 1.3.3 Select the correct Gradle version
+### 1.3.3 Select the correct Gradle version
 ```
 cd cloudsimplus_gateway
 sudo ./gradlew wrapper --gradle-version 7.3 --distribution-type all
