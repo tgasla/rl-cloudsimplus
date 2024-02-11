@@ -1,38 +1,38 @@
 # 1. Prerequisites
-## Install Docker
+## 1.1 Install Docker
 https://docs.docker.com/get-docker/
 
-## Install Docker Compose
+## 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
 
-## Install OpenJDK Java 17 JDK and JRE
-### On Linux Debian 12/11/10
+## 1.3 Install OpenJDK Java 17 JDK and JRE
+### 1.3.1 On Linux Debian 12/11/10
 `sudo apt install openjdk-17-jdk openjdk-17-jre`
 
-#### Make sure that the environment variable JAVA_HOME is set to the right path
+#### 1.3.2 Make sure that the environment variable JAVA_HOME is set to the right path
 `echo export JAVA_HOME=/usr/lib/jvm/java-17-openjdk >> ~/.bash_profile`
 
-#### Select the correct Gradle version
+#### 1.3.3 Select the correct Gradle version
 ```
 cd cloudsimplus_gateway
 .sudo /gradlew wrapper --gradle-version 7.3 --distribution-type all
 ```
 
-### On MacOS >= 11
-#### Install OpenJDK 17 using brew
+### 1.3 On MacOS >= 11
+#### 1.3.1 1nstall OpenJDK 17 using brew
 `brew install openjdk@17`
 
-#### Or you can also try Azul Zulu
+#### 1.3.1 Or you can also try Azul Zulu
 `https://www.azul.com/downloads/?version=java-17-lts#zulu`
 
-#### Make sure that the environment variable JAVA_HOME is set to the right path
-##### If you are using zsh
+#### 1.3.2 Make sure that the environment variable JAVA_HOME is set to the right path
+- If you are using zsh
 `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.zprofile`
 
-##### If you are using bash
+- If you are using bash
 `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.bash_profile`
 
-#### Select the correct Gradle version
+#### 1.3.3 Select the correct Gradle version
 ```
 cd cloudsimplus_gateway
 sudo ./gradlew wrapper --gradle-version 7.3 --distribution-type all
@@ -40,13 +40,13 @@ sudo ./gradlew wrapper --gradle-version 7.3 --distribution-type all
 
 # 2. Build images
 
-## Build gateway image
+## 2.1 Build gateway image
 ```
 cd cloudsimplus_gateway
 sudo make build
 ```
 
-## Build manager image
+## 2.2 Build manager image
 ```
 cd rl_manager
 sudo make build
