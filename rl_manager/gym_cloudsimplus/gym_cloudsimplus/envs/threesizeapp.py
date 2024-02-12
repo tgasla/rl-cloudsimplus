@@ -1,7 +1,7 @@
-import gym
+import gymnasium as gym
 import os
 import json
-from gym import spaces
+from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
 
 import numpy as np
@@ -51,8 +51,10 @@ class ThreeSizeAppEnv(gym.Env):
         # "waitingJobsRatioGlobalHistory",
         # "waitingJobsRatioRecentHistory"
         self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0, 0, 0, 0, 0]),
-            high=np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+            low=0,
+            high=1,
+            shape=(7,),
+            dtype=np.float32
         )
         params = {
             'INITIAL_VM_COUNT': kwargs.get('initial_vm_count'),
@@ -72,22 +74,26 @@ class ThreeSizeAppEnv(gym.Env):
             action = action.item()
         result = simulation_environment.step(self.simulation_id, action)
         reward = result.getReward()
-        done = result.isDone()
+        terminated = result.isDone()
+        truncated = False
         raw_obs = result.getObs()
 
         obs = to_nparray(raw_obs)
         return (
             obs,
             reward,
-            done,
+            terminated,
+            truncated,
             {}
         )
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        super().init(seed=seed)
         result = simulation_environment.reset(self.simulation_id)
         raw_obs = result.getObs()
         obs = to_nparray(raw_obs)
-        return obs
+        info = {}
+        return obs, info
 
     def render(self, mode='human', close=False):
         # result is a string with arrays encoded as json

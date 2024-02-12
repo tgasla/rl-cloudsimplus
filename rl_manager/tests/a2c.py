@@ -1,14 +1,14 @@
-import gym
+import gymnasium as gym
 import gym_cloudsimplus
 import json
 import sys
 from py4j.java_gateway import JavaGateway
-from stable_baselines3 import PPO, A2C
+from stable_baselines3 import A2C
 import torch
 from read_swf import jobs
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
+#print(device)
 
 gateway = JavaGateway()
 simulation_environment = gateway.entry_point
@@ -28,18 +28,18 @@ env = gym.make('SingleDCAppEnv-v0',
 
 it = 0
 reward_sum = 0
-model = A2C("MlpPolicy", env, device="cuda")
+model = A2C("MlpPolicy", env, device=device)
 model.learn(total_timesteps=100_000, progress_bar=True)
-obs = env.reset()
+obs, info = env.reset()
 
 while True:
     action, _states = model.predict(obs)
     print(f"ACTION = {action}")
-    obs, reward, done, info = env.step(int(action))
+    obs, reward, terminated, truncated, info = env.step(int(action))
     print(f'{it}, {[str(i) for i in obs]}, {reward}')
     reward_sum += reward
 
     it += 1
-    if done:
+    if terminated or truncated:
         print(f"Episode finished! Reward sum: {reward_sum}")
         break
