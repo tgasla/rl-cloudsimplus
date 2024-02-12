@@ -1,4 +1,4 @@
-package pl.edu.agh.csg;
+package daislab.csg;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.ArrayUtils;

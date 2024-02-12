@@ -1,4 +1,4 @@
-package pl.edu.agh.csg;
+package daislab.csg;
 
 import com.google.gson.Gson;
 import org.junit.Test;

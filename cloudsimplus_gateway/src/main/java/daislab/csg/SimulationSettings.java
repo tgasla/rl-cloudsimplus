@@ -1,6 +1,6 @@
-package pl.edu.agh.csg;
+package daislab.csg;
 
-import static pl.edu.agh.csg.Defaults.withDefault;
+import static daislab.csg.Defaults.withDefault;
 
 public class SimulationSettings {
 

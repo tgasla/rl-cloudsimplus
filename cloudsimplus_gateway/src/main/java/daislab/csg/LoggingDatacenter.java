@@ -1,4 +1,4 @@
-package pl.edu.agh.csg;
+package daislab.csg;
 
 import org.cloudbus.cloudsim.allocationpolicies.VmAllocationPolicy;
 import org.cloudbus.cloudsim.core.Simulation;

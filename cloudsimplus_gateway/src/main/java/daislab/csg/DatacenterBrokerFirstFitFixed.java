@@ -1,4 +1,4 @@
-package pl.edu.agh.csg;
+package daislab.csg;
 
 import org.cloudbus.cloudsim.brokers.DatacenterBrokerSimple;
 import org.cloudbus.cloudsim.cloudlets.Cloudlet;

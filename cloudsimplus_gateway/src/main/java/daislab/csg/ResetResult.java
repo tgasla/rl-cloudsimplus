@@ -1,4 +1,4 @@
-package pl.edu.agh.csg;
+package daislab.csg;
 
 public class ResetResult {
     private final double[] obs;

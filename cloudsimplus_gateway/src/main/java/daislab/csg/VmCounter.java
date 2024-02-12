@@ -1,4 +1,4 @@
-package pl.edu.agh.csg;
+package daislab.csg;
 
 import java.util.HashMap;
 import java.util.Map;

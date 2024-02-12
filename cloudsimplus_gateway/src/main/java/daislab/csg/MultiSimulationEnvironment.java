@@ -1,4 +1,4 @@
-package pl.edu.agh.csg;
+package daislab.csg;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

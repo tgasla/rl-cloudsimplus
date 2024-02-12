@@ -1,4 +1,4 @@
-package pl.edu.agh.csg;
+package daislab.csg;
 
 import com.google.gson.Gson;
 import org.apache.commons.math3.stat.StatUtils;

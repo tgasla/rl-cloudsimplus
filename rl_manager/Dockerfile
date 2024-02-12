@@ -4,7 +4,7 @@ COPY gym_cloudsimplus /gym_cloudsimplus
 
 RUN mkdir -p /mgr
 RUN pip3 install --upgrade pip
-RUN pip3 install psycopg2-binary stable-baselines3 tensorboard
+RUN pip3 install psycopg2-binary stable-baselines3 tensorboard tqdm rich
 RUN pip3 install /gym_cloudsimplus
 # torch torchvision
 

@@ -50,7 +50,7 @@ docker {
         baseImage = 'amazoncorretto:17-alpine-jdk'
         ports = [25333]
         images = [dockerImageTag]
-        jvmArgs = ['-Xms8G', '-Xmx32G']
+        jvmArgs = ['-Xms16G', '-Xmx32G']
     }
 }
 
@@ -58,4 +58,4 @@ dockerCreateDockerfile {
     environmentVariable 'JAVA_OPTS', '-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external'
 }
 
-mainClassName = "pl.edu.agh.csg.Main"
+mainClassName = "daislab.csg.Main"

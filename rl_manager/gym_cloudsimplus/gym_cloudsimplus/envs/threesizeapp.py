@@ -30,7 +30,7 @@ def to_string(java_array):
 
 def to_nparray(raw_obs):
     obs = list(raw_obs)
-    return np.array(obs)
+    return np.array(obs, dtype=np.float32)
 
 
 # Based on https://github.com/openai/gym/blob/master/gym/core.py
