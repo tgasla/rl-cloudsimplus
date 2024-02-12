@@ -7,7 +7,7 @@ services:
     environment:
       CLOUDSIM_GATEWAY_HOST: gateway
       CLOUDSIM_GATEWAY_PORT: 25333
-      JAVA_OPTS: "-Xms16G -Xmx32G -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external"
+      JAVA_OPTS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external"
       TEST_FILE: KTH-SP2-1996-2.1-cln.swf
     ports:
       - 25333:25333

@@ -44,13 +44,26 @@ dependencies {
     testImplementation 'com.github.stefanbirkner:system-lambda:1.2.0'
 }
 
+def os = System.getProperty('os.name').toLowerCase()
+def totalMemorySizeInGigabytes
+
+if (os.contains('linux')) {
+    def totalMemorySizeInBytes = "cat /proc/meminfo | grep MemTotal".execute().text.split(":")[1].trim().split()[0].toLong() * 1024
+    totalMemorySizeInGigabytes = totalMemorySizeInBytes / (1024 * 1024 * 1024)
+} else if (os.contains('mac')) {
+    def totalMemorySizeInBytes = "sysctl -n hw.memsize".execute().text.trim().toLong()
+    totalMemorySizeInGigabytes = totalMemorySizeInBytes / (1024 * 1024 * 1024)
+} else {
+    throw new IllegalStateException("Unsupported operating system: $os")
+}
+
 docker {
     url = 'unix:///var/run/docker.sock'
     javaApplication {
         baseImage = 'amazoncorretto:17-alpine-jdk'
         ports = [25333]
         images = [dockerImageTag]
-        jvmArgs = ['-Xms16G', '-Xmx32G']
+        jvmArgs = ["-Xms${totalMemorySizeInGigabytes}G", "-Xmx${totalMemorySizeInGigabytes}G"]
     }
 }
 

@@ -1,4 +1,6 @@
 build:
-	./gradlew clean
 	./gradlew build
 	./gradlew dockerBuildImage
+
+clean:
+	./gradlew clean
