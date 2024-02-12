@@ -86,7 +86,7 @@ Make sure you are inside the `rl_manager` folder and then build the image using
 # 3. Start application
 `docker compose up`
 
-- You can also build manager image adding the `--build` flag to the `docker compose` command
+- You can also build manager image by adding the `--build` flag to the `docker compose` command
 
 - If you want to see only the manager output use:
   `docker compose manager run`
