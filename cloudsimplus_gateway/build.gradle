@@ -49,10 +49,10 @@ def totalMemorySizeInGigabytes
 
 if (os.contains('linux')) {
     def totalMemorySizeInBytes = "cat /proc/meminfo | grep MemTotal".execute().text.split(":")[1].trim().split()[0].toLong() * 1024
-    totalMemorySizeInGigabytes = totalMemorySizeInBytes / (1024 * 1024 * 1024)
+    totalMemorySizeInGigabytes = Math.round(totalMemorySizeInBytes / (1024 * 1024 * 1024))
 } else if (os.contains('mac')) {
     def totalMemorySizeInBytes = "sysctl -n hw.memsize".execute().text.trim().toLong()
-    totalMemorySizeInGigabytes = totalMemorySizeInBytes / (1024 * 1024 * 1024)
+    totalMemorySizeInGigabytes = Math.round(totalMemorySizeInBytes / (1024 * 1024 * 1024))
 } else {
     throw new IllegalStateException("Unsupported operating system: $os")
 }
