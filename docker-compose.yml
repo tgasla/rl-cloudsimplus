@@ -43,7 +43,6 @@ services:
       TEST_CASE: model
       BATCH_SIZE: 128
       EPISODES_CNT: 25
-      #TEST_CASE: run 
     volumes:
       # - ./model-storage:/storage
       - ./rl_manager/tests:/mgr/tests
