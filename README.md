@@ -13,10 +13,6 @@ You can install OpenJDK Java 17 JDK and JRE
 
 `sudo apt-get install openjdk-17-jdk openjdk-17-jre`
 
-or you can also try Azul Zulu
-
-`https://www.azul.com/downloads/?version=java-17-lts#zulu`
-
 ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
 
 `echo export JAVA_HOME=/usr/lib/jvm/java-17-openjdk >> ~/.bash_profile`
@@ -44,13 +40,30 @@ or you can also try Azul Zulu
 `https://www.azul.com/downloads/?version=java-17-lts#zulu`
 
 ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
-- If you are using zsh:
+- For Zulu
+  - For zsh:
 
-`echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.zprofile`
+  `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.zprofile`
 
-- If you are using bash:
+  - For bash:
   
-`echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.bash_profile`
+  `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.bash_profile`
+
+- For OpenJDK downloaded using brew
+
+  You can ask brew where OpenJDK Java was installed
+
+  `brew info openjdk@17`
+
+  and then add the given path into your shell profile
+   
+  - For bash:
+    
+  `echo export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home >> ~/.bash_profile`
+
+  - For zsh:
+ 
+     `echo export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home >> ~/.zprofile`
 
 ### 1.5 Select the correct Gradle version
 ```
