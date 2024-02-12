@@ -34,7 +34,7 @@ https://docs.docker.com/get-docker/
 ### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
 
-### 1.3 1nstall Java 17
+### 1.3 Install Java 17
 You can install OpenJDK Java 17 using brew
 
 `brew install openjdk@17`
