@@ -43,11 +43,11 @@ or you can also try Azul Zulu
 - For Zulu
   - For zsh:
 
-  `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.zprofile`
+    `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.zprofile`
 
   - For bash:
   
-  `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.bash_profile`
+    `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.bash_profile`
 
 - For OpenJDK downloaded using brew
 
@@ -59,7 +59,7 @@ or you can also try Azul Zulu
    
   - For bash:
     
-  `echo export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home >> ~/.bash_profile`
+    `echo export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home >> ~/.bash_profile`
 
   - For zsh:
  
