@@ -20,7 +20,7 @@ You can install OpenJDK Java 17 JDK and JRE
 ### 1.5 Select the correct Gradle version
 ```
 cd cloudsimplus_gateway
-.sudo /gradlew wrapper --gradle-version 7.3 --distribution-type all
+sudo /gradlew wrapper --gradle-version 7.3 --distribution-type all
 ```
 
 ## MacOS 14/13/12/11
