@@ -99,10 +99,10 @@ Make sure you are inside the `rl_manager` folder and then build the image using
 
 # Acknowledgements
 
-* This project uses the CloudSim Plus framework: a full-featured, highly extensible and easy to use Java 8+ framework for
+* This project uses the CloudSim Plus framework: a full-featured, highly extensible, and easy to use Java 17+ framework for
 modeling and simulation of cloud computing infrastructure and services.
 
-  You can find it [here](http://cloudsimplus.org/). Source code is available [here](https://github.com/manoelcampos/cloudsim-plus)
+  You can find it [here](http://cloudsimplus.org/). The source code is available [here](https://github.com/manoelcampos/cloudsim-plus)
 
 - The code was based on the work done by [pkoperek](https://github.com/pkoperek) in these following projects:
   - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
