@@ -74,16 +74,15 @@ sudo ./gradlew wrapper --gradle-version 7.3 --distribution-type all
 # 2. Build images
 
 ## 2.1 Build gateway image
-```
-cd cloudsimplus_gateway
-sudo make build
-```
+Make sure you are inside the `cloudsimplus_gateway` folder and then build the image using
+
+`sudo make build`
 
 ## 2.2 Build manager image
-```
-cd ../rl_manager
-sudo make build
-```
+Make sure you are inside the `rl_manager` folder and then build the image using
+
+`sudo make build`
+
 # 3. Start application
 `docker compose up`
 
