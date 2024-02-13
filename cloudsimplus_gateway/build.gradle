@@ -63,7 +63,7 @@ docker {
         baseImage = 'amazoncorretto:17-alpine-jdk'
         ports = [25333]
         images = [dockerImageTag]
-        jvmArgs = ["-Xms${totalMemorySizeInGigabytes}G", "-Xmx${totalMemorySizeInGigabytes}G"]
+        // jvmArgs = ["-Xms${totalMemorySizeInGigabytes}G", "-Xmx${totalMemorySizeInGigabytes}G"]
     }
 }
 

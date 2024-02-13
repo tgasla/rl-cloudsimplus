@@ -1,81 +1,54 @@
-class SwfJob(object):
-    """Format as specified in
-       http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
-    """
+"""Format as specified in
+    http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
+"""
+class SWFReader(object):
+    def __init__(self):
+        self.jobs = []
 
-    def __init__(self,
-                 job_id,
-                 submit_time,
-                 wait_time,
-                 run_time,
-                 allocated_cores,
-                 mips_per_core):
-        self._job_id = job_id
-        self._submit_time = submit_time
-        self._wait_time = wait_time
-        self._run_time = run_time
-        self._allocated_cores = allocated_cores
-        self._mips_per_core = mips_per_core
-
-    @property
-    def mips_per_core(self):
-        return self._mips_per_core
-
-    @property
-    def job_id(self):
-        return self._job_id
-
-    @property
-    def submit_time(self):
-        return self._submit_time
-
-    @property
-    def wait_time(self):
-        return self._wait_time
-
-    @property
-    def run_time(self):
-        return self._run_time
-
-    @property
-    def allocated_cores(self):
-        return self._allocated_cores
-
-    def as_cloudlet_descriptor_dict(self):
+    def _as_cloudlet_descriptor_dict(self,
+                                    job_id,
+                                    submit_time,
+                                    run_time,
+                                    mips,
+                                    allocated_cores):
         return {
-            'jobId': self.job_id,
-            'submissionDelay': self.submit_time,
-            'mi': self.run_time * self.mips_per_core * self.allocated_cores,
-            'numberOfCores': self._allocated_cores,
+            'jobId': job_id,
+            'submissionDelay': submit_time,
+            'mi': run_time * mips * allocated_cores,
+            'numberOfCores': allocated_cores,
         }
+    
+    def read(self, filename, lines_to_read=-1):
+        with open(filename, 'r') as f:
+            line_num = 0
+            for line in f.readlines():
+                line_num += 1
+                if line.startswith(';'):
+                    continue
+                if lines_to_read != -1 and line_num > lines_to_read:
+                    return self.jobs
 
+                stripped = line.strip()
+                splitted = stripped.split()
 
-jobs = []
+                job_id = int(splitted[0])
+                submit_time = int(splitted[1])
+                wait_time = int(splitted[2])
+                run_time = int(splitted[3])
+                allocated_cores = int(splitted[4])
+                status = int(splitted[10])
 
-with open('tests/LLNL-Atlas-2006-2.1-cln.swf', 'r') as f:
-    for line in f.readlines():
-        if line.startswith(';'):
-            continue
+                mips = 1250
 
-        stripped = line.strip()
-        splitted = stripped.split()
-
-        job_id = splitted[0]
-        submit_time = float(splitted[1])
-        wait_time = float(splitted[2])
-        run_time = splitted[3]
-        allocated_cores = splitted[4]
-
-        mips = 1250
-
-        if int(run_time) > 0 and int(allocated_cores) > 0:
-            job = SwfJob(
-                job_id=int(job_id),
-                submit_time=int(submit_time),
-                wait_time=int(wait_time),
-                run_time=int(run_time),
-                allocated_cores=int(allocated_cores),
-                mips_per_core=int(mips),
-            )
-            jobs.append(job.as_cloudlet_descriptor_dict())
-
+                if (int(run_time) > 0 and 
+                        int(allocated_cores) > 0 and 
+                        status == 0):
+                    cloudlet = self._as_cloudlet_descriptor_dict(
+                        job_id,
+                        submit_time,
+                        run_time,
+                        mips,
+                        allocated_cores
+                    )
+                    self.jobs.append(cloudlet)
+        return self.jobs

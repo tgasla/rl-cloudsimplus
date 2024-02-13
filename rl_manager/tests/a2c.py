@@ -5,10 +5,14 @@ import sys
 from py4j.java_gateway import JavaGateway
 from stable_baselines3 import A2C
 import torch
-from read_swf import jobs
+from read_swf import SWFReader
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #print(device)
+
+jobs = SWFReader().read(
+    'tests/LLNL-Atlas-2006-2.1-cln.swf',
+    lines_to_read=-1)
 
 gateway = JavaGateway()
 simulation_environment = gateway.entry_point
