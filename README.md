@@ -23,7 +23,7 @@ For Java 21, replace 17 with 21 in the baove command.
 
 Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
 
-`sudo cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
+`cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 
 ## MacOS 14/13/12/11
 ### 1.1 Install Docker
@@ -60,7 +60,7 @@ or you can also try Azul Zulu
 
 Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
 
-`sudo cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
+`cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 
 # 2. Build images
 
