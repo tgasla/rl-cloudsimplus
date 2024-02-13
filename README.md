@@ -37,8 +37,10 @@ https://docs.docker.com/get-docker/
 ### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
 
-### 1.3 Install Java 17
+### 1.3 Install Java 17 or Java 21
 You can install OpenJDK Java 17 using brew
+
+For Java 21, replace 17 with 21 in the baove command.
 
 `brew install openjdk@17`
 
