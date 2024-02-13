@@ -4,26 +4,30 @@
     <summary><h2>Linux Debian 12/11/10</h2></summary>
     
 ### 1.1 Install Docker
-    https://docs.docker.com/get-docker/
-    ### 1.2 Install Docker Compose
-    https://docs.docker.com/compose/install/
-    ### 1.3 Install Java 17 or Java 21
-    
-    You can install OpenJDK Java 17 or 21 JDK and JRE
-    
-    `sudo apt-get install openjdk-17-jdk openjdk-17-jre`
-    
-    For Java 21, replace 17 with 21 in the baove command.
-    
-    ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
-    
-    `export JAVA_HOME=/usr/lib/jvm/java-17-openjdk`
-    
-    ### 1.5 Select the correct Gradle version
-    
-    Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
-    
-    `cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
+
+https://docs.docker.com/get-docker/
+
+### 1.2 Install Docker Compose
+
+https://docs.docker.com/compose/install/
+
+### 1.3 Install Java 17 or Java 21
+
+You can install OpenJDK Java 17 or 21 JDK and JRE
+
+`sudo apt-get install openjdk-17-jdk openjdk-17-jre`
+
+For Java 21, replace 17 with 21 in the baove command.
+
+### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
+
+`export JAVA_HOME=/usr/lib/jvm/java-17-openjdk`
+
+### 1.5 Select the correct Gradle version
+
+Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
+
+`cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 </details>
 
 ## MacOS 14/13/12/11
