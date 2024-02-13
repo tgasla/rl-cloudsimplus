@@ -36,8 +36,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 ### 1.1 Install Docker
 https://docs.docker.com/get-docker/
 
-> [!NOTE]
-> This is a note
+If you install Docker Desktop make sure you are giving enough memory in your containers by going to <b> Settings.. > Resources </b> and increase the Memory Limit
 
 ### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
@@ -45,7 +44,7 @@ https://docs.docker.com/compose/install/
 ### 1.3 Install Java 17 or Java 21
 You can install OpenJDK Java 17 using brew
 
-For Java 21, replace 17 with 21 in the baove command.
+For Java 21, replace 17 with 21 in the above command.
 
 `brew install openjdk@17`
 
