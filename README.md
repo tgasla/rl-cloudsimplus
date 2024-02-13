@@ -3,7 +3,7 @@
 <details open>
     <summary><b>Linux Debian 12/11/10</b></summary>
     
-    ### 1.1 Install Docker
+    <h1> 1.1 Install Docker </h1>
     https://docs.docker.com/get-docker/
     
     ### 1.2 Install Docker Compose
