@@ -1,14 +1,11 @@
 # 1. Prerequisites
 
 <details open>
-    <summary><h1>Linux Debian 12/11/10</h1></summary>
-    
-    <h1> 1.1 Install Docker </h1>
+    <summary><h2>Linux Debian 12/11/10</h2></summary>
+    ### 1.1 Install Docker
     https://docs.docker.com/get-docker/
-    
     ### 1.2 Install Docker Compose
     https://docs.docker.com/compose/install/
-    
     ### 1.3 Install Java 17 or Java 21
     
     You can install OpenJDK Java 17 or 21 JDK and JRE
