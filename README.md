@@ -27,8 +27,8 @@ For Java 21, replace 17 with 21 in the baove command.
 Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
 
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
-</details>
 -->
+</details>
 
 <details>
     <summary><h2>MacOS 14/13/12/11</h2></summary>
@@ -71,9 +71,8 @@ or you can also try Azul Zulu
 Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
 
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
-
+-->
 </details>
---->
 
 # 2. Build images
 
