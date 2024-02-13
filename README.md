@@ -27,6 +27,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 </details>
+
 <details>
     <summary><h2>MacOS 14/13/12/11</h2></summary>
 
