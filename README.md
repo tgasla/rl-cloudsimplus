@@ -67,6 +67,8 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 
+</details>
+
 # 2. Build images
 
 ## 2.1 Build gateway image
