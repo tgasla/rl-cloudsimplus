@@ -36,7 +36,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 ### 1.1 Install Docker
 https://docs.docker.com/get-docker/
 
-> [!WARNING]This alert uses[!WARNING]
+> **Warning**This alert uses warning
 
 ### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
