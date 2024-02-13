@@ -11,9 +11,11 @@ https://docs.docker.com/compose/install/
 
 ### 1.3 Install Java 17 or Java 21
 
-You can install OpenJDK Java 17 JDK and JRE
+You can install OpenJDK Java 17 or 21 JDK and JRE
 
 `sudo apt-get install openjdk-17-jdk openjdk-17-jre`
+
+For Java 21 replace 17 with 21
 
 ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
 
@@ -39,7 +41,7 @@ If you install Docker Desktop make sure you are giving enough memory in your con
 ### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
 
-### 1.3 Install Java 17
+### 1.3 Install Java 17 or 21
 You can install OpenJDK Java 17 using brew
 
 `brew install openjdk@17`
