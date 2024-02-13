@@ -21,12 +21,14 @@ For Java 21, replace 17 with 21 in the baove command.
 
 `export JAVA_HOME=/usr/lib/jvm/java-17-openjdk`
 
+<!--
 ### 1.5 Select the correct Gradle version
 
 Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
 
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 </details>
+-->
 
 <details>
     <summary><h2>MacOS 14/13/12/11</h2></summary>
@@ -62,7 +64,8 @@ or you can also try Azul Zulu
   and then add the given path into your shell profile
   
   `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
-
+  
+<!--
 ### 1.5 Select the correct Gradle version
 
 Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
@@ -70,6 +73,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 
 </details>
+-->
 
 # 2. Build images
 
