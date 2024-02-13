@@ -7,21 +7,23 @@ https://docs.docker.com/get-docker/
 ### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
 
-### 1.3 Install Java 17 
+### 1.3 Install Java 17 or Java 21
 
-You can install OpenJDK Java 17 JDK and JRE
+You can install OpenJDK Java 17 or 21 JDK and JRE
 
 `sudo apt-get install openjdk-17-jdk openjdk-17-jre`
 
+For Java 21, replace 17 with 21 in the baove command.
+
 ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
 
-`echo export JAVA_HOME=/usr/lib/jvm/java-17-openjdk >> ~/.bash_profile`
+`export JAVA_HOME=/usr/lib/jvm/java-17-openjdk`
 
 ### 1.5 Select the correct Gradle version
-```
-cd cloudsimplus_gateway
-sudo /gradlew wrapper --gradle-version 7.3 --distribution-type all
-```
+
+Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
+
+`sudo cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 
 ## MacOS 14/13/12/11
 ### 1.1 Install Docker
@@ -41,13 +43,8 @@ or you can also try Azul Zulu
 
 ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
 - For Zulu
-  - For zsh:
 
-    `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.zprofile`
-
-  - For bash:
-  
-    `echo export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home >> ~/.bash_profile`
+    `export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home`
 
 - For OpenJDK downloaded using brew
 
@@ -56,20 +53,14 @@ or you can also try Azul Zulu
   `brew info openjdk@17`
 
   and then add the given path into your shell profile
-   
-  - For bash:
-    
-    `echo export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home >> ~/.bash_profile`
-
-  - For zsh:
- 
-     `echo export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home >> ~/.zprofile`
+  
+  `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
 
 ### 1.5 Select the correct Gradle version
-```
-cd cloudsimplus_gateway
-sudo ./gradlew wrapper --gradle-version 7.3 --distribution-type all
-```
+
+Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
+
+`sudo cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 
 # 2. Build images
 
