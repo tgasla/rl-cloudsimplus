@@ -2,6 +2,7 @@
 
 <details open>
     <summary><h2>Linux Debian 12/11/10</h2></summary>
+    
 ### 1.1 Install Docker
 
 https://docs.docker.com/get-docker/
