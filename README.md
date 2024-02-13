@@ -72,12 +72,12 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 # 2. Build images
 
 ## 2.1 Build gateway image
-Make sure you are inside the `cloudsimplus_gateway` folder and then build the image using
+Make sure you are inside the `cloudsimplus_gateway` folder and then build the image using:
 
 `sudo make build`
 
 ## 2.2 Build manager image
-Make sure you are inside the `rl_manager` folder and then build the image using
+Make sure you are inside the `rl_manager` folder and then build the image using:
 
 `sudo make build`
 
