@@ -12,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 jobs = SWFReader().read(
     'tests/LLNL-Atlas-2006-2.1-cln.swf',
-    lines_to_read=-1)
+    lines_to_read=100)
 
 gateway = JavaGateway()
 simulation_environment = gateway.entry_point
