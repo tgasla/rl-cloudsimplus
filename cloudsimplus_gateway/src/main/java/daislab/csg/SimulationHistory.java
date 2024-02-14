@@ -8,11 +8,15 @@ import java.util.*;
 public class SimulationHistory {
 
     private static final Logger logger = LoggerFactory.getLogger(SimulationHistory.class.getName());
-    private Map<String, List> history = new HashMap<>();
+    private Map<String, List<Object>> history;
+
+    public SimulationHistory() {
+        history = new HashMap<>();
+    }
 
     public <T> void record(String key, T value) {
         if(!history.containsKey(key)) {
-            history.put(key, new ArrayList<T>(1024));
+            history.put(key, new ArrayList<>());
         }
 
         history.get(key).add(value);

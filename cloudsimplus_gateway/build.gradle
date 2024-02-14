@@ -11,8 +11,22 @@ plugins {
   id 'java'
   id 'application'
   id 'idea'
-  id 'com.github.johnrengelman.shadow' version '7.1.2'
+  id 'com.github.johnrengelman.shadow' version '8.1.1'
   id 'com.bmuschko.docker-java-application' version '9.4.0'
+}
+
+//https://stackoverflow.com/questions/29593500/how-can-i-set-the-compileoptions-for-my-gradle-java-plugin
+tasks.withType(JavaCompile) {
+    configure(options) {
+        options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
+    }
+}
+
+//https://stackoverflow.com/questions/70756414/java-lang-reflect-inaccessibleobjectexception-unable-to-make-field-private-fina
+//https://stackoverflow.com/questions/70412805/what-does-this-error-mean-java-lang-reflect-inaccessibleobjectexception-unable
+//https://openjdk.org/jeps/396
+tasks.withType(Test).configureEach {
+    jvmArgs = jvmArgs + ['--add-opens=java.base/java.util=ALL-UNNAMED']
 }
 
 // In this section you declare where to find the dependencies of your project
@@ -21,18 +35,17 @@ repositories {
     // You can declare any Maven/Ivy/file repository here.
     mavenCentral()
     mavenLocal()
-    jcenter()
 }
 
-sourceCompatibility = 1.17
-targetCompatibility = 1.17
+sourceCompatibility = 1.21
+targetCompatibility = 1.21
 def dockerImageTag = 'gateway:1.9.1'
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
     // The production code uses the SLF4J logging API at compile time
     implementation 'org.slf4j:slf4j-api:2.0.12'
-    implementation 'org.cloudsimplus:cloudsim-plus:6.1.4'
+    implementation 'org.cloudsimplus:cloudsim-plus:6.2.12'
     implementation group: 'net.sf.py4j', name: 'py4j', version: '0.10.9.7'
     implementation group: "ch.qos.logback", name: "logback-classic", version: "1.4.14"
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
@@ -60,10 +73,10 @@ if (os.contains('linux')) {
 docker {
     url = 'unix:///var/run/docker.sock'
     javaApplication {
-        baseImage = 'amazoncorretto:17-alpine-jdk'
+        baseImage = 'amazoncorretto:21-alpine-jdk'
         ports = [25333]
         images = [dockerImageTag]
-        // jvmArgs = ["-Xms${totalMemorySizeInGigabytes}G", "-Xmx${totalMemorySizeInGigabytes}G"]
+        jvmArgs = ["-Xms${totalMemorySizeInGigabytes}G", "-Xmx${totalMemorySizeInGigabytes}G"]
     }
 }
 

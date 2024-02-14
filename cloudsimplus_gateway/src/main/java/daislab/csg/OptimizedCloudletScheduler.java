@@ -3,6 +3,7 @@ package daislab.csg;
 import org.cloudbus.cloudsim.brokers.DatacenterBroker;
 import org.cloudbus.cloudsim.cloudlets.Cloudlet;
 import org.cloudbus.cloudsim.cloudlets.CloudletExecution;
+import org.cloudbus.cloudsim.schedulers.MipsShare;
 import org.cloudbus.cloudsim.schedulers.cloudlet.CloudletSchedulerAbstract;
 import org.cloudbus.cloudsim.schedulers.cloudlet.CloudletSchedulerSpaceShared;
 
@@ -33,7 +34,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
     }
 
     @Override
-    public double updateProcessing(double currentTime, List<Double> mipsShare) {
+    public double updateProcessing(double currentTime, MipsShare mipsShare) {
         final int sizeBefore = this.getCloudletWaitingList().size();
         final double nextSimulationTime = super.updateProcessing(currentTime, mipsShare);
         final int sizeAfter = this.getCloudletWaitingList().size();
