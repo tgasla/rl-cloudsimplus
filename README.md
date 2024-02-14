@@ -9,17 +9,15 @@ https://docs.docker.com/get-docker/
 ### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
 
-### 1.3 Install Java 17 or Java 21
+### 1.3 Install Java 21
 
-You can install OpenJDK Java 17 or 21 JDK and JRE
+You can install OpenJDK 21 JDK and JRE
 
-`sudo apt-get install openjdk-17-jdk openjdk-17-jre`
-
-For Java 21 replace 17 with 21
+`sudo apt-get install openjdk-21-jdk openjdk-21-jre`
 
 ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
 
-`export JAVA_HOME=/usr/lib/jvm/java-17-openjdk`
+`export JAVA_HOME=/usr/lib/jvm/java-21-openjdk`
 
 <!--
 ### 1.5 Select the correct Gradle version
@@ -41,16 +39,23 @@ If you install Docker Desktop make sure you are giving enough memory in your con
 ### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
 
-### 1.3 Install Java 17 or 21
-You can install OpenJDK Java 17 using brew
+### 1.3 Install Java 21 JDK and JRE
+You can install OpenJDK Java 21 using brew
 
-`brew install openjdk@17`
+`brew install openjdk@21`
 
+<!--
 or you can also try Azul Zulu
 
 `https://www.azul.com/downloads/?version=java-17-lts#zulu`
 
+-->
+
 ### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
+
+`export JAVA_HOME=/usr/libexec/java_home`
+
+<!--
 - For Zulu
 
     `export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home`
@@ -59,11 +64,13 @@ or you can also try Azul Zulu
 
   You can ask brew where OpenJDK Java was installed
 
-  `brew info openjdk@17`
+  `brew info openjdk@21`
 
   and then add the given path into your shell profile
   
   `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
+
+  -->
   
 <!--
 ### 1.5 Select the correct Gradle version
