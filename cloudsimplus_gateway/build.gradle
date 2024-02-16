@@ -37,8 +37,11 @@ repositories {
     mavenLocal()
 }
 
-sourceCompatibility = 1.21
-targetCompatibility = 1.21
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
 def dockerImageTag = 'gateway:1.9.1'
 
 // In this section you declare the dependencies for your production and test code
@@ -84,4 +87,7 @@ dockerCreateDockerfile {
     environmentVariable 'JAVA_OPTS', '-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external'
 }
 
-mainClassName = "daislab.csg.Main"
+
+application{
+    mainClass.set("daislab.csg.Main")
+}
