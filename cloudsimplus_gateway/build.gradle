@@ -10,7 +10,6 @@
 plugins {
   id 'java'
   id 'application'
-  id 'idea'
   id 'com.github.johnrengelman.shadow' version '8.1.1'
   id 'com.bmuschko.docker-java-application' version '9.4.0'
 }
@@ -35,11 +34,6 @@ repositories {
     // You can declare any Maven/Ivy/file repository here.
     mavenCentral()
     mavenLocal()
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
 }
 
 def dockerImageTag = 'gateway:1.9.1'
@@ -73,6 +67,10 @@ if (os.contains('linux')) {
     throw new IllegalStateException("Unsupported operating system: $os")
 }
 
+application{
+    mainClass.set("daislab.csg.Main")
+}
+
 docker {
     url = 'unix:///var/run/docker.sock'
     javaApplication {
@@ -87,7 +85,7 @@ dockerCreateDockerfile {
     environmentVariable 'JAVA_OPTS', '-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external'
 }
 
-
-application{
-    mainClass.set("daislab.csg.Main")
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
