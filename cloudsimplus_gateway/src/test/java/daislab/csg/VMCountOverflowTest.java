@@ -1,7 +1,7 @@
 package daislab.csg;
 
 import com.google.gson.Gson;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class VMCountOverflowTest {
 
@@ -48,7 +48,7 @@ public class VMCountOverflowTest {
             }
 
             multiSimulationEnvironment.close(simulationId);
-            assertTrue("There should be much less than a 1000 iterations!", i < 1000);
+            assertTrue(i < 1000, "There should be much less than a 1000 iterations!");
         });
     }
 }

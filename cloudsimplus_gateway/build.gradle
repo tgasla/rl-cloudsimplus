@@ -21,10 +21,11 @@ tasks.withType(JavaCompile) {
     }
 }
 
-//https://stackoverflow.com/questions/70756414/java-lang-reflect-inaccessibleobjectexception-unable-to-make-field-private-fina
-//https://stackoverflow.com/questions/70412805/what-does-this-error-mean-java-lang-reflect-inaccessibleobjectexception-unable
-//https://openjdk.org/jeps/396
-tasks.withType(Test).configureEach {
+test {
+    useJUnitPlatform()
+    //https://stackoverflow.com/questions/70756414/java-lang-reflect-inaccessibleobjectexception-unable-to-make-field-private-fina
+    //https://stackoverflow.com/questions/70412805/what-does-this-error-mean-java-lang-reflect-inaccessibleobjectexception-unable
+    //https://openjdk.org/jeps/396
     jvmArgs = jvmArgs + ['--add-opens=java.base/java.util=ALL-UNNAMED']
 }
 
@@ -50,7 +51,8 @@ dependencies {
     implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.1'
     implementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
 
-    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
     testImplementation 'com.github.stefanbirkner:system-lambda:1.2.1'
 }
 

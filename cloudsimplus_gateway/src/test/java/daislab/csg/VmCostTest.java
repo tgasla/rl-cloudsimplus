@@ -2,8 +2,8 @@ package daislab.csg;
 
 import org.cloudbus.cloudsim.vms.Vm;
 import org.cloudbus.cloudsim.vms.VmSimple;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.number.IsCloseTo.closeTo;
@@ -14,7 +14,7 @@ public class VmCostTest {
     final int mipsCapacity = 4400;
     private VmCost vmCost;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         vmCost = new VmCost(0.2, 60, false);
     }
