@@ -44,12 +44,12 @@ dependencies {
     // The production code uses the SLF4J logging API at compile time
     implementation 'org.slf4j:slf4j-api:2.0.12'
     implementation 'org.cloudsimplus:cloudsim-plus:6.2.12'
-    implementation group: 'net.sf.py4j', name: 'py4j', version: '0.10.9.7'
-    implementation group: "ch.qos.logback", name: "logback-classic", version: "1.4.14"
-    implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
+    implementation 'net.sf.py4j:py4j:0.10.9.7'
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+    implementation 'org.apache.commons:commons-collections4:4.4'
     implementation 'com.google.code.gson:gson:2.10.1'
-    implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.1'
-    implementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
+    implementation 'org.postgresql:postgresql:42.7.1'
+    implementation 'org.hamcrest:hamcrest:2.2'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
@@ -70,7 +70,7 @@ if (os.contains('linux')) {
 }
 
 application{
-    mainClass.set("daislab.csg.Main")
+    mainClass.set('daislab.csg.Main')
 }
 
 docker {
