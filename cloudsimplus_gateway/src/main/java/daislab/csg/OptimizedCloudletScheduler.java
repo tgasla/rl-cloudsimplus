@@ -1,11 +1,11 @@
 package daislab.csg;
 
-import org.cloudbus.cloudsim.brokers.DatacenterBroker;
-import org.cloudbus.cloudsim.cloudlets.Cloudlet;
-import org.cloudbus.cloudsim.cloudlets.CloudletExecution;
-import org.cloudbus.cloudsim.schedulers.MipsShare;
-import org.cloudbus.cloudsim.schedulers.cloudlet.CloudletSchedulerAbstract;
-import org.cloudbus.cloudsim.schedulers.cloudlet.CloudletSchedulerSpaceShared;
+import org.cloudsimplus.brokers.DatacenterBroker;
+import org.cloudsimplus.cloudlets.Cloudlet;
+import org.cloudsimplus.cloudlets.CloudletExecution;
+import org.cloudsimplus.schedulers.MipsShare;
+import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerAbstract;
+import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerSpaceShared;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

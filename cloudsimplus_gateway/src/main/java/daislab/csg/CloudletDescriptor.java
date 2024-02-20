@@ -1,9 +1,9 @@
 package daislab.csg;
 
-import org.cloudbus.cloudsim.cloudlets.Cloudlet;
-import org.cloudbus.cloudsim.cloudlets.CloudletSimple;
-import org.cloudbus.cloudsim.util.DataCloudTags;
-import org.cloudbus.cloudsim.utilizationmodels.UtilizationModelFull;
+import org.cloudsimplus.cloudlets.Cloudlet;
+import org.cloudsimplus.cloudlets.CloudletSimple;
+import org.cloudsimplus.util.DataCloudTags;
+import org.cloudsimplus.utilizationmodels.UtilizationModelFull;
 
 import java.util.Objects;
 

@@ -1,6 +1,6 @@
 package daislab.csg;
 
-import org.cloudbus.cloudsim.vms.Vm;
+import org.cloudsimplus.vms.Vm;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,9 +41,9 @@ public class VmCost {
             double m = getSizeMultiplier(vm);
             final double perIterationVMCost = perIterationSmallVMCost * m;
             if(vm.getStartTime() > -1) {
-                if(vm.getStopTime() > -1) {
+                if(vm.getFinishTime() > -1) {
                     // vm was stopped - we continue to pay for it within the last running hour if need to
-                    if(payForFullHour && (clock <= vm.getStopTime() + iterationsInHour)) {
+                    if(payForFullHour && (clock <= vm.getFinishTime() + iterationsInHour)) {
                         totalCost += perIterationVMCost;
                     } else {
                         toRemove.add(vm);

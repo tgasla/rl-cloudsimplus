@@ -1,14 +1,14 @@
 package daislab.csg;
 
-import org.cloudbus.cloudsim.brokers.DatacenterBrokerSimple;
-import org.cloudbus.cloudsim.cloudlets.Cloudlet;
-import org.cloudbus.cloudsim.cloudlets.CloudletSimple;
-import org.cloudbus.cloudsim.core.CloudSim;
-import org.cloudbus.cloudsim.core.CloudSimTags;
-import org.cloudbus.cloudsim.core.events.SimEvent;
-import org.cloudbus.cloudsim.datacenters.Datacenter;
-import org.cloudbus.cloudsim.vms.Vm;
-import org.cloudbus.cloudsim.vms.VmSimple;
+import org.cloudsimplus.brokers.DatacenterBrokerSimple;
+import org.cloudsimplus.cloudlets.Cloudlet;
+import org.cloudsimplus.cloudlets.CloudletSimple;
+import org.cloudsimplus.core.CloudSimPlus;
+import org.cloudsimplus.core.CloudSimTag;
+import org.cloudsimplus.core.events.SimEvent;
+import org.cloudsimplus.datacenters.Datacenter;
+import org.cloudsimplus.vms.Vm;
+import org.cloudsimplus.vms.VmSimple;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -29,7 +29,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
      *
      * @param simulation The CloudSim instance that represents the simulation the Entity is related to
      */
-    public DatacenterBrokerFirstFitFixed(final CloudSim simulation) {
+    public DatacenterBrokerFirstFitFixed(final CloudSimPlus simulation) {
         super(simulation);
     }
 
@@ -37,13 +37,13 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     public void processEvent(SimEvent evt) {
         super.processEvent(evt);
 
-        if(evt.getTag() == CloudSimTags.CLOUDLET_RETURN) {
+        if(evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
             final Cloudlet cloudlet = (Cloudlet) evt.getData();
             LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/" + cloudlet.getVm().getId() + " Scheduling more cloudlets...");
             requestDatacentersToCreateWaitingCloudlets();
         }
 
-        if(evt.getTag() == CloudSimTags.VM_CREATE_ACK) {
+        if(evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
             LOGGER.debug("Cleaning the vmCreatedList");
             this.getVmCreatedList().clear();
         }
@@ -68,11 +68,11 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
                 break;
             }
 
-            ((VmSimple) selectedVm).removeExpectedFreePesNumber(cloudlet.getNumberOfPes());
+            ((VmSimple) selectedVm).removeExpectedFreePesNumber(cloudlet.getPesNumber());
 
             cloudlet.setVm(selectedVm);
             send(getDatacenter(selectedVm),
-                    cloudlet.getSubmissionDelay(), CloudSimTags.CLOUDLET_SUBMIT, cloudlet);
+                    cloudlet.getSubmissionDelay(), CloudSimTag.CLOUDLET_SUBMIT, cloudlet);
             cloudlet.setLastTriedDatacenter(getDatacenter(selectedVm));
             getCloudletCreatedList().add(cloudlet);
             scheduled.add(cloudlet);
@@ -95,7 +95,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
                     datacenter,
                     datacenter,
                     eventDelay,
-                    CloudSimTags.VM_UPDATE_CLOUDLET_PROCESSING,
+                    CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING,
                     ResubmitAnchor.THE_VALUE
             );
         }
@@ -126,9 +126,9 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         final int maxTries = getVmExecList().size();
         for (int i = 0; i < maxTries; i++) {
             final Vm vm = getVmExecList().get(lastVmIndex);
-            if (vm.getExpectedFreePesNumber() >= cloudlet.getNumberOfPes()) {
+            if (vm.getExpectedFreePesNumber() >= cloudlet.getPesNumber()) {
                 LOGGER.trace("{}: {}: {} (PEs: {}) mapped to {} (available PEs: {}, tot PEs: {})",
-                        getSimulation().clockStr(), getName(), cloudlet, cloudlet.getNumberOfPes(), vm,
+                        getSimulation().clockStr(), getName(), cloudlet, cloudlet.getPesNumber(), vm,
                         vm.getExpectedFreePesNumber(), vm.getFreePesNumber());
                 return vm;
             }
@@ -141,7 +141,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         }
 
         LOGGER.warn("{}: {}: {} (PEs: {}) couldn't be mapped to any suitable VM.",
-                getSimulation().clockStr(), getName(), cloudlet, cloudlet.getNumberOfPes());
+                getSimulation().clockStr(), getName(), cloudlet, cloudlet.getPesNumber());
 
         // if we return NULL, that VM is not created so the cloudlet lands
         // on "waiting" list

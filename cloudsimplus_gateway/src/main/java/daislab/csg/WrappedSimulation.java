@@ -2,7 +2,7 @@ package daislab.csg;
 
 import com.google.gson.Gson;
 import org.apache.commons.math3.stat.StatUtils;
-import org.cloudbus.cloudsim.cloudlets.Cloudlet;
+import org.cloudsimplus.cloudlets.Cloudlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

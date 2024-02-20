@@ -3,7 +3,7 @@
  *
  * This generated file contains a commented-out sample Java project to get you started.
  * For more details take a look at the Java Quickstart chapter in the Gradle
- * user guide available at https://docs.gradle.org/3.4.1/userguide/tutorial_java_projects.html
+ * user guide available at https://docs.gradle.org/current/userguide/userguide.html
  */
 
 // Apply the java plugin to add support for Java
@@ -31,21 +31,18 @@ test {
 
 // In this section you declare where to find the dependencies of your project
 repositories {
-    // Use 'jcenter' for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     mavenCentral()
     mavenLocal()
 }
 
-def dockerImageTag = 'gateway:1.9.1'
-
 // In this section you declare the dependencies for your production and test code
 dependencies {
     // The production code uses the SLF4J logging API at compile time
+    implementation 'org.cloudsimplus:cloudsimplus:8.5.1'
     implementation 'org.slf4j:slf4j-api:2.0.12'
-    implementation 'org.cloudsimplus:cloudsim-plus:6.2.12'
     implementation 'net.sf.py4j:py4j:0.10.9.7'
-    implementation 'ch.qos.logback:logback-classic:1.4.14'
+    implementation 'ch.qos.logback:logback-classic:1.5.0'
     implementation 'org.apache.commons:commons-collections4:4.4'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'org.postgresql:postgresql:42.7.1'
@@ -56,6 +53,7 @@ dependencies {
     testImplementation 'com.github.stefanbirkner:system-lambda:1.2.1'
 }
 
+def dockerImageTag = 'gateway:1.9.1'
 def os = System.getProperty('os.name').toLowerCase()
 def totalMemorySizeInGigabytes
 
@@ -69,7 +67,7 @@ if (os.contains('linux')) {
     throw new IllegalStateException("Unsupported operating system: $os")
 }
 
-application{
+application {
     mainClass.set('daislab.csg.Main')
 }
 
