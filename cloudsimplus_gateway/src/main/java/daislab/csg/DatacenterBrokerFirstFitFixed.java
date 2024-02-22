@@ -116,6 +116,10 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             return cloudlet.getVm();
         }
 
+        // no VMs available
+        if (getVmExecList().size() == 0) {
+            return Vm.NULL;
+        }
         // if we delete a VM when in the previous iteration we had lastVmIndex set
         // to size() - 1 then we are going to explode... if we don't have the
         // line below :)

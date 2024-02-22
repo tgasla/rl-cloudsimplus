@@ -158,7 +158,8 @@ public class CloudSimProxy {
                 .setBw(settings.getBasicVmBw())
                 .setSize(settings.getBasicVmSize())
                 .setCloudletScheduler(new OptimizedCloudletScheduler())
-                .setDescription(type);
+                .setDescription(type)
+                .setShutDownDelay(settings.getVmShutdownDelay());
         vmCost.notifyCreateVM(vm);
         return vm;
     }
@@ -388,6 +389,8 @@ public class CloudSimProxy {
     }
 
     private boolean hasUnfinishedJobs() {
+        System.out.println("FINISHED JOBS COUNT: " + this.finishedIds.size());
+        System.out.println("TOTAL JOB COUNT: " + this.jobs.size());
         return this.finishedIds.size() < this.jobs.size();
     }
 

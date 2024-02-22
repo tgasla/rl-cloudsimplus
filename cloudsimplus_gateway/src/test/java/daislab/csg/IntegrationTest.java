@@ -74,130 +74,127 @@ public class IntegrationTest {
         assertEquals(21, stepsExecuted);
     }
 
-    // @Test
-    // public void testWithCreatingNewVirtualMachines() {
-    //     // every cloudlet executes for 40 simulation iterations and starts with a delay of 20*i iterations
-    //     List<CloudletDescriptor> jobs = new ArrayList<>();
-    //     for (int i = 0; i < 10; i++) {
-    //         jobs.add(new CloudletDescriptor(i, 20 * i, 400000, 4));
-    //     }
+    @Test
+    public void testWithCreatingNewVirtualMachines() {
+        // every cloudlet executes for 40 simulation iterations and starts with a delay of 20*i iterations
+        List<CloudletDescriptor> jobs = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            jobs.add(new CloudletDescriptor(i, 20 * i, 400000, 4));
+        }
 
-    //     Map<String, String> parameters = new HashMap<>();
-    //     parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
-    //     parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
+        parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
 
-    //     final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+        final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
-    //     multiSimulationEnvironment.reset(simulationId);
-    //     int stepsExecuted = 1;
-    //     SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
+        multiSimulationEnvironment.reset(simulationId);
+        int stepsExecuted = 1;
+        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
 
-    //     double maxCoreRatio = 0.0;
-    //     while (!step.isDone()) {
-    //         System.out.println("Executing step: " + stepsExecuted);
+        double maxCoreRatio = 0.0;
+        while (!step.isDone()) {
+            System.out.println("Executing step: " + stepsExecuted);
 
-    //         int action = stepsExecuted == 20 ? 1 : 0;
+            int action = stepsExecuted == 20 ? 1 : 0;
 
-    //         step = multiSimulationEnvironment.step(simulationId, action);
-    //         if (step.getObs()[0] > maxCoreRatio) {
-    //             maxCoreRatio = step.getObs()[0];
-    //         }
+            step = multiSimulationEnvironment.step(simulationId, action);
+            if (step.getObs()[0] > maxCoreRatio) {
+                maxCoreRatio = step.getObs()[0];
+            }
 
-    //         System.out.println("Observations: " + Arrays.toString(step.getObs()) + " clock: " + multiSimulationEnvironment.clock(simulationId));
-    //         stepsExecuted++;
-    //     }
-    //     multiSimulationEnvironment.close(simulationId);
+            System.out.println("Observations: " + Arrays.toString(step.getObs()) + " clock: " + multiSimulationEnvironment.clock(simulationId));
+            stepsExecuted++;
+        }
+        multiSimulationEnvironment.close(simulationId);
 
-    //     // the actual count of cores in the system is 42000
-    //     // we should be running at most 1 small, 1 medium, 1 large and then
-    //     // start 1 small, which would result in 16 (2+4+8+2) cores
+        // the actual count of cores in the system is 42000
+        // we should be running at most 1 small, 1 medium, 1 large and then
+        // start 1 small, which would result in 16 (2+4+8+2) cores
+        // 16/42000 = 0,00038096
+        // (42000 is the total capacity of the datacenter)
 
-    //     assertEquals(0.00038, maxCoreRatio, 0.000001);
-    // }
+        assertEquals(0.00038, maxCoreRatio, 0.000001);
+    }
 
-    // @Test
-    // public void testWithDestroyingVMs() {
-    //     List<CloudletDescriptor> jobs = new ArrayList<>();
-    //     for (int i = 0; i < 5; i++) {
-    //         jobs.add(new CloudletDescriptor(i, 10 * i, 200000, 4));
-    //     }
+    @Test
+    public void testWithDestroyingVMs() {
+        List<CloudletDescriptor> jobs = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            jobs.add(new CloudletDescriptor(i, 10 * i, 200000, 4));
+        }
 
-    //     Map<String, String> parameters = new HashMap<>();
-    //     parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "10");
-    //     parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "10");
+        parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
 
-    //     final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+        final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
-    //     multiSimulationEnvironment.reset(simulationId);
-    //     int stepsExecuted = 1;
-    //     SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
+        multiSimulationEnvironment.reset(simulationId);
+        int stepsExecuted = 1;
+        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
 
-    //     while (!step.isDone()) {
-    //         System.out.println("Executing step: " + stepsExecuted);
+        while (!step.isDone()) {
+            System.out.println("Executing step: " + stepsExecuted);
 
-    //         if (stepsExecuted == 20) {
-    //             step = multiSimulationEnvironment.step(simulationId, 2);
+            if (stepsExecuted == 20) {
+                step = multiSimulationEnvironment.step(simulationId, 2);
 
-    //             // here we should have 9S, 1M, 1L = 9*2 + 4 + 8 = 30 cores
-    //             // 30/42000 = 0,000714286
-    //             // (42000 is the total capacity of the datacenter)
-    //             assertEquals(0.000714, step.getObs()[0], 0.000001);
-    //         } else {
-    //             step = multiSimulationEnvironment.step(simulationId, 0);
-    //         }
+                // here we should have 9S, 1M, 1L = 9*2 + 4 + 8 = 30 cores
+                // 30/42000 = 0,000714286
+                // (42000 is the total capacity of the datacenter)
+                assertEquals(0.000714, step.getObs()[0], 0.000001);
+            }
 
-    //         System.out.println("Observations: " + Arrays.toString(step.getObs()) + " " + multiSimulationEnvironment.clock(simulationId));
-    //         stepsExecuted++;
-    //     }
-    //     multiSimulationEnvironment.close(simulationId);
-    // }
+            step = multiSimulationEnvironment.step(simulationId, 0);
 
-    // @Test
-    // public void testProcessingAllCloudlets() {
-    //     // scenario:
-    //     // 1. we submit jobs at delay 5
-    //     // 2. we have 2S, 1M, 1L VMs
-    //     // 3. we submit enough to overload the system (we have 2+2+4+8 cores, so we submit for 18 cores) for 10 iterations
-    //     //    there should be 2 cloudlets assigned to a VM but not executing
-    //     // 5. we delete the additional S machine at time 10. (at 50% of processing of the accepted jobs)
-    //     // 6. we see what happens to the jobs
+            System.out.println("Observations: " + Arrays.toString(step.getObs()) + " " + multiSimulationEnvironment.clock(simulationId));
+            stepsExecuted++;
+        }
+        multiSimulationEnvironment.close(simulationId);
+    }
 
-    //     List<CloudletDescriptor> jobs = new ArrayList<>();
-    //     jobs.add(new CloudletDescriptor(1, 5, 100*10000*10, 100));
+    @Test
+    public void testProcessingAllCloudlets() {
+        // scenario:
+        // 1. we submit jobs at delay 5
+        // 2. we have 2S, 1M, 1L VMs
+        // 3. we submit enough to overload the system (we have 2+2+4+8 cores, so we submit for 18 cores) for 10 iterations
+        //    there should be 2 cloudlets assigned to a VM but not executing
+        // 5. we delete the additional S machine at time 10. (at 50% of processing of the accepted jobs)
+        // 6. we see what happens to the jobs
 
-    //     Map<String, String> parameters = new HashMap<>();
-    //     parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "2");
-    //     parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
+        List<CloudletDescriptor> jobs = new ArrayList<>();
+        jobs.add(new CloudletDescriptor(1, 5, 100*10000*10, 100));
 
-    //     final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "2");
+        parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
 
-    //     multiSimulationEnvironment.reset(simulationId);
-    //     int stepsExecuted = 1;
-    //     SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
+        final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
-    //     while (!step.isDone()) {
-    //         System.out.println("Executing step: " + stepsExecuted);
+        multiSimulationEnvironment.reset(simulationId);
+        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
+        int stepsExecuted = 1;
 
-    //         if (stepsExecuted % 4 == 1) {
-    //             step = multiSimulationEnvironment.step(simulationId, 2);
-    //         } else if(stepsExecuted % 4 == 2) {
-    //             step = multiSimulationEnvironment.step(simulationId, 1);
-    //         } else {
-    //             step = multiSimulationEnvironment.step(simulationId, 0);
-    //         }
+        while (!step.isDone()) {
+            System.out.println("Executing step: " + stepsExecuted);
 
-    //         System.out.println("Observations: " + Arrays.toString(step.getObs()) + " " + multiSimulationEnvironment.clock(simulationId));
-    //         stepsExecuted++;
+            int action = stepsExecuted == 10 ? 2 : 0;
+            step = multiSimulationEnvironment.step(simulationId, action);
 
-    //         if(stepsExecuted == 1000) {
-    //             break;
-    //         }
-    //     }
-    //     final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
-    //     CloudSimProxy cloudSimProxy = wrappedSimulation.getSimulation();
-    //     cloudSimProxy.printJobStats();
-    //     multiSimulationEnvironment.close(simulationId);
+            System.out.println("Observations: " + Arrays.toString(step.getObs()) + " " + multiSimulationEnvironment.clock(simulationId));
+            stepsExecuted++;
 
-    //     assertNotEquals(1000, stepsExecuted);
-    // }
+            if(stepsExecuted == 1000) {
+                break;
+            }
+        }
+        final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
+        CloudSimProxy cloudSimProxy = wrappedSimulation.getSimulation();
+        cloudSimProxy.printJobStats();
+        multiSimulationEnvironment.close(simulationId);
+
+        assertNotEquals(1000, stepsExecuted);
+    }
 }
