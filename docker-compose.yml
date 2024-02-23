@@ -44,7 +44,7 @@ services:
       BATCH_SIZE: 128
       EPISODES_CNT: 25
     ports:
-     - 6006:6006
+     - 80:80
     volumes:
       # - ./model-storage:/storage
       - ./rl_manager/tests:/mgr/tests
