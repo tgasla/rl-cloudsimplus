@@ -31,7 +31,7 @@ def to_nparray(raw_obs):
 
 # Based on https://github.com/openai/gym/blob/master/gym/core.py
 class SingleDCAppEnv(gym.Env):
-    metadata = {'render_modes': ['human', 'ansi', 'array']}
+    metadata = {'render_modes': ['human', 'ansi']}
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -101,19 +101,18 @@ class SingleDCAppEnv(gym.Env):
         info = {}
         return obs, info
 
-    def render(self, mode='human', close=False):
+    def render(self):
         # result is a string with arrays encoded as json
         result = simulation_environment.render(self.simulation_id)
-        arr = json.loads(result)
-        if mode == 'ansi' or mode == 'human':
-            if mode == 'human':
-                print([ser[-1] for ser in arr])
-
-            return result
-        elif mode == 'array':
-            return arr
-        elif mode != 'ansi' and mode != 'human':
-            return super().render(mode)
+        obs_data = json.loads(result)
+        if self.render_mode == 'human':
+            print([metric[-1] for metric in obs_data])
+            return
+        elif self.render_mode == 'ansi':
+            print(obs_data)
+            return obs_data
+        else:
+            return super().render()
 
     def close(self):
         # close the resources

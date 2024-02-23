@@ -43,10 +43,12 @@ services:
       TEST_CASE: model
       BATCH_SIZE: 128
       EPISODES_CNT: 25
+    ports:
+     - 6006:6006
     volumes:
       # - ./model-storage:/storage
       - ./rl_manager/tests:/mgr/tests
-    command: python3 tests/a2c.py
+    command: tests/entrypoint.sh
 
   manager_gpu:
     <<: *cpu
