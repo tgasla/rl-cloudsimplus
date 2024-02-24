@@ -5,7 +5,6 @@ import sys
 from py4j.java_gateway import JavaGateway
 from stable_baselines3 import A2C
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.callbacks import EvalCallback
 import torch
 from read_swf import SWFReader
 
@@ -35,13 +34,6 @@ env = gym.make(
 it = 0
 reward_sum = 0
 tb_log = "./a2c_log_cloudsimplus/"
-
-eval_callback = EvalCallback(
-    env,
-    best_model_save_path='./a2c_log_cloudsimplus/',
-    log_path='./a2c_log_cloudsimplus/',
-    eval_freq=5000,
-    render=False)
 
 model = A2C(
     "MlpPolicy",
