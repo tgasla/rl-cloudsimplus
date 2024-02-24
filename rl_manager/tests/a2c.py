@@ -36,7 +36,7 @@ it = 0
 reward_sum = 0
 tb_log = "./a2c_log_cloudsimplus/"
 
-eval_callback = sb3.common.callbacks.EvalCallback(
+eval_callback = EvalCallback(
     env,
     best_model_save_path='./a2c_log_cloudsimplus/',
     log_path='./a2c_log_cloudsimplus/',
