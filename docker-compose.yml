@@ -11,7 +11,7 @@ services:
       TEST_FILE: KTH-SP2-1996-2.1-cln.swf
     ports:
       - 25333:25333
-      
+
   database:
     image: postgres
     container_name: database
@@ -44,10 +44,11 @@ services:
       BATCH_SIZE: 128
       EPISODES_CNT: 25
     ports:
-     - 80:80
+     - 80:6006
     volumes:
       # - ./model-storage:/storage
       - ./rl_manager/tests:/mgr/tests
+      - ~/tb_logs:/mgr/tb_logs
     command: tests/entrypoint.sh
 
   manager_gpu:

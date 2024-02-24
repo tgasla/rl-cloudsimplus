@@ -33,7 +33,7 @@ env = gym.make(
 
 it = 0
 reward_sum = 0
-tb_log = "./a2c_log_cloudsimplus/"
+tb_log = "./tb_logs/a2c/"
 
 model = A2C(
     "MlpPolicy",
@@ -43,10 +43,10 @@ model = A2C(
     device=device)
 
 model.learn(
-    total_timesteps=100_000,
+    total_timesteps=3_000_000,
     progress_bar=True,
     reset_num_timesteps=False,
-    tb_log_name="A2C_v1"
+    tb_log_name="A2C_3M"
 )
 
 mean_reward, std_reward = evaluate_policy(
