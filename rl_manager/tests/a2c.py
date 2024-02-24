@@ -36,6 +36,13 @@ it = 0
 reward_sum = 0
 tb_log = "./a2c_log_cloudsimplus/"
 
+eval_callback = sb3.common.callbacks.EvalCallback(
+    env,
+    best_model_save_path='./a2c_log_cloudsimplus/',
+    log_path='./a2c_log_cloudsimplus/',
+    eval_freq=5000,
+    render=False)
+
 model = A2C(
     "MlpPolicy",
     env,
@@ -44,15 +51,16 @@ model = A2C(
     device=device)
 
 model.learn(
-    total_timesteps=100_000, 
+    total_timesteps=100_000,
     progress_bar=True,
     reset_num_timesteps=False,
+    callback=eval_callback,
     tb_log_name="A2C_v1"
 )
 
 mean_reward, std_reward = evaluate_policy(
-    model, 
-    model.get_env(), 
+    model,
+    model.get_env(),
     n_eval_episodes=10,
     render = True
 )
