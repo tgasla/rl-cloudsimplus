@@ -46,7 +46,6 @@ model.learn(
     total_timesteps=100_000,
     progress_bar=True,
     reset_num_timesteps=False,
-    callback=eval_callback,
     tb_log_name="A2C_v1"
 )
 
