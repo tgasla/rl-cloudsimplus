@@ -455,7 +455,7 @@ public class CloudSimProxy {
         Vm newVm = createVmWithId(type);
         double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
         newVm.setSubmissionDelay(delay);
-
+        logger.info("Agent action: Create a " + type + " VM");
         broker.submitVm(newVm);
         logger.debug("VM creating requested, delay: " + delay + " type: " + type);
     }
@@ -467,7 +467,7 @@ public class CloudSimProxy {
                 .parallelStream()
                 .filter(vm -> type.equals((vm.getDescription())))
                 .collect(Collectors.toList());
-
+        logger.info("Agent action: Remove a " + type + " VM");
         if (canKillVm(type, vmsOfType.size())) {
             int vmToKillIdx = random.nextInt(vmsOfType.size());
             destroyVm(vmsOfType.get(vmToKillIdx));

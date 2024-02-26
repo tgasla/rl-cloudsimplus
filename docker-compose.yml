@@ -45,9 +45,9 @@ services:
       EPISODES_CNT: 25
     volumes:
       # - ./model-storage:/storage
-      - ./rl_manager/tests:/mgr/tests
+      - ./rl_manager/mnt:/mgr/mnt
       - ~/tb_logs:/mgr/tb_logs
-    command: python3 tests/a2c.py
+    command: python3 mnt/a2c.py
 
   manager_gpu:
     <<: *cpu
