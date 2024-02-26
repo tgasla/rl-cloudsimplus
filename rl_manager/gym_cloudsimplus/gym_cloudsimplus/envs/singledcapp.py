@@ -6,9 +6,13 @@ from py4j.java_gateway import JavaGateway, GatewayParameters
 import numpy as np
 
 # Available actions
-ACTION_NOTHING = 0
-ACTION_ADD_VM = 1
-ACTION_REMOVE_VM = 2
+# ACTION_NOTHING: 0
+# ACTION_ADD_VM: 1
+# ACTION_REMOVE_VM: 2
+# ACTION_ADD_MEDIUM_VM: 3
+# ACTION_REMOVE_MEDIUM_VM: 4
+# ACTION_ADD_LARGE_VM: 5
+# ACTION_REMOVE_LARGE_VM: 6
 
 address = os.getenv('CLOUDSIM_GATEWAY_HOST', 'gateway')
 port = os.getenv('CLOUDSIM_GATEWAY_PORT', '25333')
@@ -29,14 +33,14 @@ def to_nparray(raw_obs):
     return np.array(obs, dtype=np.float32)
 
 
-# Based on https://github.com/openai/gym/blob/master/gym/core.py
+# Based on https://gymnasium.farama.org/api/env/
 class SingleDCAppEnv(gym.Env):
     metadata = {'render_modes': ['human', 'ansi']}
 
     def __init__(self, **kwargs):
         super().__init__()
         # actions are identified by integers 0-n
-        self.num_of_actions = 3
+        self.num_of_actions = 7
         self.action_space = spaces.Discrete(self.num_of_actions)
 
         # observation metrics - all within 0-1 range
@@ -106,7 +110,15 @@ class SingleDCAppEnv(gym.Env):
         result = simulation_environment.render(self.simulation_id)
         obs_data = json.loads(result)
         if self.render_mode == 'human':
-            print([metric[-1] for metric in obs_data])
+            print("Observation metrics:")
+            print("-" * 40)
+            print(f"avgCPUUtilizationHistory: {obs_data[0]}")
+            print(f"vmAllocatedRatioHistory: {obs_data[1]}")
+            print(f"p90CPUUtilizationHistory: {obs_data[2]}")
+            print(f"avgMemoryUtilizationHistory: {obs_data[3]}")
+            print(f"p90MemoryUtilizationHistory: {obs_data[4]}")
+            print(f"waitingJobsRatioGlobalHistory: {obs_data[5]}")
+            print(f"waitingJobsRatioRecentHistory: {obs_data[6]}")
             return
         elif self.render_mode == 'ansi':
             print(obs_data)

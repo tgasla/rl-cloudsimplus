@@ -84,7 +84,7 @@ while True:
     obs, reward, terminated, truncated, info = env.step(int(action))
     print(f"Iteration: {it}")
     print("State Space:")
-    print("-" * 20)
+    print("-" * 40)
     print(f"avgCPUUtilizationHistory: {obs[0]}")
     print(f"vmAllocatedRatioHistory: {obs[1]}")
     print(f"p90CPUUtilizationHistory: {obs[2]}")
