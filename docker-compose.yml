@@ -47,7 +47,7 @@ services:
       # - ./model-storage:/storage
       - ./rl_manager/mnt:/mgr/mnt
       - ~/tb_logs:/mgr/tb_logs
-    command: python3 mnt/a2c.py
+    command: python3 mnt/agent.py a2c 3000000
 
   manager_gpu:
     <<: *cpu

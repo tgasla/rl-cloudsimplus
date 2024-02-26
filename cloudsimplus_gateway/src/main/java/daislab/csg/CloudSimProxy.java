@@ -389,8 +389,8 @@ public class CloudSimProxy {
     }
 
     private boolean hasUnfinishedJobs() {
-        System.out.println("FINISHED JOBS COUNT: " + this.finishedIds.size());
-        System.out.println("TOTAL JOB COUNT: " + this.jobs.size());
+        logger.debug("FINISHED JOBS COUNT: " + this.finishedIds.size());
+        logger.debug("TOTAL JOB COUNT: " + this.jobs.size());
         return this.finishedIds.size() < this.jobs.size();
     }
 
@@ -502,8 +502,8 @@ public class CloudSimProxy {
     private void destroyVm(Vm vm) {
         final String vmSize = vm.getDescription();
 
-        // TODO: okazało się, że jak czyścimy submitted list to chyba "zapominamy" jakieś cloudlety wykonać
-        // wydaje mi się, że jest po prostu jakaś lista w schedulerze o jakiej zapominamy i trzeba
+        // TODO: it turned out that when we clean the submitted list, we probably "forget" to execute some cloudlets
+        // it seems to me that there is simply some list in the scheduler that we forget about and we need to take into account
 
         // replaces broker.destroyVm
         final List<Cloudlet> affectedExecCloudlets = resetCloudlets(vm.getCloudletScheduler().getCloudletExecList());

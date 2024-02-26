@@ -3,10 +3,19 @@ import gym_cloudsimplus
 import json
 import sys
 from py4j.java_gateway import JavaGateway
-from stable_baselines3 import A2C
+import stable_baselines3 as sb3
 from stable_baselines3.common.evaluation import evaluate_policy
 import torch
+import argparse
 from read_swf import SWFReader
+
+def human_format(num):
+    num = float('{:.3g}'.format(num))
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+    return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #print(device)
@@ -17,14 +26,9 @@ jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", lines_to_read=1000)
 gateway = JavaGateway()
 simulation_environment = gateway.entry_point
 
-if len(sys.argv) > 1:
-    initial_vm_count = sys.argv[1]
-else:
-    initial_vm_count = "10"
-
 env = gym.make(
     "SingleDCAppEnv-v0",
-    initial_vm_count=initial_vm_count,
+    #initial_vm_count=initial_vm_count,
     jobs_as_json=json.dumps(jobs),
     simulation_speedup="10000",
     split_large_jobs="true",
@@ -33,9 +37,24 @@ env = gym.make(
 
 it = 0
 reward_sum = 0
-tb_log = "./tb_logs/a2c/"
 
-model = A2C(
+parser = argparse.ArgumentParser()
+parser.add_argument("algorithm", type=str,
+                    help="The RL algorithm to train")
+parser.add_argument("timesteps", type=int,
+                    help="The number of timesteps to train")
+args = parser.parse_args()
+algorithm_str = str(args.algorithm).upper()
+timesteps = int(args.timesteps)
+
+if not hasattr(sb3, algorithm_str):
+    raise NameError(f"RL algorithm {algorithm_str} not found")
+
+tb_log = f"./tb_logs/{algorithm_str}/"
+
+algorithm = getattr(sb3, algorithm_str)
+
+model = algorithm(
     "MlpPolicy",
     env,
     verbose=True,
@@ -43,10 +62,10 @@ model = A2C(
     device=device)
 
 model.learn(
-    total_timesteps=3_000_000,
+    total_timesteps=timesteps,
     progress_bar=True,
     reset_num_timesteps=False,
-    tb_log_name="A2C_3M"
+    tb_log_name=f"{algorithm_str}_{human_format(timesteps)}"
 )
 
 mean_reward, std_reward = evaluate_policy(
