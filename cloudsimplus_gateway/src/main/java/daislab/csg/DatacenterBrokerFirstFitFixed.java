@@ -48,7 +48,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             this.getVmCreatedList().clear();
         }
     }
-
+    
     @Override
     protected void requestDatacentersToCreateWaitingCloudlets() {
         final List<Cloudlet> scheduled = new LinkedList<>();

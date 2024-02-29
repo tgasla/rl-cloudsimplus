@@ -8,7 +8,7 @@ services:
       CLOUDSIM_GATEWAY_HOST: gateway
       CLOUDSIM_GATEWAY_PORT: 25333
       JAVA_OPTS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external"
-      TEST_FILE: KTH-SP2-1996-2.1-cln.swf
+      #TEST_FILE: KTH-SP2-1996-2.1-cln.swf
     ports:
       - 25333:25333
 
@@ -40,14 +40,15 @@ services:
       POSTGRES_USER: samm
       POSTGRES_PASSWORD: samm_secret
       POSTGRES_DB: samm_db
-      TEST_CASE: model
-      BATCH_SIZE: 128
-      EPISODES_CNT: 25
+      #TEST_CASE: model
+      #BATCH_SIZE: 128
+      #EPISODES_CNT: 25
+      
     volumes:
       # - ./model-storage:/storage
       - ./rl_manager/mnt:/mgr/mnt
       - ~/tb_logs:/mgr/tb_logs
-    command: python3 mnt/agent.py a2c 3000000
+    command: python3 mnt/learn.py ${ALGORITHM} ${TIMESTEPS}
 
   manager_gpu:
     <<: *cpu
