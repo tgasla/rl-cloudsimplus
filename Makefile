@@ -13,12 +13,12 @@ gateway:
 manager:
 	docker build -t manager:${MANAGER_VERSION} rl-manager
 
-tensorboard:
+tb:
 	docker build -t tensorboard tensorboard
 
-.PHONY: clean-all clean-tensorboard clean-manager clean-gateway
+.PHONY: all clean-all prune
 
-clean-tensorboard:
+clean-tb:
 	docker rmi --force tensorboard
 
 clean-manager:

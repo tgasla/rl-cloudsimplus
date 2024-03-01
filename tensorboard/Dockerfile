@@ -16,5 +16,4 @@ RUN apt-get update \
         /usr/share/doc \
         /usr/share/doc-base
 
-WORKDIR /tb
-CMD ["tensorboard", "--logdir", "./tb_logs/", "--host", "0.0.0.0", "--port", "6006"] 
+CMD ["tensorboard", "--logdir", "/tb-logs/", "--host", "0.0.0.0", "--port", "6006"] 
