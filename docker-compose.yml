@@ -27,7 +27,7 @@ services:
     profiles: [""]
     image: manager:0.10
     container_name: manager
-    restart: always
+    #restart: always
     build: rl-manager
     depends_on:
       - gateway
