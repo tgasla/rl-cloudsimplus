@@ -108,6 +108,7 @@ public class WrappedSimulation {
     }
 
     public SimulationStepResult step(int action) {
+
         if (cloudSimProxy == null) {
             throw new RuntimeException("Simulation not reset! Please call the reset() function!");
         }
@@ -115,7 +116,7 @@ public class WrappedSimulation {
         debug("Executing action: " + action);
 
         long startAction = System.nanoTime();
-        executeAction(action);
+        boolean isValid = executeAction(action);
         long stopAction = System.nanoTime();
         cloudSimProxy.runFor(INTERVAL);
 
@@ -125,7 +126,7 @@ public class WrappedSimulation {
 
         boolean done = !cloudSimProxy.isRunning();
         double[] observation = getObservation();
-        double reward = calculateReward();
+        double reward = calculateReward(isValid);
 
         this.simulationHistory.record("action", action);
         this.simulationHistory.record("reward", reward);
@@ -153,37 +154,41 @@ public class WrappedSimulation {
         );
     }
 
-    private void executeAction(int action) {
+    private boolean executeAction(int action) {
+        boolean isValid = true;
+
         switch (action) {
             case 0:
                 // nothing happens
                 break;
             case 1:
                 // adding a new vm
-                addNewVM(CloudSimProxy.SMALL);
+                isValid = addNewVM(CloudSimProxy.SMALL);
                 break;
             case 2:
                 // removing randomly one of the vms
-                removeVM(CloudSimProxy.SMALL);
+                isValid = removeVM(CloudSimProxy.SMALL);
                 break;
             case 3:
-                addNewVM(CloudSimProxy.MEDIUM);
+                isValid = addNewVM(CloudSimProxy.MEDIUM);
                 break;
             case 4:
-                removeVM(CloudSimProxy.MEDIUM);
+                isValid = removeVM(CloudSimProxy.MEDIUM);
                 break;
             case 5:
-                addNewVM(CloudSimProxy.LARGE);
+                isValid = addNewVM(CloudSimProxy.LARGE);
                 break;
             case 6:
-                removeVM(CloudSimProxy.LARGE);
+                isValid = removeVM(CloudSimProxy.LARGE);
                 break;
         }
+        return isValid;
     }
 
-    private void removeVM(String type) {
+    private boolean removeVM(String type) {
         if (cloudSimProxy.removeRandomlyVM(type)) {
             this.vmCounter.recordRemovedVM(type);
+            return true;
         } else {
             debug("Removing a VM of type "
                     + type + " requested but the request was ignored. Stats: "
@@ -191,13 +196,15 @@ public class WrappedSimulation {
                     + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
                     + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
             );
+            return false;
         }
     }
 
-    private void addNewVM(String type) {
+    private boolean addNewVM(String type) {
         if (vmCounter.hasCapacity(type)) {
             cloudSimProxy.addNewVM(type);
             vmCounter.recordNewVM(type);
+            return true;
         } else {
             debug("Adding a VM of type "
                     + type
@@ -207,6 +214,7 @@ public class WrappedSimulation {
                     + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
                     + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
             );
+            return false;
         }
     }
 
@@ -283,12 +291,16 @@ public class WrappedSimulation {
         return StatUtils.mean(cpuPercentUsage);
     }
 
-    private double calculateReward() {
+    private double calculateReward(boolean isValid) {
+        final int penaltyMultiplier = (isValid) ? 1 : 1000;
+        if (!isValid) {
+            logger.info("Penalty given to agent because action was not possible");
+        }
         // reward is the negative cost of running the infrastructure
         // - any penalties from jobs waiting in the queue
         final double vmRunningCost = cloudSimProxy.getRunningCost();
         final double penalty = this.cloudSimProxy.getWaitingJobsCount() * this.queueWaitPenalty * simulationSpeedUp;
-        return -vmRunningCost - penalty;
+        return - penaltyMultiplier * (vmRunningCost + penalty);
     }
 
     public void seed() {

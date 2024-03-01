@@ -5,6 +5,7 @@ import sys
 from py4j.java_gateway import JavaGateway
 import stable_baselines3 as sb3
 from stable_baselines3.common.evaluation import evaluate_policy
+import dummy_agents.rng
 import torch
 import argparse
 from read_swf import SWFReader
@@ -28,11 +29,10 @@ simulation_environment = gateway.entry_point
 
 env = gym.make(
     "SingleDCAppEnv-v0",
-    #initial_vm_count=initial_vm_count,
     jobs_as_json=json.dumps(jobs),
     simulation_speedup="10000",
     split_large_jobs="true",
-    render_mode="human"
+    render_mode="ansi"
 )
 
 it = 0
@@ -47,12 +47,20 @@ args = parser.parse_args()
 algorithm_str = str(args.algorithm).upper()
 timesteps = int(args.timesteps)
 
-if not hasattr(sb3, algorithm_str):
+rng_algorithm = False
+if algorithm_str == "RNG":
+    rng_algorithm = True
+
+if not rng_algorithm and not hasattr(sb3, algorithm_str):
     raise NameError(f"RL algorithm {algorithm_str} not found")
 
-tb_log = f"./tb_logs/{algorithm_str}/"
+tb_log = f"./tb-logs/{algorithm_str}/"
 
-algorithm = getattr(sb3, algorithm_str)
+if rng_algorithm:
+    algorithm = getattr(dummy_agents.rng, algorithm_str)
+else:
+    algorithm = getattr(sb3, algorithm_str)
+
 
 model = algorithm(
     "MlpPolicy",
@@ -61,6 +69,7 @@ model = algorithm(
     tensorboard_log=tb_log,
     device=device)
 
+# Model training
 model.learn(
     total_timesteps=timesteps,
     progress_bar=True,
@@ -68,6 +77,7 @@ model.learn(
     tb_log_name=f"{algorithm_str}_{human_format(timesteps)}"
 )
 
+# Model evaluation
 mean_reward, std_reward = evaluate_policy(
     model,
     model.get_env(),
@@ -76,6 +86,15 @@ mean_reward, std_reward = evaluate_policy(
 )
 print("Mean Reward: {} +/- {}".format(mean_reward, std_reward))
 
+model_path = f"./storage/{algorithm_str}_{human_format(timesteps)}_{int(time.time())}"
+
+model.save(model_path)
+
+del model
+
+model.load(model_path)
+
+# Model deployment
 obs, info = env.reset()
 
 while True:

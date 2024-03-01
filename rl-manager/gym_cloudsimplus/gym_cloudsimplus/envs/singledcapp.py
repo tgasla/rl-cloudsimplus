@@ -121,7 +121,6 @@ class SingleDCAppEnv(gym.Env):
             print(f"waitingJobsRatioRecentHistory: {obs_data[6]}")
             return
         elif self.render_mode == 'ansi':
-            print(obs_data)
             return obs_data
         else:
             return super().render()

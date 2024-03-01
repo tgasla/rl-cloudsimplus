@@ -12,26 +12,26 @@ services:
     ports:
       - 25333:25333
 
-  database:
-    image: postgres
-    container_name: database
-    restart: always
-    environment:
-      POSTGRES_USER: samm
-      POSTGRES_PASSWORD: samm_secret
-      POSTGRES_DB: samm_db
-    ports:
-      - 5432:5432
+  # database:
+  #   image: postgres
+  #   container_name: database
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: samm
+  #     POSTGRES_PASSWORD: samm_secret
+  #     POSTGRES_DB: samm_db
+  #   ports:
+  #     - 5432:5432
 
   manager: &cpu
     profiles: [""]
     image: manager:0.10
     container_name: manager
     restart: always
-    build: rl_manager
+    build: rl-manager
     depends_on:
       - gateway
-      - database
+      # - database
     environment:
       CLOUDSIM_GATEWAY_HOST: gateway
       CLOUDSIM_GATEWAY_PORT: 25333
@@ -43,14 +43,13 @@ services:
       #TEST_CASE: model
       #BATCH_SIZE: 128
       #EPISODES_CNT: 25
-      
     volumes:
-      # - ./model-storage:/storage
-      - ./rl_manager/mnt:/mgr/mnt
-      - ~/tb_logs:/mgr/tb_logs
+      - ./model-storage:/mgr/storage
+      - ./rl-manager/mnt:/mgr/mnt
+      - ~/tb-logs:/mgr/tb-logs
     command: python3 mnt/learn.py ${ALGORITHM} ${TIMESTEPS}
 
-  manager_gpu:
+  manager-gpu:
     <<: *cpu
     profiles: ["gpu"]
     deploy:
