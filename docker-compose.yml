@@ -46,7 +46,7 @@ services:
     volumes:
       - ./model-storage:/mgr/storage
       - ./rl-manager/mnt:/mgr/mnt
-      - ~/tb-logs:/mgr/tb-logs
+      - ./tb-logs:/mgr/tb-logs
     command: python3 mnt/learn.py ${ALGORITHM} ${TIMESTEPS}
 
   manager-gpu:
