@@ -3,7 +3,7 @@ services:
   gateway:
     image: gateway:1.9.1
     container_name: gateway
-    restart: always
+    # restart: always
     environment:
       CLOUDSIM_GATEWAY_HOST: gateway
       CLOUDSIM_GATEWAY_PORT: 25333

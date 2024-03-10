@@ -1,42 +1,53 @@
 MANAGER_VERSION=0.10
 GATEWAY_VERSION=1.9.1
 
-all: gateway manager tensorboard
+build-all: build-tensorboard build-compose-images
 
-run:
-	docker compose up -d
+build-compose-images: build-gateway build-manager
 
-gateway:
+build-tensorboard:
+	docker build -t tensorboard tensorboard
+
+build-gateway:
 	cd cloudsimplus-gateway && sudo ./gradlew build --warning-mode all
 	cd cloudsimplus-gateway && sudo ./gradlew dockerBuildImage
 
-manager:
+build-gateway-debug:
+	cd cloudsimplus-gateway && sudo ./gradlew build --warning-mode all -Dlog.level=DEBUG
+	cd cloudsimplus-gateway && sudo ./gradlew dockerBuildImage
+
+build-manager:
 	docker build -t manager:${MANAGER_VERSION} rl-manager
 
-tb:
-	docker build -t tensorboard tensorboard
+run-tensorboard:
+	docker run --rm --name tensorboard -t -d -v ./tb-logs/:/tb-logs/ -p 80:6006 tensorboard
 
-.PHONY: all clean-all prune
+run-compose:
+	docker compose up -d
 
-clean-tb:
-	docker rmi --force tensorboard
+run-compose-build:
+	docker compose up -d --build
 
-clean-manager:
-	docker rmi --force manager:${MANAGER_VERSION}
+rmi-compose-images: rmi-gateway rmi-manager
 
-clean-gateway:
+rmi-tensorboard:
+	docker rmi --force tensorboard:latest
+
+rmi-gateway:
 	docker rmi --force gateway:${GATEWAY_VERSION}
 
-prune:
+rmi-manager:
+	docker stop manager && docker rmi --force manager:${MANAGER_VERSION}
+
+clean-gateway:
+	cd cloudsimplus-gateway && sudo ./gradlew clean
+
+prune-all:
 	docker system prune -f
 	docker volume prune -f
 	docker container prune -f
 	docker image prune -f
 
-clean-all:
-	docker system prune -f
-	docker volume prune -f
-	docker container prune -f
-	docker image prune -f
-	cd cloudsimplus-gateway && ./gradlew clean
-	docker rmi --force manager:${MANAGER_VERSION} gateway:${GATEWAY_VERSION}
+.PHONY: build-tensorboard build-gateway build-manager \
+run-tensorboard run-compose rmi-tensorboard rmi-gateway \
+rmi-manager prune-all rmi-compose-images clean-gateway
