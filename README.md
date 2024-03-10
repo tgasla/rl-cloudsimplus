@@ -27,7 +27,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 -->
 </details>
 
-<details><summary><h2>MacOS 14/13/12/11</h2></summary>
+<details><summary><b>MacOS 14/13/12/11</b></summary>
 
 ### 1.1 Install Docker
 https://docs.docker.com/get-docker/
