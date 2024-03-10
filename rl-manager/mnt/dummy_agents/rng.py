@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, ClassVar, Tuple, Optional, Type, TypeVar, Union
+from typing import Any, Dict, ClassVar, Tuple, Optional, Type, TypeVar, Union
 
 import numpy as np
 import torch as th
@@ -71,8 +71,6 @@ class RNG(NoPolicyAlgorithm):
         self,
         observation: Union[np.ndarray, Dict[str, np.ndarray]],
         state: Optional[Tuple[np.ndarray, ...]] = None,
-        episode_start: Optional[np.ndarray] = None,
-        deterministic: bool = False,
     ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
         """
         Overrides the base_class predict function for random policy.
@@ -83,7 +81,7 @@ class RNG(NoPolicyAlgorithm):
         :return: the model's action and the next state
             (used in recurrent policies)
         """
-    
+        
         if self.is_vectorized_observation(observation):
             if isinstance(observation, dict):
                 n_batch = observation[next(iter(observation.keys()))].shape[0]

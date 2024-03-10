@@ -21,21 +21,6 @@ tasks.withType(JavaCompile) {
     }
 }
 
-task configureLogging {
-    doLast {
-        def logLevel = System.getProperty('log.level', 'INFO')
-        def logbackFile = file('src/main/resources/logback.xml')
-        if (!logbackFile.exists()) {
-            logger.warn "Logback configuration file not found."
-            return
-        }
-        def logbackConfig = logbackFile.text
-        logbackConfig = logbackConfig.replaceAll('<root level="\\w+">', "<root level=\"$logLevel\">")
-        logbackFile.write(logbackConfig)
-        logger.lifecycle "Logging level set to $logLevel"
-    }
-}
-
 test {
     useJUnitPlatform()
     //https://stackoverflow.com/questions/70756414/java-lang-reflect-inaccessibleobjectexception-unable-to-make-field-private-fina
@@ -104,5 +89,3 @@ java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
-
-build.dependsOn configureLogging

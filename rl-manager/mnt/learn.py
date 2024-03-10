@@ -1,30 +1,28 @@
 import gymnasium as gym
 import gym_cloudsimplus
 import json
-import time
+import sys
 from py4j.java_gateway import JavaGateway
 import stable_baselines3 as sb3
 from stable_baselines3.common.evaluation import evaluate_policy
-import dummy_agents
+import dummy_agents.rng
 import torch
 import argparse
 from read_swf import SWFReader
 
 def human_format(num):
-    num = float(f"{num:.3g}")
+    num = float('{:.3g}'.format(num))
     magnitude = 0
-    suffix = ['', 'K', 'M', 'B', 'T']
     while abs(num) >= 1000:
         magnitude += 1
-        num /= 1000
-    return f"{num:.0g}" + suffix[magnitude]
+        num /= 1000.0
+    return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #print(device)
 
 swf_reader = SWFReader()
-jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=1)
-print(len(jobs))
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", lines_to_read=1000)
 
 gateway = JavaGateway()
 simulation_environment = gateway.entry_point
@@ -41,12 +39,7 @@ it = 0
 reward_sum = 0
 
 parser = argparse.ArgumentParser()
-parser.add_argument("algorithm", 
-                    type=str,
-                    choices=["DQN", "A2C", "PPO", 
-                             "RNG", "DDPG", "HER", 
-                             "SAC", "TD3"
-                             ],
+parser.add_argument("algorithm", type=str,
                     help="The RL algorithm to train")
 parser.add_argument("timesteps", type=int,
                     help="The number of timesteps to train")
@@ -59,12 +52,12 @@ if algorithm_str == "RNG":
     rng_algorithm = True
 
 if not rng_algorithm and not hasattr(sb3, algorithm_str):
-    raise NameError(f"RL algorithm {algorithm_str} was not found")
+    raise NameError(f"RL algorithm {algorithm_str} not found")
 
 tb_log = f"./tb-logs/{algorithm_str}/"
 
 if rng_algorithm:
-    algorithm = getattr(dummy_agents, algorithm_str)
+    algorithm = getattr(dummy_agents.rng, algorithm_str)
 else:
     algorithm = getattr(sb3, algorithm_str)
 
@@ -88,12 +81,12 @@ model.learn(
 mean_reward, std_reward = evaluate_policy(
     model,
     model.get_env(),
-    n_eval_episodes=1,
+    n_eval_episodes=10,
     render = True
 )
-print(f"Mean Reward: {mean_reward} +/- {std_reward}")
+print("Mean Reward: {} +/- {}".format(mean_reward, std_reward))
 
-model_path = f"./storage/{algorithm_str}_{human_format(timesteps)}_{int(time.time())}/"
+model_path = f"./storage/{algorithm_str}_{human_format(timesteps)}_{int(time.time())}"
 
 model.save(model_path)
 

@@ -18,27 +18,31 @@ class SWFReader(object):
             'numberOfCores': allocated_cores,
         }
     
-    def read(self, filename, jobs_to_read=-1):
+    def read(self, filename, lines_to_read=-1):
         with open(filename, 'r') as f:
-            jobs_read = 0
+            line_num = 0
             for line in f.readlines():
+                line_num += 1
                 if line.startswith(';'):
                     continue
-                if jobs_to_read != -1 and jobs_read == jobs_to_read:
+                if lines_to_read != -1 and line_num > lines_to_read:
                     return self.jobs
 
-                line_stripped = line.strip()
-                line_splitted = line_stripped.split()
+                stripped = line.strip()
+                splitted = stripped.split()
 
-                job_id = int(line_splitted[0])
-                submit_time = int(line_splitted[1])
-                wait_time = int(line_splitted[2])
-                run_time = int(line_splitted[3])
-                allocated_cores = int(line_splitted[4])
-                status = int(line_splitted[10])
+                job_id = int(splitted[0])
+                submit_time = int(splitted[1])
+                wait_time = int(splitted[2])
+                run_time = int(splitted[3])
+                allocated_cores = int(splitted[4])
+                status = int(splitted[10])
+
                 mips = 1250
 
-                if (run_time > 0 and allocated_cores > 0 and status == 0):
+                if (int(run_time) > 0 and 
+                        int(allocated_cores) > 0 and 
+                        status == 0):
                     cloudlet = self._as_cloudlet_descriptor_dict(
                         job_id,
                         submit_time,
@@ -47,5 +51,4 @@ class SWFReader(object):
                         allocated_cores
                     )
                     self.jobs.append(cloudlet)
-                    jobs_read += 1
         return self.jobs
