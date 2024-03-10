@@ -32,7 +32,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 ### 1.1 Install Docker
 https://docs.docker.com/get-docker/
 
-If you install Docker Desktop make sure you are giving enough memory in your containers by going to <b> Settings.. > Resources </b> and increase the Memory Limit
+If you install Docker Desktop make sure you are giving enough memory in your containers by going to <b> Settings.. > Resources </b> and increasing the Memory Limit
 
 ### 1.2 Install Docker Compose
 https://docs.docker.com/compose/install/
