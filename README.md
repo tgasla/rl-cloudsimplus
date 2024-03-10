@@ -1,7 +1,6 @@
 # 1. Prerequisites
 
-<details>
-    <summary><h2>Linux Debian 12/11/10</h2></summary>
+<details><summary><h2>Linux Debian 12/11/10</h2></summary>
     
 ### 1.1 Install Docker
 https://docs.docker.com/get-docker/
@@ -28,8 +27,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 -->
 </details>
 
-<details>
-    <summary><h2>MacOS 14/13/12/11</h2></summary>
+<details><summary><h2>MacOS 14/13/12/11</h2></summary>
 
 ### 1.1 Install Docker
 https://docs.docker.com/get-docker/
