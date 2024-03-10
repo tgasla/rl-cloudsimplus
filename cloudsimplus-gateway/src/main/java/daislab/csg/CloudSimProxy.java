@@ -8,6 +8,7 @@ import org.cloudsimplus.core.CloudSimTag;
 import org.cloudsimplus.core.events.SimEvent;
 import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.hosts.Host;
+import org.cloudsimplus.hosts.HostAbstract;
 import org.cloudsimplus.provisioners.PeProvisionerSimple;
 import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
@@ -261,8 +262,8 @@ public class CloudSimProxy {
 
     private void printJobStatsAfterEndOfSimulation() {
         if (!this.isRunning()) {
+            // logger.info("CloudSimProxy.isRunning: " + cloudSimPlus.isRunning());
             logger.info("End of simulation, some reality check stats:");
-
             printJobStats();
         }
     }
@@ -346,7 +347,7 @@ public class CloudSimProxy {
             // we process every cloudlet only once here...
             final Cloudlet cloudlet = this.jobs.get(toAddJobId);
 
-            // the job shold enter the cluster once target is crossed
+            // the job should enter the cluster once target is crossed
             cloudlet.setSubmissionDelay(1.0);
             cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
                 @Override
@@ -389,8 +390,6 @@ public class CloudSimProxy {
     }
 
     private boolean hasUnfinishedJobs() {
-        logger.debug("FINISHED JOBS COUNT: " + this.finishedIds.size());
-        logger.debug("TOTAL JOB COUNT: " + this.jobs.size());
         return this.finishedIds.size() < this.jobs.size();
     }
 
@@ -455,7 +454,7 @@ public class CloudSimProxy {
         Vm newVm = createVmWithId(type);
         double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
         newVm.setSubmissionDelay(delay);
-        logger.info("Agent action: Create a " + type + " VM");
+        logger.debug("Agent action: Create a " + type + " VM");
         broker.submitVm(newVm);
         logger.debug("VM creating requested, delay: " + delay + " type: " + type);
     }
@@ -467,7 +466,7 @@ public class CloudSimProxy {
                 .parallelStream()
                 .filter(vm -> type.equals((vm.getDescription())))
                 .collect(Collectors.toList());
-        logger.info("Agent action: Remove a " + type + " VM");
+        logger.debug("Agent action: Remove a " + type + " VM");
         if (canKillVm(type, vmsOfType.size())) {
             int vmToKillIdx = random.nextInt(vmsOfType.size());
             destroyVm(vmsOfType.get(vmToKillIdx));
@@ -507,17 +506,17 @@ public class CloudSimProxy {
 
         // replaces broker.destroyVm
         final List<Cloudlet> affectedExecCloudlets = resetCloudlets(vm.getCloudletScheduler().getCloudletExecList());
-        final List<Cloudlet> affectedWaitingGloudlets = resetCloudlets(vm.getCloudletScheduler().getCloudletWaitingList());
-        final List<Cloudlet> affectedCloudlets = Stream.concat(affectedExecCloudlets.stream(), affectedWaitingGloudlets.stream()).collect(Collectors.toList());
-        vm.shutdown();
+        final List<Cloudlet> affectedWaitingCloudlets = resetCloudlets(vm.getCloudletScheduler().getCloudletWaitingList());
+        final List<Cloudlet> affectedCloudlets = Stream.concat(affectedExecCloudlets.stream(), affectedWaitingCloudlets.stream()).collect(Collectors.toList());
+        ((HostAbstract)vm.getHost()).destroyVm(vm);
         vm.getCloudletScheduler().clear();
         // replaces broker.destroyVm
 
         logger.debug("Killing VM: "
                 + vm.getId()
-                + " to reschedule cloudlets: "
+                + ", to-reschedule cloudlets count: "
                 + affectedCloudlets.size()
-                + " type: "
+                + ", type: "
                 + vmSize);
         if(affectedCloudlets.size() > 0) {
             rescheduleCloudlets(affectedCloudlets);
