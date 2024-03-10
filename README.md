@@ -1,6 +1,6 @@
 # 1. Prerequisites
 
-<details><summary> ### Linux Debian 12/11/10</summary>
+<details><summary> <h1> Linux Debian 12/11/10 </h1> </summary>
     
 ### 1.1 Install Docker
 https://docs.docker.com/get-docker/
