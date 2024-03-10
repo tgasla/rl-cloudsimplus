@@ -38,7 +38,7 @@ If you install Docker Desktop make sure you are giving enough memory in your con
 https://docs.docker.com/compose/install/
 
 ### 1.3 Install Java 21 JDK and JRE
-You can install OpenJDK Java 21 using brew
+You can install OpenJDK Java 21 using [brew](https://brew.sh/)
 
 `brew install openjdk@21`
 
@@ -82,14 +82,14 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 # 2. Build images
 
 ## 2.1 Build gateway image
-Make sure you are inside the `cloudsimplus_gateway` folder and then build the image using:
+`make build-gateway`
 
-`sudo make build`
+or
+
+`make build-gateway-debug` to enable debugging and show DEBUG log messages. 
 
 ## 2.2 Build manager image
-Make sure you are inside the `rl_manager` folder and then build the image using:
-
-`sudo make build`
+`make build-manager`
 
 # 3. Start application
 `docker compose up`
@@ -107,7 +107,7 @@ Make sure you are inside the `rl_manager` folder and then build the image using:
 
 # Acknowledgements
 
-* This project uses the CloudSim Plus framework: a full-featured, highly extensible, and easy to use Java 17+ framework for
+- This project uses the CloudSim Plus framework: a full-featured, highly extensible, and easy to use Java 17+ framework for
 modeling and simulation of cloud computing infrastructure and services.
 
   You can find it [here](http://cloudsimplus.org/). The source code is available [here](https://github.com/manoelcampos/cloudsim-plus)
