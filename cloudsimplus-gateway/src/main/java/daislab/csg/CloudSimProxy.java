@@ -7,8 +7,9 @@ import org.cloudsimplus.core.CloudSimPlus;
 import org.cloudsimplus.core.CloudSimTag;
 import org.cloudsimplus.core.events.SimEvent;
 import org.cloudsimplus.datacenters.Datacenter;
-import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.hosts.HostAbstract;
+import org.cloudsimplus.hosts.Host;
+import org.cloudsimplus.hosts.HostSimple;
 import org.cloudsimplus.provisioners.PeProvisionerSimple;
 import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
@@ -109,7 +110,7 @@ public class CloudSimProxy {
                         datacenter,
                         c.getSubmissionDelay() + 1.0,
                         CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING,
-                        ResubmitAnchor.THE_VALUE
+                        null
                 )
         );
     }
@@ -124,7 +125,7 @@ public class CloudSimProxy {
             final long hostBw = settings.getHostBw();
             final long hostSize = settings.getHostSize();
             Host host =
-                    new HostWithoutCreatedList(hostRam, hostBw, hostSize, peList)
+                    new HostSimple(hostRam, hostBw, hostSize, peList)
                             .setRamProvisioner(new ResourceProvisionerSimple())
                             .setBwProvisioner(new ResourceProvisionerSimple())
                             .setVmScheduler(new VmSchedulerTimeShared());
@@ -197,7 +198,7 @@ public class CloudSimProxy {
     }
 
     public void runFor(final double interval) {
-        if(!this.isRunning()) {
+        if (!this.isRunning()) {
             throw new RuntimeException("The simulation is not running - please reset or create a new one!");
         }
 
@@ -233,7 +234,7 @@ public class CloudSimProxy {
         cancelInvalidEvents();
         printJobStatsAfterEndOfSimulation();
 
-        if(shouldPrintJobStats()) {
+        if (shouldPrintJobStats()) {
             printJobStats();
         }
 
@@ -242,13 +243,13 @@ public class CloudSimProxy {
         // to avoid OOMing we need to clear that list
         // it is a safe operation in our environment, because that list is only used in
         // CloudSim+ when a VM is being upscaled (we don't do that)
-        if(!settings.isStoreCreatedCloudletsDatacenterBroker()) {
+        if (!settings.isStoreCreatedCloudletsDatacenterBroker()) {
             this.broker.getCloudletCreatedList().clear();
         }
 
         long end = System.nanoTime();
         long diff = end - start;
-        double diffInSec = ((double)diff) / 1_000_000_000L;
+        double diffInSec = ((double) diff) / 1_000_000_000L;
 
         // TODO: can be removed after validating the fix of OOM
         // should always be zero
@@ -283,13 +284,13 @@ public class CloudSimProxy {
 
         logger.info("Jobs which are still queued");
         for(Cloudlet cloudlet : this.jobs) {
-            if(Cloudlet.Status.QUEUED.equals(cloudlet.getStatus())) {
+            if (Cloudlet.Status.QUEUED.equals(cloudlet.getStatus())) {
                 printCloudlet(cloudlet);
             }
         }
         logger.info("Jobs which are still executed");
         for(Cloudlet cloudlet : this.jobs) {
-            if(Cloudlet.Status.INEXEC.equals(cloudlet.getStatus())) {
+            if (Cloudlet.Status.INEXEC.equals(cloudlet.getStatus())) {
                 printCloudlet(cloudlet);
             }
         }
@@ -326,7 +327,7 @@ public class CloudSimProxy {
                             current.getSource() == datacenter &&
                             current.getDestination() == datacenter &&
                             previous.getTime() == current.getTime() &&
-                            current.getData() == ResubmitAnchor.THE_VALUE
+                            current.getData() == null
                     ) {
                         return true;
                     }
@@ -519,7 +520,7 @@ public class CloudSimProxy {
                 + affectedCloudlets.size()
                 + ", type: "
                 + vmSize);
-        if(affectedCloudlets.size() > 0) {
+        if (affectedCloudlets.size() > 0) {
             rescheduleCloudlets(affectedCloudlets);
         }
     }

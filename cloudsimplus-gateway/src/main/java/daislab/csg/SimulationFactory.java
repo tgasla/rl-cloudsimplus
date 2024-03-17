@@ -96,7 +96,7 @@ public class SimulationFactory {
         logger.info(settings.toString());
 
         final List<CloudletDescriptor> splitted;
-        if(splitLargeJobs) {
+        if (splitLargeJobs) {
             logger.info("Splitting large jobs");
             splitted = splitLargeJobs(jobs, settings);
         } else {
@@ -132,7 +132,7 @@ public class SimulationFactory {
         List<CloudletDescriptor> splitted = new ArrayList<>();
         for(CloudletDescriptor cloudletDescriptor : jobs) {
             int numberOfCores = cloudletDescriptor.getNumberOfCores();
-            if(numberOfCores <= hostPeCnt) {
+            if (numberOfCores <= hostPeCnt) {
                 splitted.add(cloudletDescriptor);
             } else {
                 final long miPerCore = (cloudletDescriptor.getMi() / cloudletDescriptor.getNumberOfCores());

@@ -23,13 +23,13 @@ public class MultiSimulationEnvironment {
         return identifier;
     }
 
-    public ResetResult reset(String simulationIdentifier) {
+    public double[] reset(String simulationIdentifier) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
         return simulation.reset();
     }
 
     private void validateIdentifier(String simulationIdentifier) {
-        if(!simulations.containsKey(simulationIdentifier)) {
+        if (!simulations.containsKey(simulationIdentifier)) {
             throw new IllegalArgumentException("Simulation with identifier: " + simulationIdentifier + " not found!");
         }
     }

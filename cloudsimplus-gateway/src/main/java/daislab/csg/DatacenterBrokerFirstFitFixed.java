@@ -37,13 +37,13 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     public void processEvent(SimEvent evt) {
         super.processEvent(evt);
 
-        if(evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
+        if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
             final Cloudlet cloudlet = (Cloudlet) evt.getData();
             LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/" + cloudlet.getVm().getId() + " Scheduling more cloudlets...");
             requestDatacentersToCreateWaitingCloudlets();
         }
 
-        if(evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
+        if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
             LOGGER.debug("Cleaning the vmCreatedList");
             this.getVmCreatedList().clear();
         }
@@ -96,7 +96,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
                     datacenter,
                     eventDelay,
                     CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING,
-                    ResubmitAnchor.THE_VALUE
+                    null
             );
         }
         LOGGER.debug("Events cnt after: " + getSimulation().getNumberOfFutureEvents(simEvent -> true));

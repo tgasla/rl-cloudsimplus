@@ -44,7 +44,7 @@ public class MetricsStorage {
 
     public void updateMetric(String metricName, Double value) {
         final CircularFifoQueue<Double> valuesQueue = data.get(metricName);
-        if(valuesQueue == null) {
+        if (valuesQueue == null) {
             throw new RuntimeException("Unknown metric: " + metricName);
         }
 
@@ -64,7 +64,7 @@ public class MetricsStorage {
 
     public double getLastMetricValue(String metricName) {
         final CircularFifoQueue<Double> valuesQueue = data.get(metricName);
-        if(valuesQueue == null) {
+        if (valuesQueue == null) {
             throw new RuntimeException("Unknown metric: " + metricName);
         }
 

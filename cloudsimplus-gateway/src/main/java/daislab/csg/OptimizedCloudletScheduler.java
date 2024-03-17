@@ -18,7 +18,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
 
     @Override
     protected double cloudletSubmitInternal(CloudletExecution cle, double fileTransferTime) {
-        if(!this.getVm().isCreated()) {
+        if (!this.getVm().isCreated()) {
             // It is possible, that we schedule a cloudlet, an event with processing
             // update is issued (tag: 16), but the VM gets killed before the event
             // is processed. In such a case the cloudlet does not get rescheduled,

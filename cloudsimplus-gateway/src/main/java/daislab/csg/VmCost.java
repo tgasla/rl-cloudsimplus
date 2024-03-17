@@ -40,10 +40,10 @@ public class VmCost {
             // check if the vm is started
             double m = getSizeMultiplier(vm);
             final double perIterationVMCost = perIterationSmallVMCost * m;
-            if(vm.getStartTime() > -1) {
-                if(vm.getFinishTime() > -1) {
+            if (vm.getStartTime() > -1) {
+                if (vm.getFinishTime() > -1) {
                     // vm was stopped - we continue to pay for it within the last running hour if need to
-                    if(payForFullHour && (clock <= vm.getFinishTime() + iterationsInHour)) {
+                    if (payForFullHour && (clock <= vm.getFinishTime() + iterationsInHour)) {
                         totalCost += perIterationVMCost;
                     } else {
                         toRemove.add(vm);
@@ -62,10 +62,10 @@ public class VmCost {
     }
 
     public double getSizeMultiplier(Vm vm) {
-        if("M".equals(vm.getDescription())) {
+        if ("M".equals(vm.getDescription())) {
             return 2.0;
         }
-        if("L".equals(vm.getDescription())) {
+        if ("L".equals(vm.getDescription())) {
             return 4.0;
         }
         return 1.0;

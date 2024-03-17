@@ -34,7 +34,7 @@ public class SimulationSettings {
         basicVmPeCount = Long.parseLong(getEnvironmentVariable("BASIC_VM_PE_CNT", "2"));
         vmShutdownDelay = Double.parseDouble(getEnvironmentVariable("VM_SHUTDOWN_DELAY", "0"));
 
-        // we can have 50 == the same as number of hosts, as every host can have 1 small, 1 medium and 1 large Vm
+        // we can have as many VMs as the number of hosts, as every host can have 1 small, 1 medium and 1 large Vm
         maxVmsPerSize = Long.parseLong(getEnvironmentVariable("MAX_VMS_PER_SIZE", "50"));
         printJobsPeriodically = Boolean.parseBoolean(getEnvironmentVariable("PRINT_JOBS_PERIODICALLY", "false"));
         payingForTheFullHour = Boolean.parseBoolean(getEnvironmentVariable("PAYING_FOR_THE_FULL_HOUR", "false"));

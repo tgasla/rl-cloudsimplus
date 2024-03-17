@@ -203,7 +203,7 @@ public class IntegrationTest {
             System.out.println("Observations: " + Arrays.toString(step.getObs()) + " " + multiSimulationEnvironment.clock(simulationId));
             stepsExecuted++;
 
-            if(stepsExecuted == 1000) {
+            if (stepsExecuted == 1000) {
                 break;
             }
         }

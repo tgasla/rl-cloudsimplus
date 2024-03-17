@@ -15,7 +15,7 @@ public class SimulationHistory {
     }
 
     public <T> void record(String key, T value) {
-        if(!history.containsKey(key)) {
+        if (!history.containsKey(key)) {
             history.put(key, new ArrayList<>());
         }
 

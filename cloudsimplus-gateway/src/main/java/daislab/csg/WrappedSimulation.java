@@ -69,7 +69,7 @@ public class WrappedSimulation {
         return identifier;
     }
 
-    public ResetResult reset() {
+    public double[] reset() {
         info("Reset initiated");
 
         // first attempt to store some memory
@@ -86,7 +86,7 @@ public class WrappedSimulation {
         cloudSimProxy = new CloudSimProxy(settings, initialVmsCount, cloudlets, simulationSpeedUp);
 
         double[] obs = getObservation();
-        return new ResetResult(obs);
+        return obs;
     }
 
     public void close() {
@@ -135,7 +135,7 @@ public class WrappedSimulation {
         this.simulationHistory.record("medium_vms", this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM));
         this.simulationHistory.record("large_vms", this.vmCounter.getStartedVms(CloudSimProxy.LARGE));
 
-        if(!cloudSimProxy.isRunning()) {
+        if (!cloudSimProxy.isRunning()) {
             this.simulationHistory.logHistory();
             this.simulationHistory.reset();
         }
