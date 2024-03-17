@@ -268,7 +268,7 @@ public class WrappedSimulation {
 
 
     private double[] getObservation() {
-        return new double[]{
+        return new double[] {
                 metricsStorage.getLastMetricValue("vmAllocatedRatioHistory"),
                 metricsStorage.getLastMetricValue("avgCPUUtilizationHistory"),
                 metricsStorage.getLastMetricValue("p90CPUUtilizationHistory"),

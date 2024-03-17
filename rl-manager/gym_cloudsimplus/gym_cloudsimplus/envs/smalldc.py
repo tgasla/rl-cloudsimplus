@@ -74,8 +74,6 @@ class SmallDC(gym.Env):
             params['JOBS'] = kwargs['jobs_as_json']
         elif 'jobs_from_file' in kwargs:
             params['FILE'] = kwargs['jobs_from_file']
-        # elif 'jobs_from_db' in kwargs:
-            # connect_to_db()
 
         self.simulation_id = simulation_environment.createSimulation(params)
 
@@ -104,8 +102,7 @@ class SmallDC(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        result = simulation_environment.reset(self.simulation_id)
-        raw_obs = result.getObs()
+        raw_obs = simulation_environment.reset(self.simulation_id)
         obs = to_nparray(raw_obs)
         info = {}
         return obs, info

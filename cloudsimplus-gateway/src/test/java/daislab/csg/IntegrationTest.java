@@ -30,7 +30,7 @@ public class IntegrationTest {
 
         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
         Map<String, String> parameters = new HashMap<>();
-        parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
+        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
@@ -55,7 +55,7 @@ public class IntegrationTest {
 
         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
         Map<String, String> parameters = new HashMap<>();
-        parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
+        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
@@ -83,7 +83,7 @@ public class IntegrationTest {
         }
 
         Map<String, String> parameters = new HashMap<>();
-        parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
+        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
@@ -132,7 +132,7 @@ public class IntegrationTest {
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "10");
-        parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
+        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
@@ -186,7 +186,7 @@ public class IntegrationTest {
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "2");
-        parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
+        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 

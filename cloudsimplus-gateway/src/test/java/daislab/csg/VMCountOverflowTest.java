@@ -25,7 +25,7 @@ public class VMCountOverflowTest {
 
             List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
             Map<String, String> parameters = new HashMap<>();
-            parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
+            parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
             parameters.put(SimulationFactory.SIMULATION_SPEEDUP, "60.0");
             parameters.put(SimulationFactory.SPLIT_LARGE_JOBS, "true");
             parameters.put(SimulationFactory.QUEUE_WAIT_PENALTY, "0.00001");

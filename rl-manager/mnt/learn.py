@@ -26,7 +26,7 @@ jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=10)
 
 env = gym.make(
     "SmallDC-v0",
-    # jobs_as_json=json.dumps(jobs),
+    jobs_as_json=json.dumps(jobs),
     simulation_speedup="10000",
     split_large_jobs="true",
     render_mode="ansi"
