@@ -1,1 +1,1 @@
-from gym_cloudsimplus.envs.singledcapp import SingleDCAppEnv
+from gym_cloudsimplus.envs.smalldc import SmallDC

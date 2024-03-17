@@ -1,8 +1,6 @@
 package daislab.csg;
 
-import static daislab.csg.Defaults.withDefault;
-
-import java.util.function.DoubleUnaryOperator;
+import static org.apache.commons.lang3.SystemUtils.getEnvironmentVariable;
 
 public class SimulationSettings {
 
@@ -12,7 +10,6 @@ public class SimulationSettings {
     private final long hostRam;
     private final long hostSize;
     private final int hostPeCnt;
-    private final int defaultInitialVmCount;
     private final double queueWaitPenalty;
     private final long datacenterHostsCnt;
     private final long basicVmRam;
@@ -25,24 +22,23 @@ public class SimulationSettings {
 
     public SimulationSettings() {
         // Host size is big enough to host a m5a.2xlarge VM
-        vmRunningHourlyCost = Double.parseDouble(withDefault("VM_RUNNING_HOURLY_COST", "0.2"));
-        hostPeMips = Long.parseLong(withDefault("HOST_PE_MIPS", "10000"));
-        hostBw = Long.parseLong(withDefault("HOST_BW", "50000"));
-        hostRam = Long.parseLong(withDefault("HOST_RAM", "65536"));
-        hostSize = Long.parseLong(withDefault("HOST_SIZE", "16000"));
-        hostPeCnt = Integer.parseInt(withDefault("HOST_PE_CNT", "14"));
-        defaultInitialVmCount = Integer.parseInt(withDefault("INITIAL_VM_COUNT", "10"));
-        queueWaitPenalty = Double.parseDouble(withDefault("QUEUE_WAIT_PENALTY", "0.00001"));
-        datacenterHostsCnt = Long.parseLong(withDefault("DATACENTER_HOSTS_CNT", "3000"));
-        basicVmRam = Long.parseLong(withDefault("BASIC_VM_RAM", "8192"));
-        basicVmPeCount = Long.parseLong(withDefault("BASIC_VM_PE_CNT", "2"));
-        vmShutdownDelay = Double.parseDouble(withDefault("VM_SHUTDOWN_DELAY", "0"));
+        vmRunningHourlyCost = Double.parseDouble(getEnvironmentVariable("VM_RUNNING_HOURLY_COST", "0.2"));
+        hostPeMips = Long.parseLong(getEnvironmentVariable("HOST_PE_MIPS", "10000"));
+        hostBw = Long.parseLong(getEnvironmentVariable("HOST_BW", "50000"));
+        hostRam = Long.parseLong(getEnvironmentVariable("HOST_RAM", "65536"));
+        hostSize = Long.parseLong(getEnvironmentVariable("HOST_SIZE", "16000"));
+        hostPeCnt = Integer.parseInt(getEnvironmentVariable("HOST_PE_CNT", "14"));
+        queueWaitPenalty = Double.parseDouble(getEnvironmentVariable("QUEUE_WAIT_PENALTY", "0.00001"));
+        datacenterHostsCnt = Long.parseLong(getEnvironmentVariable("DATACENTER_HOSTS_CNT", "50"));
+        basicVmRam = Long.parseLong(getEnvironmentVariable("BASIC_VM_RAM", "8192"));
+        basicVmPeCount = Long.parseLong(getEnvironmentVariable("BASIC_VM_PE_CNT", "2"));
+        vmShutdownDelay = Double.parseDouble(getEnvironmentVariable("VM_SHUTDOWN_DELAY", "0"));
 
-        // we can have 3000 == the same as number of hosts, as every host can have 1 small, 1 medium and 1 large Vm
-        maxVmsPerSize = Long.parseLong(withDefault("MAX_VMS_PER_SIZE", "3000"));
-        printJobsPeriodically = Boolean.parseBoolean(withDefault("PRINT_JOBS_PERIODICALLY", "false"));
-        payingForTheFullHour = Boolean.parseBoolean(withDefault("PAYING_FOR_THE_FULL_HOUR", "false"));
-        storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(withDefault("STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
+        // we can have 50 == the same as number of hosts, as every host can have 1 small, 1 medium and 1 large Vm
+        maxVmsPerSize = Long.parseLong(getEnvironmentVariable("MAX_VMS_PER_SIZE", "50"));
+        printJobsPeriodically = Boolean.parseBoolean(getEnvironmentVariable("PRINT_JOBS_PERIODICALLY", "false"));
+        payingForTheFullHour = Boolean.parseBoolean(getEnvironmentVariable("PAYING_FOR_THE_FULL_HOUR", "false"));
+        storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(getEnvironmentVariable("STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
     }
 
     @Override
@@ -54,7 +50,6 @@ public class SimulationSettings {
                 "\n, hostRam=" + hostRam +
                 "\n, hostSize=" + hostSize +
                 "\n, hostPeCnt=" + hostPeCnt +
-                "\n, defaultInitialVmCount=" + defaultInitialVmCount +
                 "\n, queueWaitPenalty=" + queueWaitPenalty +
                 "\n, datacenterHostsCnt=" + datacenterHostsCnt +
                 "\n, basicVmRam=" + basicVmRam +
@@ -87,10 +82,6 @@ public class SimulationSettings {
 
     public int getHostPeCnt() {
         return hostPeCnt;
-    }
-
-    public int getDefaultInitialVmCount() {
-        return defaultInitialVmCount;
     }
 
     public double getQueueWaitPenalty() {

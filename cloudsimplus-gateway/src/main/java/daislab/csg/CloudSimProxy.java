@@ -165,7 +165,7 @@ public class CloudSimProxy {
         return vm;
     }
 
-    private int getSizeMultiplier(String type) {
+    public int getSizeMultiplier(String type) {
         int sizeMultiplier;
 
         switch (type) {
@@ -453,7 +453,7 @@ public class CloudSimProxy {
         // from anecdotal exp the startup time can be as fast as 45s
         Vm newVm = createVmWithId(type);
         double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
-        newVm.setSubmissionDelay(delay);
+        newVm.setSubmissionDelay(delay); // instead of submissiondelay, maybe consider adding the vm boot up delay
         logger.debug("Agent action: Create a " + type + " VM");
         broker.submitVm(newVm);
         logger.debug("VM creating requested, delay: " + delay + " type: " + type);
@@ -503,6 +503,7 @@ public class CloudSimProxy {
 
         // TODO: it turned out that when we clean the submitted list, we probably "forget" to execute some cloudlets
         // it seems to me that there is simply some list in the scheduler that we forget about and we need to take into account
+        // I think this is now fixed, have to double-check it though.
 
         // replaces broker.destroyVm
         final List<Cloudlet> affectedExecCloudlets = resetCloudlets(vm.getCloudletScheduler().getCloudletExecList());

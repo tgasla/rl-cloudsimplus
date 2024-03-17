@@ -16,8 +16,8 @@ public class VmCounter {
     }
 
     public void recordNewVM(String type) {
-        final Long current = getCurrentOfType(type);
-        this.vmCounts.put(type, current + 1);
+        final Long currentOfType = getCurrentOfType(type);
+        this.vmCounts.put(type, currentOfType + 1);
     }
 
     private Long getCurrentOfType(String type) {

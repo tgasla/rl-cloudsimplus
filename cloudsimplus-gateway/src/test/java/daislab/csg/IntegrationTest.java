@@ -67,11 +67,11 @@ public class IntegrationTest {
             step = multiSimulationEnvironment.step(simulationId, 0);
             stepsExecuted++;
         }
-        multiSimulationEnvironment.close(simulationId);
-
+        
         // 21 not 20 because we technically submit the task at 10.1 so it is not able to
         // finish _exactly_ at 20
         assertEquals(21, stepsExecuted);
+        multiSimulationEnvironment.close(simulationId);
     }
 
     @Test
@@ -106,15 +106,17 @@ public class IntegrationTest {
             System.out.println("Observations: " + Arrays.toString(step.getObs()) + " clock: " + multiSimulationEnvironment.clock(simulationId));
             stepsExecuted++;
         }
-        multiSimulationEnvironment.close(simulationId);
-
-        // the actual count of cores in the system is 42000
+        
         // we should be running at most 1 small, 1 medium, 1 large and then
         // start 1 small, which would result in 16 (2+4+8+2) cores
-        // 16/42000 = 0,00038096
-        // (42000 is the total capacity of the datacenter)
+        // 16/datacenterCores
 
-        assertEquals(0.00038, maxCoreRatio, 0.000001);
+        final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
+        final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
+        
+        assertEquals(16.0/settings.getDatacenterCores(), maxCoreRatio, 0.000001);
+
+        multiSimulationEnvironment.close(simulationId);
     }
 
     @Test
@@ -141,9 +143,11 @@ public class IntegrationTest {
                 step = multiSimulationEnvironment.step(simulationId, 2);
 
                 // here we should have 9S, 1M, 1L = 9*2 + 4 + 8 = 30 cores
-                // 30/42000 = 0,000714286
-                // (42000 is the total capacity of the datacenter)
-                assertEquals(0.000714, step.getObs()[0], 0.000001);
+                // 30/datacenterCores
+                final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
+                final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
+
+                assertEquals(30.0/settings.getDatacenterCores(), step.getObs()[0], 0.000001);
             }
 
             step = multiSimulationEnvironment.step(simulationId, 0);

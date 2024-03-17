@@ -34,7 +34,7 @@ def to_nparray(raw_obs):
 
 
 # Based on https://gymnasium.farama.org/api/env/
-class SingleDCAppEnv(gym.Env):
+class SmallDC(gym.Env):
     metadata = {'render_modes': ['human', 'ansi']}
 
     def __init__(self, **kwargs):
@@ -57,20 +57,25 @@ class SingleDCAppEnv(gym.Env):
             shape=(7,),
             dtype=np.float32
         )
-        # mandatory args
+
         params = {
-            'INITIAL_VM_COUNT': kwargs.get('initial_vm_count', '1'),
-            'SOURCE_OF_JOBS': 'PARAMS',
-            'JOBS': kwargs.get('jobs_as_json', '[]'),
+            'INITIAL_L_VM_COUNT': kwargs.get('initial_l_vm_count', '1'),
+            'INITIAL_M_VM_COUNT': kwargs.get('initial_m_vm_count', '1'),
+            'INITIAL_S_VM_COUNT': kwargs.get('initial_s_vm_count', '1'),
             'SIMULATION_SPEEDUP': kwargs.get('simulation_speedup', '1.0'),
             'SPLIT_LARGE_JOBS': kwargs.get('split_large_jobs', 'false'),
+            'QUEUE_WAIT_PENALTY': kwargs.get('queue_wait_penalty', '0.00001')
         }
 
         self.render_mode = kwargs.get('render_mode', 'None')
 
-        # optional arg
-        if 'queue_wait_penalty' in kwargs:
-            params['QUEUE_WAIT_PENALTY'] = kwargs['queue_wait_penalty']
+        if 'jobs_as_json' in kwargs:
+            params['SOURCE_OF_JOBS'] = 'PARAMS'
+            params['JOBS'] = kwargs['jobs_as_json']
+        elif 'jobs_from_file' in kwargs:
+            params['FILE'] = kwargs['jobs_from_file']
+        # elif 'jobs_from_db' in kwargs:
+            # connect_to_db()
 
         self.simulation_id = simulation_environment.createSimulation(params)
 

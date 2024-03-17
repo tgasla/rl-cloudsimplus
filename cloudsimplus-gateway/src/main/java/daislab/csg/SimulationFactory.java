@@ -32,11 +32,14 @@ public class SimulationFactory {
     public static final String INITIAL_VM_COUNT_DEFAULT = "1";
 
     public static final String SOURCE_OF_JOBS_PARAMS = "PARAMS";
-    public static final String SOURCE_OF_JOBS_PARAMS_JOBS = "JOBS";
     public static final String SOURCE_OF_JOBS_FILE = "FILE";
     public static final String SOURCE_OF_JOBS_DATABASE = "DB";
     public static final String SOURCE_OF_JOBS = "SOURCE_OF_JOBS";
     public static final String SOURCE_OF_JOBS_DEFAULT = SOURCE_OF_JOBS_PARAMS;
+    
+    public static final String SOURCE_OF_JOBS_PARAMS_JOBS = "JOBS";
+    public static final String SOURCE_OF_JOBS_PARAMS_JOBS_EMPTY = "[]";
+    public static final String SOURCE_OF_JOBS_PARAMS_JOBS_DEFAULT = SOURCE_OF_JOBS_PARAMS_JOBS_EMPTY;
 
     private static final Gson gson = new Gson();
 
@@ -156,8 +159,8 @@ public class SimulationFactory {
 
     private List<CloudletDescriptor> loadJobsFromParams(Map<String, String> maybeParameters, double simulationSpeedUp) {
         List<CloudletDescriptor> retVal = new ArrayList<>();
-        final String jobsAsJson = maybeParameters.get(SOURCE_OF_JOBS_PARAMS_JOBS);
-
+        final String jobsAsJson = maybeParameters.getOrDefault(SOURCE_OF_JOBS_PARAMS_JOBS, SOURCE_OF_JOBS_DEFAULT);
+        logger.info(jobsAsJson);
         final List<CloudletDescriptor> deserialized = gson.fromJson(jobsAsJson, cloudletDescriptors);
 
         for (CloudletDescriptor cloudletDescriptor : deserialized) {

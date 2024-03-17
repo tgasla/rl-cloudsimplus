@@ -16,7 +16,7 @@ import static org.apache.commons.math3.stat.StatUtils.percentile;
 public class WrappedSimulation {
 
     private static final Logger logger = LoggerFactory.getLogger(WrappedSimulation.class.getName());
-    private static final int HISTORY_LENGTH = 30 * 60; // 30 minutes * 60s
+    private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
     private final double queueWaitPenalty;
     private final List<CloudletDescriptor> initialJobsDescriptors;
     private final double simulationSpeedUp;
@@ -218,7 +218,7 @@ public class WrappedSimulation {
         }
     }
 
-    private double percentileWithDefault(double[] values, double percentile, double defaultValue) {
+    private double percentilegetEnvironmentVariable(double[] values, double percentile, double defaultValue) {
         if (values.length == 0) {
             return defaultValue;
         }
@@ -238,9 +238,9 @@ public class WrappedSimulation {
 
         metricsStorage.updateMetric("vmAllocatedRatioHistory", getVmAllocatedRatio());
         metricsStorage.updateMetric("avgCPUUtilizationHistory", safeMean(cpuPercentUsage));
-        metricsStorage.updateMetric("p90CPUUtilizationHistory", percentileWithDefault(cpuPercentUsage, 0.90, 0));
+        metricsStorage.updateMetric("p90CPUUtilizationHistory", percentilegetEnvironmentVariable(cpuPercentUsage, 0.90, 0));
         metricsStorage.updateMetric("avgMemoryUtilizationHistory", safeMean(memPercentageUsage));
-        metricsStorage.updateMetric("p90MemoryUtilizationHistory", percentileWithDefault(memPercentageUsage, 0.90, 0));
+        metricsStorage.updateMetric("p90MemoryUtilizationHistory", percentilegetEnvironmentVariable(memPercentageUsage, 0.90, 0));
         metricsStorage.updateMetric("waitingJobsRatioGlobalHistory", waitingJobsRatioGlobal);
         metricsStorage.updateMetric("waitingJobsRatioRecentHistory", waitingJobsRatioRecent);
     }
@@ -313,5 +313,9 @@ public class WrappedSimulation {
 
     public CloudSimProxy getSimulation() {
         return cloudSimProxy;
+    }
+
+    public SimulationSettings getSimulationSettings() {
+        return this.settings;
     }
 }
