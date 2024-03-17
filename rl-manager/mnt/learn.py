@@ -22,7 +22,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #print(device)
 
 swf_reader = SWFReader()
-jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=10)
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 
 env = gym.make(
     "SmallDC-v0",
@@ -86,7 +86,7 @@ model.learn(
 mean_reward, std_reward = evaluate_policy(
     model,
     model.get_env(),
-    n_eval_episodes=10,
+    n_eval_episodes=1,
     render = True
 )
 
@@ -98,7 +98,7 @@ model.save(model_path)
 
 del model
 
-model =algorithm.load(model_path)
+model = algorithm.load(model_path)
 
 # Model deployment
 obs, info = env.reset()
