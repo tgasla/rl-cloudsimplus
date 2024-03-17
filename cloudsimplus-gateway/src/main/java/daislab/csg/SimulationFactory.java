@@ -58,15 +58,15 @@ public class SimulationFactory {
         final int initialLVmCount = Integer.parseInt(initialLVmCountStr);
 
         final String simulationSpeedUpStr = maybeParameters.getOrDefault(SIMULATION_SPEEDUP, SIMULATION_SPEEDUP_DEFAULT);
-        final double simulationSpeedUp = Double.valueOf(simulationSpeedUpStr);
+        final double simulationSpeedUp = Double.parseDouble(simulationSpeedUpStr);
 
         final String sourceOfJobs = maybeParameters.getOrDefault(SOURCE_OF_JOBS, SOURCE_OF_JOBS_DEFAULT);
 
         final String queueWaitPenaltyStr = maybeParameters.getOrDefault(QUEUE_WAIT_PENALTY, QUEUE_WAIT_PENALTY_DEFAULT);
-        final double queueWaitPenalty = Double.valueOf(queueWaitPenaltyStr);
+        final double queueWaitPenalty = Double.parseDouble(queueWaitPenaltyStr);
 
         final String splitLargeJobsStr = maybeParameters.getOrDefault(SPLIT_LARGE_JOBS, SPLIT_LARGE_JOBS_DEFAULT);
-        final boolean splitLargeJobs = Boolean.valueOf(splitLargeJobsStr.toLowerCase());
+        final boolean splitLargeJobs = Boolean.parseBoolean(splitLargeJobsStr.toLowerCase());
 
         logger.info("Simulation parameters: ");
         logger.info("-> initialSVmCount: " + initialSVmCount);

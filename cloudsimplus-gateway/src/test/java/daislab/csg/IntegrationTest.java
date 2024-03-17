@@ -83,7 +83,6 @@ public class IntegrationTest {
         }
 
         Map<String, String> parameters = new HashMap<>();
-        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
         parameters.put(SimulationFactory.SOURCE_OF_JOBS_PARAMS_JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
@@ -106,15 +105,20 @@ public class IntegrationTest {
             System.out.println("Observations: " + Arrays.toString(step.getObs()) + " clock: " + multiSimulationEnvironment.clock(simulationId));
             stepsExecuted++;
         }
-        
-        // we should be running at most 1 small, 1 medium, 1 large and then
-        // start 1 small, which would result in 16 (2+4+8+2) cores
-        // 16/datacenterCores
 
         final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
         final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
+
+        final int initialSVmCount = Integer.parseInt(SimulationFactory.INITIAL_VM_COUNT_DEFAULT);
+        final int initialMVmCount = initialSVmCount;
+        final int initialLVmCount = initialSVmCount;
+
+        final long basicVmPeCount = settings.getBasicVmPeCnt();
+        final long totalVmPes =  (initialSVmCount + 1) * basicVmPeCount
+                                + initialMVmCount * basicVmPeCount * 2
+                                + initialLVmCount * basicVmPeCount * 4;
         
-        assertEquals(16.0/settings.getDatacenterCores(), maxCoreRatio, 0.000001);
+        assertEquals((double) totalVmPes/settings.getDatacenterCores(), maxCoreRatio, 0.000001);
 
         multiSimulationEnvironment.close(simulationId);
     }
@@ -133,6 +137,15 @@ public class IntegrationTest {
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
         multiSimulationEnvironment.reset(simulationId);
+
+        final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
+        final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
+
+        final String initialSVmCountStr = parameters.get(SimulationFactory.INITIAL_S_VM_COUNT);
+        final int initialSVmCount = Integer.parseInt(initialSVmCountStr);
+        final int initialMVmCount = Integer.parseInt(SimulationFactory.INITIAL_VM_COUNT_DEFAULT);
+        final int initialLVmCount = initialMVmCount;
+
         int stepsExecuted = 1;
         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
 
@@ -140,14 +153,14 @@ public class IntegrationTest {
             System.out.println("Executing step: " + stepsExecuted);
 
             if (stepsExecuted == 20) {
+                // delete a SMALL VM
                 step = multiSimulationEnvironment.step(simulationId, 2);
+                final long basicVmPeCount = settings.getBasicVmPeCnt();
+                final long totalVmPes = (initialSVmCount - 1) * basicVmPeCount
+                                    + initialMVmCount * basicVmPeCount * 2
+                                    + initialLVmCount * basicVmPeCount * 4;
 
-                // here we should have 9S, 1M, 1L = 9*2 + 4 + 8 = 30 cores
-                // 30/datacenterCores
-                final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
-                final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
-
-                assertEquals(30.0/settings.getDatacenterCores(), step.getObs()[0], 0.000001);
+                assertEquals((double) totalVmPes/settings.getDatacenterCores(), step.getObs()[0], 0.000001);
             }
 
             step = multiSimulationEnvironment.step(simulationId, 0);
