@@ -5,7 +5,7 @@ from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
 import numpy as np
 
-# Available actions
+# Action space - 7 discrete actions
 # ACTION_NOTHING: 0
 # ACTION_ADD_VM: 1
 # ACTION_REMOVE_VM: 2
@@ -13,6 +13,15 @@ import numpy as np
 # ACTION_REMOVE_MEDIUM_VM: 4
 # ACTION_ADD_LARGE_VM: 5
 # ACTION_REMOVE_LARGE_VM: 6
+
+# Observation space - 7 continuous values within [0-1]
+# "vmAllocatedRatioHistory",
+# "avgCPUUtilizationHistory",
+# "p90CPUUtilizationHistory",
+# "avgMemoryUtilizationHistory",
+# "p90MemoryUtilizationHistory",
+# "waitingJobsRatioGlobalHistory",
+# "waitingJobsRatioRecentHistory"
 
 address = os.getenv('CLOUDSIM_GATEWAY_HOST', 'gateway')
 port = os.getenv('CLOUDSIM_GATEWAY_PORT', '25333')
@@ -43,14 +52,6 @@ class SmallDC(gym.Env):
         self.num_of_actions = 7
         self.action_space = spaces.Discrete(self.num_of_actions)
 
-        # observation metrics - all within 0-1 range
-        # "vmAllocatedRatioHistory",
-        # "avgCPUUtilizationHistory",
-        # "p90CPUUtilizationHistory",
-        # "avgMemoryUtilizationHistory",
-        # "p90MemoryUtilizationHistory",
-        # "waitingJobsRatioGlobalHistory",
-        # "waitingJobsRatioRecentHistory"
         self.observation_space = spaces.Box(
             low=0,
             high=1,
@@ -58,13 +59,51 @@ class SmallDC(gym.Env):
             dtype=np.float32
         )
 
+        # Get parameters when calling gym.make on learn.py
+        #   if a parameter is not defined, it gets a default value
         params = {
-            'INITIAL_L_VM_COUNT': kwargs.get('initial_l_vm_count', '1'),
-            'INITIAL_M_VM_COUNT': kwargs.get('initial_m_vm_count', '1'),
-            'INITIAL_S_VM_COUNT': kwargs.get('initial_s_vm_count', '1'),
-            'SIMULATION_SPEEDUP': kwargs.get('simulation_speedup', '1.0'),
-            'SPLIT_LARGE_JOBS': kwargs.get('split_large_jobs', 'false'),
-            'QUEUE_WAIT_PENALTY': kwargs.get('queue_wait_penalty', '0.00001')
+            'INITIAL_L_VM_COUNT':
+                kwargs.get('initial_l_vm_count', '1'),
+            'INITIAL_M_VM_COUNT':
+                kwargs.get('initial_m_vm_count', '1'),
+            'INITIAL_S_VM_COUNT':
+                kwargs.get('initial_s_vm_count', '1'),
+            'SIMULATION_SPEEDUP':
+                kwargs.get('simulation_speedup', '1.0'),
+            'SPLIT_LARGE_JOBS':
+                kwargs.get('split_large_jobs', 'false'),
+            'QUEUE_WAIT_PENALTY':
+                kwargs.get('queue_wait_penalty', '0.00001'),
+            'VM_RUNNING_HOURLY_COST':
+                kwargs.get('vm_running_hourly_cost', '0.2'),
+            'HOST_PE_MIPS':
+                kwargs.get('host_pe_mips', '10000'),
+            'HOST_BW':
+                kwargs.get('host_bw', '50000'),
+            'HOST_RAM':
+                kwargs.get('host_ram', '65536'),
+            'HOST_SIZE':
+                kwargs.get('hostSize', '16000'),
+            'HOST_PE_CNT':
+                kwargs.get('hostPeCnt', '14'),
+            'QUEUE_WAIT_PENALTY':
+                kwargs.get('queue_wait_penalty', '0.00001'),
+            'DATACENTER_HOSTS_CNT':
+                kwargs.get('datacenter_hosts_cnt', '50'),
+            'BASIC_VM_RAM':
+                kwargs.get('basic_vm_ram', '8192'),
+            'BASIC_VM_PE_CNT':
+                kwargs.get('basic_vm_pe_count','2'),
+            'VM_SHUTDOWN_DELAY':
+                kwargs.get('vm_shutdown_delay', '0'),
+            'MAX_VMS_PER_SIZE':
+                kwargs.get('max_vms_Per_size', '50'),
+            'PRINT_JOBS_PERIODICALLY':
+                kwargs.get('print_jobs_periodically', 'false'),
+            'PAYING_FOR_THE_FULL_HOUR':
+                kwargs.get('paying_for_the_full_hour', 'false'),
+            'STORE_CREATED_CLOUDLETS_DATACENTER_BROKER':
+                kwargs.get('storeCreatedCloudletsDatacenterBroker', 'false')
         }
 
         self.render_mode = kwargs.get('render_mode', 'None')

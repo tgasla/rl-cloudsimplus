@@ -91,7 +91,7 @@ public class SimulationFactory {
                 jobs = loadJobsFromParams(maybeParameters, simulationSpeedUp);
         }
 
-        final SimulationSettings settings = new SimulationSettings();
+        final SimulationSettings settings = new SimulationSettings(maybeParameters);
         logger.info("Simulation settings dump");
         logger.info(settings.toString());
 
