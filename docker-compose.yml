@@ -1,17 +1,15 @@
 version: '3.1'
 services:
+  # uses port 25333
   gateway:
     image: gateway:1.9.1
     container_name: gateway
     # restart: always
     environment:
-      CLOUDSIM_GATEWAY_HOST: gateway
-      CLOUDSIM_GATEWAY_PORT: 25333
       JAVA_OPTS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external"
-      #TEST_FILE: KTH-SP2-1996-2.1-cln.swf
-    ports:
-      - 25333:25333
+      #JOBS_FILE: KTH-SP2-1996-2.1-cln.swf
 
+  # # uses port 5432
   # database:
   #   image: postgres
   #   container_name: database
@@ -20,8 +18,6 @@ services:
   #     POSTGRES_USER: samm
   #     POSTGRES_PASSWORD: samm_secret
   #     POSTGRES_DB: samm_db
-  #   ports:
-  #     - 5432:5432
 
   manager: &cpu
     profiles: [""]

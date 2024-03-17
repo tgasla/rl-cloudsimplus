@@ -73,7 +73,7 @@ class SmallDC(gym.Env):
             params['SOURCE_OF_JOBS'] = 'PARAMS'
             params['JOBS'] = kwargs['jobs_as_json']
         elif 'jobs_from_file' in kwargs:
-            params['FILE'] = kwargs['jobs_from_file']
+            params['JOBS_FILE'] = kwargs['jobs_from_file']
 
         self.simulation_id = simulation_environment.createSimulation(params)
 

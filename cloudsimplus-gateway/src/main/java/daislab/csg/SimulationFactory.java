@@ -32,7 +32,7 @@ public class SimulationFactory {
     public static final String INITIAL_VM_COUNT_DEFAULT = "1";
 
     public static final String SOURCE_OF_JOBS_PARAMS = "PARAMS";
-    public static final String SOURCE_OF_JOBS_FILE = "FILE";
+    public static final String SOURCE_OF_JOBS_FILE = "JOBS_FILE";
     public static final String SOURCE_OF_JOBS_DATABASE = "DB";
     public static final String SOURCE_OF_JOBS = "SOURCE_OF_JOBS";
     public static final String SOURCE_OF_JOBS_DEFAULT = SOURCE_OF_JOBS_PARAMS;
