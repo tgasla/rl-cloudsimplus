@@ -61,7 +61,7 @@ public class VmCost {
         return totalCost;
     }
 
-    private double getSizeMultiplier(Vm vm) {
+    public double getSizeMultiplier(Vm vm) {
         if("M".equals(vm.getDescription())) {
             return 2.0;
         }

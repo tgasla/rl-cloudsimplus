@@ -118,7 +118,10 @@ public class SimulationSettings {
 
     public long getAvailableCores() {
         // we can have 2 cores for a small VM, 4 for Medium and 8 for a large one
-        return getMaxVmsPerSize() * (2 + 4 + 8);
+        return getMaxVmsPerSize() 
+            * (getBasicVmPeCnt() + 
+            getBasicVmPeCnt() * 2 +
+            getBasicVmPeCnt() * 4);
     }
 
     public long getMaxVmsPerSize() {
