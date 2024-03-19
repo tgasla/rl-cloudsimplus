@@ -39,7 +39,7 @@ public class VMCountOverflowTest {
         }
         
         // If the original value didn't exist, clear the property
-        System.clearProperty("YOUR_VARIABLE_NAME");
+        System.clearProperty("DATACENTER_HOSTS_CNT");
     }
 
     @Test

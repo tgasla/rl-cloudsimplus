@@ -81,7 +81,7 @@ public class SimulationSettings {
         vmRunningHourlyCost = Double.parseDouble(
                 parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));
         hostPeMips = Long.parseLong(
-                parameters.getOrDefault("HOST_PE_MIPS", "10000"));
+                parameters.getOrDefault("HOST_PE_MIPS", "110000"));
         hostBw = Long.parseLong(
                 parameters.getOrDefault("HOST_BW", "50000"));
         hostRam = Long.parseLong(
@@ -89,11 +89,11 @@ public class SimulationSettings {
         hostSize = Long.parseLong(
                 parameters.getOrDefault("HOST_SIZE", "16000"));
         hostPeCnt = Integer.parseInt(
-                parameters.getOrDefault("HOST_PE_CNT", "14"));
+                parameters.getOrDefault("HOST_PE_CNT", "22"));
         queueWaitPenalty = Double.parseDouble(
                 parameters.getOrDefault("QUEUE_WAIT_PENALTY", "0.00001"));
         datacenterHostsCnt = Long.parseLong(
-                parameters.getOrDefault("DATACENTER_HOSTS_CNT", "3000"));
+                parameters.getOrDefault("DATACENTER_HOSTS_CNT", "50"));
         basicVmRam = Long.parseLong(
                 parameters.getOrDefault("BASIC_VM_RAM", "8192"));
         basicVmPeCount = Long.parseLong(
@@ -104,7 +104,7 @@ public class SimulationSettings {
         // we can have as many VMs as the number of hosts, 
         // as every host can have 1 small, 1 medium and 1 large Vm
         maxVmsPerSize = Long.parseLong(
-                parameters.getOrDefault("MAX_VMS_PER_SIZE", "3000"));
+                parameters.getOrDefault("MAX_VMS_PER_SIZE", "50"));
         printJobsPeriodically = Boolean.parseBoolean(
                 parameters.getOrDefault("PRINT_JOBS_PERIODICALLY", "false"));
         payingForTheFullHour = Boolean.parseBoolean(

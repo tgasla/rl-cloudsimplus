@@ -233,6 +233,7 @@ public class WrappedSimulation {
             double[] values, 
             double percentile, 
             double defaultValue) {
+
         if (values.length == 0) {
             return defaultValue;
         }

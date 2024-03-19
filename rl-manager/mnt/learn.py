@@ -19,7 +19,6 @@ def human_format(num):
     return f"{num:.0f}" + suffix[magnitude]
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#print(device)
 
 swf_reader = SWFReader()
 jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
@@ -125,5 +124,7 @@ while not done:
     done = terminated or truncated
     if terminated:
         print(f"Episode finished! Reward sum: {reward_sum}")
+    if truncated:
+        print("Episode is truncated")
 
 env.close()

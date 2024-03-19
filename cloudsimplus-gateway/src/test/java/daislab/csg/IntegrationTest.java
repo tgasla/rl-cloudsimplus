@@ -49,13 +49,21 @@ public class IntegrationTest {
         //
         // This means the job needs to be splitted into 3 equal chunks which we want
         // to last for 10 iterations each. A single core has 10000 MIPS, so we want
-        // a the small chunk to have 2*10*10000 MIPS (2 because the smallest machine
+        // a the small chunk to have 2*10*10000 MIPS (2 because the smallest virtual machine
         // has 2 cores, doesn't matter for the bigger ones).
         CloudletDescriptor cloudletDescriptor =
                 new CloudletDescriptor(1, 10, (2*10*10000)*3, 2+2+2);
 
         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
         Map<String, String> parameters = new HashMap<>();
+        parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "1");
+        parameters.put(SimulationFactory.INITIAL_M_VM_COUNT, "1");
+        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
+        parameters.put("DATACENTER_HOSTS_CNT", "3000");
+        parameters.put("MAX_VMS_PER_SIZE", "3000");
+        parameters.put("HOST_PE_CNT", "14");
+        parameters.put("HOST_PE_MIPS", "10000");
+        parameters.put("BASIC_VM_PE_CNT", "2");
         parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
@@ -85,6 +93,14 @@ public class IntegrationTest {
         }
 
         Map<String, String> parameters = new HashMap<>();
+        parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "1");
+        parameters.put(SimulationFactory.INITIAL_M_VM_COUNT, "1");
+        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
+        parameters.put("DATACENTER_HOSTS_CNT", "3000");
+        parameters.put("MAX_VMS_PER_SIZE", "3000");
+        parameters.put("HOST_PE_CNT", "14");
+        parameters.put("HOST_PE_MIPS", "10000");
+        parameters.put("BASIC_VM_PE_CNT", "2");
         parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
@@ -113,14 +129,18 @@ public class IntegrationTest {
                 multiSimulationEnvironment.retrieveValidSimulation(simulationId);
         final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
 
-        final int initialSVmCount = Integer.parseInt(SimulationFactory.INITIAL_VM_COUNT_DEFAULT);
-        final int initialMVmCount = initialSVmCount;
-        final int initialLVmCount = initialSVmCount;
-
-        final long basicVmPeCount = settings.getBasicVmPeCnt();
-        final long totalVmPes =  (initialSVmCount + 1) * basicVmPeCount
-                                + initialMVmCount * basicVmPeCount * 2
-                                + initialLVmCount * basicVmPeCount * 4;
+        final int initialSVmCount = 
+                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_S_VM_COUNT));
+        final int initialMVmCount =
+                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_M_VM_COUNT));
+        final int initialLVmCount =
+                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_L_VM_COUNT));
+        final long basicVmPeCount =
+                Long.parseLong(parameters.get("BASIC_VM_PE_CNT"));
+        final long totalVmPes = 
+                (initialSVmCount + 1) * basicVmPeCount
+                + initialMVmCount * basicVmPeCount * 2
+                + initialLVmCount * basicVmPeCount * 4;
         
         assertEquals((double) totalVmPes/settings.getDatacenterCores(), maxCoreRatio, 0.000001);
 
@@ -136,6 +156,13 @@ public class IntegrationTest {
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "10");
+        parameters.put(SimulationFactory.INITIAL_M_VM_COUNT, "1");
+        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
+        parameters.put("DATACENTER_HOSTS_CNT", "3000");
+        parameters.put("MAX_VMS_PER_SIZE", "3000");
+        parameters.put("HOST_PE_CNT", "14");
+        parameters.put("HOST_PE_MIPS", "10000");
+        parameters.put("BASIC_VM_PE_CNT", "2");
         parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
@@ -146,10 +173,14 @@ public class IntegrationTest {
                 multiSimulationEnvironment.retrieveValidSimulation(simulationId);
         final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
 
-        final String initialSVmCountStr = parameters.get(SimulationFactory.INITIAL_S_VM_COUNT);
-        final int initialSVmCount = Integer.parseInt(initialSVmCountStr);
-        final int initialMVmCount = Integer.parseInt(SimulationFactory.INITIAL_VM_COUNT_DEFAULT);
-        final int initialLVmCount = initialMVmCount;
+        final int initialSVmCount = 
+                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_S_VM_COUNT));
+        final int initialMVmCount =
+                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_M_VM_COUNT));
+        final int initialLVmCount =
+                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_L_VM_COUNT));
+        final long basicVmPeCount =
+                Long.parseLong(parameters.get("BASIC_VM_PE_CNT"));
 
         int stepsExecuted = 1;
         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
@@ -160,10 +191,10 @@ public class IntegrationTest {
             if (stepsExecuted == 20) {
                 // delete a SMALL VM
                 step = multiSimulationEnvironment.step(simulationId, 2);
-                final long basicVmPeCount = settings.getBasicVmPeCnt();
-                final long totalVmPes = (initialSVmCount - 1) * basicVmPeCount
-                                    + initialMVmCount * basicVmPeCount * 2
-                                    + initialLVmCount * basicVmPeCount * 4;
+                final long totalVmPes =
+                        (initialSVmCount - 1) * basicVmPeCount
+                        + initialMVmCount * basicVmPeCount * 2
+                        + initialLVmCount * basicVmPeCount * 4;
 
                 assertEquals((double) totalVmPes / settings.getDatacenterCores(),
                         step.getObs()[0], 0.000001);
@@ -196,6 +227,13 @@ public class IntegrationTest {
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "2");
+        parameters.put(SimulationFactory.INITIAL_M_VM_COUNT, "1");
+        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
+        parameters.put("DATACENTER_HOSTS_CNT", "3000");
+        parameters.put("MAX_VMS_PER_SIZE", "3000");
+        parameters.put("HOST_PE_CNT", "14");
+        parameters.put("HOST_PE_MIPS", "10000");
+        parameters.put("BASIC_VM_PE_CNT", "2");
         parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
@@ -218,6 +256,7 @@ public class IntegrationTest {
                 break;
             }
         }
+
         final WrappedSimulation wrappedSimulation =
                 multiSimulationEnvironment.retrieveValidSimulation(simulationId);
         CloudSimProxy cloudSimProxy = wrappedSimulation.getSimulation();

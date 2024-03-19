@@ -1,6 +1,8 @@
-"""Format as specified in
+"""
+    Format as specified in
     http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
 """
+
 class SWFReader(object):
     def __init__(self):
         self.jobs = []
@@ -32,7 +34,7 @@ class SWFReader(object):
 
                 job_id = int(line_splitted[0])
                 submit_time = int(line_splitted[1])
-                wait_time = int(line_splitted[2])
+                # wait_time = int(line_splitted[2])
                 run_time = int(line_splitted[3])
                 allocated_cores = int(line_splitted[4])
                 status = int(line_splitted[10])
