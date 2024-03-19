@@ -7,7 +7,8 @@ import java.util.*;
 
 public class SimulationHistory {
 
-    private static final Logger logger = LoggerFactory.getLogger(SimulationHistory.class.getName());
+    private static final Logger logger 
+            = LoggerFactory.getLogger(SimulationHistory.class.getName());
     private Map<String, List<Object>> history;
 
     public SimulationHistory() {

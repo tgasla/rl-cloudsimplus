@@ -39,7 +39,8 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         final double nextSimulationTime = super.updateProcessing(currentTime, mipsShare);
         final int sizeAfter = this.getCloudletWaitingList().size();
 
-        // if we have a new cloudlet being processed, schedule another recalculation, which should trigger a proper
+        // if we have a new cloudlet being processed, 
+        // schedule another recalculation, which should trigger a proper
         // estimation of end time
         if (sizeAfter != sizeBefore && Double.MAX_VALUE == nextSimulationTime) {
             return this.getVm().getSimulation().getMinTimeBetweenEvents();
@@ -62,19 +63,24 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         return Optional.empty();
     }
 
-    private void setPrivateField(String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
+    private void setPrivateField(String fieldName, Object value) 
+            throws NoSuchFieldException, IllegalAccessException {
+
         final Field field = CloudletSchedulerAbstract.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(this, value);
     }
 
-    private Object getPrivateFieldValue(String fieldName, Object source) throws IllegalAccessException, NoSuchFieldException {
+    private Object getPrivateFieldValue(String fieldName, Object source)
+            throws IllegalAccessException, NoSuchFieldException {
+
         final Field field = CloudletSchedulerAbstract.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         return field.get(source);
     }
 
-    // It is safe to override this function: it is used only in one place - DatacenterBrokerAbstract:827
+    // It is safe to override this function:
+    // it is used only in one place - DatacenterBrokerAbstract:827
     @Override
     public void clear() {
         try {

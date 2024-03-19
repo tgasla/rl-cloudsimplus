@@ -2,6 +2,10 @@ package daislab.csg;
 
 import java.util.Arrays;
 
+/*
+ * Class that represents the object that is returned as a result
+ * of each step method call.
+*/
 public class SimulationStepResult {
 
     private final boolean done;
@@ -28,10 +32,10 @@ public class SimulationStepResult {
 
     @Override
     public String toString() {
-        return "SimulationStepResult{" +
-                "done=" + done +
-                ", obs=" + Arrays.toString(obs) +
-                ", reward=" + reward +
-                '}';
+        return "SimulationStepResult{"
+                + "done=" + done
+                + ", obs=" + Arrays.toString(obs)
+                + ", reward=" + reward
+                + '}';
     }
 }

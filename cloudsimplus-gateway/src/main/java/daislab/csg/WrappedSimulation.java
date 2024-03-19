@@ -15,7 +15,8 @@ import static org.apache.commons.math3.stat.StatUtils.percentile;
 
 public class WrappedSimulation {
 
-    private static final Logger logger = LoggerFactory.getLogger(WrappedSimulation.class.getName());
+    private static final Logger logger =
+            LoggerFactory.getLogger(WrappedSimulation.class.getName());
     private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
     private final double queueWaitPenalty;
     private final List<CloudletDescriptor> initialJobsDescriptors;
@@ -75,15 +76,22 @@ public class WrappedSimulation {
         // first attempt to store some memory
         metricsStorage.clear();
         this.vmCounter = new VmCounter(this.settings.getMaxVmsPerSize());
-        this.vmCounter.initializeCapacity(CloudSimProxy.SMALL, initialVmsCount.get(CloudSimProxy.SMALL));
-        this.vmCounter.initializeCapacity(CloudSimProxy.MEDIUM, initialVmsCount.get(CloudSimProxy.MEDIUM));
-        this.vmCounter.initializeCapacity(CloudSimProxy.LARGE, initialVmsCount.get(CloudSimProxy.LARGE));
+        this.vmCounter.initializeCapacity(
+                CloudSimProxy.SMALL, initialVmsCount.get(CloudSimProxy.SMALL));
+        this.vmCounter.initializeCapacity(
+                CloudSimProxy.MEDIUM, initialVmsCount.get(CloudSimProxy.MEDIUM));
+        this.vmCounter.initializeCapacity(
+                CloudSimProxy.LARGE, initialVmsCount.get(CloudSimProxy.LARGE));
 
         List<Cloudlet> cloudlets = initialJobsDescriptors
                 .stream()
                 .map(CloudletDescriptor::toCloudlet)
                 .collect(Collectors.toList());
-        cloudSimProxy = new CloudSimProxy(settings, initialVmsCount, cloudlets, simulationSpeedUp);
+        cloudSimProxy = new CloudSimProxy(
+                settings, 
+                initialVmsCount, 
+                cloudlets, 
+                simulationSpeedUp);
 
         double[] obs = getObservation();
         return obs;
@@ -131,9 +139,12 @@ public class WrappedSimulation {
         this.simulationHistory.record("action", action);
         this.simulationHistory.record("reward", reward);
         this.simulationHistory.record("resourceCost", cloudSimProxy.getRunningCost());
-        this.simulationHistory.record("small_vms", this.vmCounter.getStartedVms(CloudSimProxy.SMALL));
-        this.simulationHistory.record("medium_vms", this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM));
-        this.simulationHistory.record("large_vms", this.vmCounter.getStartedVms(CloudSimProxy.LARGE));
+        this.simulationHistory.record(
+                "small_vms", this.vmCounter.getStartedVms(CloudSimProxy.SMALL));
+        this.simulationHistory.record(
+                "medium_vms", this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM));
+        this.simulationHistory.record(
+                "large_vms", this.vmCounter.getStartedVms(CloudSimProxy.LARGE));
 
         if (!cloudSimProxy.isRunning()) {
             this.simulationHistory.logHistory();
@@ -142,10 +153,10 @@ public class WrappedSimulation {
 
         double metricsTime = (stopMetrics - startMetrics) / 1_000_000_000d;
         double actionTime = (stopAction - startAction) / 1_000_000_000d;
-        debug("Step finished (action: " + action + ") is done: " + done +
-                " Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents() +
-                " Metrics (s): " + metricsTime +
-                " Action (s): " + actionTime);
+        debug("Step finished (action: " + action + ") is done: " + done
+                + " Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents()
+                + " Metrics (s): " + metricsTime
+                + " Action (s): " + actionTime);
 
         return new SimulationStepResult(
                 done,
@@ -218,7 +229,10 @@ public class WrappedSimulation {
         }
     }
 
-    private double percentilegetEnvironmentVariable(double[] values, double percentile, double defaultValue) {
+    private double percentilegetEnvironmentVariable(
+            double[] values, 
+            double percentile, 
+            double defaultValue) {
         if (values.length == 0) {
             return defaultValue;
         }
@@ -238,19 +252,25 @@ public class WrappedSimulation {
 
         metricsStorage.updateMetric("vmAllocatedRatioHistory", getVmAllocatedRatio());
         metricsStorage.updateMetric("avgCPUUtilizationHistory", safeMean(cpuPercentUsage));
-        metricsStorage.updateMetric("p90CPUUtilizationHistory", percentilegetEnvironmentVariable(cpuPercentUsage, 0.90, 0));
+        metricsStorage.updateMetric(
+                "p90CPUUtilizationHistory", 
+                percentilegetEnvironmentVariable(cpuPercentUsage, 0.90, 0));
         metricsStorage.updateMetric("avgMemoryUtilizationHistory", safeMean(memPercentageUsage));
-        metricsStorage.updateMetric("p90MemoryUtilizationHistory", percentilegetEnvironmentVariable(memPercentageUsage, 0.90, 0));
+        metricsStorage.updateMetric(
+                "p90MemoryUtilizationHistory", 
+                percentilegetEnvironmentVariable(memPercentageUsage, 0.90, 0));
         metricsStorage.updateMetric("waitingJobsRatioGlobalHistory", waitingJobsRatioGlobal);
         metricsStorage.updateMetric("waitingJobsRatioRecentHistory", waitingJobsRatioRecent);
     }
 
     private double getWaitingJobsRatioRecent() {
-        final int submittedJobsCountLastInterval = cloudSimProxy.getSubmittedJobsCountLastInterval();
+        final int submittedJobsCountLastInterval =
+            cloudSimProxy.getSubmittedJobsCountLastInterval();
         if (submittedJobsCountLastInterval == 0) {
             return 0.0;
         }
-        return cloudSimProxy.getWaitingJobsCountInterval(INTERVAL) / (double) submittedJobsCountLastInterval;
+        return cloudSimProxy.getWaitingJobsCountInterval(INTERVAL) 
+                / (double) submittedJobsCountLastInterval;
     }
 
     private double getWaitingJobsRatioGlobal() {
@@ -299,7 +319,10 @@ public class WrappedSimulation {
         // reward is the negative cost of running the infrastructure
         // - any penalties from jobs waiting in the queue
         final double vmRunningCost = cloudSimProxy.getRunningCost();
-        final double penalty = this.cloudSimProxy.getWaitingJobsCount() * this.queueWaitPenalty * simulationSpeedUp;
+        final double penalty =
+                  this.cloudSimProxy.getWaitingJobsCount() 
+                * this.queueWaitPenalty 
+                * simulationSpeedUp;
         return - penaltyMultiplier * (vmRunningCost + penalty);
     }
 

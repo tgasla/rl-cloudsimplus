@@ -51,7 +51,8 @@ public class IntegrationTest {
         // to last for 10 iterations each. A single core has 10000 MIPS, so we want
         // a the small chunk to have 2*10*10000 MIPS (2 because the smallest machine
         // has 2 cores, doesn't matter for the bigger ones).
-        CloudletDescriptor cloudletDescriptor = new CloudletDescriptor(1, 10, (2*10*10000)*3, 2+2+2);
+        CloudletDescriptor cloudletDescriptor =
+                new CloudletDescriptor(1, 10, (2*10*10000)*3, 2+2+2);
 
         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
         Map<String, String> parameters = new HashMap<>();
@@ -76,7 +77,8 @@ public class IntegrationTest {
 
     @Test
     public void testWithCreatingNewVirtualMachines() {
-        // every cloudlet executes for 40 simulation iterations and starts with a delay of 20*i iterations
+        // every cloudlet executes for 40 simulation iterations
+        // and starts with a delay of 20*i iterations
         List<CloudletDescriptor> jobs = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             jobs.add(new CloudletDescriptor(i, 20 * i, 400000, 4));
@@ -102,11 +104,13 @@ public class IntegrationTest {
                 maxCoreRatio = step.getObs()[0];
             }
 
-            System.out.println("Observations: " + Arrays.toString(step.getObs()) + " clock: " + multiSimulationEnvironment.clock(simulationId));
+            System.out.println("Observations: " + Arrays.toString(step.getObs())
+                    + " clock: " + multiSimulationEnvironment.clock(simulationId));
             stepsExecuted++;
         }
 
-        final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
+        final WrappedSimulation wrappedSimulation =
+                multiSimulationEnvironment.retrieveValidSimulation(simulationId);
         final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
 
         final int initialSVmCount = Integer.parseInt(SimulationFactory.INITIAL_VM_COUNT_DEFAULT);
@@ -138,7 +142,8 @@ public class IntegrationTest {
 
         multiSimulationEnvironment.reset(simulationId);
 
-        final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
+        final WrappedSimulation wrappedSimulation =
+                multiSimulationEnvironment.retrieveValidSimulation(simulationId);
         final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
 
         final String initialSVmCountStr = parameters.get(SimulationFactory.INITIAL_S_VM_COUNT);
@@ -160,12 +165,15 @@ public class IntegrationTest {
                                     + initialMVmCount * basicVmPeCount * 2
                                     + initialLVmCount * basicVmPeCount * 4;
 
-                assertEquals((double) totalVmPes/settings.getDatacenterCores(), step.getObs()[0], 0.000001);
+                assertEquals((double) totalVmPes / settings.getDatacenterCores(),
+                        step.getObs()[0], 0.000001);
             }
 
             step = multiSimulationEnvironment.step(simulationId, 0);
 
-            System.out.println("Observations: " + Arrays.toString(step.getObs()) + " " + multiSimulationEnvironment.clock(simulationId));
+            System.out.println("Observations: "
+                    + Arrays.toString(step.getObs()) + " "
+                    + multiSimulationEnvironment.clock(simulationId));
             stepsExecuted++;
         }
         multiSimulationEnvironment.close(simulationId);
@@ -176,9 +184,11 @@ public class IntegrationTest {
         // scenario:
         // 1. we submit jobs at delay 5
         // 2. we have 2S, 1M, 1L VMs
-        // 3. we submit enough to overload the system (we have 2+2+4+8 cores, so we submit for 18 cores) for 10 iterations
+        // 3. we submit enough to overload the system (we have 2+2+4+8 cores,
+        //    so we submit for 18 cores) for 10 iterations
         //    there should be 2 cloudlets assigned to a VM but not executing
-        // 5. we delete the additional S machine at time 10. (at 50% of processing of the accepted jobs)
+        // 5. we delete the additional S machine at time 10.
+        //    (at 50% of processing of the accepted jobs)
         // 6. we see what happens to the jobs
 
         List<CloudletDescriptor> jobs = new ArrayList<>();
@@ -200,14 +210,16 @@ public class IntegrationTest {
             int action = stepsExecuted == 10 ? 2 : 0;
             step = multiSimulationEnvironment.step(simulationId, action);
 
-            System.out.println("Observations: " + Arrays.toString(step.getObs()) + " " + multiSimulationEnvironment.clock(simulationId));
+            System.out.println("Observations: " + Arrays.toString(step.getObs()) + " "
+                    + multiSimulationEnvironment.clock(simulationId));
             stepsExecuted++;
 
             if (stepsExecuted == 1000) {
                 break;
             }
         }
-        final WrappedSimulation wrappedSimulation = multiSimulationEnvironment.retrieveValidSimulation(simulationId);
+        final WrappedSimulation wrappedSimulation =
+                multiSimulationEnvironment.retrieveValidSimulation(simulationId);
         CloudSimProxy cloudSimProxy = wrappedSimulation.getSimulation();
         cloudSimProxy.printJobStats();
         multiSimulationEnvironment.close(simulationId);

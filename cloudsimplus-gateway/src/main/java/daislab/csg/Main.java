@@ -24,7 +24,9 @@ public class Main {
                 null,
                 new CallbackClient(GatewayServer.DEFAULT_PYTHON_PORT, all)
         );
-        logger.info("Starting server: " + gatewayServer.getAddress() + " " + gatewayServer.getPort());
+        logger.info("Starting server: " 
+                + gatewayServer.getAddress() + " "
+                + gatewayServer.getPort());
         gatewayServer.start();
     }
 }

@@ -3,6 +3,10 @@ package daislab.csg;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
+ * Class to count the number of VMs, so we can keep track of them.
+ * We do not allow the creation of a new VM if we have reached the maxVmsPerSize.
+*/
 public class VmCounter {
     private final long maxVmsPerSize;
     private final Map<String, Long> vmCounts = new HashMap<>();

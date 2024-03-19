@@ -10,9 +10,13 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class LoggingDatacenter extends DatacenterSimple {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingDatacenter.class.getSimpleName());
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(LoggingDatacenter.class.getSimpleName());
 
-    public LoggingDatacenter(Simulation simulation, List<? extends Host> hostList, VmAllocationPolicy vmAllocationPolicy) {
+    public LoggingDatacenter(
+            Simulation simulation,
+            List<? extends Host> hostList,
+            VmAllocationPolicy vmAllocationPolicy) {
         super(simulation, hostList, vmAllocationPolicy);
     }
 
@@ -20,7 +24,9 @@ public class LoggingDatacenter extends DatacenterSimple {
     protected double updateCloudletProcessing() {
         final double retVal = super.updateCloudletProcessing();
 
-        LOGGER.debug("updateCloudletProcessing: " + retVal + " (if equal to Double.MAX_VALUE: " + Double.MAX_VALUE + " no further processing scheduled");
+        LOGGER.debug("updateCloudletProcessing: "
+                + retVal + " (if equal to Double.MAX_VALUE: "
+                + Double.MAX_VALUE + " no further processing scheduled");
 
         return retVal;
     }

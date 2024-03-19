@@ -5,6 +5,10 @@ import org.cloudsimplus.vms.Vm;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * Class to calculate the infrastructure cost.
+ * We need it to calculate the agent's reward.
+*/
 public class VmCost {
 
     private final double secondsInIteration;
@@ -42,7 +46,8 @@ public class VmCost {
             final double perIterationVMCost = perIterationSmallVMCost * m;
             if (vm.getStartTime() > -1) {
                 if (vm.getFinishTime() > -1) {
-                    // vm was stopped - we continue to pay for it within the last running hour if need to
+                    // vm was stopped -
+                    // we continue to pay for it within the last running hour if need to
                     if (payForFullHour && (clock <= vm.getFinishTime() + iterationsInHour)) {
                         totalCost += perIterationVMCost;
                     } else {

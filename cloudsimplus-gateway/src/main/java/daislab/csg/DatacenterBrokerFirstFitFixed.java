@@ -27,7 +27,8 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     /**
      * Creates a DatacenterBroker object.
      *
-     * @param simulation The CloudSim instance that represents the simulation the Entity is related to
+     * @param simulation The CloudSim instance that represents 
+     * the simulation the Entity is related to
      */
     public DatacenterBrokerFirstFitFixed(final CloudSimPlus simulation) {
         super(simulation);
@@ -39,7 +40,8 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
 
         if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
             final Cloudlet cloudlet = (Cloudlet) evt.getData();
-            LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/" + cloudlet.getVm().getId() + " Scheduling more cloudlets...");
+            LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/"
+                    + cloudlet.getVm().getId() + " Scheduling more cloudlets...");
             requestDatacentersToCreateWaitingCloudlets();
         }
 
@@ -79,8 +81,10 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             it.remove();
         }
 
-        LOGGER.debug("requestDatacentersToCreateWaitingCloudlets scheduled: " + scheduled.size() + "/" + cloudletWaitingList.size());
-        LOGGER.debug("Events cnt before: " + getSimulation().getNumberOfFutureEvents(simEvent -> true));
+        LOGGER.debug("requestDatacentersToCreateWaitingCloudlets scheduled: "
+                + scheduled.size() + "/" + cloudletWaitingList.size());
+        LOGGER.debug("Events cnt before: " 
+                + getSimulation().getNumberOfFutureEvents(simEvent -> true));
         for (Cloudlet cloudlet : scheduled) {
             final long totalLengthInMips = cloudlet.getTotalLength();
             final double peMips = cloudlet.getVm().getProcessor().getMips();
@@ -88,8 +92,8 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             final Datacenter datacenter = getDatacenter(cloudlet.getVm());
             final double eventDelay = lengthInSeconds + 1.0;
             
-            LOGGER.debug("Cloudlet " + cloudlet.getId() + " scheduled. Updating in: " + eventDelay);
-
+            LOGGER.debug("Cloudlet " + cloudlet.getId() 
+                    + " scheduled. Updating in: " + eventDelay);
 
             this.getSimulation().send(
                     datacenter,
@@ -99,7 +103,8 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
                     null
             );
         }
-        LOGGER.debug("Events cnt after: " + getSimulation().getNumberOfFutureEvents(simEvent -> true));
+        LOGGER.debug("Events cnt after: "
+                + getSimulation().getNumberOfFutureEvents(simEvent -> true));
     }
 
     /**
@@ -132,8 +137,10 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             final Vm vm = getVmExecList().get(lastVmIndex);
             if (vm.getExpectedFreePesNumber() >= cloudlet.getPesNumber()) {
                 LOGGER.trace("{}: {}: {} (PEs: {}) mapped to {} (available PEs: {}, tot PEs: {})",
-                        getSimulation().clockStr(), getName(), cloudlet, cloudlet.getPesNumber(), vm,
-                        vm.getExpectedFreePesNumber(), vm.getFreePesNumber());
+                        getSimulation().clockStr(), getName(),
+                        cloudlet, cloudlet.getPesNumber(), vm,
+                        vm.getExpectedFreePesNumber(),
+                        vm.getFreePesNumber());
                 return vm;
             }
 

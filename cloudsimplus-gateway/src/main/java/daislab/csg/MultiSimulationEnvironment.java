@@ -10,9 +10,13 @@ import java.util.Map;
 
 public class MultiSimulationEnvironment {
 
-    private Map<String, WrappedSimulation> simulations = Collections.synchronizedMap(new HashMap<>());
+    private Map<String, WrappedSimulation> simulations 
+        = Collections.synchronizedMap(new HashMap<>());
+
     private SimulationFactory simulationFactory = new SimulationFactory();
-    private static final Logger logger = LoggerFactory.getLogger(MultiSimulationEnvironment.class.getName());
+
+    private static final Logger logger 
+        = LoggerFactory.getLogger(MultiSimulationEnvironment.class.getName());
 
     public String createSimulation(Map<String, String> maybeParameters) {
         WrappedSimulation simulation = simulationFactory.create(maybeParameters);
@@ -30,7 +34,8 @@ public class MultiSimulationEnvironment {
 
     private void validateIdentifier(String simulationIdentifier) {
         if (!simulations.containsKey(simulationIdentifier)) {
-            throw new IllegalArgumentException("Simulation with identifier: " + simulationIdentifier + " not found!");
+            throw new IllegalArgumentException(
+                "Simulation with identifier: " + simulationIdentifier + " not found!");
         }
     }
 

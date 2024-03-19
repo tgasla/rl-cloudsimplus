@@ -41,10 +41,10 @@ public class CloudletDescriptor {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CloudletDescriptor that = (CloudletDescriptor) o;
-        return getJobId() == that.getJobId() &&
-                getSubmissionDelay() == that.getSubmissionDelay() &&
-                getMi() == that.getMi() &&
-                getNumberOfCores() == that.getNumberOfCores();
+        return getJobId() == that.getJobId()
+            && getSubmissionDelay() == that.getSubmissionDelay()
+            && getMi() == that.getMi()
+            && getNumberOfCores() == that.getNumberOfCores();
     }
 
     @Override
@@ -54,12 +54,12 @@ public class CloudletDescriptor {
 
     @Override
     public String toString() {
-        return "CloudletDescriptor{" +
-                "jobId=" + jobId +
-                ", submissionDelay=" + submissionDelay +
-                ", mi=" + mi +
-                ", numberOfCores=" + numberOfCores +
-                '}';
+        return "CloudletDescriptor{"
+                + "jobId=" + jobId
+                + ", submissionDelay=" + submissionDelay
+                + ", mi=" + mi
+                + ", numberOfCores=" + numberOfCores
+                + '}';
     }
 
     public Cloudlet toCloudlet() {

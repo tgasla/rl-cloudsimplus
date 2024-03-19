@@ -29,7 +29,8 @@ public class CloudletDescriptorTest {
         final CloudletDescriptor cloudletDescriptor1 = new CloudletDescriptor(1, 2, 3, 4);
         final CloudletDescriptor cloudletDescriptor5 = new CloudletDescriptor(5, 6, 7, 8);
 
-        final List<CloudletDescriptor> cloudletDescriptors = Arrays.asList(cloudletDescriptor1, cloudletDescriptor5);
+        final List<CloudletDescriptor> cloudletDescriptors =
+                Arrays.asList(cloudletDescriptor1, cloudletDescriptor5);
 
         final String serialized = gson.toJson(cloudletDescriptors);
 
