@@ -13,9 +13,36 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class IntegrationTest {
+        
+	private static final int initialMVmCount = 1;
+	private static final int initialLVmCount = 1;
+	private static final long basicVmPeCount = 2;
+	private static final long datacenterHostsCnt = 3000;
+	private static final long maxVmsPerSize = datacenterHostsCnt;
+	private static final long hostPeMips = 10000;
+	private static final int hostPeCnt = 14;
 
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();
+
+    private Map<String, String> addParameters(
+                        final int initialSVmCount, 
+                        final List<CloudletDescriptor> jobs) {
+
+        final Map<String, String> parameters = new HashMap<>();
+
+        parameters.put("INITIAL_S_VM_COUNT", String.valueOf(initialSVmCount));
+        parameters.put("INITIAL_M_VM_COUNT", String.valueOf(initialMVmCount));
+        parameters.put("INITIAL_L_VM_COUNT", String.valueOf(initialLVmCount));
+        parameters.put("DATACENTER_HOSTS_CNT", String.valueOf(datacenterHostsCnt));
+        parameters.put("MAX_VMS_PER_SIZE", String.valueOf(maxVmsPerSize));
+        parameters.put("HOST_PE_CNT", String.valueOf(hostPeCnt));
+        parameters.put("HOST_PE_MIPS", String.valueOf(hostPeMips));
+        parameters.put("BASIC_VM_PE_CNT", String.valueOf(basicVmPeCount));
+        parameters.put("JOBS", gson.toJson(jobs));
+        
+        return parameters;
+    }
 
     @Test
     public void testPing() {
@@ -55,16 +82,10 @@ public class IntegrationTest {
                 new CloudletDescriptor(1, 10, (2*10*10000)*3, 2+2+2);
 
         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "1");
-        parameters.put(SimulationFactory.INITIAL_M_VM_COUNT, "1");
-        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
-        parameters.put("DATACENTER_HOSTS_CNT", "3000");
-        parameters.put("MAX_VMS_PER_SIZE", "3000");
-        parameters.put("HOST_PE_CNT", "14");
-        parameters.put("HOST_PE_MIPS", "10000");
-        parameters.put("BASIC_VM_PE_CNT", "2");
-        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
+
+		final int initialSVmCount = 1;
+
+        Map<String, String> parameters = addParameters(initialSVmCount, jobs);
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
@@ -92,16 +113,9 @@ public class IntegrationTest {
             jobs.add(new CloudletDescriptor(i, 20 * i, 400000, 4));
         }
 
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "1");
-        parameters.put(SimulationFactory.INITIAL_M_VM_COUNT, "1");
-        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
-        parameters.put("DATACENTER_HOSTS_CNT", "3000");
-        parameters.put("MAX_VMS_PER_SIZE", "3000");
-        parameters.put("HOST_PE_CNT", "14");
-        parameters.put("HOST_PE_MIPS", "10000");
-        parameters.put("BASIC_VM_PE_CNT", "2");
-        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
+		final int initialSVmCount = 1;
+
+        Map<String, String> parameters = addParameters(initialSVmCount, jobs);
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
@@ -125,24 +139,14 @@ public class IntegrationTest {
             stepsExecuted++;
         }
 
-        final WrappedSimulation wrappedSimulation =
-                multiSimulationEnvironment.retrieveValidSimulation(simulationId);
-        final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
-
-        final int initialSVmCount = 
-                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_S_VM_COUNT));
-        final int initialMVmCount =
-                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_M_VM_COUNT));
-        final int initialLVmCount =
-                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_L_VM_COUNT));
-        final long basicVmPeCount =
-                Long.parseLong(parameters.get("BASIC_VM_PE_CNT"));
         final long totalVmPes = 
                 (initialSVmCount + 1) * basicVmPeCount
                 + initialMVmCount * basicVmPeCount * 2
                 + initialLVmCount * basicVmPeCount * 4;
+
+        final long datacenterCores = datacenterHostsCnt * hostPeCnt;
         
-        assertEquals((double) totalVmPes/settings.getDatacenterCores(), maxCoreRatio, 0.000001);
+        assertEquals((double) totalVmPes/datacenterCores, maxCoreRatio, 0.000001);
 
         multiSimulationEnvironment.close(simulationId);
     }
@@ -154,33 +158,13 @@ public class IntegrationTest {
             jobs.add(new CloudletDescriptor(i, 10 * i, 200000, 4));
         }
 
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "10");
-        parameters.put(SimulationFactory.INITIAL_M_VM_COUNT, "1");
-        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
-        parameters.put("DATACENTER_HOSTS_CNT", "3000");
-        parameters.put("MAX_VMS_PER_SIZE", "3000");
-        parameters.put("HOST_PE_CNT", "14");
-        parameters.put("HOST_PE_MIPS", "10000");
-        parameters.put("BASIC_VM_PE_CNT", "2");
-        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
+		final int initialSVmCount = 10;
+
+        Map<String, String> parameters = addParameters(initialSVmCount, jobs);
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
         multiSimulationEnvironment.reset(simulationId);
-
-        final WrappedSimulation wrappedSimulation =
-                multiSimulationEnvironment.retrieveValidSimulation(simulationId);
-        final SimulationSettings settings = wrappedSimulation.getSimulationSettings();
-
-        final int initialSVmCount = 
-                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_S_VM_COUNT));
-        final int initialMVmCount =
-                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_M_VM_COUNT));
-        final int initialLVmCount =
-                Integer.parseInt(parameters.get(SimulationFactory.INITIAL_L_VM_COUNT));
-        final long basicVmPeCount =
-                Long.parseLong(parameters.get("BASIC_VM_PE_CNT"));
 
         int stepsExecuted = 1;
         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
@@ -191,12 +175,15 @@ public class IntegrationTest {
             if (stepsExecuted == 20) {
                 // delete a SMALL VM
                 step = multiSimulationEnvironment.step(simulationId, 2);
+
                 final long totalVmPes =
                         (initialSVmCount - 1) * basicVmPeCount
                         + initialMVmCount * basicVmPeCount * 2
                         + initialLVmCount * basicVmPeCount * 4;
 
-                assertEquals((double) totalVmPes / settings.getDatacenterCores(),
+				final long datacenterCores = datacenterHostsCnt * hostPeCnt;
+
+                assertEquals((double) totalVmPes / datacenterCores,
                         step.getObs()[0], 0.000001);
             }
 
@@ -225,16 +212,9 @@ public class IntegrationTest {
         List<CloudletDescriptor> jobs = new ArrayList<>();
         jobs.add(new CloudletDescriptor(1, 5, 100*10000*10, 100));
 
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "2");
-        parameters.put(SimulationFactory.INITIAL_M_VM_COUNT, "1");
-        parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
-        parameters.put("DATACENTER_HOSTS_CNT", "3000");
-        parameters.put("MAX_VMS_PER_SIZE", "3000");
-        parameters.put("HOST_PE_CNT", "14");
-        parameters.put("HOST_PE_MIPS", "10000");
-        parameters.put("BASIC_VM_PE_CNT", "2");
-        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
+		final int initialSVmCount = 2;
+
+        Map<String, String> parameters = addParameters(initialSVmCount, jobs);
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
