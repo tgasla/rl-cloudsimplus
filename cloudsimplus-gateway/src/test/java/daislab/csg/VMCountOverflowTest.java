@@ -17,35 +17,8 @@ public class VMCountOverflowTest {
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();
 
-    // Store the original value of the environment variable (if it exists) to restore it later
-    private static String datacenterHostsCnt;
-
-    @BeforeAll
-    public static void setUp() {
-        // Store the original value of DATACENTER_HOSTS_CNT environment variable
-        datacenterHostsCnt = System.getProperty("DATACENTER_HOSTS_CNT");
-
-        // Set the new value of DATACENTER_HOSTS_CNT environment variable
-        System.setProperty("DATACENTER_HOSTS_CNT", "5");
-    }
-
-    @AfterAll
-    public static void tearDown() {
-        // Clear DATACENTER_HOSTS_CNT to restore it to its original state
-        if (datacenterHostsCnt != null) {
-            // Restore the original value of DATACENTER_HOSTS_CNT
-            System.setProperty("DATACENTER_HOSTS_CNT", datacenterHostsCnt);
-            return;
-        }
-        
-        // If the original value didn't exist, clear the property
-        System.clearProperty("DATACENTER_HOSTS_CNT");
-    }
-
     @Test
     public void testHandleNegativeMi() throws Exception {
-        System.out.println("DATACENTER_HOSTS_CNT: " + System.getenv("DATACENTER_HOSTS_CNT"));
-
         CloudletDescriptor cloudletDescriptor = new CloudletDescriptor(1, 60, -778, 1);
 
         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
@@ -57,6 +30,7 @@ public class VMCountOverflowTest {
         parameters.put(SimulationFactory.INITIAL_L_VM_COUNT, "1");
         parameters.put(SimulationFactory.INITIAL_M_VM_COUNT, "1");
         parameters.put(SimulationFactory.INITIAL_S_VM_COUNT, "1");
+        parameters.put("DATACENTER_HOSTS_CNT", "5");
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
