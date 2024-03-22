@@ -191,15 +191,10 @@ public class CloudSimProxy {
     private Vm createVmWithId(final String type) {
         final int sizeMultiplier = getVmSizeMultiplier(type);
         final int vmId = this.nextVmId;
-        // static final double hostMips=0.0;
 
-        final MyVm vm = new MyVm(
+        final VmSimple vm = new VmSimple(
                 this.nextVmId,
-                // settings.getHostPeMips() we will set the PE MIPS
-                // when a host is allocated to the VM.
-                // we will set the PE MIPS of the VM to be equal
-                // to the PE MIPS of the host.
-                0,
+                settings.getHostSPeMips(),
                 settings.getBasicVmPeCnt() * sizeMultiplier);
         
         vm
@@ -210,17 +205,6 @@ public class CloudSimProxy {
                 .setDescription(type)
                 .setShutDownDelay(settings.getVmShutdownDelay());
         vmCost.notifyCreateVM(vm);
-        
-        // TODO: We have a bug here. We have to solve this issue.
-        // We do not know before the allocation of a Vm to a host,
-        // how many Pe Mips should a Vm have.
-        // Inside the listener we cannot set the Mips of a vm.
-        vm.addOnHostAllocationListener(new EventListener<VmHostEventInfo>() {
-            @Override
-            public void update(VmHostEventInfo info) {
-                logger.debug("Host assigned to vm: " + vmId);
-            }
-        });
 
         this.nextVmId++;
         return vm;
