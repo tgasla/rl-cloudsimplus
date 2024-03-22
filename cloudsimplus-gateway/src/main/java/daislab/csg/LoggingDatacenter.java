@@ -10,12 +10,12 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class LoggingDatacenter extends DatacenterSimple {
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(LoggingDatacenter.class.getSimpleName());
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(LoggingDatacenter.class.getSimpleName());
 
     public LoggingDatacenter(
             Simulation simulation,
-            List<? extends Host> hostList,
+            List<Host> hostList,
             VmAllocationPolicy vmAllocationPolicy) {
         super(simulation, hostList, vmAllocationPolicy);
     }

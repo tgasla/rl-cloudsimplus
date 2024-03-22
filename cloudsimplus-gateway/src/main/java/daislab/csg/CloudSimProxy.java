@@ -18,6 +18,7 @@ import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
 import org.cloudsimplus.listeners.CloudletVmEventInfo;
+import org.cloudsimplus.listeners.VmHostEventInfo;
 import org.cloudsimplus.listeners.EventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,8 @@ public class CloudSimProxy {
     public static final String SMALL = "S";
     public static final String MEDIUM = "M";
     public static final String LARGE = "L";
+    public static final String XLARGE = "XL";
+    public static final String XXLARGE = "2XL";
 
     private static final Logger logger = LoggerFactory.getLogger(CloudSimProxy.class.getName());
 
@@ -61,10 +64,10 @@ public class CloudSimProxy {
     private int previousIntervalJobId = 0;
     private int nextVmId;
 
-    public CloudSimProxy(SimulationSettings settings,
-                         Map<String, Integer> initialVmsCount,
-                         List<Cloudlet> inputJobs,
-                         double simulationSpeedUp) {
+    public CloudSimProxy(final SimulationSettings settings,
+                         final Map<String, Integer> initialVmsCount,
+                         final List<Cloudlet> inputJobs,
+                         final double simulationSpeedUp) {
         this.settings = settings;
         this.cloudSimPlus = new CloudSimPlus(0.01);
         this.broker = createDatacenterBroker();
@@ -117,14 +120,53 @@ public class CloudSimProxy {
     }
 
     private Datacenter createDatacenter() {
+
         List<Host> hostList = new ArrayList<>();
+        addHostsToList(SMALL, hostList);
+        addHostsToList(MEDIUM, hostList);
+        addHostsToList(LARGE, hostList);
+        addHostsToList(XLARGE, hostList);
+        addHostsToList(XXLARGE, hostList);
 
-        for (int i = 0; i < settings.getDatacenterHostsCnt(); i++) {
-            List<Pe> peList = createPeList();
+        return new LoggingDatacenter(cloudSimPlus, hostList, new VmAllocationPolicySimple());
+    }
 
-            final long hostRam = settings.getHostRam();
-            final long hostBw = settings.getHostBw();
-            final long hostSize = settings.getHostSize();
+    private void addHostsToList(final String type, List<Host> hostList) {
+        final long hostBw = settings.getHostBw();
+        final long hostSize = settings.getHostSize();
+        final long hostCount;
+        final long hostRam;
+        final List<Pe> peList;
+
+        switch (type) {
+            case MEDIUM:
+                hostCount = settings.getDatacenterMHostsCnt();
+                hostRam = settings.getHostMRam();
+                peList = createPeList(MEDIUM);
+                break;
+            case LARGE:
+                hostCount = settings.getDatacenterLHostsCnt();
+                hostRam = settings.getHostLRam();
+                peList = createPeList(LARGE);
+                break;
+            case XLARGE:
+                hostCount = settings.getDatacenterXLHostsCnt();
+                hostRam = settings.getHostXLRam();
+                peList = createPeList(XLARGE);
+                break;
+            case XXLARGE:
+                hostCount = settings.getDatacenter2XLHostsCnt();
+                hostRam = settings.getHost2XLRam();
+                peList = createPeList(XXLARGE);
+                break;
+            case SMALL:
+            default:
+                hostCount = settings.getDatacenterSHostsCnt();
+                hostRam = settings.getHostSRam();
+                peList = createPeList(SMALL);
+        }
+
+        for (int i = 0; i < hostCount; i++) {
             Host host =
                     new HostSimple(hostRam, hostBw, hostSize, peList)
                             .setRamProvisioner(new ResourceProvisionerSimple())
@@ -133,11 +175,9 @@ public class CloudSimProxy {
 
             hostList.add(host);
         }
-
-        return new LoggingDatacenter(cloudSimPlus, hostList, new VmAllocationPolicySimple());
     }
 
-    private List<? extends Vm> createVmList(int vmCount, String type) {
+    private List<? extends Vm> createVmList(final int vmCount, final String type) {
         List<Vm> vmList = new ArrayList<>(vmCount);
 
         for (int i = 0; i < vmCount; i++) {
@@ -148,14 +188,20 @@ public class CloudSimProxy {
         return vmList;
     }
 
-    private Vm createVmWithId(String type) {
-        int sizeMultiplier = getSizeMultiplier(type);
+    private Vm createVmWithId(final String type) {
+        final int sizeMultiplier = getVmSizeMultiplier(type);
+        final int vmId = this.nextVmId;
+        // static final double hostMips=0.0;
 
-        Vm vm = new VmSimple(
+        final MyVm vm = new MyVm(
                 this.nextVmId,
-                settings.getHostPeMips(),
+                // settings.getHostPeMips() we will set the PE MIPS
+                // when a host is allocated to the VM.
+                // we will set the PE MIPS of the VM to be equal
+                // to the PE MIPS of the host.
+                0,
                 settings.getBasicVmPeCnt() * sizeMultiplier);
-        this.nextVmId++;
+        
         vm
                 .setRam(settings.getBasicVmRam() * sizeMultiplier)
                 .setBw(settings.getBasicVmBw())
@@ -164,10 +210,23 @@ public class CloudSimProxy {
                 .setDescription(type)
                 .setShutDownDelay(settings.getVmShutdownDelay());
         vmCost.notifyCreateVM(vm);
+        
+        // TODO: We have a bug here. We have to solve this issue.
+        // We do not know before the allocation of a Vm to a host,
+        // how many Pe Mips should a Vm have.
+        // Inside the listener we cannot set the Mips of a vm.
+        vm.addOnHostAllocationListener(new EventListener<VmHostEventInfo>() {
+            @Override
+            public void update(VmHostEventInfo info) {
+                logger.debug("Host assigned to vm: " + vmId);
+            }
+        });
+
+        this.nextVmId++;
         return vm;
     }
 
-    public int getSizeMultiplier(String type) {
+    public int getVmSizeMultiplier(final String type) {
         int sizeMultiplier;
 
         switch (type) {
@@ -184,10 +243,35 @@ public class CloudSimProxy {
         return sizeMultiplier;
     }
 
-    private List<Pe> createPeList() {
+    private List<Pe> createPeList(final String type) {
+        final int hostPeCnt;
+        final long hostPeMips;
+        switch (type) {
+            case MEDIUM:
+                hostPeCnt = settings.getHostMPeCnt();
+                hostPeMips = settings.getHostMPeMips();
+                break;
+            case LARGE:
+                hostPeCnt = settings.getHostLPeCnt();
+                hostPeMips = settings.getHostLPeMips();
+                break;
+            case XLARGE:
+                hostPeCnt = settings.getHostXLPeCnt();
+                hostPeMips = settings.getHostXLPeMips();
+                break;
+            case XXLARGE:
+                hostPeCnt = settings.getHost2XLPeCnt();
+                hostPeMips = settings.getHost2XLPeMips();
+                break;
+            case SMALL:
+            default:
+                hostPeCnt = settings.getHostSPeCnt();
+                hostPeMips = settings.getHostSPeMips();
+        }
+
         List<Pe> peList = new ArrayList<>();
-        for (int i = 0; i < settings.getHostPeCnt(); i++) {
-            peList.add(new PeSimple(settings.getHostPeMips(), new PeProvisionerSimple()));
+        for (int i = 0; i < hostPeCnt; i++) {
+            peList.add(new PeSimple(hostPeMips, new PeProvisionerSimple()));
         }
 
         return peList;

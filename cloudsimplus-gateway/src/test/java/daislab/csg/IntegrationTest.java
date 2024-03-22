@@ -18,9 +18,10 @@ public class IntegrationTest {
 	private static final int initialLVmCount = 1;
 	private static final long basicVmPeCount = 2;
 	private static final long datacenterHostsCnt = 3000;
-	private static final long maxVmsPerSize = datacenterHostsCnt;
 	private static final long hostPeMips = 10000;
 	private static final int hostPeCnt = 14;
+	private static final long maxVmsPerSize = datacenterHostsCnt;
+    private static final long datacenterCores = datacenterHostsCnt * hostPeCnt;
 
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();
@@ -143,8 +144,6 @@ public class IntegrationTest {
                 (initialSVmCount + 1) * basicVmPeCount
                 + initialMVmCount * basicVmPeCount * 2
                 + initialLVmCount * basicVmPeCount * 4;
-
-        final long datacenterCores = datacenterHostsCnt * hostPeCnt;
         
         assertEquals((double) totalVmPes/datacenterCores, maxCoreRatio, 0.000001);
 
@@ -180,8 +179,6 @@ public class IntegrationTest {
                         (initialSVmCount - 1) * basicVmPeCount
                         + initialMVmCount * basicVmPeCount * 2
                         + initialLVmCount * basicVmPeCount * 4;
-
-				final long datacenterCores = datacenterHostsCnt * hostPeCnt;
 
                 assertEquals((double) totalVmPes / datacenterCores,
                         step.getObs()[0], 0.000001);

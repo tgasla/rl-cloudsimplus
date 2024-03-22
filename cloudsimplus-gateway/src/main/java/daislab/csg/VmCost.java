@@ -42,7 +42,7 @@ public class VmCost {
         List<Vm> toRemove = new ArrayList<>();
         for(Vm vm : createdVms) {
             // check if the vm is started
-            double m = getSizeMultiplier(vm);
+            double m = getVmSizeMultiplier(vm);
             final double perIterationVMCost = perIterationSmallVMCost * m;
             if (vm.getStartTime() > -1) {
                 if (vm.getFinishTime() > -1) {
@@ -66,7 +66,7 @@ public class VmCost {
         return totalCost;
     }
 
-    public double getSizeMultiplier(Vm vm) {
+    public double getVmSizeMultiplier(Vm vm) {
         if ("M".equals(vm.getDescription())) {
             return 2.0;
         }

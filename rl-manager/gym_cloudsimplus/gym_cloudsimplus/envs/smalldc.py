@@ -76,20 +76,52 @@ class SmallDC(gym.Env):
                 kwargs.get('queue_wait_penalty', '0.00001'),
             'VM_RUNNING_HOURLY_COST':
                 kwargs.get('vm_running_hourly_cost', '0.2'),
-            'HOST_PE_MIPS':
-                kwargs.get('host_pe_mips', '10000'),
+            'HOST_S_PE_CNT':
+                kwargs.get('host_s_pe_cnt', '22'),
+            'HOST_S_PE_MIPS':
+                kwargs.get('host_s_pe_mips', '110000'),
+            'HOST_S_RAM':
+                kwargs.get('host_s_ram', '128000'),
+            'HOST_M_PE_CNT':
+                kwargs.get('host_m_pe_cnt', '18'),
+            'HOST_M_PE_MIPS':
+                kwargs.get('host_m_pe_mips', '98000'),
+            'HOST_M_RAM':
+                kwargs.get('host_m_ram', '256000'),
+            'HOST_L_PE_CNT':
+                kwargs.get('host_l_pe_cnt', '10'),
+            'HOST_L_PE_MIPS':
+                kwargs.get('host_l_pe_mips', '40000'),
+            'HOST_L_RAM':
+                kwargs.get('host_l_ram', '384000'),
+            'HOST_XL_PE_CNT':
+                kwargs.get('host_xl_pe_cnt', '6'),
+            'HOST_XL_PE_MIPS':
+                kwargs.get('host_xl_pe_mips', '22500'),
+            'HOST_XL_RAM':
+                kwargs.get('host_xl_ram', '786000'),
+            'HOST_2XL_PE_CNT':
+                kwargs.get('host_2xl_pe_cnt', '6'),
+            'HOST_2XL_PE_MIPS':
+                kwargs.get('host_2xl_pe_mips', '29000'),
+            'HOST_2XL_RAM':
+                kwargs.get('host_2xl_ram', '1500000'),
             'HOST_BW':
-                kwargs.get('host_bw', '50000'),
-            'HOST_RAM':
-                kwargs.get('host_ram', '65536'),
+                kwargs.get('host_bw', '40000'),
             'HOST_SIZE':
-                kwargs.get('hostSize', '16000'),
-            'HOST_PE_CNT':
-                kwargs.get('hostPeCnt', '14'),
+                kwargs.get('hostSize', '50000'),
             'QUEUE_WAIT_PENALTY':
                 kwargs.get('queue_wait_penalty', '0.00001'),
-            'DATACENTER_HOSTS_CNT':
-                kwargs.get('datacenter_hosts_cnt', '50'),
+            'DATACENTER_S_HOSTS_CNT':
+                kwargs.get('datacenter_s_hosts_cnt', '20'),
+            'DATACENTER_M_HOSTS_CNT':
+                kwargs.get('datacenter_m_hosts_cnt', '5'),
+            'DATACENTER_L_HOSTS_CNT':
+                kwargs.get('datacenter_l_hosts_cnt', '20'),
+            'DATACENTER_XL_HOSTS_CNT':
+                kwargs.get('datacenter_xl_hosts_cnt', '3'),
+            'DATACENTER_2XL_HOSTS_CNT':
+                kwargs.get('datacenter_2xl_hosts_cnt', '2'),
             'BASIC_VM_RAM':
                 kwargs.get('basic_vm_ram', '8192'),
             'BASIC_VM_PE_CNT':
