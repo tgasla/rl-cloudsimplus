@@ -37,7 +37,6 @@ public class SimulationSettings {
     private final long host2XLRam;
     private final long hostBw;
     private final long hostSize;
-    private final long datacenterHostsCnt;
     private final long datacenterSHostsCnt;
     private final long datacenterMHostsCnt;
     private final long datacenterLHostsCnt;
@@ -91,9 +90,8 @@ public class SimulationSettings {
     //             "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
     // }
 
-    // Get SimulationSettings from parameters
-    // passed from the python client endpoint - the Gymnasium environment,
-    // if an environment variable is not set, a default value is given
+    // Get SimulationSettings from parameters passed from the python client endpoint.
+    // If an environment variable is not set, a default value is given.
     public SimulationSettings(Map<String, String> parameters) {
         vmRunningHourlyCost = Double.parseDouble(
                 parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));
@@ -133,10 +131,6 @@ public class SimulationSettings {
                 parameters.getOrDefault("HOST_BW", "40000"));
         hostSize = Long.parseLong(
                 parameters.getOrDefault("HOST_SIZE", "50000"));
-        datacenterHostsCnt = Long.parseLong(
-            parameters.getOrDefault("DATACENTER_HOSTS_CNT", "20"));
-        datacenterSHostsCnt = Long.parseLong(
-                parameters.getOrDefault("DATACENTER_S_HOSTS_CNT", "20"));
         datacenterMHostsCnt = Long.parseLong(
                 parameters.getOrDefault("DATACENTER_M_HOSTS_CNT", "0"));
         datacenterLHostsCnt = Long.parseLong(
@@ -163,6 +157,16 @@ public class SimulationSettings {
         storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(
                 parameters.getOrDefault(
                 "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
+
+        final String datacenterHostsCntStr = parameters.get("DATACENTER_HOSTS_CNT");
+
+        if (datacenterHostsCntStr != null) {
+            datacenterSHostsCnt = Long.parseLong(datacenterHostsCntStr);
+        }
+        else {
+            datacenterSHostsCnt = Long.parseLong(
+                    parameters.getOrDefault("DATACENTER_S_HOSTS_CNT", "20"));
+        }
     }
 
     @Override
