@@ -194,6 +194,20 @@ public class CloudSimProxy {
 
         final VmSimple vm = new VmSimple(
                 this.nextVmId,
+                // TODO: this is not quite correct. We
+                // do not know the host that this vm will be mapped.
+                // So, we do not know the PE MIPS that this vm will have.
+                // This is the case only when we multiple types of Hosts
+                // in our simulation.
+                // What we want to do is to give a dummy value when we create
+                // the VM, and then update the Mips to the correct value of
+                // host mips when a host is assigned to this vm.
+                // The problem is that the method to do it is the setMips() method,
+                // which is protected, so we cannot do it this way.
+                // Another option is to destroy the vm immediately when the broker
+                // assigns it to a host and then resubmit it without the broker
+                // to the host that the broker previously sent it. So, now we know
+                // the correct mips amount. Although, this seems like a weird solution.
                 settings.getHostSPeMips(),
                 settings.getBasicVmPeCnt() * sizeMultiplier);
         
