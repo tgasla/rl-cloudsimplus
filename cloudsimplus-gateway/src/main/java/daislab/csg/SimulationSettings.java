@@ -36,43 +36,43 @@ public class SimulationSettings {
 
     // Get SimulationSettings from environment variables,
     //  if an environment variable is not set, a default value is given
-    public SimulationSettings() {
-        // Host size is big enough to host a m5a.2xlarge VM
-        vmRunningHourlyCost = Double.parseDouble(
-                getEnvironmentVariable("VM_RUNNING_HOURLY_COST", "0.2"));
-        hostPeMips = Long.parseLong(
-                getEnvironmentVariable("HOST_PE_MIPS", "10000"));
-        hostBw = Long.parseLong(
-                getEnvironmentVariable("HOST_BW", "50000"));
-        hostRam = Long.parseLong(
-                getEnvironmentVariable("HOST_RAM", "65536"));
-        hostSize = Long.parseLong(
-                getEnvironmentVariable("HOST_SIZE", "16000"));
-        hostPeCnt = Integer.parseInt(
-                getEnvironmentVariable("HOST_PE_CNT", "14"));
-        queueWaitPenalty = Double.parseDouble(
-                getEnvironmentVariable("QUEUE_WAIT_PENALTY", "0.00001"));
-        datacenterHostsCnt = Long.parseLong(
-                getEnvironmentVariable("DATACENTER_HOSTS_CNT", "3000"));
-        basicVmRam = Long.parseLong(
-                getEnvironmentVariable("BASIC_VM_RAM", "8192"));
-        basicVmPeCount = Long.parseLong(
-                getEnvironmentVariable("BASIC_VM_PE_CNT", "2"));
-        vmShutdownDelay = Double.parseDouble(
-                getEnvironmentVariable("VM_SHUTDOWN_DELAY", "0"));
+//     public SimulationSettings() {
+//         // Host size is big enough to host a m5a.2xlarge VM
+//         vmRunningHourlyCost = Double.parseDouble(
+//                 getEnvironmentVariable("VM_RUNNING_HOURLY_COST", "0.2"));
+//         hostPeMips = Long.parseLong(
+//                 getEnvironmentVariable("HOST_PE_MIPS", "10000"));
+//         hostBw = Long.parseLong(
+//                 getEnvironmentVariable("HOST_BW", "50000"));
+//         hostRam = Long.parseLong(
+//                 getEnvironmentVariable("HOST_RAM", "65536"));
+//         hostSize = Long.parseLong(
+//                 getEnvironmentVariable("HOST_SIZE", "16000"));
+//         hostPeCnt = Integer.parseInt(
+//                 getEnvironmentVariable("HOST_PE_CNT", "14"));
+//         queueWaitPenalty = Double.parseDouble(
+//                 getEnvironmentVariable("QUEUE_WAIT_PENALTY", "0.00001"));
+//         datacenterHostsCnt = Long.parseLong(
+//                 getEnvironmentVariable("DATACENTER_HOSTS_CNT", "3000"));
+//         basicVmRam = Long.parseLong(
+//                 getEnvironmentVariable("BASIC_VM_RAM", "8192"));
+//         basicVmPeCount = Long.parseLong(
+//                 getEnvironmentVariable("BASIC_VM_PE_CNT", "2"));
+//         vmShutdownDelay = Double.parseDouble(
+//                 getEnvironmentVariable("VM_SHUTDOWN_DELAY", "0"));
 
-        // we can have as many VMs as the number of hosts, 
-        // as every host can have 1 small, 1 medium and 1 large Vm
-        maxVmsPerSize = Long.parseLong(
-                getEnvironmentVariable("MAX_VMS_PER_SIZE", "3000"));
-        printJobsPeriodically = Boolean.parseBoolean(
-                getEnvironmentVariable("PRINT_JOBS_PERIODICALLY", "false"));
-        payingForTheFullHour = Boolean.parseBoolean(
-                getEnvironmentVariable("PAYING_FOR_THE_FULL_HOUR", "false"));
-        storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(
-                getEnvironmentVariable(
-                "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
-    }
+//         // we can have as many VMs as the number of hosts, 
+//         // as every host can have 1 small, 1 medium and 1 large Vm
+//         maxVmsPerSize = Long.parseLong(
+//                 getEnvironmentVariable("MAX_VMS_PER_SIZE", "3000"));
+//         printJobsPeriodically = Boolean.parseBoolean(
+//                 getEnvironmentVariable("PRINT_JOBS_PERIODICALLY", "false"));
+//         payingForTheFullHour = Boolean.parseBoolean(
+//                 getEnvironmentVariable("PAYING_FOR_THE_FULL_HOUR", "false"));
+//         storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(
+//                 getEnvironmentVariable(
+//                 "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
+//     }
 
     // Get SimulationSettings from parameters
     // passed from the python client endpoint - the Gymnasium environment,
@@ -81,7 +81,7 @@ public class SimulationSettings {
         vmRunningHourlyCost = Double.parseDouble(
                 parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));
         hostPeMips = Long.parseLong(
-                parameters.getOrDefault("HOST_PE_MIPS", "110000"));
+                parameters.getOrDefault("HOST_PE_MIPS", "10000"));
         hostBw = Long.parseLong(
                 parameters.getOrDefault("HOST_BW", "50000"));
         hostRam = Long.parseLong(
@@ -89,11 +89,11 @@ public class SimulationSettings {
         hostSize = Long.parseLong(
                 parameters.getOrDefault("HOST_SIZE", "16000"));
         hostPeCnt = Integer.parseInt(
-                parameters.getOrDefault("HOST_PE_CNT", "22"));
+                parameters.getOrDefault("HOST_PE_CNT", "14"));
         queueWaitPenalty = Double.parseDouble(
                 parameters.getOrDefault("QUEUE_WAIT_PENALTY", "0.00001"));
         datacenterHostsCnt = Long.parseLong(
-                parameters.getOrDefault("DATACENTER_HOSTS_CNT", "50"));
+                parameters.getOrDefault("DATACENTER_HOSTS_CNT", "3000"));
         basicVmRam = Long.parseLong(
                 parameters.getOrDefault("BASIC_VM_RAM", "8192"));
         basicVmPeCount = Long.parseLong(
@@ -104,7 +104,7 @@ public class SimulationSettings {
         // we can have as many VMs as the number of hosts, 
         // as every host can have 1 small, 1 medium and 1 large Vm
         maxVmsPerSize = Long.parseLong(
-                parameters.getOrDefault("MAX_VMS_PER_SIZE", "50"));
+                parameters.getOrDefault("MAX_VMS_PER_SIZE", "3000"));
         printJobsPeriodically = Boolean.parseBoolean(
                 parameters.getOrDefault("PRINT_JOBS_PERIODICALLY", "false"));
         payingForTheFullHour = Boolean.parseBoolean(
@@ -166,7 +166,7 @@ public class SimulationSettings {
     }
 
     public long getDatacenterCores() {
-        return getDatacenterHostsCnt() * hostPeCnt;
+        return getDatacenterHostsCnt() * getHostPeCnt();
     }
 
     public long getBasicVmPeCnt() {

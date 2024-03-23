@@ -43,12 +43,13 @@ def to_nparray(raw_obs):
 
 
 # Based on https://gymnasium.farama.org/api/env/
-class SmallDC(gym.Env):
+class LargeDC(gym.Env):
     metadata = {'render_modes': ['human', 'ansi']}
 
     def __init__(self, **kwargs):
         super().__init__()
-        # actions are identified by integers 0-n
+
+        # actions are identified by integers 0-6
         self.num_of_actions = 7
         self.action_space = spaces.Discrete(self.num_of_actions)
 
@@ -78,17 +79,18 @@ class SmallDC(gym.Env):
             'VM_RUNNING_HOURLY_COST':
                 kwargs.get('vm_running_hourly_cost', '0.2'),
             'HOST_PE_MIPS':
-                kwargs.get('host_pe_mips', '10000'),
+                kwargs.get('host_pe_mips', '222122'),
             'HOST_BW':
-                kwargs.get('host_bw', '50000'),
+                kwargs.get('host_bw', '100000'),
+            # 192 GB of RAM = 192 * 1024 MB
             'HOST_RAM':
-                kwargs.get('host_ram', '65536'),
+                kwargs.get('host_ram', '196608'),
             'HOST_SIZE':
-                kwargs.get('hostSize', '16000'),
+                kwargs.get('hostSize', '400000'),
             'HOST_PE_CNT':
-                kwargs.get('hostPeCnt', '14'),
+                kwargs.get('hostPeCnt', '40'),
             'DATACENTER_HOSTS_CNT':
-                kwargs.get('datacenter_hosts_cnt', '50'),
+                kwargs.get('datacenter_hosts_cnt', '500'),
             'BASIC_VM_RAM':
                 kwargs.get('basic_vm_ram', '8192'),
             'BASIC_VM_PE_CNT':
@@ -96,7 +98,7 @@ class SmallDC(gym.Env):
             'VM_SHUTDOWN_DELAY':
                 kwargs.get('vm_shutdown_delay', '0.0'),
             'MAX_VMS_PER_SIZE':
-                kwargs.get('max_vms_per_size', '50'),
+                kwargs.get('max_vms_per_size', '500'),
             'PRINT_JOBS_PERIODICALLY':
                 kwargs.get('print_jobs_periodically', 'false'),
             'PAYING_FOR_THE_FULL_HOUR':

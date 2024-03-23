@@ -1,3 +1,6 @@
+# TODO: I have to ditch this makefile in favor of a batch script.
+# This would make much more sense.
+
 MANAGER_VERSION=0.10
 GATEWAY_VERSION=1.9.1
 
@@ -22,10 +25,10 @@ build-manager:
 run-tensorboard:
 	docker run --rm --name tensorboard -t -d -v ./tb-logs/:/tb-logs/ -p 80:6006 tensorboard
 
-run-compose:
+run-compose-detached:
 	docker compose up -d
 
-run-compose-build:
+run-compose-detached-build:
 	docker compose up -d --build
 
 rmi-compose-images: rmi-gateway rmi-manager
@@ -48,6 +51,8 @@ prune-all:
 	docker container prune -f
 	docker image prune -f
 
-.PHONY: build-tensorboard build-gateway build-manager \
-run-tensorboard run-compose rmi-tensorboard rmi-gateway \
-rmi-manager prune-all rmi-compose-images clean-gateway
+.PHONY: build-all build-compose-images build-tensorboard build-gateway \
+build-gateway-debug build-manager run-tensorboard run-compose-detached \
+run-compose-detached-build rmi-compose-images rmi-tensorboard rmi-gateway \
+rmi-manager clean-gateway prune-all
+ 

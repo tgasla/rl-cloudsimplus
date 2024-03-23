@@ -15,5 +15,9 @@ class RngPolicy(BasePolicy):
             action_space
         )
 
-    def _predict(self, observation: PyTorchObs, deterministic: bool = False) -> th.Tensor:
+    def _predict(
+        self,
+        observation: PyTorchObs,
+        deterministic: bool = False
+    ) -> th.Tensor:
         pass
