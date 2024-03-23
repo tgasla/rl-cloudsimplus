@@ -1,4 +1,4 @@
-package daislab.csg;
+package daislab.cspg;
 
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicySimple;
 import org.cloudsimplus.cloudlets.Cloudlet;

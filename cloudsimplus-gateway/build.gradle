@@ -82,7 +82,7 @@ if (os.contains('linux')) {
 }
 
 application {
-    mainClass.set('daislab.csg.Main')
+    mainClass.set('daislab.cspg.Main')
 }
 
 docker {

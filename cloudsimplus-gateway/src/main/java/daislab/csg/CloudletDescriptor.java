@@ -1,4 +1,4 @@
-package daislab.csg;
+package daislab.cspg;
 
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.cloudlets.CloudletSimple;

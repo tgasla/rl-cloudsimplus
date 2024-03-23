@@ -1,4 +1,4 @@
-package daislab.csg;
+package daislab.cspg;
 
 import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
