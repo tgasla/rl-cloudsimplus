@@ -67,7 +67,7 @@ public class CloudSimProxy {
                          double simulationSpeedUp) {
         this.settings = settings;
         this.cloudSimPlus = new CloudSimPlus(0.01);
-        this.broker = createDatacenterBroker();
+        this.broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         this.datacenter = createDatacenter();
         this.vmCost = new VmCost(
                 settings.getVmRunningHourlyCost(),
@@ -191,11 +191,6 @@ public class CloudSimProxy {
         }
 
         return peList;
-    }
-
-    private DatacenterBrokerFirstFitFixed createDatacenterBroker() {
-        // this should be first fit
-        return new DatacenterBrokerFirstFitFixed(cloudSimPlus);
     }
 
     public void runFor(final double interval) {
@@ -517,6 +512,7 @@ public class CloudSimProxy {
          * we probably "forget" to execute some cloudlets
          * it seems to me that there is simply some list in the scheduler that we forget about
          * and we need to take into account
+         * 
          * I think this is now fixed, have to double-check it though.
          */
 
@@ -558,7 +554,7 @@ public class CloudSimProxy {
             if (submissionDelay < currentClock) {
                 submissionDelay = 1.0;
             } else {
-                // if we the Cloudlet still hasn't been started, 
+                // if the Cloudlet still hasn't been started, 
                 // let it start at the scheduled time.
                 submissionDelay -= currentClock;
             }
