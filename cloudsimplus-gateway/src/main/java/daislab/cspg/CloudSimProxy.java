@@ -330,7 +330,7 @@ public class CloudSimProxy {
                             && current.getTag() == CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING
                             && current.getSource() == datacenter
                             && current.getDestination() == datacenter
-                            &&  previous.getTime() == current.getTime()
+                            && previous.getTime() == current.getTime()
                             && current.getData() == null
                     ) {
                         return true;
