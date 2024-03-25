@@ -16,7 +16,7 @@ import static org.apache.commons.math3.stat.StatUtils.percentile;
 public class WrappedSimulation {
 
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(WrappedSimulation.class.getName());
+            LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
     private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
     private final double queueWaitPenalty;
     private final List<CloudletDescriptor> initialJobsDescriptors;

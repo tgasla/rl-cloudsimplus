@@ -16,7 +16,7 @@ public class MultiSimulationEnvironment {
     private SimulationFactory simulationFactory = new SimulationFactory();
 
     private static final Logger LOGGER 
-        = LoggerFactory.getLogger(MultiSimulationEnvironment.class.getName());
+        = LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
 
     public String createSimulation(final Map<String, String> maybeParameters) {
         WrappedSimulation simulation = simulationFactory.create(maybeParameters);

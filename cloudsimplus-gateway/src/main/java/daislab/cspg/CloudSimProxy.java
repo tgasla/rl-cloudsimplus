@@ -45,7 +45,8 @@ public class CloudSimProxy {
     public static final String LARGE = "L";
     public static final String[] VM_TYPES = {SMALL, MEDIUM, LARGE};
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CloudSimProxy.class.getName());
+    private static final Logger LOGGER = 
+            LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
 
     private final DatacenterBrokerFirstFitFixed broker;
     private final CloudSimPlus cloudSimPlus;
