@@ -19,7 +19,7 @@ public class VmCounter {
         return getCurrentOfType(type) < maxVmsPerSize;
     }
 
-    public void recordNewVM(final String type) {
+    public void recordNewVm(final String type) {
         final Long currentOfType = getCurrentOfType(type);
         this.vmCounts.put(type, currentOfType + 1);
     }
@@ -32,7 +32,7 @@ public class VmCounter {
         this.vmCounts.put(type, initialVmsCount);
     }
 
-    public void recordRemovedVM(final String type) {
+    public void recordRemovedVm(final String type) {
         final Long currentOfType = getCurrentOfType(type);
         this.vmCounts.put(type, currentOfType - 1);
     }

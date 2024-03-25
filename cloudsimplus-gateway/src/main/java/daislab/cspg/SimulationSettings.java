@@ -2,7 +2,7 @@ package daislab.cspg;
 
 import java.util.Map;
 
-import static org.apache.commons.lang3.SystemUtils.getEnvironmentVariable;
+// import static org.apache.commons.lang3.SystemUtils.getEnvironmentVariable;
 
 /*
  * Class to describe the simulation settings.

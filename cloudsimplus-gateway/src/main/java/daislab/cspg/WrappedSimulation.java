@@ -174,20 +174,20 @@ public class WrappedSimulation {
                 break;
             case 1:
                 // adding a new vm
-                isValid = addNewVM(CloudSimProxy.SMALL);
+                isValid = addNewVm(CloudSimProxy.SMALL);
                 break;
             case 2:
                 // removing randomly one of the vms
                 isValid = removeVM(CloudSimProxy.SMALL);
                 break;
             case 3:
-                isValid = addNewVM(CloudSimProxy.MEDIUM);
+                isValid = addNewVm(CloudSimProxy.MEDIUM);
                 break;
             case 4:
                 isValid = removeVM(CloudSimProxy.MEDIUM);
                 break;
             case 5:
-                isValid = addNewVM(CloudSimProxy.LARGE);
+                isValid = addNewVm(CloudSimProxy.LARGE);
                 break;
             case 6:
                 isValid = removeVM(CloudSimProxy.LARGE);
@@ -197,8 +197,8 @@ public class WrappedSimulation {
     }
 
     private boolean removeVM(final String type) {
-        if (cloudSimProxy.removeRandomlyVM(type)) {
-            this.vmCounter.recordRemovedVM(type);
+        if (cloudSimProxy.removeRandomVm(type)) {
+            this.vmCounter.recordRemovedVm(type);
             return true;
         } else {
             debug("Removing a VM of type "
@@ -211,10 +211,10 @@ public class WrappedSimulation {
         }
     }
 
-    private boolean addNewVM(final String type) {
+    private boolean addNewVm(final String type) {
         if (vmCounter.hasCapacity(type)) {
-            cloudSimProxy.addNewVM(type);
-            vmCounter.recordNewVM(type);
+            cloudSimProxy.addNewVm(type);
+            vmCounter.recordNewVm(type);
             return true;
         } else {
             debug("Adding a VM of type "
