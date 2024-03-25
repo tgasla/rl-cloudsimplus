@@ -15,7 +15,7 @@ import static org.apache.commons.math3.stat.StatUtils.percentile;
 
 public class WrappedSimulation {
 
-    private static final Logger logger =
+    private static final Logger LOGGER =
             LoggerFactory.getLogger(WrappedSimulation.class.getName());
     private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
     private final double queueWaitPenalty;
@@ -59,11 +59,11 @@ public class WrappedSimulation {
     }
 
     private void info(String message) {
-        logger.info(getIdentifier() + " " + message);
+        LOGGER.info(getIdentifier() + " " + message);
     }
 
     private void debug(String message) {
-        logger.debug(getIdentifier() + " " + message);
+        LOGGER.debug(getIdentifier() + " " + message);
     }
 
     public String getIdentifier() {
@@ -315,7 +315,7 @@ public class WrappedSimulation {
     private double calculateReward(boolean isValid) {
         final int penaltyMultiplier = (isValid) ? 1 : 1000;
         if (!isValid) {
-            logger.info("Penalty given to agent because action was not possible");
+            LOGGER.info("Penalty given to agent because action was not possible");
         }
         // reward is the negative cost of running the infrastructure
         // - any penalties from jobs waiting in the queue
