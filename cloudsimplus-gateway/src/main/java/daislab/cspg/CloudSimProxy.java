@@ -43,6 +43,7 @@ public class CloudSimProxy {
     public static final String SMALL = "S";
     public static final String MEDIUM = "M";
     public static final String LARGE = "L";
+    public static final String[] VM_TYPES = {SMALL, MEDIUM, LARGE};
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudSimProxy.class.getName());
 
