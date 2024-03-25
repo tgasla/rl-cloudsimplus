@@ -14,9 +14,9 @@ public class LoggingDatacenter extends DatacenterSimple {
             = LoggerFactory.getLogger(LoggingDatacenter.class.getSimpleName());
 
     public LoggingDatacenter(
-            Simulation simulation,
-            List<? extends Host> hostList,
-            VmAllocationPolicy vmAllocationPolicy) {
+            final Simulation simulation,
+            final List<? extends Host> hostList,
+            final VmAllocationPolicy vmAllocationPolicy) {
         super(simulation, hostList, vmAllocationPolicy);
     }
 

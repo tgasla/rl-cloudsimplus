@@ -77,7 +77,7 @@ public class SimulationSettings {
     // Get SimulationSettings from parameters
     // passed from the python client endpoint - the Gymnasium environment,
     // if an environment variable is not set, a default value is given
-    public SimulationSettings(Map<String, String> parameters) {
+    public SimulationSettings(final Map<String, String> parameters) {
         vmRunningHourlyCost = Double.parseDouble(
                 parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));
         hostPeMips = Long.parseLong(

@@ -12,7 +12,7 @@ public class SimulationStepResult {
     private final double[] obs;
     private final double reward;
 
-    public SimulationStepResult(boolean done, double[] obs, double reward) {
+    public SimulationStepResult(final boolean done, final double[] obs, final double reward) {
         this.done = done;
         this.obs = obs;
         this.reward = reward;

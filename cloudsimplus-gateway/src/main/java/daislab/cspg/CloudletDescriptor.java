@@ -13,7 +13,11 @@ public class CloudletDescriptor {
     private final long mi;
     private final int numberOfCores;
 
-    public CloudletDescriptor(int jobId, long submissionDelay, long mi, int numberOfCores) {
+    public CloudletDescriptor(
+                final int jobId,
+                final long submissionDelay,
+                final long mi,
+                final int numberOfCores) {
         this.jobId = jobId;
         this.submissionDelay = submissionDelay;
         this.mi = mi;
@@ -37,7 +41,7 @@ public class CloudletDescriptor {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CloudletDescriptor that = (CloudletDescriptor) o;

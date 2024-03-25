@@ -9,7 +9,7 @@ import java.net.InetAddress;
 
 public class Main {
 
-    private static final Logger logger = LoggerFactory.getLogger(Main.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class.getName());
     private static final Logger cloudSimLogger = LoggerFactory.getLogger("CLOUDSIM");
 
     public static void main(String[] args) throws Exception {
@@ -24,7 +24,7 @@ public class Main {
                 null,
                 new CallbackClient(GatewayServer.DEFAULT_PYTHON_PORT, all)
         );
-        logger.info("Starting server: " 
+        LOGGER.info("Starting server: " 
                 + gatewayServer.getAddress() + " "
                 + gatewayServer.getPort());
         gatewayServer.start();

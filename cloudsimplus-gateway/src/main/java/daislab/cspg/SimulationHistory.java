@@ -15,7 +15,7 @@ public class SimulationHistory {
         history = new HashMap<>();
     }
 
-    public <T> void record(String key, T value) {
+    public <T> void record(final String key, final T value) {
         if (!history.containsKey(key)) {
             history.put(key, new ArrayList<>());
         }
