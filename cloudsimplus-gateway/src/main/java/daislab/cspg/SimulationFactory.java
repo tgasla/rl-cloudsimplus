@@ -14,8 +14,8 @@ import java.util.Map;
 
 public class SimulationFactory {
 
-    private static final Logger logger =
-            LoggerFactory.getLogger(SimulationFactory.class.getName());
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(SimulationFactory.class.getSimpleName());
 
     private static final Type cloudletDescriptors =
             new TypeToken<List<CloudletDescriptor>>() {}.getType();

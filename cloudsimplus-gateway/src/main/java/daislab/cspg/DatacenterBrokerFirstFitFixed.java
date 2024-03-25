@@ -158,5 +158,4 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         // on "waiting" list
         return Vm.NULL;
     }
-
 }

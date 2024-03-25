@@ -15,9 +15,10 @@ import static org.apache.commons.math3.stat.StatUtils.percentile;
 
 public class WrappedSimulation {
 
-    private static final Logger logger =
-            LoggerFactory.getLogger(WrappedSimulation.class.getName());
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
     private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
+
     private final double queueWaitPenalty;
     private final List<CloudletDescriptor> initialJobsDescriptors;
     private final double simulationSpeedUp;
@@ -59,11 +60,11 @@ public class WrappedSimulation {
     }
 
     private void info(String message) {
-        logger.info(getIdentifier() + " " + message);
+        LOGGER.info(getIdentifier() + " " + message);
     }
 
     private void debug(String message) {
-        logger.debug(getIdentifier() + " " + message);
+        LOGGER.debug(getIdentifier() + " " + message);
     }
 
     public String getIdentifier() {
@@ -115,18 +116,18 @@ public class WrappedSimulation {
         return gson.toJson(renderedEnv);
     }
 
-    public SimulationStepResult step(int action) {
+    public SimulationStepResult step(double[] action) {
 
         if (cloudSimProxy == null) {
             throw new RuntimeException("Simulation not reset! Please call the reset() function!");
         }
 
-        debug("Executing action: " + action);
+        debug("Executing action: " + action[0] + ", " + action[1]);
 
         long startAction = System.nanoTime();
         boolean isValid = executeAction(action);
         long stopAction = System.nanoTime();
-        cloudSimProxy.runFor(INTERVAL);
+        cloudSimProxy.runFor(INTERVAL, action);
 
         long startMetrics = System.nanoTime();
         collectMetrics();
@@ -136,7 +137,8 @@ public class WrappedSimulation {
         double[] observation = getObservation();
         double reward = calculateReward(isValid);
 
-        this.simulationHistory.record("action", action);
+        this.simulationHistory.record("action[0]", action[0]);
+        this.simulationHistory.record("action[1]", action[1]);
         this.simulationHistory.record("reward", reward);
         this.simulationHistory.record("resourceCost", cloudSimProxy.getRunningCost());
         this.simulationHistory.record(
@@ -153,7 +155,7 @@ public class WrappedSimulation {
 
         double metricsTime = (stopMetrics - startMetrics) / 1_000_000_000d;
         double actionTime = (stopAction - startAction) / 1_000_000_000d;
-        debug("Step finished (action: " + action + ") is done: " + done
+        debug("Step finished (action: " + action[0] + ", " + action[1] + ") is done: " + done
                 + " Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents()
                 + " Metrics (s): " + metricsTime
                 + " Action (s): " + actionTime);
@@ -165,61 +167,82 @@ public class WrappedSimulation {
         );
     }
 
-    private boolean executeAction(int action) {
-        boolean isValid = true;
+    private int continuousToPositiveDiscrete(final double continuous, final long maxDiscreteValue) {
+        final int discrete = (int) Math.round(continuous * maxDiscreteValue);
+        return Math.abs(discrete);
+    }
 
-        switch (action) {
-            case 0:
-                // nothing happens
-                break;
-            case 1:
-                // adding a new vm
-                isValid = addNewVM(CloudSimProxy.SMALL);
-                break;
-            case 2:
-                // removing randomly one of the vms
-                isValid = removeVM(CloudSimProxy.SMALL);
-                break;
-            case 3:
-                isValid = addNewVM(CloudSimProxy.MEDIUM);
-                break;
-            case 4:
-                isValid = removeVM(CloudSimProxy.MEDIUM);
-                break;
-            case 5:
-                isValid = addNewVM(CloudSimProxy.LARGE);
-                break;
-            case 6:
-                isValid = removeVM(CloudSimProxy.LARGE);
-                break;
+    private boolean executeAction(final double[] action) {
+
+        debug("action is " + action[0] + ", " + action[1]);
+
+        boolean isValid = true;
+        final int id = continuousToPositiveDiscrete(
+                    action[0], 
+                    cloudSimProxy.getLastCreatedVmId());
+
+        debug("translated action[0] = " + id);
+
+        // action[0] = 0 does nothing
+
+        // action < 0 destroys a VM with VmId = Math.abs(scaled_action)
+        if (action[0] < 0) {
+            debug("will try to destroy vm with id = " + id);
+            Vm vm = broker.getVmExecList().get(id);
+            if (vm == Vm.NULL) {
+                isValid = false;
+                logger.warn("Can't kill the VM with id " + id + ". No such vm found.");
+                return isValid;
+            }
+
+            isValid = destroyVm(vm);
+        }
+        // action > 0 creates a VM in the same host of VM with 
+        // Vm.id = action[0] and Vm.type = action[1]
+        else if (action[0] > 0) {
+            final int vmTypeIndex = continuousToPositiveDiscrete(
+                    action[1],
+                    CloudSimProxy.VM_TYPES.length - 1);
+            debug("will try to create a new Vm on the same host as the vm with id = " 
+                    + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
+            isValid = addNewVM(CloudSimProxy.VM_TYPES[vmTypeIndex]);
         }
         return isValid;
     }
 
-    private boolean removeVM(String type) {
+    private boolean destroyVm(final <? extends Vm> vm) {
+        String vmToKillType = cloudSimProxy.destroyVm(vm);
+        if (vmToKillType != null) {
+            this.vmCounter.recordRemovedVM(vmToKillType);
+            return true;
+        }
+        debug("Destroy VM with ID " + id + " request was ignored.");
+        return false;
+    }
+
+    private boolean removeVM(final String type) {
         if (cloudSimProxy.removeRandomlyVM(type)) {
             this.vmCounter.recordRemovedVM(type);
             return true;
-        } else {
-            debug("Removing a VM of type "
-                    + type + " requested but the request was ignored. Stats: "
-                    + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
-                    + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
-                    + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
-            );
-            return false;
         }
+        debug("Removing a VM of type "
+                + type + " requested but the request was ignored. Stats: "
+                + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
+                + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
+                + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
+        );
+        return false;
     }
 
-    private boolean addNewVM(String type) {
+    private boolean addNewVM(final String type) {
         if (vmCounter.hasCapacity(type)) {
             cloudSimProxy.addNewVM(type);
             vmCounter.recordNewVM(type);
             return true;
-        } else {
+        }
+        else {
             debug("Adding a VM of type "
-                    + type
-                    + " requested but the request was ignored (MAX_VMS_PER_SIZE "
+                    + type + " requested but the request was ignored (MAX_VMS_PER_SIZE "
                     + this.settings.getMaxVmsPerSize() + " reached) Stats: "
                     + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
                     + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
@@ -315,7 +338,7 @@ public class WrappedSimulation {
     private double calculateReward(boolean isValid) {
         final int penaltyMultiplier = (isValid) ? 1 : 1000;
         if (!isValid) {
-            logger.info("Penalty given to agent because action was not possible");
+            info("Penalty given to the agent because the action was not possible");
         }
         // reward is the negative cost of running the infrastructure
         // - any penalties from jobs waiting in the queue

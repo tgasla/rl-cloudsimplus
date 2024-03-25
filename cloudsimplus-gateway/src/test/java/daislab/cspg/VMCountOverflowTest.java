@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class VMCountOverflowTest {
 
+    private static final double[] nopAction = {0, 0};
+
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();
 
@@ -38,7 +40,7 @@ public class VMCountOverflowTest {
 
         int i = 0;
         while (i++ < 1000) {
-            SimulationStepResult result = multiSimulationEnvironment.step(simulationId, 1);
+            SimulationStepResult result = multiSimulationEnvironment.step(simulationId, nopAction);
             System.out.println("Result: " + result);
 
             if (result.isDone()) {

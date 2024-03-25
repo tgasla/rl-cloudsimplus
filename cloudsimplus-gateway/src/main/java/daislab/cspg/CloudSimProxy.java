@@ -42,8 +42,10 @@ public class CloudSimProxy {
     public static final String SMALL = "S";
     public static final String MEDIUM = "M";
     public static final String LARGE = "L";
+    public static final String[] VM_TYPES = {SMALL, MEDIUM, LARGE};
 
-    private static final Logger logger = LoggerFactory.getLogger(CloudSimProxy.class.getName());
+    private static final Logger LOGGER = 
+            LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
 
     private final DatacenterBrokerFirstFitFixed broker;
     private final CloudSimPlus cloudSimPlus;
@@ -126,7 +128,7 @@ public class CloudSimProxy {
             final long hostBw = settings.getHostBw();
             final long hostSize = settings.getHostSize();
             Host host =
-                    new HostSimple(hostRam, hostBw, hostSize, peList)
+                    new HostWithoutCreatedList(hostRam, hostBw, hostSize, peList)
                             .setRamProvisioner(new ResourceProvisionerSimple())
                             .setBwProvisioner(new ResourceProvisionerSimple())
                             .setVmScheduler(new VmSchedulerTimeShared());
@@ -142,28 +144,30 @@ public class CloudSimProxy {
 
         for (int i = 0; i < vmCount; i++) {
             // 1 VM == 1 HOST for simplicity
-            vmList.add(createVmWithId(type));
+            vmList.add(createVm(type));
         }
 
         return vmList;
     }
 
-    private Vm createVmWithId(String type) {
+    private Vm createVm(String type) {
         int sizeMultiplier = getSizeMultiplier(type);
 
         Vm vm = new VmSimple(
                 this.nextVmId,
                 settings.getHostPeMips(),
                 settings.getBasicVmPeCnt() * sizeMultiplier);
-        this.nextVmId++;
-        vm
+                vm
                 .setRam(settings.getBasicVmRam() * sizeMultiplier)
                 .setBw(settings.getBasicVmBw())
                 .setSize(settings.getBasicVmSize())
                 .setCloudletScheduler(new OptimizedCloudletScheduler())
                 .setDescription(type)
                 .setShutDownDelay(settings.getVmShutdownDelay());
-        vmCost.notifyCreateVM(vm);
+
+        vmCost.addNewVmToList(vm);
+        this.nextVmId++;
+        
         return vm;
     }
 
@@ -193,7 +197,7 @@ public class CloudSimProxy {
         return peList;
     }
 
-    public void runFor(final double interval) {
+    public void runFor(final double interval, final double[] action) {
         if (!this.isRunning()) {
             throw new RuntimeException("The simulation is not running - "
                     + "please reset or create a new one!");
@@ -260,7 +264,7 @@ public class CloudSimProxy {
     }
 
     private boolean shouldPrintJobStats() {
-        return this.settings.getPrintJobsPeriodically() 
+        return settings.getPrintJobsPeriodically() 
                 && Double.valueOf(this.clock()).longValue() % 20000 == 0;
     }
 
@@ -399,6 +403,10 @@ public class CloudSimProxy {
         return this.finishedIds.size() < this.jobs.size();
     }
 
+    public int getLastCreatedVmId() {
+        return nextVmId - 1;
+    }
+
     public long getNumberOfActiveCores() {
         final Optional<Long> reduce = this.broker
                 .getVmExecList()
@@ -455,15 +463,36 @@ public class CloudSimProxy {
     }
 
     public void addNewVM(String type) {
+        Vm newVm = createVm(type);
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
-        Vm newVm = createVmWithId(type);
-        double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
+        final double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
         logger.debug("Agent action: Create a " + type + " VM");
         broker.submitVm(newVm);
         logger.debug("VM creating requested, delay: " + delay + " type: " + type);
+    }
+
+    // if a vm is destroyed, this method returns the type of it.
+    public String destroyVm(final <? extends Vm> vm) {
+
+        String vmType = vm.getDescription();
+
+        logger.debug("vmType = " + vmToKillType);
+
+        List<Vm> vmsOfType = vmExecList
+                .parallelStream()
+                .filter(vm -> vmType.equals((vm.getDescription())))
+                .collect(Collectors.toList());
+        logger.debug("Agent action: Remove VM with id " + id);
+        if (canKillVm(vmType, vmsOfType.size())) {
+            destroyVm(vm);
+            return vmType;
+        } else {
+            logger.warn("Can't kill the VM. It is the only SMALL one running");
+            return null;
+        }
     }
 
     public boolean removeRandomlyVM(String type) {
@@ -479,7 +508,7 @@ public class CloudSimProxy {
             destroyVm(vmsOfType.get(vmToKillIdx));
             return true;
         } else {
-            logger.warn("Can't kill a VM - only one running");
+            logger.warn("Can't kill the VM. It is the only SMALL one running");
             return false;
         }
     }

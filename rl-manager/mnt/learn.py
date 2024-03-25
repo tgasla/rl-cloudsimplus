@@ -106,7 +106,7 @@ done = False
 while not done:
     action, _states = model.predict(obs)
     print(f"ACTION = {action}")
-    obs, reward, terminated, truncated, info = env.step(int(action))
+    obs, reward, terminated, truncated, info = env.step(action)
     print(f"Iteration: {it}")
     print("State Space:")
     print("-" * 50)

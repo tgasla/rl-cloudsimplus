@@ -15,8 +15,8 @@ public class MultiSimulationEnvironment {
 
     private SimulationFactory simulationFactory = new SimulationFactory();
 
-    private static final Logger logger 
-        = LoggerFactory.getLogger(MultiSimulationEnvironment.class.getName());
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
 
     public String createSimulation(Map<String, String> maybeParameters) {
         WrappedSimulation simulation = simulationFactory.create(maybeParameters);
@@ -53,7 +53,7 @@ public class MultiSimulationEnvironment {
         return simulation.render();
     }
 
-    public SimulationStepResult step(String simulationIdentifier, int action) {
+    public SimulationStepResult step(String simulationIdentifier, double[] action) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
         return simulation.step(action);
     }
@@ -77,7 +77,7 @@ public class MultiSimulationEnvironment {
     }
 
     public void shutdown() {
-        logger.info("Shutting down as per users request");
+        logger.info("Shutting down as per user's request");
         System.exit(0);
     }
 

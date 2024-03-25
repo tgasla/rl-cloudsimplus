@@ -28,6 +28,7 @@ public class SimulationSettings {
     private final long datacenterHostsCnt;
     private final long basicVmRam;
     private final long basicVmPeCount;
+    private final double vmStartupDelay;
     private final double vmShutdownDelay;
     private final long maxVmsPerSize;
     private final boolean printJobsPeriodically;
@@ -98,6 +99,8 @@ public class SimulationSettings {
                 parameters.getOrDefault("BASIC_VM_RAM", "8192"));
         basicVmPeCount = Long.parseLong(
                 parameters.getOrDefault("BASIC_VM_PE_CNT", "2"));
+        vmStartupDelay = Double.parseDouble(
+                parameters.getOrDefault("VM_STARTUP_DELAY", "0"));
         vmShutdownDelay = Double.parseDouble(
                 parameters.getOrDefault("VM_SHUTDOWN_DELAY", "0"));
 
@@ -171,6 +174,10 @@ public class SimulationSettings {
 
     public long getBasicVmPeCnt() {
         return this.basicVmPeCount;
+    }
+
+    public double getVmStartupDelay() {
+        return this.vmStartupDelay;
     }
 
     public double getVmShutdownDelay() {

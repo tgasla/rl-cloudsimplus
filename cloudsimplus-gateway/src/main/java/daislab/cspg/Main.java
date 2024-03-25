@@ -9,7 +9,7 @@ import java.net.InetAddress;
 
 public class Main {
 
-    private static final Logger logger = LoggerFactory.getLogger(Main.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class.getSimpleName());
     private static final Logger cloudSimLogger = LoggerFactory.getLogger("CLOUDSIM");
 
     public static void main(String[] args) throws Exception {

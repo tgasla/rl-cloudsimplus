@@ -21,7 +21,8 @@ public class IntegrationTest {
 	private static final long maxVmsPerSize = datacenterHostsCnt;
 	private static final long hostPeMips = 10000;
 	private static final int hostPeCnt = 14;
-
+    private static final double[] nopAction = {0, 0};
+    
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();
 
@@ -62,7 +63,7 @@ public class IntegrationTest {
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
         multiSimulationEnvironment.reset(simulationId);
-        multiSimulationEnvironment.step(simulationId, 0);
+        multiSimulationEnvironment.step(simulationId, nopAction);
         multiSimulationEnvironment.close(simulationId);
     }
 
@@ -91,10 +92,10 @@ public class IntegrationTest {
 
         multiSimulationEnvironment.reset(simulationId);
         int stepsExecuted = 1;
-        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
+        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
-            step = multiSimulationEnvironment.step(simulationId, 0);
+            step = multiSimulationEnvironment.step(simulationId, nopAction);
             stepsExecuted++;
         }
         
@@ -121,13 +122,17 @@ public class IntegrationTest {
 
         multiSimulationEnvironment.reset(simulationId);
         int stepsExecuted = 1;
-        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
+        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
 
         double maxCoreRatio = 0.0;
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
-            int action = stepsExecuted == 20 ? 1 : 0;
+            double[] createSVmAction = {1,0};
+
+            double[] action = stepsExecuted == 20 ? new double[]{1, 0} : nopAction;
+
+            System.out.println("action on this step is " + action[0] + ", " + action[1]);
 
             step = multiSimulationEnvironment.step(simulationId, action);
             if (step.getObs()[0] > maxCoreRatio) {
@@ -145,6 +150,11 @@ public class IntegrationTest {
                 + initialLVmCount * basicVmPeCount * 4;
 
         final long datacenterCores = datacenterHostsCnt * hostPeCnt;
+
+        System.out.println("totalVmPes = " + totalVmPes 
+                + " datacenterCores = " + datacenterCores
+                + " totalVmPes/datacenterCores = " + (double)totalVmPes/datacenterCores
+                + " maxCoreRatio = " + maxCoreRatio);
         
         assertEquals((double) totalVmPes/datacenterCores, maxCoreRatio, 0.000001);
 
@@ -167,14 +177,15 @@ public class IntegrationTest {
         multiSimulationEnvironment.reset(simulationId);
 
         int stepsExecuted = 1;
-        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
+        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
 
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
             if (stepsExecuted == 20) {
                 // delete a SMALL VM
-                step = multiSimulationEnvironment.step(simulationId, 2);
+                double[] action = {-0.1, 0};
+                step = multiSimulationEnvironment.step(simulationId, action);
 
                 final long totalVmPes =
                         (initialSVmCount - 1) * basicVmPeCount
@@ -187,7 +198,7 @@ public class IntegrationTest {
                         step.getObs()[0], 0.000001);
             }
 
-            step = multiSimulationEnvironment.step(simulationId, 0);
+            step = multiSimulationEnvironment.step(simulationId, nopAction);
 
             System.out.println("Observations: "
                     + Arrays.toString(step.getObs()) + " "
@@ -219,13 +230,13 @@ public class IntegrationTest {
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
         multiSimulationEnvironment.reset(simulationId);
-        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, 0);
+        SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
         int stepsExecuted = 1;
 
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
-            int action = stepsExecuted == 10 ? 2 : 0;
+            double[] action = stepsExecuted == 10 ? new double[]{-0.1, 0} : nopAction;
             step = multiSimulationEnvironment.step(simulationId, action);
 
             System.out.println("Observations: " + Arrays.toString(step.getObs()) + " "

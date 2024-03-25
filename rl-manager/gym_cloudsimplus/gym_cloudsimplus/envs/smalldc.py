@@ -5,26 +5,38 @@ from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
 import numpy as np
 
-# Action space - 7 discrete actions
-# ACTION_NOTHING: 0
-# ACTION_ADD_VM: 1
-# ACTION_REMOVE_VM: 2
-# ACTION_ADD_MEDIUM_VM: 3
-# ACTION_REMOVE_MEDIUM_VM: 4
-# ACTION_ADD_LARGE_VM: 5
-# ACTION_REMOVE_LARGE_VM: 6
+"""
+Action space
 
-# Observation space - 7 continuous values within [0-1]
-# "vmAllocatedRatioHistory",
-# "avgCPUUtilizationHistory",
-# "p90CPUUtilizationHistory",
-# "avgMemoryUtilizationHistory",
-# "p90MemoryUtilizationHistory",
-# "waitingJobsRatioGlobalHistory",
-# "waitingJobsRatioRecentHistory"
+A vector of 2 continuous numbers
 
-address = os.getenv('CLOUDSIM_GATEWAY_HOST', 'gateway')
-port = os.getenv('CLOUDSIM_GATEWAY_PORT', '25333')
+The first number is in range [-1,1]
+Positive value - create a VM
+Negative value - destroy a VM
+The range shows the id of the VM that will be destroyed
+
+The second number is in range [0,1]
+It shows the size of the VM that will be created/destroyed
+
+
+
+Observation space
+
+A vector of 7 continuous values 
+
+All values are within range [0,1]
+
+"vmAllocatedRatioHistory",
+"avgCPUUtilizationHistory",
+"p90CPUUtilizationHistory",
+"avgMemoryUtilizationHistory",
+"p90MemoryUtilizationHistory",
+"waitingJobsRatioGlobalHistory",
+"waitingJobsRatioRecentHistory"
+"""
+
+address = os.getenv("CLOUDSIM_GATEWAY_HOST", "gateway")
+port = os.getenv("CLOUDSIM_GATEWAY_PORT", "25333")
 
 parameters = GatewayParameters(address=address,
                                port=int(port),
@@ -44,13 +56,17 @@ def to_nparray(raw_obs):
 
 # Based on https://gymnasium.farama.org/api/env/
 class SmallDC(gym.Env):
-    metadata = {'render_modes': ['human', 'ansi']}
+    metadata = {"render_modes": ["human", "ansi"]}
 
     def __init__(self, **kwargs):
         super().__init__()
-        # actions are identified by integers 0-n
-        self.num_of_actions = 7
-        self.action_space = spaces.Discrete(self.num_of_actions)
+
+        self.action_space = spaces.Box(
+            low=np.array([-1, 0]), 
+            high=np.array([1, 1]),
+            shape=(2,),
+            dtype=np.float32
+        )
 
         self.observation_space = spaces.Box(
             low=0,
@@ -59,74 +75,71 @@ class SmallDC(gym.Env):
             dtype=np.float32
         )
 
-        # These parameters are passed when calling gym.make on learn.py
+        # These parameters are passed when calling gym.make in learn.py
         # to the java cloudsimplus gateway.
         # If a parameter is not defined, it gets a default value.
         params = {
-            'INITIAL_L_VM_COUNT':
-                kwargs.get('initial_l_vm_count', '1'),
-            'INITIAL_M_VM_COUNT':
-                kwargs.get('initial_m_vm_count', '1'),
-            'INITIAL_S_VM_COUNT':
-                kwargs.get('initial_s_vm_count', '1'),
-            'SIMULATION_SPEEDUP':
-                kwargs.get('simulation_speedup', '1.0'),
-            'SPLIT_LARGE_JOBS':
-                kwargs.get('split_large_jobs', 'false'),
-            'QUEUE_WAIT_PENALTY':
-                kwargs.get('queue_wait_penalty', '0.00001'),
-            'VM_RUNNING_HOURLY_COST':
-                kwargs.get('vm_running_hourly_cost', '0.2'),
-            'HOST_PE_MIPS':
-                kwargs.get('host_pe_mips', '10000'),
-            'HOST_BW':
-                kwargs.get('host_bw', '50000'),
-            'HOST_RAM':
-                kwargs.get('host_ram', '65536'),
-            'HOST_SIZE':
-                kwargs.get('hostSize', '16000'),
-            'HOST_PE_CNT':
-                kwargs.get('hostPeCnt', '14'),
-            'DATACENTER_HOSTS_CNT':
-                kwargs.get('datacenter_hosts_cnt', '50'),
-            'BASIC_VM_RAM':
-                kwargs.get('basic_vm_ram', '8192'),
-            'BASIC_VM_PE_CNT':
-                kwargs.get('basic_vm_pe_count','2'),
-            'VM_SHUTDOWN_DELAY':
-                kwargs.get('vm_shutdown_delay', '0.0'),
-            'MAX_VMS_PER_SIZE':
-                kwargs.get('max_vms_per_size', '50'),
-            'PRINT_JOBS_PERIODICALLY':
-                kwargs.get('print_jobs_periodically', 'false'),
-            'PAYING_FOR_THE_FULL_HOUR':
-                kwargs.get('paying_for_the_full_hour', 'false'),
-            'STORE_CREATED_CLOUDLETS_DATACENTER_BROKER':
-                kwargs.get('storeCreatedCloudletsDatacenterBroker', 'false')
+            "INITIAL_L_VM_COUNT":
+                kwargs.get("initial_l_vm_count", "1"),
+            "INITIAL_M_VM_COUNT":
+                kwargs.get("initial_m_vm_count", "1"),
+            "INITIAL_S_VM_COUNT":
+                kwargs.get("initial_s_vm_count", "1"),
+            "SIMULATION_SPEEDUP":
+                kwargs.get("simulation_speedup", "1.0"),
+            "SPLIT_LARGE_JOBS":
+                kwargs.get("split_large_jobs", "false"),
+            "QUEUE_WAIT_PENALTY":
+                kwargs.get("queue_wait_penalty", "0.00001"),
+            "VM_RUNNING_HOURLY_COST":
+                kwargs.get("vm_running_hourly_cost", "0.2"),
+            "HOST_PE_MIPS":
+                kwargs.get("host_pe_mips", "10000"),
+            "HOST_BW":
+                kwargs.get("host_bw", "50000"),
+            "HOST_RAM":
+                kwargs.get("host_ram", "65536"),
+            "HOST_SIZE":
+                kwargs.get("hostSize", "16000"),
+            "HOST_PE_CNT":
+                kwargs.get("hostPeCnt", "14"),
+            "DATACENTER_HOSTS_CNT":
+                kwargs.get("datacenter_hosts_cnt", "50"),
+            "BASIC_VM_RAM":
+                kwargs.get("basic_vm_ram", "8192"),
+            "BASIC_VM_PE_CNT":
+                kwargs.get("basic_vm_pe_count","2"),
+            "VM_SHUTDOWN_DELAY":
+                kwargs.get("vm_shutdown_delay", "0.0"),
+            "MAX_VMS_PER_SIZE":
+                kwargs.get("max_vms_per_size", "50"),
+            "PRINT_JOBS_PERIODICALLY":
+                kwargs.get("print_jobs_periodically", "false"),
+            "PAYING_FOR_THE_FULL_HOUR":
+                kwargs.get("paying_for_the_full_hour", "false"),
+            "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER":
+                kwargs.get("storeCreatedCloudletsDatacenterBroker", "false")
         }
 
-        self.render_mode = kwargs.get('render_mode', 'None')
+        self.render_mode = kwargs.get("render_mode", "None")
 
-        if 'jobs_as_json' in kwargs:
-            params['SOURCE_OF_JOBS'] = 'PARAMS'
-            params['JOBS'] = kwargs['jobs_as_json']
-        elif 'jobs_from_file' in kwargs:
-            params['JOBS_FILE'] = kwargs['jobs_from_file']
+        if "jobs_as_json" in kwargs:
+            params["SOURCE_OF_JOBS"] = "PARAMS"
+            params["JOBS"] = kwargs["jobs_as_json"]
+        elif "jobs_from_file" in kwargs:
+            params["JOBS_FILE"] = kwargs["jobs_from_file"]
 
         self.simulation_id = simulation_environment.createSimulation(params)
 
     def step(self, action):
-        if type(action) == np.int64:
-            action = action.item()
         result = simulation_environment.step(self.simulation_id, action)
         reward = result.getReward()
         terminated = result.isDone()
         truncated = False
         raw_obs = result.getObs()
-
         obs = to_nparray(raw_obs)
 
-        if self.render_mode == 'human':
+        if self.render_mode == "human":
             self.render()
             print(f"Current reward is {reward}")
 
@@ -149,7 +162,7 @@ class SmallDC(gym.Env):
         # result is a string with arrays encoded as json
         result = simulation_environment.render(self.simulation_id)
         obs_data = json.loads(result)
-        if self.render_mode == 'human':
+        if self.render_mode == "human":
             print("Observation metrics:")
             print("-" * 40)
             print(f"avgCPUUtilizationHistory: {obs_data[0]}")
@@ -160,7 +173,7 @@ class SmallDC(gym.Env):
             print(f"waitingJobsRatioGlobalHistory: {obs_data[5]}")
             print(f"waitingJobsRatioRecentHistory: {obs_data[6]}")
             return
-        elif self.render_mode == 'ansi':
+        elif self.render_mode == "ansi":
             return str(obs_data)
         else:
             return super().render()
