@@ -1,15 +1,16 @@
 package daislab.cspg;
 
-import com.google.gson.Gson;
-import org.apache.commons.math3.stat.StatUtils;
 import org.cloudsimplus.cloudlets.Cloudlet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.commons.math3.stat.StatUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.google.gson.Gson;
 
 import static org.apache.commons.math3.stat.StatUtils.percentile;
 
@@ -127,7 +128,7 @@ public class WrappedSimulation {
         long startAction = System.nanoTime();
         boolean isValid = executeAction(action);
         long stopAction = System.nanoTime();
-        cloudSimProxy.runFor(INTERVAL, action);
+        cloudSimProxy.runFor(INTERVAL);
 
         long startMetrics = System.nanoTime();
         collectMetrics();
@@ -188,14 +189,7 @@ public class WrappedSimulation {
         // action < 0 destroys a VM with VmId = Math.abs(scaled_action)
         if (action[0] < 0) {
             debug("will try to destroy vm with id = " + id);
-            Vm vm = broker.getVmExecList().get(id);
-            if (vm == Vm.NULL) {
-                isValid = false;
-                logger.warn("Can't kill the VM with id " + id + ". No such vm found.");
-                return isValid;
-            }
-
-            isValid = destroyVm(vm);
+            isValid = removeVm(id);
         }
         // action > 0 creates a VM in the same host of VM with 
         // Vm.id = action[0] and Vm.type = action[1]
@@ -205,23 +199,23 @@ public class WrappedSimulation {
                     CloudSimProxy.VM_TYPES.length - 1);
             debug("will try to create a new Vm on the same host as the vm with id = " 
                     + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
-            isValid = addNewVM(CloudSimProxy.VM_TYPES[vmTypeIndex]);
+            isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);
         }
         return isValid;
     }
 
-    private boolean destroyVm(final <? extends Vm> vm) {
-        String vmToKillType = cloudSimProxy.destroyVm(vm);
+    private boolean removeVm(final int id) {
+        String vmToKillType = cloudSimProxy.removeVm(id);
         if (vmToKillType != null) {
             this.vmCounter.recordRemovedVM(vmToKillType);
             return true;
         }
-        debug("Destroy VM with ID " + id + " request was ignored.");
+        debug("Remove vm with Id " + id + " request was ignored.");
         return false;
     }
 
-    private boolean removeVM(final String type) {
-        if (cloudSimProxy.removeRandomlyVM(type)) {
+    private boolean removeRandomVm(final String type) {
+        if (cloudSimProxy.removeRandomVM(type)) {
             this.vmCounter.recordRemovedVM(type);
             return true;
         }
@@ -232,6 +226,29 @@ public class WrappedSimulation {
                 + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
         );
         return false;
+    }
+
+    // adds a new vm to the same host as the vm with vmId if possible
+    private boolean addNewVm(final String type, final int vmId) {
+        if (vmCounter.hasCapacity(type)) {
+            // need to also check if this succeeds
+            cloudSimProxy.addNewVm(type, vmId);
+            vmCounter.recordNewVM(type);
+            return true;
+            // debug("Adding a VM of type " + type + "to host "
+            //         + " was requested but the request was ignored because host is not suitable");
+            // return false;
+        }
+        else {
+            debug("Adding a VM of type "
+                    + type + " requested but the request was ignored (MAX_VMS_PER_SIZE "
+                    + this.settings.getMaxVmsPerSize() + " reached) Stats: "
+                    + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
+                    + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
+                    + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
+            );
+            return false;
+        }
     }
 
     private boolean addNewVM(final String type) {

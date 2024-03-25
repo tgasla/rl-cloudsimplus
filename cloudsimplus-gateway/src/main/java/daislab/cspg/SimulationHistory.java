@@ -9,7 +9,7 @@ public class SimulationHistory {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(SimulationHistory.class.getSimpleName());
-            
+
     private Map<String, List<Object>> history;
 
     public SimulationHistory() {
@@ -25,9 +25,9 @@ public class SimulationHistory {
     }
 
     public void logHistory() {
-        logger.info("Simulation History");
+        LOGGER.info("Simulation History");
         history.entrySet().forEach(entry -> {
-            logger.info(entry.getKey() + ": " + Arrays.toString(entry.getValue().toArray()));
+            LOGGER.info(entry.getKey() + ": " + Arrays.toString(entry.getValue().toArray()));
         });
     }
 

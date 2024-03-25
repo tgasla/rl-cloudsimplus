@@ -1,9 +1,9 @@
 package daislab.cspg;
 
-import org.cloudbus.cloudsim.hosts.HostSimple;
-import org.cloudbus.cloudsim.provisioners.ResourceProvisioner;
-import org.cloudbus.cloudsim.resources.Pe;
-import org.cloudbus.cloudsim.vms.Vm;
+import org.cloudsimplus.hosts.HostSimple;
+import org.cloudsimplus.provisioners.ResourceProvisioner;
+import org.cloudsimplus.resources.Pe;
+import org.cloudsimplus.vms.Vm;
 
 import java.util.List;
 

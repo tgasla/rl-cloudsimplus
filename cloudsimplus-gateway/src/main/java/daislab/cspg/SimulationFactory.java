@@ -83,13 +83,13 @@ public class SimulationFactory {
         final boolean splitLargeJobs =
                 Boolean.parseBoolean(splitLargeJobsStr.toLowerCase());
 
-        logger.info("Simulation parameters: ");
-        logger.info("-> initialSVmCount: " + initialSVmCount);
-        logger.info("-> initialMVmCount: " + initialMVmCount);
-        logger.info("-> initialLVmCount: " + initialLVmCount);
-        logger.info("-> simulationSpeedUp: " + simulationSpeedUp);
-        logger.info("-> queueWaitPenalty: " + queueWaitPenalty);
-        logger.info("-> splitLargeJobs: " + splitLargeJobs);
+        LOGGER.info("Simulation parameters: ");
+        LOGGER.info("-> initialSVmCount: " + initialSVmCount);
+        LOGGER.info("-> initialMVmCount: " + initialMVmCount);
+        LOGGER.info("-> initialLVmCount: " + initialLVmCount);
+        LOGGER.info("-> simulationSpeedUp: " + simulationSpeedUp);
+        LOGGER.info("-> queueWaitPenalty: " + queueWaitPenalty);
+        LOGGER.info("-> splitLargeJobs: " + splitLargeJobs);
 
         final List<CloudletDescriptor> jobs;
 
@@ -107,15 +107,15 @@ public class SimulationFactory {
         }
 
         final SimulationSettings settings = new SimulationSettings(maybeParameters);
-        logger.info("Simulation settings dump");
-        logger.info(settings.toString());
+        LOGGER.info("Simulation settings dump");
+        LOGGER.info(settings.toString());
 
         final List<CloudletDescriptor> splitted;
         if (splitLargeJobs) {
-            logger.info("Splitting large jobs");
+            LOGGER.info("Splitting large jobs");
             splitted = splitLargeJobs(jobs, settings);
         } else {
-            logger.info("Not applying the splitting algorithm - using raw jobs");
+            LOGGER.info("Not applying the splitting algorithm - using raw jobs");
             splitted = jobs;
         }
 
@@ -171,7 +171,7 @@ public class SimulationFactory {
             }
         }
 
-        logger.info("Splitted: " + jobs.size() + " into " + splitted.size());
+        LOGGER.info("Splitted: " + jobs.size() + " into " + splitted.size());
 
         return splitted;
     }
@@ -182,7 +182,7 @@ public class SimulationFactory {
 
         List<CloudletDescriptor> retVal = new ArrayList<>();
         final String jobsAsJson = maybeParameters.getOrDefault(JOBS, JOBS_DEFAULT);
-        logger.info(jobsAsJson);
+        LOGGER.info(jobsAsJson);
         final List<CloudletDescriptor> deserialized =
                 gson.fromJson(jobsAsJson, cloudletDescriptors);
 
@@ -190,7 +190,7 @@ public class SimulationFactory {
             retVal.add(speedUp(cloudletDescriptor, simulationSpeedUp));
         }
 
-        logger.info("Deserialized " + retVal.size() + " jobs");
+        LOGGER.info("Deserialized " + retVal.size() + " jobs");
 
         return retVal;
     }

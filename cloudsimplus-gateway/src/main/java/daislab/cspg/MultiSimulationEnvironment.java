@@ -59,7 +59,7 @@ public class MultiSimulationEnvironment {
     }
 
     public long ping() {
-        logger.info("pong");
+        LOGGER.info("pong");
 
         return 31415L;
     }
@@ -77,7 +77,7 @@ public class MultiSimulationEnvironment {
     }
 
     public void shutdown() {
-        logger.info("Shutting down as per user's request");
+        LOGGER.info("Shutting down as per user's request");
         System.exit(0);
     }
 

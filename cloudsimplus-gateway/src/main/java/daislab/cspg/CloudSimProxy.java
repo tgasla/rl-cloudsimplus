@@ -197,7 +197,7 @@ public class CloudSimProxy {
         return peList;
     }
 
-    public void runFor(final double interval, final double[] action) {
+    public void runFor(final double interval) {
         if (!this.isRunning()) {
             throw new RuntimeException("The simulation is not running - "
                     + "please reset or create a new one!");
@@ -259,7 +259,7 @@ public class CloudSimProxy {
         // TODO: can be removed after validating the fix of OOM
         // should always be zero
         final int debugBrokerCreatedListSize = this.broker.getCloudletCreatedList().size();
-        logger.debug("runFor (" + this.clock() + ") took " 
+        LOGGER.debug("runFor (" + this.clock() + ") took " 
                 + diff + "ns / " + diffInSec + "s (DEBUG: " + debugBrokerCreatedListSize + ")");
     }
 
@@ -270,14 +270,14 @@ public class CloudSimProxy {
 
     private void printJobStatsAfterEndOfSimulation() {
         if (!this.isRunning()) {
-            // logger.info("CloudSimProxy.isRunning: " + cloudSimPlus.isRunning());
-            logger.info("End of simulation, some reality check stats:");
+            // LOGGER.info("CloudSimProxy.isRunning: " + cloudSimPlus.isRunning());
+            LOGGER.info("End of simulation, some reality check stats:");
             printJobStats();
         }
     }
 
     public void printJobStats() {
-        logger.info("All jobs: " + this.jobs.size());
+        LOGGER.info("All jobs: " + this.jobs.size());
         Map<Cloudlet.Status, Integer> countByStatus = new HashMap<>();
         for (Cloudlet c : this.jobs) {
             final Cloudlet.Status status = c.getStatus();
@@ -286,16 +286,16 @@ public class CloudSimProxy {
         }
 
         for(Map.Entry<Cloudlet.Status, Integer> e : countByStatus.entrySet()) {
-            logger.info(e.getKey().toString() + ": " + e.getValue());
+            LOGGER.info(e.getKey().toString() + ": " + e.getValue());
         }
 
-        logger.info("Jobs which are still queued");
+        LOGGER.info("Jobs which are still queued");
         for(Cloudlet cloudlet : this.jobs) {
             if (Cloudlet.Status.QUEUED.equals(cloudlet.getStatus())) {
                 printCloudlet(cloudlet);
             }
         }
-        logger.info("Jobs which are still executed");
+        LOGGER.info("Jobs which are still executed");
         for(Cloudlet cloudlet : this.jobs) {
             if (Cloudlet.Status.INEXEC.equals(cloudlet.getStatus())) {
                 printCloudlet(cloudlet);
@@ -304,13 +304,13 @@ public class CloudSimProxy {
     }
 
     private void printCloudlet(Cloudlet cloudlet) {
-        logger.info("Cloudlet: " + cloudlet.getId());
-        logger.info("Number of PEs: " + cloudlet.getPesNumber());
-        logger.info("Number of MIPS: " + cloudlet.getLength());
-        logger.info("Submission delay: " + cloudlet.getSubmissionDelay());
-        logger.info("Started: " + cloudlet.getStartTime());
+        LOGGER.info("Cloudlet: " + cloudlet.getId());
+        LOGGER.info("Number of PEs: " + cloudlet.getPesNumber());
+        LOGGER.info("Number of MIPS: " + cloudlet.getLength());
+        LOGGER.info("Submission delay: " + cloudlet.getSubmissionDelay());
+        LOGGER.info("Started: " + cloudlet.getStartTime());
         final Vm vm = cloudlet.getVm();
-        logger.info("VM: " + vm.getId() + "(" + vm.getDescription() + ")"
+        LOGGER.info("VM: " + vm.getId() + "(" + vm.getDescription() + ")"
                 + " CPU: " + vm.getPesNumber() + "/" + vm.getMips() + " @ "
                 + vm.getCpuPercentUtilization()
                 + " RAM: " + vm.getRam().getAllocatedResource()
@@ -322,7 +322,7 @@ public class CloudSimProxy {
         final long clock = (long) cloudSimPlus.clock();
 
         if (clock % 100 == 0) {
-            logger.debug("Cleaning up events (before): " + getNumberOfFutureEvents());
+            LOGGER.debug("Cleaning up events (before): " + getNumberOfFutureEvents());
             cloudSimPlus.cancelAll(datacenter, new Predicate<SimEvent>() {
 
                 private SimEvent previous;
@@ -344,7 +344,7 @@ public class CloudSimProxy {
                     return false;
                 }
             });
-            logger.debug("Cleaning up events (after): " + getNumberOfFutureEvents());
+            LOGGER.debug("Cleaning up events (after): " + getNumberOfFutureEvents());
         }
     }
 
@@ -362,7 +362,7 @@ public class CloudSimProxy {
             cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
                 @Override
                 public void update(CloudletVmEventInfo info) {
-                    logger.debug("Cloudlet: " + cloudlet.getId() + "/" + 
+                    LOGGER.debug("Cloudlet: " + cloudlet.getId() + "/" + 
                             cloudlet.getVm().getId() + " Finished.");
                     finishedIds.add(info.getCloudlet().getId());
                 }
@@ -379,13 +379,13 @@ public class CloudSimProxy {
         int pctSubmitted = (int) ((toAddJobId / (double) this.jobs.size()) * 10000d);
         int upper = pctSubmitted / 100;
         int lower = pctSubmitted % 100;
-        logger.info(
+        LOGGER.info(
                 "Simulation progress: submitted: " + upper + "." + lower + "% "
                 + "Waiting list size: " + this.broker.getCloudletWaitingList().size());
     }
 
     private void submitCloudletsList(List<Cloudlet> jobsToSubmit) {
-        logger.debug("Submitting: " + jobsToSubmit.size() + " jobs");
+        LOGGER.debug("Submitting: " + jobsToSubmit.size() + " jobs");
         broker.submitCloudletList(jobsToSubmit);
 
         // we immediately clear up that list because it is not really
@@ -462,6 +462,24 @@ public class CloudSimProxy {
         return memPercentUsage;
     }
 
+    public void addNewVm(final String type, final int vmId) {
+        Vm newVm = createVm(type);
+        // String hostId = broker.getVmExecList().get(vmId).getHost().getId();
+        // newVm.setDescription(type + "-" + hostId);
+        final long hostId = broker.getVmExecList().get(vmId).getHost().getId();
+
+        newVm.setDescription(type + "-" + hostId);
+
+        // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
+        // from anecdotal exp the startup time can be as fast as 45s
+        final double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
+        // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
+        newVm.setSubmissionDelay(delay);
+        LOGGER.debug("Agent action: Create a " + type + " VM");
+        broker.submitVm(newVm);
+        LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
+    }
+
     public void addNewVM(String type) {
         Vm newVm = createVm(type);
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
@@ -469,46 +487,53 @@ public class CloudSimProxy {
         final double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
-        logger.debug("Agent action: Create a " + type + " VM");
+        LOGGER.debug("Agent action: Create a " + type + " VM");
         broker.submitVm(newVm);
-        logger.debug("VM creating requested, delay: " + delay + " type: " + type);
+        LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
     }
 
     // if a vm is destroyed, this method returns the type of it.
-    public String destroyVm(final <? extends Vm> vm) {
+    public String removeVm(final int id) {
+        List<Vm> vmExecList = broker.getVmExecList();
 
-        String vmType = vm.getDescription();
+        final Vm vmToKill = broker.getVmExecList().get(id);
+        if (vmToKill == Vm.NULL) {
+            LOGGER.warn("Can't kill the VM with id " + id + ". No such vm found.");
+            return null;
+        }
 
-        logger.debug("vmType = " + vmToKillType);
+        String vmType = vmToKill.getDescription();
+
+        LOGGER.debug("vmType = " + vmType);
 
         List<Vm> vmsOfType = vmExecList
                 .parallelStream()
                 .filter(vm -> vmType.equals((vm.getDescription())))
                 .collect(Collectors.toList());
-        logger.debug("Agent action: Remove VM with id " + id);
+        LOGGER.debug("Agent action: Remove VM with id " + id);
         if (canKillVm(vmType, vmsOfType.size())) {
-            destroyVm(vm);
+            destroyVm(vmToKill);
             return vmType;
         } else {
-            logger.warn("Can't kill the VM. It is the only SMALL one running");
+            LOGGER.warn("Can't kill the VM. It is the only SMALL one running");
             return null;
         }
     }
 
-    public boolean removeRandomlyVM(String type) {
+    public boolean removeRandomVM(String type) {
         List<Vm> vmExecList = broker.getVmExecList();
 
         List<Vm> vmsOfType = vmExecList
                 .parallelStream()
                 .filter(vm -> type.equals((vm.getDescription())))
                 .collect(Collectors.toList());
-        logger.debug("Agent action: Remove a " + type + " VM");
+        LOGGER.debug("Agent action: Remove a " + type + " VM");
         if (canKillVm(type, vmsOfType.size())) {
             int vmToKillIdx = random.nextInt(vmsOfType.size());
             destroyVm(vmsOfType.get(vmToKillIdx));
             return true;
         } else {
-            logger.warn("Can't kill the VM. It is the only SMALL one running");
+            LOGGER.warn("Can't kill the VM. It is the only SMALL one running");
             return false;
         }
     }
@@ -557,7 +582,7 @@ public class CloudSimProxy {
         vm.getCloudletScheduler().clear();
         // replaces broker.destroyVm
 
-        logger.debug("Killing VM: "
+        LOGGER.debug("Killing VM: "
                 + vm.getId()
                 + ", to-reschedule cloudlets count: "
                 + affectedCloudlets.size()
@@ -596,7 +621,7 @@ public class CloudSimProxy {
         long brokerStop = System.nanoTime();
 
         double brokerTime = (brokerStop - brokerStart) / 1_000_000_000d;
-        logger.debug("Rescheduling "
+        LOGGER.debug("Rescheduling "
                 + affectedCloudlets.size()
                 + " cloudlets took (s): "
                 + brokerTime);
