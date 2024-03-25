@@ -8,28 +8,38 @@ import org.cloudsimplus.vms.Vm;
 import java.util.List;
 
 public class HostWithoutCreatedList extends HostSimple {
-    public HostWithoutCreatedList(List<Pe> peList) {
+    public HostWithoutCreatedList(final List<Pe> peList) {
         super(peList);
     }
 
-    public HostWithoutCreatedList(List<Pe> peList, boolean activate) {
+    public HostWithoutCreatedList(final List<Pe> peList, final boolean activate) {
         super(peList, activate);
     }
 
-    public HostWithoutCreatedList(ResourceProvisioner ramProvisioner, ResourceProvisioner bwProvisioner, long storage, List<Pe> peList) {
+    public HostWithoutCreatedList(final ResourceProvisioner ramProvisioner,
+            final ResourceProvisioner bwProvisioner, 
+            final long storage, 
+            final List<Pe> peList) {
         super(ramProvisioner, bwProvisioner, storage, peList);
     }
 
-    public HostWithoutCreatedList(long ram, long bw, long storage, List<Pe> peList) {
+    public HostWithoutCreatedList(final long ram, 
+            final long bw, 
+            final long storage, 
+            final List<Pe> peList) {
         super(ram, bw, storage, peList);
     }
 
-    public HostWithoutCreatedList(long ram, long bw, long storage, List<Pe> peList, boolean activate) {
+    public HostWithoutCreatedList(final long ram, 
+            final long bw, 
+            final long storage, 
+            final List<Pe> peList, 
+            final boolean activate) {
         super(ram, bw, storage, peList, activate);
     }
 
     @Override
-    protected void addVmToCreatedList(Vm vm) {
+    protected void addVmToCreatedList(final Vm vm) {
         // do nothing to avoid accumulating vm data
     }
 }
