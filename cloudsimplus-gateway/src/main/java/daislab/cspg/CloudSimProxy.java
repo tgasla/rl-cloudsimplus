@@ -19,6 +19,7 @@ import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
 import org.cloudsimplus.listeners.CloudletVmEventInfo;
 import org.cloudsimplus.listeners.EventListener;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
