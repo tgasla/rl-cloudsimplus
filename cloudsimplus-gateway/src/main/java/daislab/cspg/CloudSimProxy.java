@@ -9,7 +9,6 @@ import org.cloudsimplus.core.events.SimEvent;
 import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.hosts.HostAbstract;
 import org.cloudsimplus.hosts.Host;
-import org.cloudsimplus.hosts.HostSimple;
 import org.cloudsimplus.provisioners.PeProvisionerSimple;
 import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
@@ -129,7 +128,7 @@ public class CloudSimProxy {
             final long hostBw = settings.getHostBw();
             final long hostSize = settings.getHostSize();
             Host host =
-                    new HostSimple(hostRam, hostBw, hostSize, peList)
+                    new HostWithoutCreatedList(hostRam, hostBw, hostSize, peList)
                             .setRamProvisioner(new ResourceProvisionerSimple())
                             .setBwProvisioner(new ResourceProvisionerSimple())
                             .setVmScheduler(new VmSchedulerTimeShared());
