@@ -42,6 +42,7 @@ test {
     //https://stackoverflow.com/questions/70412805/what-does-this-error-mean-java-lang-reflect-inaccessibleobjectexception-unable
     //https://openjdk.org/jeps/396
     jvmArgs = jvmArgs + ['--add-opens=java.base/java.util=ALL-UNNAMED']
+    testLogging.showStandardStreams = true
 }
 
 // In this section you declare where to find the dependencies of your project
