@@ -35,7 +35,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     }
 
     @Override
-    public void processEvent(SimEvent evt) {
+    public void processEvent(final SimEvent evt) {
         super.processEvent(evt);
 
         if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {

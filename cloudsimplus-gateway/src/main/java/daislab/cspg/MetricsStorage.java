@@ -16,7 +16,7 @@ public class MetricsStorage {
     private final List<String> trackedMetrics;
     private Map<String, CircularFifoQueue<Double>> data = new HashMap<>();
 
-    public MetricsStorage(int historyLength, List<String> trackedMetrics) {
+    public MetricsStorage(final int historyLength, final List<String> trackedMetrics) {
         this.historyLength = historyLength;
         this.trackedMetrics = trackedMetrics;
 
@@ -42,7 +42,7 @@ public class MetricsStorage {
         }
     }
 
-    public void updateMetric(String metricName, Double value) {
+    public void updateMetric(final String metricName, final Double value) {
         final CircularFifoQueue<Double> valuesQueue = data.get(metricName);
         if (valuesQueue == null) {
             throw new RuntimeException("Unknown metric: " + metricName);
@@ -51,18 +51,18 @@ public class MetricsStorage {
         valuesQueue.add(value);
     }
 
-    private void fillWithZeros(Queue<Double> queue) {
+    private void fillWithZeros(final Queue<Double> queue) {
         for (int i = 0; i < this.historyLength; i++) {
             queue.add(0.0);
         }
     }
 
-    public double[] metricValuesAsPrimitives(String metricName) {
+    public double[] metricValuesAsPrimitives(final String metricName) {
         final CircularFifoQueue<Double> queue = data.get(metricName);
         return ArrayUtils.toPrimitive(queue.toArray(doubles));
     }
 
-    public double getLastMetricValue(String metricName) {
+    public double getLastMetricValue(final String metricName) {
         final CircularFifoQueue<Double> valuesQueue = data.get(metricName);
         if (valuesQueue == null) {
             throw new RuntimeException("Unknown metric: " + metricName);

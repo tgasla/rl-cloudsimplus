@@ -19,7 +19,7 @@ public class VmCost {
     private boolean payForFullHour;
     private double iterationsInHour;
 
-    public VmCost(double perHourVMCost, double speedUp, boolean payForFullHour) {
+    public VmCost(final double perHourVMCost, final double speedUp, final boolean payForFullHour) {
         this.payForFullHour = payForFullHour;
         this.speedUp = speedUp;
         this.secondsInIteration = this.speedUp;
@@ -37,7 +37,7 @@ public class VmCost {
         createdVms.clear();
     }
 
-    public double getVMCostPerIteration(double clock) {
+    public double getVMCostPerIteration(final double clock) {
         double totalCost = 0.0;
         List<Vm> toRemove = new ArrayList<>();
         for(Vm vm : createdVms) {
@@ -66,7 +66,7 @@ public class VmCost {
         return totalCost;
     }
 
-    public double getSizeMultiplier(Vm vm) {
+    public double getSizeMultiplier(final Vm vm) {
         if ("M".equals(vm.getDescription())) {
             return 2.0;
         }

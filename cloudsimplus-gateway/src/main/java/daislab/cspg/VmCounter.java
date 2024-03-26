@@ -11,33 +11,33 @@ public class VmCounter {
     private final long maxVmsPerSize;
     private final Map<String, Long> vmCounts = new HashMap<>();
 
-    public VmCounter(long maxVmsPerSize) {
+    public VmCounter(final long maxVmsPerSize) {
         this.maxVmsPerSize = maxVmsPerSize;
     }
 
-    public boolean hasCapacity(String type) {
+    public boolean hasCapacity(final String type) {
         return getCurrentOfType(type) < maxVmsPerSize;
     }
 
-    public void recordNewVM(String type) {
+    public void recordNewVm(final String type) {
         final Long currentOfType = getCurrentOfType(type);
         this.vmCounts.put(type, currentOfType + 1);
     }
 
-    private Long getCurrentOfType(String type) {
+    private Long getCurrentOfType(final String type) {
         return this.vmCounts.getOrDefault(type, 0L);
     }
 
-    public void initializeCapacity(String type, long initialVmsCount) {
+    public void initializeCapacity(final String type, final long initialVmsCount) {
         this.vmCounts.put(type, initialVmsCount);
     }
 
-    public void recordRemovedVM(String type) {
+    public void recordRemovedVm(final String type) {
         final Long currentOfType = getCurrentOfType(type);
         this.vmCounts.put(type, currentOfType - 1);
     }
 
-    public long getStartedVms(String type) {
+    public long getStartedVms(final String type) {
         return getCurrentOfType(type);
     }
 }

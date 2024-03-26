@@ -48,7 +48,7 @@ public class SimulationFactory {
 
     private int created = 0;
 
-    public synchronized WrappedSimulation create(Map<String, String> maybeParameters) {
+    public synchronized WrappedSimulation create(final Map<String, String> maybeParameters) {
         String identifier = "Sim" + created;
         this.created++;
 
@@ -133,8 +133,8 @@ public class SimulationFactory {
     }
 
     private List<CloudletDescriptor> splitLargeJobs(
-            List<CloudletDescriptor> jobs, 
-            SimulationSettings settings) {
+            final List<CloudletDescriptor> jobs, 
+            final SimulationSettings settings) {
         // There is a bug in CloudletSchedulerAbstract:cloudletExecutedInstructionsForTimeSpan
         // The bug is that we take into the account only a single core of a PE
         // when we calculate the available MIPS per cloudlet. So we artificially limit
@@ -177,8 +177,8 @@ public class SimulationFactory {
     }
 
     private List<CloudletDescriptor> loadJobsFromParams(
-            Map<String, String> maybeParameters, 
-            double simulationSpeedUp) {
+            final Map<String, String> maybeParameters, 
+            final double simulationSpeedUp) {
 
         List<CloudletDescriptor> retVal = new ArrayList<>();
         final String jobsAsJson = maybeParameters.getOrDefault(JOBS, JOBS_DEFAULT);
@@ -196,8 +196,8 @@ public class SimulationFactory {
     }
 
     private CloudletDescriptor speedUp(
-            CloudletDescriptor cloudletDescriptor, 
-            double simulationSpeedUp) {
+            final CloudletDescriptor cloudletDescriptor, 
+            final double simulationSpeedUp) {
                 
         final long cloudletDescriptorMi = cloudletDescriptor.getMi();
         final long nonNegativeMi = cloudletDescriptorMi < 1 ? 1 : cloudletDescriptorMi;
@@ -218,11 +218,13 @@ public class SimulationFactory {
         );
     }
 
-    private List<CloudletDescriptor> loadJobsFromDatabase(Map<String, String> maybeParameters) {
+    private List<CloudletDescriptor> loadJobsFromDatabase(
+            final Map<String, String> maybeParameters) {
         throw new NotImplementedException("Feature not implemented yet!");
     }
 
-    private List<CloudletDescriptor> loadJobsFromFile(Map<String, String> maybeParameters) {
+    private List<CloudletDescriptor> loadJobsFromFile(
+                final Map<String, String> maybeParameters) {
         throw new NotImplementedException("Feature not implemented yet!");
     }
 

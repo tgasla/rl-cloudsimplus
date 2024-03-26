@@ -9,7 +9,6 @@ import org.cloudsimplus.core.events.SimEvent;
 import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.hosts.HostAbstract;
 import org.cloudsimplus.hosts.Host;
-import org.cloudsimplus.hosts.HostSimple;
 import org.cloudsimplus.provisioners.PeProvisionerSimple;
 import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
@@ -19,6 +18,7 @@ import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
 import org.cloudsimplus.listeners.CloudletVmEventInfo;
 import org.cloudsimplus.listeners.EventListener;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,10 +63,10 @@ public class CloudSimProxy {
     private int previousIntervalJobId = 0;
     private int nextVmId;
 
-    public CloudSimProxy(SimulationSettings settings,
-                         Map<String, Integer> initialVmsCount,
-                         List<Cloudlet> inputJobs,
-                         double simulationSpeedUp) {
+    public CloudSimProxy(final SimulationSettings settings,
+                         final Map<String, Integer> initialVmsCount,
+                         final List<Cloudlet> inputJobs,
+                         final double simulationSpeedUp) {
         this.settings = settings;
         this.cloudSimPlus = new CloudSimPlus(0.01);
         this.broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
@@ -139,7 +139,7 @@ public class CloudSimProxy {
         return new LoggingDatacenter(cloudSimPlus, hostList, new VmAllocationPolicySimple());
     }
 
-    private List<? extends Vm> createVmList(int vmCount, String type) {
+    private List<? extends Vm> createVmList(final int vmCount, final String type) {
         List<Vm> vmList = new ArrayList<>(vmCount);
 
         for (int i = 0; i < vmCount; i++) {
@@ -150,7 +150,7 @@ public class CloudSimProxy {
         return vmList;
     }
 
-    private Vm createVm(String type) {
+    private Vm createVmWithId(final String type) {
         int sizeMultiplier = getSizeMultiplier(type);
 
         Vm vm = new VmSimple(
@@ -171,7 +171,7 @@ public class CloudSimProxy {
         return vm;
     }
 
-    public int getSizeMultiplier(String type) {
+    public int getSizeMultiplier(final String type) {
         int sizeMultiplier;
 
         switch (type) {
@@ -303,7 +303,7 @@ public class CloudSimProxy {
         }
     }
 
-    private void printCloudlet(Cloudlet cloudlet) {
+    private void printCloudlet(final Cloudlet cloudlet) {
         LOGGER.info("Cloudlet: " + cloudlet.getId());
         LOGGER.info("Number of PEs: " + cloudlet.getPesNumber());
         LOGGER.info("Number of MIPS: " + cloudlet.getLength());
@@ -348,7 +348,7 @@ public class CloudSimProxy {
         }
     }
 
-    private void scheduleJobsUntil(double target) {
+    private void scheduleJobsUntil(final double target) {
         previousIntervalJobId = nextVmId;
         List<Cloudlet> jobsToSubmit = new ArrayList<>();
 
@@ -384,7 +384,7 @@ public class CloudSimProxy {
                 + "Waiting list size: " + this.broker.getCloudletWaitingList().size());
     }
 
-    private void submitCloudletsList(List<Cloudlet> jobsToSubmit) {
+    private void submitCloudletsList(final List<Cloudlet> jobsToSubmit) {
         LOGGER.debug("Submitting: " + jobsToSubmit.size() + " jobs");
         broker.submitCloudletList(jobsToSubmit);
 
@@ -432,7 +432,7 @@ public class CloudSimProxy {
         return toAddJobId - previousIntervalJobId;
     }
 
-    public int getWaitingJobsCountInterval(double interval) {
+    public int getWaitingJobsCountInterval(final double interval) {
         double start = clock() - interval;
 
         int jobsWaitingSubmittedInTheInterval = 0;
@@ -538,7 +538,7 @@ public class CloudSimProxy {
         }
     }
 
-    private boolean canKillVm(String type, int size) {
+    private boolean canKillVm(final String type, final int size) {
         if (SMALL.equals(type)) {
             return size > 1;
         }
@@ -546,7 +546,7 @@ public class CloudSimProxy {
         return size > 0;
     }
 
-    private Cloudlet resetCloudlet(Cloudlet cloudlet) {
+    private Cloudlet resetCloudlet(final Cloudlet cloudlet) {
         cloudlet.setVm(Vm.NULL);
         return cloudlet.reset();
     }
@@ -593,7 +593,7 @@ public class CloudSimProxy {
         }
     }
 
-    private void rescheduleCloudlets(List<Cloudlet> affectedCloudlets) {
+    private void rescheduleCloudlets(final List<Cloudlet> affectedCloudlets) {
         final double currentClock = cloudSimPlus.clock();
 
         affectedCloudlets.forEach(cloudlet -> {

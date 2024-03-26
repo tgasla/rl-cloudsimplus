@@ -10,15 +10,15 @@ import java.util.Map;
 
 public class MultiSimulationEnvironment {
 
-    private Map<String, WrappedSimulation> simulations 
-        = Collections.synchronizedMap(new HashMap<>());
+    private Map<String, WrappedSimulation> simulations = 
+            Collections.synchronizedMap(new HashMap<>());
 
     private SimulationFactory simulationFactory = new SimulationFactory();
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
 
-    public String createSimulation(Map<String, String> maybeParameters) {
+    public String createSimulation(final Map<String, String> maybeParameters) {
         WrappedSimulation simulation = simulationFactory.create(maybeParameters);
         String identifier = simulation.getIdentifier();
 
@@ -27,19 +27,19 @@ public class MultiSimulationEnvironment {
         return identifier;
     }
 
-    public double[] reset(String simulationIdentifier) {
+    public double[] reset(final String simulationIdentifier) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
         return simulation.reset();
     }
 
-    private void validateIdentifier(String simulationIdentifier) {
+    private void validateIdentifier(final String simulationIdentifier) {
         if (!simulations.containsKey(simulationIdentifier)) {
             throw new IllegalArgumentException(
                 "Simulation with identifier: " + simulationIdentifier + " not found!");
         }
     }
 
-    public void close(String simulationIdentifier) {
+    public void close(final String simulationIdentifier) {
         validateIdentifier(simulationIdentifier);
 
         final WrappedSimulation simulation = simulations.remove(simulationIdentifier);
@@ -47,13 +47,13 @@ public class MultiSimulationEnvironment {
         simulation.close();
     }
 
-    public String render(String simulationIdentifier) {
+    public String render(final String simulationIdentifier) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
 
         return simulation.render();
     }
 
-    public SimulationStepResult step(String simulationIdentifier, double[] action) {
+    public SimulationStepResult step(final String simulationIdentifier, final int action) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
         return simulation.step(action);
     }
@@ -64,13 +64,13 @@ public class MultiSimulationEnvironment {
         return 31415L;
     }
 
-    public void seed(String simulationIdentifier) {
+    public void seed(final String simulationIdentifier) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
 
         simulation.seed();
     }
 
-    public double clock(String simulationIdentifier) {
+    public double clock(final String simulationIdentifier) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
 
         return simulation.clock();
@@ -81,7 +81,7 @@ public class MultiSimulationEnvironment {
         System.exit(0);
     }
 
-    WrappedSimulation retrieveValidSimulation(String simulationIdentifier) {
+    WrappedSimulation retrieveValidSimulation(final String simulationIdentifier) {
         validateIdentifier(simulationIdentifier);
 
         return simulations.get(simulationIdentifier);

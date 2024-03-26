@@ -17,7 +17,9 @@ import java.util.Set;
 class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
 
     @Override
-    protected double cloudletSubmitInternal(CloudletExecution cle, double fileTransferTime) {
+    protected double cloudletSubmitInternal(
+                final CloudletExecution cle, 
+                final double fileTransferTime) {
         if (!this.getVm().isCreated()) {
             // It is possible, that we schedule a cloudlet, an event with processing
             // update is issued (tag: 16), but the VM gets killed before the event
@@ -34,7 +36,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
     }
 
     @Override
-    public double updateProcessing(double currentTime, MipsShare mipsShare) {
+    public double updateProcessing(final double currentTime, final MipsShare mipsShare) {
         final int sizeBefore = this.getCloudletWaitingList().size();
         final double nextSimulationTime = super.updateProcessing(currentTime, mipsShare);
         final int sizeAfter = this.getCloudletWaitingList().size();
@@ -63,7 +65,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         return Optional.empty();
     }
 
-    private void setPrivateField(String fieldName, Object value) 
+    private void setPrivateField(final String fieldName, final Object value) 
             throws NoSuchFieldException, IllegalAccessException {
 
         final Field field = CloudletSchedulerAbstract.class.getDeclaredField(fieldName);
@@ -71,7 +73,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         field.set(this, value);
     }
 
-    private Object getPrivateFieldValue(String fieldName, Object source)
+    private Object getPrivateFieldValue(final String fieldName, final Object source)
             throws IllegalAccessException, NoSuchFieldException {
 
         final Field field = CloudletSchedulerAbstract.class.getDeclaredField(fieldName);

@@ -43,12 +43,12 @@ public class WrappedSimulation {
     private CloudSimProxy cloudSimProxy;
     private VmCounter vmCounter;
 
-    public WrappedSimulation(SimulationSettings simulationSettings,
-                             String identifier,
-                             Map<String, Integer> initialVmsCount,
-                             double simulationSpeedUp,
-                             double queueWaitPenalty,
-                             List<CloudletDescriptor> jobs) {
+    public WrappedSimulation(final SimulationSettings simulationSettings,
+                             final String identifier,
+                             final Map<String, Integer> initialVmsCount,
+                             final double simulationSpeedUp,
+                             final double queueWaitPenalty,
+                             final List<CloudletDescriptor> jobs) {
         this.settings = simulationSettings;
         this.identifier = identifier;
         this.initialVmsCount = initialVmsCount;
@@ -60,11 +60,11 @@ public class WrappedSimulation {
         info("Creating simulation: " + identifier);
     }
 
-    private void info(String message) {
+    private void info(final String message) {
         LOGGER.info(getIdentifier() + " " + message);
     }
 
-    private void debug(String message) {
+    private void debug(final String message) {
         LOGGER.debug(getIdentifier() + " " + message);
     }
 
@@ -117,7 +117,7 @@ public class WrappedSimulation {
         return gson.toJson(renderedEnv);
     }
 
-    public SimulationStepResult step(double[] action) {
+    public SimulationStepResult step(final int action) {
 
         if (cloudSimProxy == null) {
             throw new RuntimeException("Simulation not reset! Please call the reset() function!");
@@ -251,10 +251,10 @@ public class WrappedSimulation {
         }
     }
 
-    private boolean addNewVM(final String type) {
+    private boolean addNewVm(final String type) {
         if (vmCounter.hasCapacity(type)) {
-            cloudSimProxy.addNewVM(type);
-            vmCounter.recordNewVM(type);
+            cloudSimProxy.addNewVm(type);
+            vmCounter.recordNewVm(type);
             return true;
         }
         else {
@@ -270,9 +270,9 @@ public class WrappedSimulation {
     }
 
     private double percentilegetEnvironmentVariable(
-            double[] values, 
-            double percentile, 
-            double defaultValue) {
+            final double[] values, 
+            final double percentile, 
+            final double defaultValue) {
 
         if (values.length == 0) {
             return defaultValue;
@@ -340,7 +340,7 @@ public class WrappedSimulation {
         };
     }
 
-    private double safeMean(double[] cpuPercentUsage) {
+    private double safeMean(final double[] cpuPercentUsage) {
         if (cpuPercentUsage.length == 0) {
             return 0.0;
         }
@@ -352,7 +352,7 @@ public class WrappedSimulation {
         return StatUtils.mean(cpuPercentUsage);
     }
 
-    private double calculateReward(boolean isValid) {
+    private double calculateReward(final boolean isValid) {
         final int penaltyMultiplier = (isValid) ? 1 : 1000;
         if (!isValid) {
             info("Penalty given to the agent because the action was not possible");
