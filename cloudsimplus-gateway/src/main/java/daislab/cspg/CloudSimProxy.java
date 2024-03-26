@@ -150,7 +150,7 @@ public class CloudSimProxy {
         return vmList;
     }
 
-    private Vm createVmWithId(final String type) {
+    private Vm createVm(final String type) {
         int sizeMultiplier = getSizeMultiplier(type);
 
         Vm vm = new VmSimple(
@@ -480,7 +480,7 @@ public class CloudSimProxy {
         LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
     }
 
-    public void addNewVM(String type) {
+    public void addNewVm(String type) {
         Vm newVm = createVm(type);
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
@@ -520,7 +520,7 @@ public class CloudSimProxy {
         }
     }
 
-    public boolean removeRandomVM(String type) {
+    public boolean removeRandomVm(String type) {
         List<Vm> vmExecList = broker.getVmExecList();
 
         List<Vm> vmsOfType = vmExecList

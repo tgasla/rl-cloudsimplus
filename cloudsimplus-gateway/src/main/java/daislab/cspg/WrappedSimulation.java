@@ -117,7 +117,7 @@ public class WrappedSimulation {
         return gson.toJson(renderedEnv);
     }
 
-    public SimulationStepResult step(final int action) {
+    public SimulationStepResult step(final double[] action) {
 
         if (cloudSimProxy == null) {
             throw new RuntimeException("Simulation not reset! Please call the reset() function!");
@@ -207,7 +207,7 @@ public class WrappedSimulation {
     private boolean removeVm(final int id) {
         String vmToKillType = cloudSimProxy.removeVm(id);
         if (vmToKillType != null) {
-            this.vmCounter.recordRemovedVM(vmToKillType);
+            this.vmCounter.recordRemovedVm(vmToKillType);
             return true;
         }
         debug("Remove vm with Id " + id + " request was ignored.");
@@ -215,8 +215,8 @@ public class WrappedSimulation {
     }
 
     private boolean removeRandomVm(final String type) {
-        if (cloudSimProxy.removeRandomVM(type)) {
-            this.vmCounter.recordRemovedVM(type);
+        if (cloudSimProxy.removeRandomVm(type)) {
+            this.vmCounter.recordRemovedVm(type);
             return true;
         }
         debug("Removing a VM of type "
@@ -233,7 +233,7 @@ public class WrappedSimulation {
         if (vmCounter.hasCapacity(type)) {
             // need to also check if this succeeds
             cloudSimProxy.addNewVm(type, vmId);
-            vmCounter.recordNewVM(type);
+            vmCounter.recordNewVm(type);
             return true;
             // debug("Adding a VM of type " + type + "to host "
             //         + " was requested but the request was ignored because host is not suitable");

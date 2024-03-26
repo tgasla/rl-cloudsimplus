@@ -53,7 +53,7 @@ public class MultiSimulationEnvironment {
         return simulation.render();
     }
 
-    public SimulationStepResult step(final String simulationIdentifier, final int action) {
+    public SimulationStepResult step(final String simulationIdentifier, final double[] action) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
         return simulation.step(action);
     }
