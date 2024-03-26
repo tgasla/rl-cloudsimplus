@@ -216,3 +216,6 @@ gradle-app.setting
 
 !.env
 tb-logs/*
+
+########## VSCODE ##########
+.vscode
