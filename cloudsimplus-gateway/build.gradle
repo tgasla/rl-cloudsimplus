@@ -36,13 +36,16 @@ task configureLogging {
     }
 }
 
+build.dependsOn configureLogging
+
 test {
     useJUnitPlatform()
     //https://stackoverflow.com/questions/70756414/java-lang-reflect-inaccessibleobjectexception-unable-to-make-field-private-fina
     //https://stackoverflow.com/questions/70412805/what-does-this-error-mean-java-lang-reflect-inaccessibleobjectexception-unable
     //https://openjdk.org/jeps/396
     jvmArgs = jvmArgs + ['--add-opens=java.base/java.util=ALL-UNNAMED']
-    testLogging.showStandardStreams = true
+    // enable/disable system out messages on junit tests
+    testLogging.showStandardStreams = false
 }
 
 // In this section you declare where to find the dependencies of your project
@@ -58,10 +61,10 @@ dependencies {
     implementation 'org.cloudsimplus:cloudsimplus:8.5.1'
     implementation 'org.slf4j:slf4j-api:2.0.12'
     implementation 'net.sf.py4j:py4j:0.10.9.7'
-    implementation 'ch.qos.logback:logback-classic:1.5.0'
+    implementation 'ch.qos.logback:logback-classic:1.5.3'
     implementation 'org.apache.commons:commons-collections4:4.4'
     implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'org.postgresql:postgresql:42.7.1'
+    implementation 'org.postgresql:postgresql:42.7.3'
     implementation 'org.hamcrest:hamcrest:2.2'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
@@ -104,5 +107,3 @@ java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
-
-build.dependsOn configureLogging
