@@ -462,12 +462,23 @@ public class CloudSimProxy {
         return memPercentUsage;
     }
 
-    public void addNewVm(final String type, final int vmId) {
-        Vm newVm = createVm(type);
-        // String hostId = broker.getVmExecList().get(vmId).getHost().getId();
-        // newVm.setDescription(type + "-" + hostId);
-        final long hostId = broker.getVmExecList().get(vmId).getHost().getId();
+    public boolean addNewVm(final String type, final long vmId) {
+        LOGGER.debug("Agent action: Create a " + type + " VM");
 
+        final long hostId = broker.getVmExecList()
+                .parallelStream()
+                .filter(vm -> vmId == vm.getId())
+                .findFirst()
+                .map(Vm::getHost)
+                .map(Host::getId)
+                .orElse(-1L);
+        
+        if (hostId == -1L) {
+            LOGGER.debug("Vm creating ignored, no vm with id given found");
+            return false;
+        }
+
+        Vm newVm = createVm(type);
         newVm.setDescription(type + "-" + hostId);
 
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
@@ -475,9 +486,9 @@ public class CloudSimProxy {
         final double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
-        LOGGER.debug("Agent action: Create a " + type + " VM");
         broker.submitVm(newVm);
         LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
+        return true;
     }
 
     public void addNewVm(String type) {
@@ -493,10 +504,13 @@ public class CloudSimProxy {
     }
 
     // if a vm is destroyed, this method returns the type of it.
-    public String removeVm(final int id) {
-        List<Vm> vmExecList = broker.getVmExecList();
+    public String removeVm(final long id) {
+        final Vm vmToKill = broker.getVmExecList()
+                .parallelStream()
+                .filter(vm -> id == vm.getId())
+                .findFirst()
+                .orElse(Vm.NULL);
 
-        final Vm vmToKill = broker.getVmExecList().get(id);
         if (vmToKill == Vm.NULL) {
             LOGGER.warn("Can't kill the VM with id " + id + ". No such vm found.");
             return null;
@@ -506,7 +520,7 @@ public class CloudSimProxy {
 
         LOGGER.debug("vmType = " + vmType);
 
-        List<Vm> vmsOfType = vmExecList
+        List<Vm> vmsOfType = broker.getVmExecList()
                 .parallelStream()
                 .filter(vm -> vmType.equals((vm.getDescription())))
                 .collect(Collectors.toList());

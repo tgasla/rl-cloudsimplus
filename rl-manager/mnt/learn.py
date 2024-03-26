@@ -1,9 +1,15 @@
 import gymnasium as gym
 import gym_cloudsimplus
+import numpy as np
 import json
 import time
+import os
 import stable_baselines3 as sb3
 from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.noise import NormalActionNoise
+from stable_baselines3.common.monitor import Monitor
+# from stable_baselines3.common import results_plotter
+# from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
 import dummy_agents
 import torch
 import argparse
@@ -23,6 +29,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 swf_reader = SWFReader()
 jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 
+# Create log dir
+eval_log_dir = "./eval-logs/"
+os.makedirs(eval_log_dir, exist_ok=True)
+
+# Create and wrap the environment
 env = gym.make(
     "LargeDC-v0",
     jobs_as_json=json.dumps(jobs),
@@ -30,6 +41,11 @@ env = gym.make(
     split_large_jobs="true",
     render_mode="ansi"
 )
+
+env = Monitor(env, eval_log_dir)
+
+# Add some action noise for exploration
+n_actions = env.action_space.shape[-1]
 
 it = 0
 reward_sum = 0
@@ -48,17 +64,13 @@ args = parser.parse_args()
 algorithm_str = str(args.algorithm).upper()
 timesteps = int(args.timesteps)
 
-rng_algorithm = False
-if algorithm_str == "RNG":
-    rng_algorithm = True
-
 # Not needed because we have the choices parameter in add_argument
 # if not rng_algorithm and not hasattr(sb3, algorithm_str):
 #     raise NameError(f"RL algorithm {algorithm_str} was not found")
 
 tb_log = f"./tb-logs/{algorithm_str}/"
 
-if rng_algorithm:
+if algorithm_str == "RNG":
     algorithm = getattr(dummy_agents, algorithm_str)
     policy = "RngPolicy"
 else:
@@ -70,6 +82,9 @@ model = algorithm(
     env=env,
     verbose=True,
     tensorboard_log=tb_log,
+    action_noise=NormalActionNoise(
+            mean=np.zeros(n_actions),
+            sigma=0.1 * np.ones(n_actions)),
     device=device
 )
 
@@ -91,7 +106,7 @@ mean_reward, std_reward = evaluate_policy(
 
 print(f"Mean Reward: {mean_reward} +/- {std_reward}")
 
-model_path = f"./storage/{algorithm_str}_{human_format(timesteps)}_{int(time.time())}"
+model_path = f"./model-storage/{algorithm_str}_{human_format(timesteps)}_{int(time.time())}"
 
 model.save(model_path)
 

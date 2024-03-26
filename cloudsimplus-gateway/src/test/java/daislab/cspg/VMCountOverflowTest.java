@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.AfterAll;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class VMCountOverflowTest {
 
-    private static final double[] nopAction = {0, 0};
+    private static final ArrayList<Double> nopAction = new ArrayList<Double>(List.of(0.0,0.0));
 
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();

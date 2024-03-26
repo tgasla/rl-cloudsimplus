@@ -21,7 +21,7 @@ public class IntegrationTest {
 	private static final long maxVmsPerSize = datacenterHostsCnt;
 	private static final long hostPeMips = 10000;
 	private static final int hostPeCnt = 14;
-    private static final double[] nopAction = {0, 0};
+    private static final ArrayList<Double> nopAction = new ArrayList<Double>(List.of(0.0, 0.0));
     
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();
@@ -128,11 +128,13 @@ public class IntegrationTest {
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
-            double[] createSVmAction = {1,0};
+            ArrayList<Double> createSVmAction = new ArrayList<Double>(2);
+            createSVmAction.add(1.0);
+            createSVmAction.add(0.0);
 
-            double[] action = stepsExecuted == 20 ? new double[]{1, 0} : nopAction;
+            ArrayList<Double> action = stepsExecuted == 20 ? createSVmAction : nopAction;
 
-            System.out.println("action on this step is " + action[0] + ", " + action[1]);
+            System.out.println("action on this step is " + action.get(0) + ", " + action.get(1));
 
             step = multiSimulationEnvironment.step(simulationId, action);
             if (step.getObs()[0] > maxCoreRatio) {
@@ -184,7 +186,9 @@ public class IntegrationTest {
 
             if (stepsExecuted == 20) {
                 // delete a SMALL VM
-                double[] action = {-0.1, 0};
+                ArrayList<Double> action = new ArrayList<Double>(2);
+                action.add(-0.1);
+                action.add(0.0);
                 step = multiSimulationEnvironment.step(simulationId, action);
 
                 final long totalVmPes =
@@ -236,7 +240,11 @@ public class IntegrationTest {
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
-            double[] action = stepsExecuted == 10 ? new double[]{-0.1, 0} : nopAction;
+            ArrayList<Double> removeSVmAction = new ArrayList<Double>(2);
+            removeSVmAction.add(-0.1);
+            removeSVmAction.add(0.0);
+
+            ArrayList<Double> action = stepsExecuted == 10 ? removeSVmAction : nopAction;
             step = multiSimulationEnvironment.step(simulationId, action);
 
             System.out.println("Observations: " + Arrays.toString(step.getObs()) + " "

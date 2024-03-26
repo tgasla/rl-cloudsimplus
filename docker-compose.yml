@@ -37,14 +37,15 @@ services:
       # BATCH_SIZE: 128
       # EPISODES_CNT: 25
     volumes:
-      - ./model-storage:/mgr/storage
+      # - ./model-storage:/mgr/model-storage
       - ./rl-manager/mnt:/mgr/mnt
-      - ./tb-logs:/mgr/tb-logs
+      # - ./tb-logs:/mgr/tb-logs
+      # - ./eval-logs:/mgr/eval-logs
     command: python3 mnt/learn.py ${ALGORITHM} ${TIMESTEPS}
 
   manager-gpu:
     <<: *cpu
-    profiles: ["gpu"]
+    profiles: ["cuda"]
     deploy:
       resources:
         reservations:

@@ -168,8 +168,8 @@ public class WrappedSimulation {
         );
     }
 
-    private int continuousToPositiveDiscrete(final double continuous, final long maxDiscreteValue) {
-        final int discrete = (int) Math.round(continuous * maxDiscreteValue);
+    private long continuousToPositiveDiscrete(final double continuous, final long maxDiscreteValue) {
+        final long discrete = Long.valueOf(Math.round(continuous * maxDiscreteValue));
         return Math.abs(discrete);
     }
 
@@ -178,7 +178,7 @@ public class WrappedSimulation {
         debug("action is " + action[0] + ", " + action[1]);
 
         boolean isValid = true;
-        final int id = continuousToPositiveDiscrete(
+        final long id = continuousToPositiveDiscrete(
                     action[0], 
                     cloudSimProxy.getLastCreatedVmId());
 
@@ -194,7 +194,7 @@ public class WrappedSimulation {
         // action > 0 creates a VM in the same host of VM with 
         // Vm.id = action[0] and Vm.type = action[1]
         else if (action[0] > 0) {
-            final int vmTypeIndex = continuousToPositiveDiscrete(
+            final int vmTypeIndex = (int) continuousToPositiveDiscrete(
                     action[1],
                     CloudSimProxy.VM_TYPES.length - 1);
             debug("will try to create a new Vm on the same host as the vm with id = " 
@@ -204,7 +204,7 @@ public class WrappedSimulation {
         return isValid;
     }
 
-    private boolean removeVm(final int id) {
+    private boolean removeVm(final long id) {
         String vmToKillType = cloudSimProxy.removeVm(id);
         if (vmToKillType != null) {
             this.vmCounter.recordRemovedVm(vmToKillType);
@@ -229,7 +229,7 @@ public class WrappedSimulation {
     }
 
     // adds a new vm to the same host as the vm with vmId if possible
-    private boolean addNewVm(final String type, final int vmId) {
+    private boolean addNewVm(final String type, final long vmId) {
         if (vmCounter.hasCapacity(type)) {
             // need to also check if this succeeds
             cloudSimProxy.addNewVm(type, vmId);

@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,9 +54,12 @@ public class MultiSimulationEnvironment {
         return simulation.render();
     }
 
-    public SimulationStepResult step(final String simulationIdentifier, final double[] action) {
+    public SimulationStepResult step(final String simulationIdentifier, final ArrayList<Double> action) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
-        return simulation.step(action);
+        final double[] action_double = action.stream()
+                .mapToDouble(Double::doubleValue)
+                .toArray();
+        return simulation.step(action_double);
     }
 
     public long ping() {
