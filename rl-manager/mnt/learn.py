@@ -26,29 +26,7 @@ def human_format(num):
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-swf_reader = SWFReader()
-jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
-
-# Create log dir
-eval_log_dir = "./eval-logs/"
-os.makedirs(eval_log_dir, exist_ok=True)
-
-# Create and wrap the environment
-env = gym.make(
-    "LargeDC-v0",
-    jobs_as_json=json.dumps(jobs),
-    simulation_speedup="10000",
-    split_large_jobs="true",
-    render_mode="ansi"
-)
-env = Monitor(env, eval_log_dir)
-
-# Add some action noise for exploration
-n_actions = env.action_space.shape[-1]
-
-it = 0
-reward_sum = 0
-
+# Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("algorithm", 
                     type=str,
@@ -63,11 +41,36 @@ args = parser.parse_args()
 algorithm_str = str(args.algorithm).upper()
 timesteps = int(args.timesteps)
 
+# Read jobs
+swf_reader = SWFReader()
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
+
+env_id = "LargeDC-v0"
+
+# Create log dir
+eval_log_path = f"./eval-logs/{env_id}_{algorithm_str}_{human_format(timesteps)}_{int(time.time())}_monitor.csv"
+
+# Create and wrap the environment
+env = gym.make(
+    env_id,
+    jobs_as_json=json.dumps(jobs),
+    simulation_speedup="10000",
+    split_large_jobs="true",
+    render_mode="ansi"
+)
+env = Monitor(env, eval_log_path)
+
+# Add some action noise for exploration
+n_actions = env.action_space.shape[-1]
+
+it = 0
+reward_sum = 0
+
 # Not needed because we have the choices parameter in add_argument
 # if not rng_algorithm and not hasattr(sb3, algorithm_str):
 #     raise NameError(f"RL algorithm {algorithm_str} was not found")
 
-tb_log = f"./tb-logs/{algorithm_str}/"
+tb_log_dir = f"./tb-logs/{env_id}/{algorithm_str}/"
 
 if algorithm_str == "RNG":
     algorithm = getattr(dummy_agents, algorithm_str)
@@ -80,7 +83,7 @@ model = algorithm(
     policy=policy,
     env=env,
     verbose=True,
-    tensorboard_log=tb_log,
+    tensorboard_log=tb_log_dir,
     action_noise=NormalActionNoise(
             mean=np.zeros(n_actions),
             sigma=0.1 * np.ones(n_actions)),
@@ -105,13 +108,13 @@ mean_reward, std_reward = evaluate_policy(
 
 print(f"Mean Reward: {mean_reward} +/- {std_reward}")
 
-model_path = f"./model-storage/{algorithm_str}_{human_format(timesteps)}_{int(time.time())}"
+model_storage_path = f"./model-storage/{env_id}/{algorithm_str}_{human_format(timesteps)}_{int(time.time())}"
 
-model.save(model_path)
+model.save(model_storage_path)
 
 del model
 
-model = algorithm.load(model_path)
+model = algorithm.load(model_storage_path)
 
 # Model deployment
 obs, info = env.reset()
