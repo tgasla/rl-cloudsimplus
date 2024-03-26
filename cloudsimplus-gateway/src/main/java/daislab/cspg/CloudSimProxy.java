@@ -165,7 +165,7 @@ public class CloudSimProxy {
                 .setCloudletScheduler(new OptimizedCloudletScheduler())
                 .setDescription(type)
                 .setShutDownDelay(settings.getVmShutdownDelay());
-        vmCost.notifyCreateVM(vm);
+        vmCost.addNewVmToList(vm);
         return vm;
     }
 

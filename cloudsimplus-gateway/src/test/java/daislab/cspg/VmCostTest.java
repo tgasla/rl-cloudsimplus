@@ -27,11 +27,11 @@ public class VmCostTest {
     @Test
     public void testCostFor11VMs() {
         // S
-        vmCost.notifyCreateVM(createVmS());
+        vmCost.addNewVmToList(createVmS());
 
         // 10x M
         for (int i = 0; i < 10; i++) {
-            vmCost.notifyCreateVM(createVmM());
+            vmCost.addNewVmToList(createVmM());
         }
 
         assertThat(vmCost.getVMCostPerIteration(1), closeTo(0.07, 0.001));
