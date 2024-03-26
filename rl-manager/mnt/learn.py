@@ -41,7 +41,6 @@ env = gym.make(
     split_large_jobs="true",
     render_mode="ansi"
 )
-
 env = Monitor(env, eval_log_dir)
 
 # Add some action noise for exploration
