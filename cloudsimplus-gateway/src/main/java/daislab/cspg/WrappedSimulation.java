@@ -315,7 +315,7 @@ public class WrappedSimulation {
     private double calculateReward(final boolean isValid) {
         final int penaltyMultiplier = (isValid) ? 1 : 1000;
         if (!isValid) {
-            LOGGER.info("Penalty given to agent because action was not possible");
+            info("Penalty given to agent because action was not possible");
         }
         // reward is the negative cost of running the infrastructure
         // - any penalties from jobs waiting in the queue

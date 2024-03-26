@@ -77,7 +77,7 @@ public class MultiSimulationEnvironment {
     }
 
     public void shutdown() {
-        LOGGER.info("Shutting down as per users request");
+        LOGGER.info("Shutting down as per user's request");
         System.exit(0);
     }
 

@@ -481,7 +481,7 @@ public class CloudSimProxy {
             destroyVm(vmsOfType.get(vmToKillIdx));
             return true;
         } else {
-            LOGGER.warn("Can't kill a VM - only one running");
+            LOGGER.warn("Can't kill the VM. It is the only SMALL one running");
             return false;
         }
     }
