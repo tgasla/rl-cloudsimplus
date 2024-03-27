@@ -25,17 +25,6 @@ def human_format(num):
         num /= 1000
     return f"{num:.0f}" + suffix[magnitude]
 
-def print_observation_space(obs):
-    print("Observation Space:")
-    print("-" * 50)
-    print(f"avgCPUUtilizationHistory: {obs[0]}")
-    print(f"vmAllocatedRatioHistory: {obs[1]}")
-    print(f"p90CPUUtilizationHistory: {obs[2]}")
-    print(f"avgMemoryUtilizationHistory: {obs[3]}")
-    print(f"p90MemoryUtilizationHistory: {obs[4]}")
-    print(f"waitingJobsRatioGlobalHistory: {obs[5]}")
-    print(f"waitingJobsRatioRecentHistory: {obs[6]}")
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Parse arguments
@@ -96,9 +85,6 @@ action_noise = NormalActionNoise(
     sigma=0.1 * np.ones(n_actions)
 )
 
-it = 0
-reward_sum = 0
-
 tb_log_dir = f"./tb-logs/{env_id}/{algorithm_str}/"
 
 if algorithm_str == "RNG":
@@ -108,6 +94,7 @@ else:
     algorithm = getattr(sb3, algorithm_str)
     policy = "MlpPolicy"
 
+# Instantiate the agent
 model = algorithm(
     policy=policy,
     env=env,
@@ -118,7 +105,7 @@ model = algorithm(
     device=device
 )
 
-# Model training
+# Train the agent
 model.learn(
     total_timesteps=timesteps,
     progress_bar=True,
@@ -144,30 +131,40 @@ model_storage_path = (
     f"{int(time.time())}"
 )
 
+# Save the agent
 model.save(model_storage_path)
 
+# Delete trained model to demonstrate loading
 del model
 
+# Load the trained agent
 model = algorithm.load(model_storage_path)
 
-# Model deployment
+# Enjoy trained agent
+env = model.get_env()
 obs, info = env.reset()
+
+cur_timestep = 0
+episode_reward = 0
 
 done = False
 while not done:
+    cur_timestep += 1
+    print(f"Current timestep: {cur_timestep}")
     action, _states = model.predict(obs)
-    print(f"ACTION = {action}")
+    print(f"Action: {action}")
     obs, reward, terminated, truncated, info = env.step(action)
-    print(f"Iteration: {it}")
-    env.render()
-    print(f"Current Reward: {reward}")
-    reward_sum += reward
+    print(f"Reward: {reward}")
+    episode_reward += reward
 
-    it += 1
     done = terminated or truncated
     if terminated:
-        print(f"Episode finished! Reward sum: {reward_sum}")
-    if truncated:
-        print("Episode is truncated")
+        print(f"Episode finished! Episode reward: {episode_reward}")
+    else:
+        print("Episode truncated. Resetting...")
+        obs, info = env.reset()
+        cur_timestep = 0
+        episode_reward = 0
+        done = False
 
 env.close()

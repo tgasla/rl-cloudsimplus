@@ -63,6 +63,9 @@ class SmallDC(gym.Env):
     def __init__(self, **kwargs):
         super().__init__()
 
+        self.reward = 0
+        self.cost = 0
+
         self.action_space = spaces.Box(
             low=np.array([-1, 0]), 
             high=np.array([1, 1]),
@@ -136,10 +139,14 @@ class SmallDC(gym.Env):
     def step(self, action):
         result = simulation_environment.step(self.simulation_id, action)
         reward = result.getReward()
+        cost = result.getCost()
         terminated = result.isDone()
         truncated = False
         raw_obs = result.getObs()
         obs = to_nparray(raw_obs)
+
+        self.reward = reward
+        self.cost = cost
 
         if self.render_mode == "human":
             self.render()
