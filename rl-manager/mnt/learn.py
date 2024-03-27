@@ -1,6 +1,6 @@
 import os
 import argparse
-import time
+from datetime import datetime
 import json
 import numpy as np
 import gymnasium as gym
@@ -15,6 +15,9 @@ from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
 # from stable_baselines3.common import results_plotter
 # from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
+
+def datetime_to_str():
+    return datetime.now().strftime("%m%d%y_%H%M%S")
 
 def human_format(num):
     num = float(f"{num:.3f}")
@@ -56,16 +59,20 @@ timesteps = int(args.timesteps)
 
 # Read jobs
 swf_reader = SWFReader()
-jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=1)
 
 env_id = "LargeDC-v0"
 
 # Create log dir
-eval_log_dir = "./eval-logs/"
+eval_log_dir = f"./eval-logs/{env_id}/"
 os.makedirs(eval_log_dir, exist_ok=True)
+
 eval_log_path = (
-    f"{eval_log_dir}{env_id}_{algorithm_str}_{human_format(timesteps)}_"
-    f"{int(time.time())}_monitor.csv"
+    f"{eval_log_dir}"
+    f"{algorithm_str}_"
+    f"{human_format(timesteps)}_"
+    f"{datetime_to_str()}_"
+    f"monitor.csv"
 )
 
 # Create and wrap the environment
@@ -85,14 +92,22 @@ action_noise = NormalActionNoise(
     sigma=0.1 * np.ones(n_actions)
 )
 
-tb_log_dir = f"./tb-logs/{env_id}/{algorithm_str}/"
-
 if algorithm_str == "RNG":
     algorithm = getattr(dummy_agents, algorithm_str)
     policy = "RngPolicy"
 else:
     algorithm = getattr(sb3, algorithm_str)
     policy = "MlpPolicy"
+
+tb_log_dir = f"./tb-logs/{env_id}/"
+os.makedirs(eval_log_dir, exist_ok=True)
+
+tb_log_path = (
+    f"{tb_log_dir}"
+    f"{algorithm_str}_"
+    f"{human_format(timesteps)}"
+    f"{datetime_to_str()}_"
+)
 
 # Instantiate the agent
 model = algorithm(
@@ -110,25 +125,27 @@ model.learn(
     total_timesteps=timesteps,
     progress_bar=True,
     reset_num_timesteps=False,
-    tb_log_name=f"{algorithm_str}_{human_format(timesteps)}"
+    tb_log_name=tb_log_path
 )
 
 # Model evaluation
 mean_reward, std_reward = evaluate_policy(
     model,
     model.get_env(),
-    n_eval_episodes=10,
+    n_eval_episodes=1,
     render = True
 )
 
 print(f"Mean Reward: {mean_reward} +/- {std_reward}")
 
-model_storage_dir = "./model-storage/"
+model_storage_dir = f"./model-storage/{env_id}/"
 os.makedirs(model_storage_dir, exist_ok=True)
 
 model_storage_path = (
-    f"{model_storage_dir}{env_id}/{algorithm_str}_{human_format(timesteps)}_"
-    f"{int(time.time())}"
+    f"{model_storage_dir}"
+    f"{algorithm_str}_"
+    f"{human_format(timesteps)}_"
+    f"{datetime_to_str()}"
 )
 
 # Save the agent
@@ -138,11 +155,11 @@ model.save(model_storage_path)
 del model
 
 # Load the trained agent
-model = algorithm.load(model_storage_path)
+model = algorithm.load(model_storage_path, env=env)
 
 # Enjoy trained agent
 env = model.get_env()
-obs, info = env.reset()
+obs = env.reset()
 
 cur_timestep = 0
 episode_reward = 0
@@ -163,7 +180,7 @@ while not done:
         print(f"Episode finished! Episode reward: {episode_reward}")
     else:
         print("Episode truncated. Resetting...")
-        obs, info = env.reset()
+        obs = env.reset()
         cur_timestep = 0
         episode_reward = 0
         done = False
