@@ -113,7 +113,7 @@ model = algorithm(
     env=env,
     verbose=True,
     tensorboard_log=tb_log_dir,
-    # for now, all action noise is ignored in RNG algorithm
+    # TODO: for now, all action noise is ignored in RNG algorithm
     action_noise=action_noise,
     device=device
 )
@@ -159,7 +159,7 @@ while not done:
     print(f"ACTION = {action}")
     obs, reward, terminated, truncated, info = env.step(action)
     print(f"Iteration: {it}")
-    print_observation_space(obs)
+    env.render()
     print(f"Current Reward: {reward}")
     reward_sum += reward
 
