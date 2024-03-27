@@ -102,7 +102,7 @@ model = algorithm(
     env=env,
     verbose=True,
     tensorboard_log=tb_log_dir,
-    # I think action noise will not work on RNG
+    # for now, all action noise is ignored in RNG algorithm
     action_noise=action_noise,
     device=device
 )
