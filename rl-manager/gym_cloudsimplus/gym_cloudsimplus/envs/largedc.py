@@ -5,6 +5,8 @@ from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
 import numpy as np
 
+# TODO: the two environments should inherit a BaseEnvironment class
+# so I do not have to repeat the same code in both of them
 """
 Action space
 
@@ -13,7 +15,7 @@ A vector of 2 continuous numbers
 The first number is in range [-1,1]
 Positive value - create a VM
 Negative value - destroy a VM
-The range shows the id of the host that will be destroyed
+The range shows the id of the VM that will be destroyed
 
 The second number is in range [0,1]
 It shows the size of the VM that will be created/destroyed
@@ -125,7 +127,11 @@ class LargeDC(gym.Env):
                 kwargs.get("storeCreatedCloudletsDatacenterBroker", "false")
         }
 
-        self.render_mode = kwargs.get("render_mode", "None")
+        render_mode = kwargs.get("render_mode", None)
+        assert render_mode is None \
+            or render_mode in self.metadata["render_modes"]
+    
+        self.render_mode = render_mode
 
         if "jobs_as_json" in kwargs:
             params["SOURCE_OF_JOBS"] = "PARAMS"
@@ -145,7 +151,6 @@ class LargeDC(gym.Env):
 
         if self.render_mode == "human":
             self.render()
-            print(f"Current reward is {reward}")
 
         return (
             obs,
@@ -163,6 +168,14 @@ class LargeDC(gym.Env):
         return obs, info
 
     def render(self):
+        if self.render_mode is None:
+            gym.logger.warn(
+                "You are calling render method "
+                "without specifying any render mode. "
+                "You can specify the render_mode at initialization, "
+                f'e.g. gym("{self.spec.id}", render_mode="human")'
+            )
+            return
         # result is a string with arrays encoded as json
         result = simulation_environment.render(self.simulation_id)
         obs_data = json.loads(result)
@@ -176,6 +189,7 @@ class LargeDC(gym.Env):
             print(f"p90MemoryUtilizationHistory: {obs_data[4]}")
             print(f"waitingJobsRatioGlobalHistory: {obs_data[5]}")
             print(f"waitingJobsRatioRecentHistory: {obs_data[6]}")
+            print("-" * 40)
             return
         elif self.render_mode == "ansi":
             return str(obs_data)

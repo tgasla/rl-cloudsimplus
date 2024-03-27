@@ -83,6 +83,9 @@ env = gym.make(
     split_large_jobs="true",
     render_mode="ansi"
 )
+
+# Monitor needs the environment to have a render_mode set
+# If render_mode is None, it will give a warning.
 env = Monitor(env, eval_log_path)
 
 # Add some action noise for exploration
@@ -155,11 +158,17 @@ model.save(model_storage_path)
 del model
 
 # Load the trained agent
-model = algorithm.load(model_storage_path, env=env)
+model = algorithm.load(model_storage_path)
 
 # Enjoy trained agent
-env = model.get_env()
-obs = env.reset()
+env = gym.make(
+    env_id,
+    jobs_as_json=json.dumps(jobs),
+    simulation_speedup="10000",
+    split_large_jobs="true",
+    render_mode="human"
+)
+obs, info = env.reset()
 
 cur_timestep = 0
 episode_reward = 0
@@ -171,18 +180,17 @@ while not done:
     action, _states = model.predict(obs)
     print(f"Action: {action}")
     obs, reward, terminated, truncated, info = env.step(action)
-    env.render("human")
     print(f"Reward: {reward}")
     episode_reward += reward
 
     done = terminated or truncated
+    print(f"terminated is {terminated}, truncated is {truncated}")
     if terminated:
         print(f"Episode finished! Episode reward: {episode_reward}")
-    else:
-        print("Episode truncated. Resetting...")
-        obs = env.reset()
+        env.close()
+    elif truncated:
+        print(f"Episode truncated. Restarting episode...")
         cur_timestep = 0
         episode_reward = 0
         done = False
-
-env.close()
+        obs, info = env.reset()

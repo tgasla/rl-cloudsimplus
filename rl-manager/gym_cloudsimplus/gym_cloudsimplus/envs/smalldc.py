@@ -5,6 +5,8 @@ from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
 import numpy as np
 
+# TODO: the two environments should inherit a BaseEnvironment class
+# so I do not have to repeat the same code in both of them
 """
 Action space
 
@@ -126,7 +128,11 @@ class SmallDC(gym.Env):
                 kwargs.get("storeCreatedCloudletsDatacenterBroker", "false")
         }
 
-        self.render_mode = kwargs.get("render_mode", "None")
+        render_mode = kwargs.get("render_mode", None)
+        assert render_mode is None \
+            or render_mode in self.metadata["render_modes"]
+    
+        self.render_mode = render_mode
 
         if "jobs_as_json" in kwargs:
             params["SOURCE_OF_JOBS"] = "PARAMS"
@@ -150,7 +156,6 @@ class SmallDC(gym.Env):
 
         if self.render_mode == "human":
             self.render()
-            print(f"Current reward is {reward}")
 
         return (
             obs,
@@ -168,6 +173,14 @@ class SmallDC(gym.Env):
         return obs, info
 
     def render(self):
+        if self.render_mode is None:
+            gym.logger.warn(
+                "You are calling render method "
+                "without specifying any render mode. "
+                "You can specify the render_mode at initialization, "
+                f'e.g. gym("{self.spec.id}", render_mode="human")'
+            )
+            return
         # result is a string with arrays encoded as json
         result = simulation_environment.render(self.simulation_id)
         obs_data = json.loads(result)
@@ -181,6 +194,7 @@ class SmallDC(gym.Env):
             print(f"p90MemoryUtilizationHistory: {obs_data[4]}")
             print(f"waitingJobsRatioGlobalHistory: {obs_data[5]}")
             print(f"waitingJobsRatioRecentHistory: {obs_data[6]}")
+            print("-" * 40)
             return
         elif self.render_mode == "ansi":
             return str(obs_data)
