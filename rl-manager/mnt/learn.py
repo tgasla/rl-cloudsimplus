@@ -25,6 +25,17 @@ def human_format(num):
         num /= 1000
     return f"{num:.0f}" + suffix[magnitude]
 
+def print_observation_space(obs):
+    print("Observation Space:")
+    print("-" * 50)
+    print(f"avgCPUUtilizationHistory: {obs[0]}")
+    print(f"vmAllocatedRatioHistory: {obs[1]}")
+    print(f"p90CPUUtilizationHistory: {obs[2]}")
+    print(f"avgMemoryUtilizationHistory: {obs[3]}")
+    print(f"p90MemoryUtilizationHistory: {obs[4]}")
+    print(f"waitingJobsRatioGlobalHistory: {obs[5]}")
+    print(f"waitingJobsRatioRecentHistory: {obs[6]}")
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Parse arguments
@@ -115,15 +126,15 @@ model.learn(
     tb_log_name=f"{algorithm_str}_{human_format(timesteps)}"
 )
 
-# # Model evaluation
-# mean_reward, std_reward = evaluate_policy(
-#     model,
-#     model.get_env(),
-#     n_eval_episodes=1,
-#     render = True
-# )
+# Model evaluation
+mean_reward, std_reward = evaluate_policy(
+    model,
+    model.get_env(),
+    n_eval_episodes=10,
+    render = True
+)
 
-# print(f"Mean Reward: {mean_reward} +/- {std_reward}")
+print(f"Mean Reward: {mean_reward} +/- {std_reward}")
 
 model_storage_dir = "./model-storage/"
 os.makedirs(model_storage_dir, exist_ok=True)
@@ -148,15 +159,7 @@ while not done:
     print(f"ACTION = {action}")
     obs, reward, terminated, truncated, info = env.step(action)
     print(f"Iteration: {it}")
-    print("State Space:")
-    print("-" * 50)
-    print(f"avgCPUUtilizationHistory: {obs[0]}")
-    print(f"vmAllocatedRatioHistory: {obs[1]}")
-    print(f"p90CPUUtilizationHistory: {obs[2]}")
-    print(f"avgMemoryUtilizationHistory: {obs[3]}")
-    print(f"p90MemoryUtilizationHistory: {obs[4]}")
-    print(f"waitingJobsRatioGlobalHistory: {obs[5]}")
-    print(f"waitingJobsRatioRecentHistory: {obs[6]}")
+    print_observation_space(obs)
     print(f"Current Reward: {reward}")
     reward_sum += reward
 
