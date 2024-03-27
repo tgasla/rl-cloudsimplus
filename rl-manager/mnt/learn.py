@@ -28,15 +28,27 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Parse arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("algorithm", 
-                    type=str,
-                    choices=["DQN", "A2C", "PPO", 
-                             "RNG", "DDPG", "HER", 
-                             "SAC", "TD3"
-                    ],
-                    help="The RL algorithm to train")
-parser.add_argument("timesteps", type=int,
-                    help="The number of timesteps to train")
+parser.add_argument(
+    "environment", 
+    type=str,
+    choices=["SmallDC-v0", "LargeDC-v0"],
+    help="The environment to train the agent on"
+)
+parser.add_argument(
+    "algorithm", 
+    type=str,
+    choices=[
+        "DQN", "A2C", "PPO", 
+        "RNG", "DDPG", "HER", 
+        "SAC", "TD3"
+    ],
+    help="The RL algorithm to train"
+)
+parser.add_argument(
+    "timesteps",
+    type=int,
+    help="The number of timesteps to train"
+)
 args = parser.parse_args()
 algorithm_str = str(args.algorithm).upper()
 timesteps = int(args.timesteps)
