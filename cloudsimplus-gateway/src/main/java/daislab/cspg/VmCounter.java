@@ -6,6 +6,7 @@ import java.util.Map;
 /*
  * Class to count the number of VMs, so we can keep track of them.
  * We do not allow the creation of a new VM if we have reached the maxVmsPerSize.
+ * TODO: check if I can do it using the VmCount functionality of the cloudsimplus.
 */
 public class VmCounter {
     private final long maxVmsPerSize;

@@ -8,6 +8,7 @@ import java.util.List;
 /*
  * Class to calculate the infrastructure cost.
  * We need it to calculate the agent's reward.
+ * TODO: check also the VmCost class of the cloudsimplus
 */
 public class VmCost {
 
