@@ -81,6 +81,8 @@ public class SimulationSettings {
     // TODO: I should create a map inside the class defining the parameter names.
     // Then, get the parameters and do a get for every parameter in a loop
     // to set the parameters.
+    // TODO: Maybe even better, write these parameter names and values into a file
+    // so that both java and python can get these without repeating code.
     public SimulationSettings(final Map<String, String> parameters) {
         vmRunningHourlyCost = Double.parseDouble(
                 parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));

@@ -169,7 +169,9 @@ public class WrappedSimulation {
         );
     }
 
-    private long continuousToPositiveDiscrete(final double continuous, final long maxDiscreteValue) {
+    private long continuousToPositiveDiscrete(
+            final double continuous, 
+            final long maxDiscreteValue) {
         final long discrete = Long.valueOf(Math.round(continuous * maxDiscreteValue));
         return Math.abs(discrete);
     }
@@ -183,6 +185,10 @@ public class WrappedSimulation {
                     action[0], 
                     cloudSimProxy.getLastCreatedVmId());
 
+        final int vmTypeIndex = (int) continuousToPositiveDiscrete(
+            action[1],
+            CloudSimProxy.VM_TYPES.length - 1);
+
         debug("translated action[0] = " + id);
 
         // action[0] = 0 does nothing
@@ -195,9 +201,6 @@ public class WrappedSimulation {
         // action > 0 creates a VM in the same host of VM with 
         // Vm.id = action[0] and Vm.type = action[1]
         else if (action[0] > 0) {
-            final int vmTypeIndex = (int) continuousToPositiveDiscrete(
-                    action[1],
-                    CloudSimProxy.VM_TYPES.length - 1);
             debug("will try to create a new Vm on the same host as the vm with id = " 
                     + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
             isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);
@@ -211,36 +214,27 @@ public class WrappedSimulation {
             this.vmCounter.recordRemovedVm(vmToKillType);
             return true;
         }
-        debug("Remove vm with Id " + id + " request was ignored.");
+        debug("Remove vm with id " + id + " request was ignored.");
         return false;
     }
 
     private boolean removeRandomVm(final String type) {
-        if (cloudSimProxy.removeRandomVm(type)) {
-            this.vmCounter.recordRemovedVm(type);
-            return true;
+        if (!cloudSimProxy.removeRandomVm(type)) {
+            debug("Removing a VM of type "
+                    + type + " requested but the request was ignored. Stats: "
+                    + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
+                    + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
+                    + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
+            );
+            return false;
         }
-        debug("Removing a VM of type "
-                + type + " requested but the request was ignored. Stats: "
-                + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
-                + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
-                + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
-        );
-        return false;
+        this.vmCounter.recordRemovedVm(type);
+        return true;
     }
 
     // adds a new vm to the same host as the vm with vmId if possible
     private boolean addNewVm(final String type, final long vmId) {
-        if (vmCounter.hasCapacity(type)) {
-            // TODO: I also need to check if this succeeds
-            cloudSimProxy.addNewVm(type, vmId);
-            vmCounter.recordNewVm(type);
-            return true;
-            // debug("Adding a VM of type " + type + "to host "
-            //         + " was requested but the request was ignored because host is not suitable");
-            // return false;
-        }
-        else {
+        if (!vmCounter.hasCapacity(type)) {
             debug("Adding a VM of type "
                     + type + " requested but the request was ignored (MAX_VMS_PER_SIZE "
                     + this.settings.getMaxVmsPerSize() + " reached) Stats: "
@@ -249,6 +243,16 @@ public class WrappedSimulation {
                     + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
             );
             return false;
+        }
+        if () {
+            // TODO: I also need to check if this succeeds
+            cloudSimProxy.addNewVm(type, vmId);
+            vmCounter.recordNewVm(type);
+            return true;
+            // debug("Adding a VM of type " + type + "to host "
+            //         + "was requested but the request was ignored "
+            //         + "because host is not suitable");
+            // return false;
         }
     }
 
@@ -270,13 +274,12 @@ public class WrappedSimulation {
         }
     }
 
-    private double percentilegetEnvironmentVariable(
+    private double percentileOrZero(
             final double[] values, 
-            final double percentile, 
-            final double defaultValue) {
+            final double percentile) {
 
         if (values.length == 0) {
-            return defaultValue;
+            return 0;
         }
 
         return percentile(values, percentile);
@@ -296,11 +299,11 @@ public class WrappedSimulation {
         metricsStorage.updateMetric("avgCPUUtilizationHistory", safeMean(cpuPercentUsage));
         metricsStorage.updateMetric(
                 "p90CPUUtilizationHistory", 
-                percentilegetEnvironmentVariable(cpuPercentUsage, 0.90, 0));
+                percentileOrZero(cpuPercentUsage, 0.90, 0));
         metricsStorage.updateMetric("avgMemoryUtilizationHistory", safeMean(memPercentageUsage));
         metricsStorage.updateMetric(
                 "p90MemoryUtilizationHistory", 
-                percentilegetEnvironmentVariable(memPercentageUsage, 0.90, 0));
+                percentileOrZero(memPercentageUsage, 0.90, 0));
         metricsStorage.updateMetric("waitingJobsRatioGlobalHistory", waitingJobsRatioGlobal);
         metricsStorage.updateMetric("waitingJobsRatioRecentHistory", waitingJobsRatioRecent);
     }

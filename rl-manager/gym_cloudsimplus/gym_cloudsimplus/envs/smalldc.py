@@ -68,9 +68,6 @@ class SmallDC(gym.Env):
     def __init__(self, **kwargs):
         super().__init__()
 
-        self.reward = 0
-        self.cost = 0
-
         self.action_space = spaces.Box(
             low=np.array([-1, 0]), 
             high=np.array([1, 1]),
