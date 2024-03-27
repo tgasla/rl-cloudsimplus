@@ -144,28 +144,30 @@ public class CloudSimProxy {
 
         for (int i = 0; i < vmCount; i++) {
             // 1 VM == 1 HOST for simplicity
-            vmList.add(createVmWithId(type));
+            vmList.add(createVm(type));
         }
 
         return vmList;
     }
 
-    private Vm createVmWithId(final String type) {
+    private Vm createVm(final String type) {
         int sizeMultiplier = getSizeMultiplier(type);
 
         Vm vm = new VmSimple(
                 this.nextVmId,
                 settings.getHostPeMips(),
                 settings.getBasicVmPeCnt() * sizeMultiplier);
-        this.nextVmId++;
-        vm
+                vm
                 .setRam(settings.getBasicVmRam() * sizeMultiplier)
                 .setBw(settings.getBasicVmBw())
                 .setSize(settings.getBasicVmSize())
                 .setCloudletScheduler(new OptimizedCloudletScheduler())
                 .setDescription(type)
                 .setShutDownDelay(settings.getVmShutdownDelay());
+
         vmCost.addNewVmToList(vm);
+        this.nextVmId++;
+        
         return vm;
     }
 
@@ -262,7 +264,7 @@ public class CloudSimProxy {
     }
 
     private boolean shouldPrintJobStats() {
-        return this.settings.getPrintJobsPeriodically() 
+        return settings.getPrintJobsPeriodically() 
                 && Double.valueOf(this.clock()).longValue() % 20000 == 0;
     }
 
@@ -401,6 +403,10 @@ public class CloudSimProxy {
         return this.finishedIds.size() < this.jobs.size();
     }
 
+    public int getLastCreatedVmId() {
+        return nextVmId - 1;
+    }
+
     public long getNumberOfActiveCores() {
         final Optional<Long> reduce = this.broker
                 .getVmExecList()
@@ -456,11 +462,40 @@ public class CloudSimProxy {
         return memPercentUsage;
     }
 
-    public void addNewVm(final String type) {
+    public boolean addNewVm(final String type, final long vmId) {
+        LOGGER.debug("Agent action: Create a " + type + " VM");
+
+        final long hostId = broker.getVmExecList()
+                .parallelStream()
+                .filter(vm -> vmId == vm.getId())
+                .findFirst()
+                .map(Vm::getHost)
+                .map(Host::getId)
+                .orElse(-1L);
+        
+        if (hostId == -1L) {
+            LOGGER.debug("Vm creating ignored, no vm with id given found");
+            return false;
+        }
+
+        Vm newVm = createVm(type);
+        newVm.setDescription(type + "-" + hostId);
+
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
-        Vm newVm = createVmWithId(type);
-        double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
+        final double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
+        // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
+        newVm.setSubmissionDelay(delay);
+        broker.submitVm(newVm);
+        LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
+        return true;
+    }
+
+    public void addNewVm(String type) {
+        Vm newVm = createVm(type);
+        // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
+        // from anecdotal exp the startup time can be as fast as 45s
+        final double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
         LOGGER.debug("Agent action: Create a " + type + " VM");
@@ -468,7 +503,38 @@ public class CloudSimProxy {
         LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
     }
 
-    public boolean removeRandomVm(final String type) {
+    // if a vm is destroyed, this method returns the type of it.
+    public String removeVm(final long id) {
+        final Vm vmToKill = broker.getVmExecList()
+                .parallelStream()
+                .filter(vm -> id == vm.getId())
+                .findFirst()
+                .orElse(Vm.NULL);
+
+        if (vmToKill == Vm.NULL) {
+            LOGGER.warn("Can't kill the VM with id " + id + ". No such vm found.");
+            return null;
+        }
+
+        String vmType = vmToKill.getDescription();
+
+        LOGGER.debug("vmType = " + vmType);
+
+        List<Vm> vmsOfType = broker.getVmExecList()
+                .parallelStream()
+                .filter(vm -> vmType.equals((vm.getDescription())))
+                .collect(Collectors.toList());
+        LOGGER.debug("Agent action: Remove VM with id " + id);
+        if (canKillVm(vmType, vmsOfType.size())) {
+            destroyVm(vmToKill);
+            return vmType;
+        } else {
+            LOGGER.warn("Can't kill the VM. It is the only SMALL one running");
+            return null;
+        }
+    }
+
+    public boolean removeRandomVm(String type) {
         List<Vm> vmExecList = broker.getVmExecList();
 
         List<Vm> vmsOfType = vmExecList

@@ -21,7 +21,7 @@ public class IntegrationTest {
 	private static final long maxVmsPerSize = datacenterHostsCnt;
 	private static final long hostPeMips = 10000;
 	private static final int hostPeCnt = 14;
-
+    
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();
 
@@ -129,6 +129,8 @@ public class IntegrationTest {
 
             int action = stepsExecuted == 20 ? 1 : 0;
 
+            System.out.println("action on this step is " + action + ", " + action);
+
             step = multiSimulationEnvironment.step(simulationId, action);
             if (step.getObs()[0] > maxCoreRatio) {
                 maxCoreRatio = step.getObs()[0];
@@ -145,6 +147,11 @@ public class IntegrationTest {
                 + initialLVmCount * basicVmPeCount * 4;
 
         final long datacenterCores = datacenterHostsCnt * hostPeCnt;
+
+        System.out.println("totalVmPes = " + totalVmPes 
+                + " datacenterCores = " + datacenterCores
+                + " totalVmPes/datacenterCores = " + (double)totalVmPes/datacenterCores
+                + " maxCoreRatio = " + maxCoreRatio);
         
         assertEquals((double) totalVmPes/datacenterCores, maxCoreRatio, 0.000001);
 
@@ -225,6 +232,7 @@ public class IntegrationTest {
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
+            // delete a SMALL VM
             int action = stepsExecuted == 10 ? 2 : 0;
             step = multiSimulationEnvironment.step(simulationId, action);
 

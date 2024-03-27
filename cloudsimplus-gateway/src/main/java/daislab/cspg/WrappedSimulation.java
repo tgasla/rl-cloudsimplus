@@ -1,15 +1,16 @@
 package daislab.cspg;
 
-import com.google.gson.Gson;
-import org.apache.commons.math3.stat.StatUtils;
 import org.cloudsimplus.cloudlets.Cloudlet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.commons.math3.stat.StatUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.google.gson.Gson;
 
 import static org.apache.commons.math3.stat.StatUtils.percentile;
 
@@ -18,6 +19,7 @@ public class WrappedSimulation {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
     private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
+
     private final double queueWaitPenalty;
     private final List<CloudletDescriptor> initialJobsDescriptors;
     private final double simulationSpeedUp;
@@ -165,44 +167,84 @@ public class WrappedSimulation {
         );
     }
 
+    private long continuousToPositiveDiscrete(final double continuous, final long maxDiscreteValue) {
+        final long discrete = Long.valueOf(Math.round(continuous * maxDiscreteValue));
+        return Math.abs(discrete);
+    }
+
     private boolean executeAction(final int action) {
+
+        debug("action is " + action);
+
         boolean isValid = true;
 
         switch (action) {
             case 0:
-                // nothing happens
+                // does nothing
                 break;
             case 1:
-                // adding a new vm
+                // adds a new vm
                 isValid = addNewVm(CloudSimProxy.SMALL);
                 break;
             case 2:
-                // removing randomly one of the vms
-                isValid = removeVM(CloudSimProxy.SMALL);
+                // removes randomly one of the vms
+                isValid = removeRandomVm(CloudSimProxy.SMALL);
                 break;
             case 3:
                 isValid = addNewVm(CloudSimProxy.MEDIUM);
                 break;
             case 4:
-                isValid = removeVM(CloudSimProxy.MEDIUM);
+                isValid = removeRandomVm(CloudSimProxy.MEDIUM);
                 break;
             case 5:
                 isValid = addNewVm(CloudSimProxy.LARGE);
                 break;
             case 6:
-                isValid = removeVM(CloudSimProxy.LARGE);
+                isValid = removeRandomVm(CloudSimProxy.LARGE);
                 break;
         }
         return isValid;
     }
 
-    private boolean removeVM(final String type) {
+    private boolean removeVm(final long id) {
+        String vmToKillType = cloudSimProxy.removeVm(id);
+        if (vmToKillType != null) {
+            this.vmCounter.recordRemovedVm(vmToKillType);
+            return true;
+        }
+        debug("Remove vm with Id " + id + " request was ignored.");
+        return false;
+    }
+
+    private boolean removeRandomVm(final String type) {
         if (cloudSimProxy.removeRandomVm(type)) {
             this.vmCounter.recordRemovedVm(type);
             return true;
-        } else {
-            debug("Removing a VM of type "
-                    + type + " requested but the request was ignored. Stats: "
+        }
+        debug("Removing a VM of type "
+                + type + " requested but the request was ignored. Stats: "
+                + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
+                + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
+                + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
+        );
+        return false;
+    }
+
+    // adds a new vm to the same host as the vm with vmId if possible
+    private boolean addNewVm(final String type, final long vmId) {
+        if (vmCounter.hasCapacity(type)) {
+            // need to also check if this succeeds
+            cloudSimProxy.addNewVm(type, vmId);
+            vmCounter.recordNewVm(type);
+            return true;
+            // debug("Adding a VM of type " + type + "to host "
+            //         + " was requested but the request was ignored because host is not suitable");
+            // return false;
+        }
+        else {
+            debug("Adding a VM of type "
+                    + type + " requested but the request was ignored (MAX_VMS_PER_SIZE "
+                    + this.settings.getMaxVmsPerSize() + " reached) Stats: "
                     + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
                     + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
                     + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
@@ -216,10 +258,10 @@ public class WrappedSimulation {
             cloudSimProxy.addNewVm(type);
             vmCounter.recordNewVm(type);
             return true;
-        } else {
+        }
+        else {
             debug("Adding a VM of type "
-                    + type
-                    + " requested but the request was ignored (MAX_VMS_PER_SIZE "
+                    + type + " requested but the request was ignored (MAX_VMS_PER_SIZE "
                     + this.settings.getMaxVmsPerSize() + " reached) Stats: "
                     + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
                     + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
@@ -315,7 +357,7 @@ public class WrappedSimulation {
     private double calculateReward(final boolean isValid) {
         final int penaltyMultiplier = (isValid) ? 1 : 1000;
         if (!isValid) {
-            info("Penalty given to agent because action was not possible");
+            info("Penalty given to the agent because the action was not possible");
         }
         // reward is the negative cost of running the infrastructure
         // - any penalties from jobs waiting in the queue

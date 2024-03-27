@@ -38,7 +38,7 @@ public class VMCountOverflowTest {
 
         int i = 0;
         while (i++ < 1000) {
-            SimulationStepResult result = multiSimulationEnvironment.step(simulationId, 1);
+            SimulationStepResult result = multiSimulationEnvironment.step(simulationId, 0);
             System.out.println("Result: " + result);
 
             if (result.isDone()) {

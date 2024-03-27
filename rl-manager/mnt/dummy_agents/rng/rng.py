@@ -10,6 +10,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.policies import BasePolicy
 from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, RolloutReturn, TrainFreq, TrainFrequencyUnit
 from stable_baselines3.common.utils import is_vectorized_observation, safe_mean, should_collect_more_steps
+from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.vec_env import VecEnv
 
@@ -30,6 +31,7 @@ class RNG(BaseAlgorithm):
         tensorboard_log: Optional[str] = None,
         verbose: int = 0,
         seed: Optional[int] = None,
+        action_noise: Optional[ActionNoise] = None,
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
     ):

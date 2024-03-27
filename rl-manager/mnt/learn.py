@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+import os
+>>>>>>> continuous-action
 import argparse
 import time
 import json
@@ -23,6 +27,17 @@ def human_format(num):
         magnitude += 1
         num /= 1000
     return f"{num:.0f}" + suffix[magnitude]
+
+def print_observation_space(obs):
+    print("Observation Space:")
+    print("-" * 50)
+    print(f"avgCPUUtilizationHistory: {obs[0]}")
+    print(f"vmAllocatedRatioHistory: {obs[1]}")
+    print(f"p90CPUUtilizationHistory: {obs[2]}")
+    print(f"avgMemoryUtilizationHistory: {obs[3]}")
+    print(f"p90MemoryUtilizationHistory: {obs[4]}")
+    print(f"waitingJobsRatioGlobalHistory: {obs[5]}")
+    print(f"waitingJobsRatioRecentHistory: {obs[6]}")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -50,7 +65,10 @@ parser.add_argument(
     help="The number of timesteps to train"
 )
 args = parser.parse_args()
+<<<<<<< HEAD
 env_id = args.environment
+=======
+>>>>>>> continuous-action
 algorithm_str = str(args.algorithm).upper()
 timesteps = int(args.timesteps)
 
@@ -58,9 +76,19 @@ timesteps = int(args.timesteps)
 swf_reader = SWFReader()
 jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 
+<<<<<<< HEAD
 # Create log dir
 eval_log_path = (
     f"./eval-logs/{env_id}_{algorithm_str}_{human_format(timesteps)}_"
+=======
+env_id = "LargeDC-v0"
+
+# Create log dir
+eval_log_dir = "./eval-logs/"
+os.makedirs(eval_log_dir, exist_ok=True)
+eval_log_path = (
+    f"{eval_log_dir}{env_id}_{algorithm_str}_{human_format(timesteps)}_"
+>>>>>>> continuous-action
     f"{int(time.time())}_monitor.csv"
 )
 
@@ -98,6 +126,7 @@ model = algorithm(
     env=env,
     verbose=True,
     tensorboard_log=tb_log_dir,
+    # for now, all action noise is ignored in RNG algorithm
     action_noise=action_noise,
     device=device
 )
@@ -114,14 +143,17 @@ model.learn(
 mean_reward, std_reward = evaluate_policy(
     model,
     model.get_env(),
-    n_eval_episodes=1,
+    n_eval_episodes=10,
     render = True
 )
 
 print(f"Mean Reward: {mean_reward} +/- {std_reward}")
 
+model_storage_dir = "./model-storage/"
+os.makedirs(model_storage_dir, exist_ok=True)
+
 model_storage_path = (
-    f"./model-storage/{env_id}/{algorithm_str}_{human_format(timesteps)}_"
+    f"{model_storage_dir}{env_id}/{algorithm_str}_{human_format(timesteps)}_"
     f"{int(time.time())}"
 )
 
@@ -137,18 +169,10 @@ obs, info = env.reset()
 done = False
 while not done:
     action, _states = model.predict(obs)
-    print(f"ACTION = {action}")
+    print(f"Action = {action}")
     obs, reward, terminated, truncated, info = env.step(action)
     print(f"Iteration: {it}")
-    print("State Space:")
-    print("-" * 50)
-    print(f"avgCPUUtilizationHistory: {obs[0]}")
-    print(f"vmAllocatedRatioHistory: {obs[1]}")
-    print(f"p90CPUUtilizationHistory: {obs[2]}")
-    print(f"avgMemoryUtilizationHistory: {obs[3]}")
-    print(f"p90MemoryUtilizationHistory: {obs[4]}")
-    print(f"waitingJobsRatioGlobalHistory: {obs[5]}")
-    print(f"waitingJobsRatioRecentHistory: {obs[6]}")
+    print_observation_space(obs)
     print(f"Current Reward: {reward}")
     reward_sum += reward
 
