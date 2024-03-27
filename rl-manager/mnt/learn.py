@@ -1,13 +1,19 @@
+import argparse
+import time
+import json
+import numpy as np
 import gymnasium as gym
 import gym_cloudsimplus
-import json
-import time
+import torch
+
+from read_swf import SWFReader
+import dummy_agents
 import stable_baselines3 as sb3
 from stable_baselines3.common.evaluation import evaluate_policy
-import dummy_agents
-import torch
-import argparse
-from read_swf import SWFReader
+from stable_baselines3.common.noise import NormalActionNoise
+from stable_baselines3.common.monitor import Monitor
+# from stable_baselines3.common import results_plotter
+# from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
 
 def human_format(num):
     num = float(f"{num:.3f}")
@@ -20,45 +26,67 @@ def human_format(num):
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "environment", 
+    type=str,
+    choices=["SmallDC-v0", "LargeDC-v0"],
+    help="The environment to train the agent on"
+)
+parser.add_argument(
+    "algorithm", 
+    type=str,
+    choices=[
+        "DQN", "A2C", "PPO", 
+        "RNG", "DDPG", "HER", 
+        "SAC", "TD3"
+    ],
+    help="The RL algorithm to train"
+)
+parser.add_argument(
+    "timesteps",
+    type=int,
+    help="The number of timesteps to train"
+)
+args = parser.parse_args()
+env_id = args.environment
+algorithm_str = str(args.algorithm).upper()
+timesteps = int(args.timesteps)
+
+# Read jobs
 swf_reader = SWFReader()
 jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 
+# Create log dir
+eval_log_path = (
+    f"./eval-logs/{env_id}_{algorithm_str}_{human_format(timesteps)}_"
+    f"{int(time.time())}_monitor.csv"
+)
+
+# Create and wrap the environment
 env = gym.make(
-    "LargeDC-v0",
+    env_id,
     jobs_as_json=json.dumps(jobs),
     simulation_speedup="10000",
     split_large_jobs="true",
     render_mode="ansi"
 )
+env = Monitor(env, eval_log_path)
+
+# Add some action noise for exploration
+n_actions = env.action_space.shape[-1]
+action_noise = NormalActionNoise(
+    mean=np.zeros(n_actions), 
+    sigma=0.1 * np.ones(n_actions)
+)
 
 it = 0
 reward_sum = 0
 
-parser = argparse.ArgumentParser()
-parser.add_argument("algorithm", 
-                    type=str,
-                    choices=["DQN", "A2C", "PPO", 
-                             "RNG", "DDPG", "HER", 
-                             "SAC", "TD3"
-                             ],
-                    help="The RL algorithm to train")
-parser.add_argument("timesteps", type=int,
-                    help="The number of timesteps to train")
-args = parser.parse_args()
-algorithm_str = str(args.algorithm).upper()
-timesteps = int(args.timesteps)
+tb_log_dir = f"./tb-logs/{env_id}/{algorithm_str}/"
 
-rng_algorithm = False
 if algorithm_str == "RNG":
-    rng_algorithm = True
-
-# Not needed because we have the choices parameter in add_argument
-# if not rng_algorithm and not hasattr(sb3, algorithm_str):
-#     raise NameError(f"RL algorithm {algorithm_str} was not found")
-
-tb_log = f"./tb-logs/{algorithm_str}/"
-
-if rng_algorithm:
     algorithm = getattr(dummy_agents, algorithm_str)
     policy = "RngPolicy"
 else:
@@ -69,7 +97,8 @@ model = algorithm(
     policy=policy,
     env=env,
     verbose=True,
-    tensorboard_log=tb_log,
+    tensorboard_log=tb_log_dir,
+    action_noise=action_noise,
     device=device
 )
 
@@ -91,13 +120,16 @@ mean_reward, std_reward = evaluate_policy(
 
 print(f"Mean Reward: {mean_reward} +/- {std_reward}")
 
-model_path = f"./storage/{algorithm_str}_{human_format(timesteps)}_{int(time.time())}"
+model_storage_path = (
+    f"./model-storage/{env_id}/{algorithm_str}_{human_format(timesteps)}_"
+    f"{int(time.time())}"
+)
 
-model.save(model_path)
+model.save(model_storage_path)
 
 del model
 
-model = algorithm.load(model_path)
+model = algorithm.load(model_storage_path)
 
 # Model deployment
 obs, info = env.reset()
@@ -106,7 +138,7 @@ done = False
 while not done:
     action, _states = model.predict(obs)
     print(f"ACTION = {action}")
-    obs, reward, terminated, truncated, info = env.step(int(action))
+    obs, reward, terminated, truncated, info = env.step(action)
     print(f"Iteration: {it}")
     print("State Space:")
     print("-" * 50)
