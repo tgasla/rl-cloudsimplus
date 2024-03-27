@@ -1,19 +1,19 @@
+import argparse
+import time
+import json
+import numpy as np
 import gymnasium as gym
 import gym_cloudsimplus
-import numpy as np
-import json
-import time
-import os
+import torch
+
+from read_swf import SWFReader
+import dummy_agents
 import stable_baselines3 as sb3
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
 # from stable_baselines3.common import results_plotter
 # from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
-import dummy_agents
-import torch
-import argparse
-from read_swf import SWFReader
 
 def human_format(num):
     num = float(f"{num:.3f}")
@@ -33,7 +33,7 @@ parser.add_argument("algorithm",
                     choices=["DQN", "A2C", "PPO", 
                              "RNG", "DDPG", "HER", 
                              "SAC", "TD3"
-                             ],
+                    ],
                     help="The RL algorithm to train")
 parser.add_argument("timesteps", type=int,
                     help="The number of timesteps to train")
@@ -48,7 +48,10 @@ jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 env_id = "LargeDC-v0"
 
 # Create log dir
-eval_log_path = f"./eval-logs/{env_id}_{algorithm_str}_{human_format(timesteps)}_{int(time.time())}_monitor.csv"
+eval_log_path = (
+    f"./eval-logs/{env_id}_{algorithm_str}_{human_format(timesteps)}_"
+    f"{int(time.time())}_monitor.csv"
+)
 
 # Create and wrap the environment
 env = gym.make(
@@ -62,13 +65,13 @@ env = Monitor(env, eval_log_path)
 
 # Add some action noise for exploration
 n_actions = env.action_space.shape[-1]
+action_noise = NormalActionNoise(
+    mean=np.zeros(n_actions), 
+    sigma=0.1 * np.ones(n_actions)
+)
 
 it = 0
 reward_sum = 0
-
-# Not needed because we have the choices parameter in add_argument
-# if not rng_algorithm and not hasattr(sb3, algorithm_str):
-#     raise NameError(f"RL algorithm {algorithm_str} was not found")
 
 tb_log_dir = f"./tb-logs/{env_id}/{algorithm_str}/"
 
@@ -84,9 +87,7 @@ model = algorithm(
     env=env,
     verbose=True,
     tensorboard_log=tb_log_dir,
-    action_noise=NormalActionNoise(
-            mean=np.zeros(n_actions),
-            sigma=0.1 * np.ones(n_actions)),
+    action_noise=action_noise,
     device=device
 )
 
@@ -108,7 +109,10 @@ mean_reward, std_reward = evaluate_policy(
 
 print(f"Mean Reward: {mean_reward} +/- {std_reward}")
 
-model_storage_path = f"./model-storage/{env_id}/{algorithm_str}_{human_format(timesteps)}_{int(time.time())}"
+model_storage_path = (
+    f"./model-storage/{env_id}/{algorithm_str}_{human_format(timesteps)}_"
+    f"{int(time.time())}"
+)
 
 model.save(model_storage_path)
 
