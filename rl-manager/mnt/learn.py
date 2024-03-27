@@ -60,10 +60,9 @@ jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 
 env_id = "LargeDC-v0"
 
+# Create log dir
 eval_log_dir = "./eval-logs/"
 os.makedirs(eval_log_dir, exist_ok=True)
-
-# Create log dir
 eval_log_path = (
     f"{eval_log_dir}{env_id}_{algorithm_str}_{human_format(timesteps)}_"
     f"{int(time.time())}_monitor.csv"
@@ -103,6 +102,7 @@ model = algorithm(
     env=env,
     verbose=True,
     tensorboard_log=tb_log_dir,
+    # I think action noise will not work on RNG
     action_noise=action_noise,
     device=device
 )
