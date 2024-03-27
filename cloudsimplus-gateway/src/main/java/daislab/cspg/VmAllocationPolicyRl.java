@@ -7,11 +7,6 @@ import org.cloudsimplus.vms.Vm;
 
 public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
 
-    public VmAllocationPolicyRl() {
-        super();
-        LOGGER.debug("Calling the VmAllocationPolicySimple constructor");
-    }
-
     @Override
     public HostSuitability allocateHostForVm(final Vm vm) {
         final String vmDescription = vm.getDescription();
