@@ -1,3 +1,4 @@
+import os
 import argparse
 import time
 import json
@@ -59,9 +60,12 @@ jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 
 env_id = "LargeDC-v0"
 
+eval_log_dir = "./eval-logs/"
+os.makedirs(eval_log_dir, exist_ok=True)
+
 # Create log dir
 eval_log_path = (
-    f"./eval-logs/{env_id}_{algorithm_str}_{human_format(timesteps)}_"
+    f"{eval_log_dir}{env_id}_{algorithm_str}_{human_format(timesteps)}_"
     f"{int(time.time())}_monitor.csv"
 )
 
@@ -111,18 +115,21 @@ model.learn(
     tb_log_name=f"{algorithm_str}_{human_format(timesteps)}"
 )
 
-# Model evaluation
-mean_reward, std_reward = evaluate_policy(
-    model,
-    model.get_env(),
-    n_eval_episodes=1,
-    render = True
-)
+# # Model evaluation
+# mean_reward, std_reward = evaluate_policy(
+#     model,
+#     model.get_env(),
+#     n_eval_episodes=1,
+#     render = True
+# )
 
-print(f"Mean Reward: {mean_reward} +/- {std_reward}")
+# print(f"Mean Reward: {mean_reward} +/- {std_reward}")
+
+model_storage_dir = "./model-storage/"
+os.makedirs(model_storage_dir, exist_ok=True)
 
 model_storage_path = (
-    f"./model-storage/{env_id}/{algorithm_str}_{human_format(timesteps)}_"
+    f"{model_storage_dir}{env_id}/{algorithm_str}_{human_format(timesteps)}_"
     f"{int(time.time())}"
 )
 
