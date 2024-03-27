@@ -38,9 +38,11 @@ All values are within range [0,1]
 address = os.getenv("CLOUDSIM_GATEWAY_HOST", "gateway")
 port = os.getenv("CLOUDSIM_GATEWAY_PORT", "25333")
 
-parameters = GatewayParameters(address=address,
-                               port=int(port),
-                               auto_convert=True)
+parameters = GatewayParameters(
+    address=address,
+    port=int(port),
+    auto_convert=True
+)
 gateway = JavaGateway(gateway_parameters=parameters)
 simulation_environment = gateway.entry_point
 
