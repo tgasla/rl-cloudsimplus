@@ -43,7 +43,7 @@ services:
       - ./eval-logs:/mgr/eval-logs
     command: python3 mnt/learn.py ${ENV} ${ALGORITHM} ${TIMESTEPS}
 
-  manager-gpu:
+  manager-cuda:
     <<: *cpu
     profiles: ["cuda"]
     deploy:
