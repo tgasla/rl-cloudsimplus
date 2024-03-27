@@ -78,6 +78,9 @@ public class SimulationSettings {
     // Get SimulationSettings from parameters
     // passed from the python client endpoint - the Gymnasium environment,
     // if an environment variable is not set, a default value is given
+    // TODO: I should create a map inside the class defining the parameter names.
+    // Then, get the parameters and do a get for every parameter in a loop
+    // to set the parameters.
     public SimulationSettings(final Map<String, String> parameters) {
         vmRunningHourlyCost = Double.parseDouble(
                 parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));

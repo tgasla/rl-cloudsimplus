@@ -29,7 +29,7 @@ public class VmCost {
         this.perIterationSmallVMCost = perSecondVMCost * secondsInIteration;
     }
 
-    public void addNewVmToList(Vm vm) {
+    public void addNewVmToList(final Vm vm) {
         this.createdVms.add(vm);
     }
 
