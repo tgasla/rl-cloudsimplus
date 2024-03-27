@@ -45,7 +45,7 @@ test {
     //https://openjdk.org/jeps/396
     jvmArgs = jvmArgs + ['--add-opens=java.base/java.util=ALL-UNNAMED']
     // enable/disable system out messages on junit tests
-    testLogging.showStandardStreams = true
+    testLogging.showStandardStreams = false
 }
 
 // In this section you declare where to find the dependencies of your project
