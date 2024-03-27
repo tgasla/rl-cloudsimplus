@@ -7,6 +7,9 @@ import numpy as np
 
 # TODO: the two environments should inherit a BaseEnvironment class
 # so I do not have to repeat the same code in both of them
+# TODO: the two environments should support both cntinuous and
+# discrete action spaces
+
 """
 Action space
 
