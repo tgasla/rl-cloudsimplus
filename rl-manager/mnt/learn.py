@@ -105,10 +105,9 @@ else:
 tb_log_dir = f"./tb-logs/{env_id}/"
 os.makedirs(eval_log_dir, exist_ok=True)
 
-tb_log_path = (
-    f"{tb_log_dir}"
+tb_log_name = (
     f"{algorithm_str}_"
-    f"{human_format(timesteps)}"
+    f"{human_format(timesteps)}_"
     f"{datetime_to_str()}_"
 )
 
@@ -128,7 +127,7 @@ model.learn(
     total_timesteps=timesteps,
     progress_bar=True,
     reset_num_timesteps=False,
-    tb_log_name=tb_log_path
+    tb_log_name=tb_log_name
 )
 
 # Model evaluation
