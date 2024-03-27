@@ -231,7 +231,7 @@ public class WrappedSimulation {
     // adds a new vm to the same host as the vm with vmId if possible
     private boolean addNewVm(final String type, final long vmId) {
         if (vmCounter.hasCapacity(type)) {
-            // need to also check if this succeeds
+            // TODO: I also need to check if this succeeds
             cloudSimProxy.addNewVm(type, vmId);
             vmCounter.recordNewVm(type);
             return true;

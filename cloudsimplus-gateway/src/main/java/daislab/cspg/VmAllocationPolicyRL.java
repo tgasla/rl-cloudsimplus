@@ -10,13 +10,23 @@ public class VmAllocationPolicyRL extends VmAllocationPolicySimple {
     @Override
     public HostSuitability allocateHostForVm(Vm vm) {
         final String vmDescription = vm.getDescription();
-        final int hostId = Integer.parseInt(vmDescription.substring(vmDescription.indexOf('-') + 1));
-        if (hostId == -1) {
+        final int index = vmDescription.indexOf('-');
+
+        // Desciption does not contain - allocate with VmAllocationPolicySimple logic
+        if (index == -1) {
             super.allocateHostForVm(vm);
         }
 
+        final int hostId = Integer.parseInt(vmDescription.substring(index + 1));
         final Host host = getHostList().get(hostId);
+
+        // host with id hostId was not found - allocate with VmAllocationPolicySimple logic
+        if (host == host.NULL) {
+            super.allocateHostForVm(vm);
+        }
         
+        // TODO: I need to find a way to give penalty to the agent.
+        // For now, do not give any penalty.
         HostSuitability suitability = allocateHostForVm(vm, host);
         if (!suitability.fully()) {
             LOGGER.debug("Action failed because host is not suitable.\n"

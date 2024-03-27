@@ -1,6 +1,5 @@
 package daislab.cspg;
 
-import org.cloudsimplus.allocationpolicies.VmAllocationPolicySimple;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.cloudlets.CloudletExecution;
 import org.cloudsimplus.core.CloudSimPlus;
@@ -52,6 +51,7 @@ public class CloudSimProxy {
     private final SimulationSettings settings;
     private final VmCost vmCost;
     private final Datacenter datacenter;
+    private final VmAllocationPolicy vmAllocationPolicy;
     private final double simulationSpeedUp;
     private final Map<Long, Double> originalSubmissionDelay = new HashMap<>();
     private final Random random = new Random(System.currentTimeMillis());
@@ -136,7 +136,9 @@ public class CloudSimProxy {
             hostList.add(host);
         }
 
-        return new LoggingDatacenter(cloudSimPlus, hostList, new VmAllocationPolicySimple());
+        vmAllocationPolicy = new VmAllocationPolicyRL();
+
+        return new LoggingDatacenter(cloudSimPlus, hostList, vmAllocationPolicy);
     }
 
     private List<? extends Vm> createVmList(final int vmCount, final String type) {
@@ -592,7 +594,9 @@ public class CloudSimProxy {
         final List<Cloudlet> affectedCloudlets =
                 Stream.concat(affectedExecCloudlets.stream(),affectedWaitingCloudlets.stream())
                 .collect(Collectors.toList());
-        ((HostAbstract)vm.getHost()).destroyVm(vm);
+        vmAllocationPolicy.deallocateHostforVm(vm);
+        // ((HostAbstract)vm.getHost()).destroyVm(vm);
+        
         vm.getCloudletScheduler().clear();
         // replaces broker.destroyVm
 
