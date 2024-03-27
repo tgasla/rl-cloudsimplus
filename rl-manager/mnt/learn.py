@@ -154,6 +154,7 @@ while not done:
     action, _states = model.predict(obs)
     print(f"Action: {action}")
     obs, reward, terminated, truncated, info = env.step(action)
+    env.render("human")
     print(f"Reward: {reward}")
     episode_reward += reward
 

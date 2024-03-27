@@ -167,7 +167,7 @@ class LargeDC(gym.Env):
         result = simulation_environment.render(self.simulation_id)
         obs_data = json.loads(result)
         if self.render_mode == "human":
-            print("Observation metrics:")
+            print("Observation state:")
             print("-" * 40)
             print(f"avgCPUUtilizationHistory: {obs_data[0]}")
             print(f"vmAllocatedRatioHistory: {obs_data[1]}")
