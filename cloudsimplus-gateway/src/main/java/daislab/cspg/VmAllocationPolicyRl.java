@@ -5,10 +5,14 @@ import org.cloudsimplus.hosts.HostSuitability;
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.vms.Vm;
 
-public class VmAllocationPolicyRL extends VmAllocationPolicySimple {
+public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
+
+    public VmAllocationPolicyRl() {
+        super();
+    }
 
     @Override
-    public HostSuitability allocateHostForVm(Vm vm) {
+    public HostSuitability allocateHostForVm(final Vm vm) {
         final String vmDescription = vm.getDescription();
         final int index = vmDescription.indexOf('-');
 

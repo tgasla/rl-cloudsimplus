@@ -89,6 +89,7 @@ public class WrappedSimulation {
                 .stream()
                 .map(CloudletDescriptor::toCloudlet)
                 .collect(Collectors.toList());
+        debug("Calling CloudSimProxy object...");
         cloudSimProxy = new CloudSimProxy(
                 settings, 
                 initialVmsCount, 

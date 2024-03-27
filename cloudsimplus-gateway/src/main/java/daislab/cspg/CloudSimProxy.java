@@ -6,8 +6,8 @@ import org.cloudsimplus.core.CloudSimPlus;
 import org.cloudsimplus.core.CloudSimTag;
 import org.cloudsimplus.core.events.SimEvent;
 import org.cloudsimplus.datacenters.Datacenter;
-import org.cloudsimplus.hosts.HostAbstract;
 import org.cloudsimplus.hosts.Host;
+import org.cloudsimplus.hosts.HostAbstract;
 import org.cloudsimplus.provisioners.PeProvisionerSimple;
 import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
@@ -15,6 +15,7 @@ import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
+// import org.cloudsimplus.allocationpolicies.VmAllocationPolicySimple;
 import org.cloudsimplus.listeners.CloudletVmEventInfo;
 import org.cloudsimplus.listeners.EventListener;
 
@@ -51,7 +52,6 @@ public class CloudSimProxy {
     private final SimulationSettings settings;
     private final VmCost vmCost;
     private final Datacenter datacenter;
-    private final VmAllocationPolicy vmAllocationPolicy;
     private final double simulationSpeedUp;
     private final Map<Long, Double> originalSubmissionDelay = new HashMap<>();
     private final Random random = new Random(System.currentTimeMillis());
@@ -135,10 +135,8 @@ public class CloudSimProxy {
 
             hostList.add(host);
         }
-
-        vmAllocationPolicy = new VmAllocationPolicyRL();
-
-        return new LoggingDatacenter(cloudSimPlus, hostList, vmAllocationPolicy);
+        LOGGER.debug("Creating datacenter...");
+        return new LoggingDatacenter(cloudSimPlus, hostList, new VmAllocationPolicyRl());
     }
 
     private List<? extends Vm> createVmList(final int vmCount, final String type) {
@@ -594,8 +592,8 @@ public class CloudSimProxy {
         final List<Cloudlet> affectedCloudlets =
                 Stream.concat(affectedExecCloudlets.stream(),affectedWaitingCloudlets.stream())
                 .collect(Collectors.toList());
-        vmAllocationPolicy.deallocateHostforVm(vm);
-        // ((HostAbstract)vm.getHost()).destroyVm(vm);
+        // vmAllocationPolicy.deallocateHostForVm(vm);
+        ((HostAbstract)vm.getHost()).destroyVm(vm);
         
         vm.getCloudletScheduler().clear();
         // replaces broker.destroyVm

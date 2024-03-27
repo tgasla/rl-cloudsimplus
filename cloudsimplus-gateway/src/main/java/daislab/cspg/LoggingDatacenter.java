@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class LoggingDatacenter extends DatacenterSimple {
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(LoggingDatacenter.class.getSimpleName());
 
     public LoggingDatacenter(
             final Simulation simulation,
