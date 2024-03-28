@@ -248,7 +248,8 @@ public class WrappedSimulation {
         if (!cloudSimProxy.addNewVm(type, vmId)) {
             debug("Adding a VM of type " + type + "to host "
                     + "was requested but the request was ignored "
-                    + "because host is not suitable");
+                    + "because vm with given id does not exist "
+                    + "or host is not suitable");
             return false;
         }
 

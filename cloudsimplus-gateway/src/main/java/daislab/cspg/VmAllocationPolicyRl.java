@@ -17,8 +17,13 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
 
         if (index == -1) {
             LOGGER.debug("Desciption does not contain the hostId to place the vm."
+<<<<<<< HEAD
                     + " Ignoring new vm creation action.");
             // suitability = super.allocateHostForVm(vm);
+=======
+                    + " This is for the initial vms. Placing them using simple policy.");
+            suitability = super.allocateHostForVm(vm);
+>>>>>>> 9751fb1 (fixed bug where if host was not suitable for vm, the vmcost was mistakenly increased)
             return suitability;
         }
 

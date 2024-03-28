@@ -163,9 +163,6 @@ public class CloudSimProxy {
                 .setCloudletScheduler(new OptimizedCloudletScheduler())
                 .setDescription(type)
                 .setShutDownDelay(settings.getVmShutdownDelay());
-
-        vmCost.addNewVmToList(vm);
-        this.nextVmId++;
         
         return vm;
     }
@@ -472,7 +469,7 @@ public class CloudSimProxy {
                 .orElse(Host.NULL);
         
         if (host == Host.NULL) {
-            LOGGER.debug("Vm creating ignored, no vm with id given found");
+            LOGGER.debug("Vm creating ignored, no vm with given id found");
             return false;
         }
 
@@ -485,6 +482,9 @@ public class CloudSimProxy {
             LOGGER.debug("Vm creating ignored, host not suitable");
             return false;
         }
+
+        vmCost.addNewVmToList(vm);
+        this.nextVmId++;
 
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
