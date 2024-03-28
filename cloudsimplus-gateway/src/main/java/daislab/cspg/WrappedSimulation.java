@@ -72,7 +72,7 @@ public class WrappedSimulation {
         return identifier;
     }
 
-    public double[] reset() {
+    public SimulationResetResult reset() {
         info("Reset initiated");
 
         // first attempt to store some memory
@@ -97,7 +97,10 @@ public class WrappedSimulation {
                 simulationSpeedUp);
 
         double[] obs = getObservation();
-        return obs;
+        double cost = cloudSimProxy.getRunningCost();
+        SimulationStepInfo info = new SimulationStepInfo(true, cost);
+
+        return new SimulationResetResult(obs, info);
     }
 
     public void close() {
@@ -162,10 +165,14 @@ public class WrappedSimulation {
                 + " Metrics (s): " + metricsTime
                 + " Action (s): " + actionTime);
 
+        double cost = cloudSimProxy.getRunningCost();
+        SimulationStepInfo info = new SimulationStepInfo(isValid, cost);
+
         return new SimulationStepResult(
-                done,
                 observation,
-                reward
+                reward,
+                done,
+                info
         );
     }
 
@@ -358,18 +365,18 @@ public class WrappedSimulation {
     }
 
     private double calculateReward(final boolean isValid) {
-        final int penaltyMultiplier = (isValid) ? 1 : 1000;
+        final int multiplier = (isValid) ? 1 : 1000;
         if (!isValid) {
             info("Penalty given to the agent because the action was not possible");
         }
         // reward is the negative cost of running the infrastructure
         // - any penalties from jobs waiting in the queue
-        final double vmRunningCost = cloudSimProxy.getRunningCost();
-        final double penalty =
+        final double vmRunningCostTerm = cloudSimProxy.getRunningCost();
+        final double waitingJobsTerm =
                   this.cloudSimProxy.getWaitingJobsCount() 
                 * this.queueWaitPenalty 
                 * simulationSpeedUp;
-        return - penaltyMultiplier * (vmRunningCost + penalty);
+        return - multiplier * (vmRunningCostTerm + waitingJobsTerm);
     }
 
     public void seed() {

@@ -146,7 +146,9 @@ class LargeDC(gym.Env):
 
     def step(self, action):
         result = simulation_environment.step(self.simulation_id, action)
+
         reward = result.getReward()
+        info = result.getInfo()
         terminated = result.isDone()
         truncated = False
         raw_obs = result.getObs()
@@ -160,14 +162,16 @@ class LargeDC(gym.Env):
             reward,
             terminated,
             truncated,
-            {}
+            info
         )
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        raw_obs = simulation_environment.reset(self.simulation_id)
+        result = simulation_environment.reset(self.simulation_id)
+
+        raw_obs = result.getObs()
         obs = to_nparray(raw_obs)
-        info = {}
+        info = result.getInfo()
         return obs, info
 
     def render(self):

@@ -483,7 +483,7 @@ public class CloudSimProxy {
             return false;
         }
 
-        vmCost.addNewVmToList(vm);
+        vmCost.addNewVmToList(newVm);
         this.nextVmId++;
 
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103

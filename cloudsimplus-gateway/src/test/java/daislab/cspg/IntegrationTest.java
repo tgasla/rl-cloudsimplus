@@ -128,9 +128,7 @@ public class IntegrationTest {
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
-            ArrayList<Double> createSVmAction = new ArrayList<Double>(2);
-            createSVmAction.add(1.0);
-            createSVmAction.add(0.0);
+            ArrayList<Double> createSVmAction = new ArrayList<Double>(List.of(0.1, 0.0));
 
             ArrayList<Double> action = stepsExecuted == 20 ? createSVmAction : nopAction;
 
@@ -186,9 +184,7 @@ public class IntegrationTest {
 
             if (stepsExecuted == 20) {
                 // delete a SMALL VM
-                ArrayList<Double> action = new ArrayList<Double>(2);
-                action.add(-0.1);
-                action.add(0.0);
+                ArrayList<Double> action = new ArrayList<Double>(List.of(-0.1, 0.0));
                 step = multiSimulationEnvironment.step(simulationId, action);
 
                 final long totalVmPes =
@@ -240,9 +236,7 @@ public class IntegrationTest {
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
-            ArrayList<Double> removeSVmAction = new ArrayList<Double>(2);
-            removeSVmAction.add(-0.1);
-            removeSVmAction.add(0.0);
+            ArrayList<Double> removeSVmAction = new ArrayList<Double>(List.of(-0.1, 0.0));
 
             ArrayList<Double> action = stepsExecuted == 10 ? removeSVmAction : nopAction;
             step = multiSimulationEnvironment.step(simulationId, action);
