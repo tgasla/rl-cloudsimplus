@@ -99,22 +99,22 @@ make build-manager
 ```
 
 # 3. Start application
-- Use the folloiwng command:
+Use the folloiwng command:
 ```
 docker compose up
 ```
 
-- You can also build the manager image by using the folloiwng command:
+You can also build the manager image by using the folloiwng command:
 ```
 docker compose up --build
 ```
 
-- If you want to see only the manager output use:
+If you want to see only the manager output use:
 ```
 docker compose manager run
 ```
 
-- If you want the manager image to have NVIDIA CUDA GPU access you need to download the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) then use the following command:
+If you want the manager image to have NVIDIA CUDA GPU access you need to download the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) then use the following command:
 ```
 docker compose --profile cuda up
 ```
@@ -133,10 +133,7 @@ docker compose down
 
 # Acknowledgements
 
-- This project uses the CloudSim Plus framework: a full-featured, highly extensible, and easy to use Java 17+ framework for
-modeling and simulation of cloud computing infrastructure and services.
-
-  You can find it [here](http://cloudsimplus.org/). The source code is available [here](https://github.com/manoelcampos/cloudsim-plus)
+This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, and easy to use Java 17+ framework for modeling and simulation of cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
 
 - The code was based on the work done by [pkoperek](https://github.com/pkoperek) in these following projects:
   - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
