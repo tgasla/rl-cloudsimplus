@@ -72,7 +72,7 @@ filename_id = get_filename_id(
 
 # Read jobs
 swf_reader = SWFReader()
-jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=10)
 
 model_storage_dir = "./model-storage/"
 model_storage_path = model_storage_dir + filename_id
@@ -146,7 +146,8 @@ model.learn(
     reset_num_timesteps=False,
     tb_log_name=tb_log_name,
     learning_rate=learning_rate_dict.get(algorithm_str),
-    device=device
+    device=device,
+    log_interval=1
 )
 
 env.close()

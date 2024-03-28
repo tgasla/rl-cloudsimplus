@@ -53,7 +53,7 @@ filename_id = get_filename_id(
 
 # Read jobs
 swf_reader = SWFReader()
-jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=10)
 
 # Create eval dir
 eval_log_dir = "./eval-logs/"

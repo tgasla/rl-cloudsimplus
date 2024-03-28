@@ -17,16 +17,16 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
 
         if (index == -1) {
             LOGGER.debug("Desciption does not contain the hostId to place the vm."
-                    + " The vm will be allocated using the VmAllocationPolicySimple.");
-            suitability = super.allocateHostForVm(vm);
+                    + " Ignoring new vm creation action.");
+            // suitability = super.allocateHostForVm(vm);
             return suitability;
         }
 
         hostId = Integer.parseInt(vmDescription.substring(index + 1));
         host = getHostList().get(hostId);
         
-        // TODO: I need to find a way to give penalty to the agent.
-        // For now, do not give any penalty.
+        // TODO: This is not needed becuase we check for suitability
+        // before telling the broker to try allocate host for this vm
         suitability = allocateHostForVm(vm, host);
         if (!suitability.fully()) {
             LOGGER.debug("Action failed because host is not suitable.\n"
