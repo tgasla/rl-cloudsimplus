@@ -94,13 +94,24 @@ or
 # 3. Start application
 `docker compose up`
 
-- You can also build manager image by adding the `--build` flag to the `docker compose` command
+- You can also build the manager image by using the folloiwng command:
+  ```
+  docker compose up --build
+  ```
 
 - If you want to see only the manager output use:
   `docker compose manager run`
 
 - If you want the manager image to have GPU access:
-  - For NVIDIA CUDA GPU you need to download the `nvidia-container-toolkit` by running `sudo apt-get install nvidia-container-toolkit` if you are using Debian and then add the `--profile gpu` flag to the `docker compose` command.
+  - For NVIDIA CUDA GPU you need to download the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) then use the following command:
+    ```
+    docker compose --profile cuda up
+    ```
+> [!NOTE]  
+> If you want to use both the --profile and --build flags, the correct syntax is the following:
+```
+docker compose --profile cuda up --build
+```
 
 # 4. Stop application
 `docker compose down`
