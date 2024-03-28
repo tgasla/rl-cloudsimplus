@@ -135,7 +135,7 @@ docker compose down
 
 This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, and easy to use Java 17+ framework for modeling and simulation of cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
 
-- The code was based on the work done by [pkoperek](https://github.com/pkoperek) in these following projects:
+The code was based on the work done by [pkoperek](https://github.com/pkoperek) in these following projects:
   - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
   - [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
   - [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)
