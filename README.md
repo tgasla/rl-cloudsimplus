@@ -82,14 +82,21 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 # 2. Build images
 
 ## 2.1 Build gateway image
-`make build-gateway`
+Use the folloiwng command to build the gateway image:
+```
+make build-gateway
+```
 
-or
-
-`make build-gateway-debug` to enable debugging and show DEBUG log messages. 
+To enable debugging and show DEBUG log messages use the following command:
+```
+make build-gateway-debug
+```
 
 ## 2.2 Build manager image
-`make build-manager`
+To build the manager image use the fowllowing command:
+```
+make build-manager
+```
 
 # 3. Start application
 - Use the folloiwng command:
