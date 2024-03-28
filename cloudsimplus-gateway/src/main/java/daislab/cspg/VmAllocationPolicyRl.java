@@ -17,13 +17,8 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
 
         if (index == -1) {
             LOGGER.debug("Desciption does not contain the hostId to place the vm."
-<<<<<<< HEAD
-                    + " Ignoring new vm creation action.");
-            // suitability = super.allocateHostForVm(vm);
-=======
                     + " This is for the initial vms. Placing them using simple policy.");
             suitability = super.allocateHostForVm(vm);
->>>>>>> 9751fb1 (fixed bug where if host was not suitable for vm, the vmcost was mistakenly increased)
             return suitability;
         }
 
@@ -34,9 +29,12 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
         // before telling the broker to try allocate host for this vm
         suitability = allocateHostForVm(vm, host);
         if (!suitability.fully()) {
-            LOGGER.debug("Action failed because host is not suitable.\n"
-            + "Reason: " + suitability.toString());
+            LOGGER.debug("This should never be printed as it is already checked.\n"
+                    + "Action failed because host is not suitable.\n"
+                    + "Reason: " + suitability.toString());
+            return suitability;
         }
+        LOGGER.debug("New vm creation and allocation with RL policy was successful!");
         return suitability;
     }
 }
