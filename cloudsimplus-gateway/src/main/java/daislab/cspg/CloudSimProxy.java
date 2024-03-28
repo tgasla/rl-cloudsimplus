@@ -464,21 +464,27 @@ public class CloudSimProxy {
     public boolean addNewVm(final String type, final long vmId) {
         LOGGER.debug("Agent action: Create a " + type + " VM");
 
-        final long hostId = broker.getVmExecList()
+        final Host host = broker.getVmExecList()
                 .parallelStream()
                 .filter(vm -> vmId == vm.getId())
                 .findFirst()
                 .map(Vm::getHost)
-                .map(Host::getId)
-                .orElse(-1L);
+                .orElse(Host.NULL);
         
-        if (hostId == -1L) {
+        if (host == Host.NULL) {
             LOGGER.debug("Vm creating ignored, no vm with id given found");
             return false;
         }
 
-        Vm newVm = createVm(type);
+        final long hostId = host.getId();
+
+        final Vm newVm = createVm(type);
         newVm.setDescription(type + "-" + hostId);
+
+        if (!host.isSuitableForVm(newVm)) {
+            LOGGER.debug("Vm creating ignored, host not suitable");
+            return false;
+        }
 
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
@@ -490,6 +496,8 @@ public class CloudSimProxy {
         return true;
     }
 
+    // TODO: I should avoid repeating code here.
+    // I should call addNewVm(type, vmId) inside this method
     public void addNewVm(String type) {
         Vm newVm = createVm(type);
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
@@ -533,6 +541,8 @@ public class CloudSimProxy {
         }
     }
 
+    // TODO: I should avoid repeating code here.
+    // I should reuse code from removeVm(id)
     public boolean removeRandomVm(String type) {
         List<Vm> vmExecList = broker.getVmExecList();
 

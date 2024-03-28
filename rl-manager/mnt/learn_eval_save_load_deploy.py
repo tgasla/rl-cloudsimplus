@@ -59,7 +59,7 @@ timesteps = int(args.timesteps)
 
 # Read jobs
 swf_reader = SWFReader()
-jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=1)
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 
 env_id = "LargeDC-v0"
 
@@ -134,7 +134,7 @@ model.learn(
 mean_reward, std_reward = evaluate_policy(
     model,
     model.get_env(),
-    n_eval_episodes=1,
+    n_eval_episodes=10,
     render = True
 )
 

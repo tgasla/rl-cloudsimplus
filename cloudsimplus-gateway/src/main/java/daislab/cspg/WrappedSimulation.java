@@ -244,16 +244,16 @@ public class WrappedSimulation {
             );
             return false;
         }
-        if () {
-            // TODO: I also need to check if this succeeds
-            cloudSimProxy.addNewVm(type, vmId);
-            vmCounter.recordNewVm(type);
-            return true;
-            // debug("Adding a VM of type " + type + "to host "
-            //         + "was requested but the request was ignored "
-            //         + "because host is not suitable");
-            // return false;
+
+        if (!cloudSimProxy.addNewVm(type, vmId)) {
+            debug("Adding a VM of type " + type + "to host "
+                    + "was requested but the request was ignored "
+                    + "because host is not suitable");
+            return false;
         }
+
+        vmCounter.recordNewVm(type);
+        return true;
     }
 
     private boolean addNewVm(final String type) {
@@ -299,11 +299,11 @@ public class WrappedSimulation {
         metricsStorage.updateMetric("avgCPUUtilizationHistory", safeMean(cpuPercentUsage));
         metricsStorage.updateMetric(
                 "p90CPUUtilizationHistory", 
-                percentileOrZero(cpuPercentUsage, 0.90, 0));
+                percentileOrZero(cpuPercentUsage, 0.90));
         metricsStorage.updateMetric("avgMemoryUtilizationHistory", safeMean(memPercentageUsage));
         metricsStorage.updateMetric(
                 "p90MemoryUtilizationHistory", 
-                percentileOrZero(memPercentageUsage, 0.90, 0));
+                percentileOrZero(memPercentageUsage, 0.90));
         metricsStorage.updateMetric("waitingJobsRatioGlobalHistory", waitingJobsRatioGlobal);
         metricsStorage.updateMetric("waitingJobsRatioRecentHistory", waitingJobsRatioRecent);
     }
