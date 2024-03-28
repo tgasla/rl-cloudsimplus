@@ -359,8 +359,9 @@ public class CloudSimProxy {
             cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
                 @Override
                 public void update(CloudletVmEventInfo info) {
-                    LOGGER.debug("Cloudlet: " + cloudlet.getId() + "/" + 
-                            cloudlet.getVm().getId() + " Finished.");
+                    LOGGER.debug("Cloudlet: " + cloudlet.getId() 
+                            + " that was running on vm "
+                            + cloudlet.getVm().getId() + " finished.");
                     finishedIds.add(info.getCloudlet().getId());
                 }
             });

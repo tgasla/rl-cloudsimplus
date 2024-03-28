@@ -19,7 +19,7 @@ public class WrappedSimulation {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
     private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
-
+    
     private final double queueWaitPenalty;
     private final List<CloudletDescriptor> initialJobsDescriptors;
     private final double simulationSpeedUp;
@@ -42,6 +42,7 @@ public class WrappedSimulation {
     private final SimulationHistory simulationHistory;
     private CloudSimProxy cloudSimProxy;
     private VmCounter vmCounter;
+    private double maxCost = 0.0;
 
     public WrappedSimulation(final SimulationSettings simulationSettings,
                              final String identifier,
@@ -99,6 +100,7 @@ public class WrappedSimulation {
         double[] obs = getObservation();
         double cost = cloudSimProxy.getRunningCost();
         SimulationStepInfo info = new SimulationStepInfo(true, cost);
+        maxCost = 0;
 
         return new SimulationResetResult(obs, info);
     }
@@ -166,8 +168,11 @@ public class WrappedSimulation {
                 + " Action (s): " + actionTime);
 
         double cost = cloudSimProxy.getRunningCost();
-        debug("COST IS: " + cost);
-        SimulationStepInfo info = new SimulationStepInfo(isValid, cost);
+        if (cost > maxCost) {
+            maxCost = cost;
+        }
+        debug("MAX COST IS: " + maxCost);
+        SimulationStepInfo info = new SimulationStepInfo(isValid, maxCost);
 
         return new SimulationStepResult(
                 observation,
@@ -218,12 +223,12 @@ public class WrappedSimulation {
 
     private boolean removeVm(final long id) {
         String vmToKillType = cloudSimProxy.removeVm(id);
-        if (vmToKillType != null) {
-            vmCounter.recordRemovedVm(vmToKillType);
-            return true;
+        if (vmToKillType == null) {
+            debug("Remove vm with id " + id + " request was ignored.");
+            return false;
         }
-        debug("Remove vm with id " + id + " request was ignored.");
-        return false;
+        vmCounter.recordRemovedVm(vmToKillType);
+        return true;
     }
 
     private boolean removeRandomVm(final String type) {
@@ -370,17 +375,24 @@ public class WrappedSimulation {
     }
 
     private double calculateReward(final boolean isValid) {
-        final int multiplier = (isValid) ? 1 : 1000;
+        final int penalty = (isValid) ? 0 : 1000;
+        final double vmCostCoef = 1;
+        final double waitingJobsCoef = 1;
+
         if (!isValid) {
             info("Penalty given to the agent because the action was not possible");
         }
         // reward is the negative cost of running the infrastructure
         // - any penalties from jobs waiting in the queue
+        // - penalty if action was invalid
         final double vmRunningCostTerm = cloudSimProxy.getRunningCost();
         final double waitingJobsTerm =
                 cloudSimProxy.getWaitingJobsCount() 
                 * queueWaitPenalty * simulationSpeedUp;
-        return - multiplier * (vmRunningCostTerm + waitingJobsTerm);
+                
+        return - vmCostCoef * vmRunningCostTerm 
+                - waitingJobsCoef * waitingJobsTerm 
+                - penalty;
     }
 
     public void seed() {
