@@ -20,7 +20,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
     protected double cloudletSubmitInternal(
                 final CloudletExecution cle, 
                 final double fileTransferTime) {
-        if (!this.getVm().isCreated()) {
+        if (!getVm().isCreated()) {
             // It is possible, that we schedule a cloudlet, an event with processing
             // update is issued (tag: 16), but the VM gets killed before the event
             // is processed. In such a case the cloudlet does not get rescheduled,
@@ -37,15 +37,15 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
 
     @Override
     public double updateProcessing(final double currentTime, final MipsShare mipsShare) {
-        final int sizeBefore = this.getCloudletWaitingList().size();
+        final int sizeBefore = getCloudletWaitingList().size();
         final double nextSimulationTime = super.updateProcessing(currentTime, mipsShare);
-        final int sizeAfter = this.getCloudletWaitingList().size();
+        final int sizeAfter = getCloudletWaitingList().size();
 
         // if we have a new cloudlet being processed, 
         // schedule another recalculation, which should trigger a proper
         // estimation of end time
         if (sizeAfter != sizeBefore && Double.MAX_VALUE == nextSimulationTime) {
-            return this.getVm().getSimulation().getMinTimeBetweenEvents();
+            return getVm().getSimulation().getMinTimeBetweenEvents();
         }
 
         return nextSimulationTime;
@@ -56,7 +56,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         if (getVm().getProcessor().getAvailableResource() > 0) {
             final List<CloudletExecution> cloudletWaitingList = getCloudletWaitingList();
             for (CloudletExecution cle : cloudletWaitingList) {
-                if (this.isThereEnoughFreePesForCloudlet(cle)) {
+                if (isThereEnoughFreePesForCloudlet(cle)) {
                     return Optional.of(cle);
                 }
             }

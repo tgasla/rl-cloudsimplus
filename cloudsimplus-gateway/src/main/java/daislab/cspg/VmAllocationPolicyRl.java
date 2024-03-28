@@ -12,7 +12,7 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
         final String vmDescription = vm.getDescription();
         final int index = vmDescription.indexOf('-');
         final HostSuitability suitability;
-        final int hostId;
+        final long hostId;
         final Host host;
 
         if (index == -1) {
@@ -22,11 +22,9 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
             return suitability;
         }
 
-        hostId = Integer.parseInt(vmDescription.substring(index + 1));
-        host = getHostList().get(hostId);
-        
-        // TODO: This is not needed becuase we check for suitability
-        // before telling the broker to try allocate host for this vm
+        hostId = Long.parseLong(vmDescription.substring(index + 1));
+        host = getDatacenter().getHostById(hostId);
+
         suitability = allocateHostForVm(vm, host);
         if (!suitability.fully()) {
             LOGGER.debug("This should never be printed as it is already checked.\n"

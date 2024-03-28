@@ -8,30 +8,36 @@ import java.util.List;
 /*
  * Class to calculate the infrastructure cost.
  * We need it to calculate the agent's reward.
- * TODO: check also the VmCost class of the cloudsimplus
+ * TODO: I should also extend this to HostCost
+ * in order to measure the cost of having many hosts running.
+ * So that I can experiment with logics that try to
+ * fit as many vms as a host can fit, so that the
+ * infrastructure cost does not rise because of
+ * many hosts running.
 */
 public class VmCost {
 
     private final double secondsInIteration;
-    private final double perIterationSmallVMCost;
+    private final double perIterationBasicVMCost;
     private final double speedUp;
+    
     private List<Vm> createdVms = new ArrayList<>();
-
     private boolean payForFullHour;
     private double iterationsInHour;
 
     public VmCost(final double perHourVMCost, final double speedUp, final boolean payForFullHour) {
         this.payForFullHour = payForFullHour;
         this.speedUp = speedUp;
-        this.secondsInIteration = this.speedUp;
-        this.iterationsInHour = 3600 / this.secondsInIteration;
+        
+        secondsInIteration = speedUp;
+        iterationsInHour = 3600 / secondsInIteration;
 
         final double perSecondVMCost = perHourVMCost * 0.00028; // 1/3600
-        this.perIterationSmallVMCost = perSecondVMCost * secondsInIteration;
+        perIterationBasicVMCost = perSecondVMCost * secondsInIteration;
     }
 
     public void addNewVmToList(final Vm vm) {
-        this.createdVms.add(vm);
+        createdVms.add(vm);
     }
 
     public void clear() {
@@ -44,7 +50,7 @@ public class VmCost {
         for(Vm vm : createdVms) {
             // check if the vm is started
             double m = getSizeMultiplier(vm);
-            final double perIterationVMCost = perIterationSmallVMCost * m;
+            final double perIterationVMCost = perIterationBasicVMCost * m;
             if (vm.getStartTime() > -1) {
                 if (vm.getFinishTime() > -1) {
                     // vm was stopped -

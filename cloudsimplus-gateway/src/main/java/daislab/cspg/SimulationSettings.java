@@ -174,40 +174,40 @@ public class SimulationSettings {
     }
 
     public long getDatacenterCores() {
-        return getDatacenterHostsCnt() * getHostPeCnt();
+        return datacenterHostsCnt * hostPeCnt;
     }
 
     public long getBasicVmPeCnt() {
-        return this.basicVmPeCount;
+        return basicVmPeCount;
     }
 
     public double getVmStartupDelay() {
-        return this.vmStartupDelay;
+        return vmStartupDelay;
     }
 
     public double getVmShutdownDelay() {
-        return this.vmShutdownDelay;
+        return vmShutdownDelay;
     }
 
     public long getBasicVmSize() {
-        return this.getHostSize() / 4;
+        return hostSize / 4;
     }
 
     public long getBasicVmBw() {
-        return this.getHostBw() / 4;
+        return hostBw / 4;
     }
 
     public long getBasicVmRam() {
-        return this.basicVmRam;
+        return basicVmRam;
     }
 
     public long getAvailableCores() {
         // we can have 2 cores for a small VM, 
         // 4 for Medium and 8 for a large one
-        return getMaxVmsPerSize() 
-                * (getBasicVmPeCnt()
-                + getBasicVmPeCnt() * 2
-                + getBasicVmPeCnt() * 4);
+        return maxVmsPerSize
+                * (basicVmPeCount
+                + basicVmPeCount * 2
+                + basicVmPeCount * 4);
     }
 
     public long getMaxVmsPerSize() {

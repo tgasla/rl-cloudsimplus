@@ -17,6 +17,8 @@ A vector of 2 continuous numbers
 
 The first number is in range [-1,1]
 Positive value - create a VM
+The range shows the id of host that the VM will be placed
+
 Negative value - destroy a VM
 The range shows the id of the VM that will be destroyed
 

@@ -36,12 +36,17 @@ public class SimulationStepResult {
         return done;
     }
 
+    public SimulationStepInfo getInfo() {
+        return info;
+    }
+
     @Override
     public String toString() {
         return "SimulationStepResult{"
                 + ", obs=" + Arrays.toString(obs)
                 + ", reward=" + reward
                 + "done=" + done
+                + "info=" + info.toString()
                 + '}';
     }
 }

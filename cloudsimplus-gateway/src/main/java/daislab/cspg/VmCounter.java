@@ -22,20 +22,20 @@ public class VmCounter {
 
     public void recordNewVm(final String type) {
         final Long currentOfType = getCurrentOfType(type);
-        this.vmCounts.put(type, currentOfType + 1);
+        vmCounts.put(type, currentOfType + 1);
     }
 
     private Long getCurrentOfType(final String type) {
-        return this.vmCounts.getOrDefault(type, 0L);
+        return vmCounts.getOrDefault(type, 0L);
     }
 
     public void initializeCapacity(final String type, final long initialVmsCount) {
-        this.vmCounts.put(type, initialVmsCount);
+        vmCounts.put(type, initialVmsCount);
     }
 
     public void recordRemovedVm(final String type) {
         final Long currentOfType = getCurrentOfType(type);
-        this.vmCounts.put(type, currentOfType - 1);
+        vmCounts.put(type, currentOfType - 1);
     }
 
     public long getStartedVms(final String type) {

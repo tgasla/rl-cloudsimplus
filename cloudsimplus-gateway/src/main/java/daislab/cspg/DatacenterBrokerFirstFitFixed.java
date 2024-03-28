@@ -47,7 +47,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
 
         if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
             LOGGER.debug("Cleaning the vmCreatedList");
-            this.getVmCreatedList().clear();
+            getVmCreatedList().clear();
         }
     }
     
@@ -95,7 +95,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             LOGGER.debug("Cloudlet " + cloudlet.getId() 
                     + " scheduled. Updating in: " + eventDelay);
 
-            this.getSimulation().send(
+            getSimulation().send(
                     datacenter,
                     datacenter,
                     eventDelay,

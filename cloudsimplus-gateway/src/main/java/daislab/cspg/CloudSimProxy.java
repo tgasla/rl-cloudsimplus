@@ -67,16 +67,17 @@ public class CloudSimProxy {
                          final List<Cloudlet> inputJobs,
                          final double simulationSpeedUp) {
         this.settings = settings;
-        this.cloudSimPlus = new CloudSimPlus(0.01);
-        this.broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
-        this.datacenter = createDatacenter();
-        this.vmCost = new VmCost(
+        this.simulationSpeedUp = simulationSpeedUp;
+        
+        cloudSimPlus = new CloudSimPlus(0.01);
+        broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
+        datacenter = createDatacenter();
+        vmCost = new VmCost(
                 settings.getVmRunningHourlyCost(),
                 simulationSpeedUp,
                 settings.isPayingForTheFullHour());
-        this.simulationSpeedUp = simulationSpeedUp;
 
-        this.nextVmId = 0;
+        nextVmId = 0;
 
         final List<? extends Vm> smallVmList = createVmList(initialVmsCount.get(SMALL), SMALL);
         final List<? extends Vm> mediumVmList = createVmList(initialVmsCount.get(MEDIUM), MEDIUM);
@@ -85,18 +86,18 @@ public class CloudSimProxy {
         broker.submitVmList(mediumVmList);
         broker.submitVmList(largeVmList);
 
-        this.jobs.addAll(inputJobs);
-        Collections.sort(this.jobs, new DelayCloudletComparator());
-        this.jobs.forEach(c -> originalSubmissionDelay.put(c.getId(), c.getSubmissionDelay()));
+        jobs.addAll(inputJobs);
+        Collections.sort(jobs, new DelayCloudletComparator());
+        jobs.forEach(c -> originalSubmissionDelay.put(c.getId(), c.getSubmissionDelay()));
 
-        scheduleAdditionalCloudletProcessingEvent(this.jobs);
+        scheduleAdditionalCloudletProcessingEvent(jobs);
 
-        this.cloudSimPlus.startSync();
-        this.runFor(0.1);
+        cloudSimPlus.startSync();
+        runFor(0.1);
     }
 
     public boolean allJobsFinished() {
-        return this.finishedIds.size() == this.jobs.size();
+        return finishedIds.size() == jobs.size();
     }
 
     public int getFinishedCount() {
@@ -107,7 +108,7 @@ public class CloudSimProxy {
         // a second after every cloudlet will be submitted we add an event - this should prevent
         // the simulation from ending while we have some jobs to schedule
         jobs.forEach(c ->
-                this.cloudSimPlus.send(
+                cloudSimPlus.send(
                         datacenter,
                         datacenter,
                         c.getSubmissionDelay() + 1.0,
@@ -153,7 +154,7 @@ public class CloudSimProxy {
         int sizeMultiplier = getSizeMultiplier(type);
 
         Vm vm = new VmSimple(
-                this.nextVmId,
+                nextVmId,
                 settings.getHostPeMips(),
                 settings.getBasicVmPeCnt() * sizeMultiplier);
                 vm
@@ -194,20 +195,20 @@ public class CloudSimProxy {
     }
 
     public void runFor(final double interval) {
-        if (!this.isRunning()) {
+        if (!isRunning()) {
             throw new RuntimeException("The simulation is not running - "
                     + "please reset or create a new one!");
         }
 
         long start = System.nanoTime();
-        final double target = this.cloudSimPlus.clock() + interval;
+        final double target = cloudSimPlus.clock() + interval;
 
         scheduleJobsUntil(target);
 
         int i = 0;
         double adjustedInterval = interval;
-        while (this.cloudSimPlus.runFor(adjustedInterval) < target) {
-            adjustedInterval = target - this.cloudSimPlus.clock();
+        while (cloudSimPlus.runFor(adjustedInterval) < target) {
+            adjustedInterval = target - cloudSimPlus.clock();
             adjustedInterval = adjustedInterval <= 0 
                     ? cloudSimPlus.getMinTimeBetweenEvents() : adjustedInterval;
 
@@ -245,7 +246,7 @@ public class CloudSimProxy {
         // it is a safe operation in our environment, because that list is only used in
         // CloudSim+ when a VM is being upscaled (we don't do that)
         if (!settings.isStoreCreatedCloudletsDatacenterBroker()) {
-            this.broker.getCloudletCreatedList().clear();
+            broker.getCloudletCreatedList().clear();
         }
 
         long end = System.nanoTime();
@@ -254,18 +255,18 @@ public class CloudSimProxy {
 
         // TODO: can be removed after validating the fix of OOM
         // should always be zero
-        final int debugBrokerCreatedListSize = this.broker.getCloudletCreatedList().size();
-        LOGGER.debug("runFor (" + this.clock() + ") took " 
+        final int debugBrokerCreatedListSize = broker.getCloudletCreatedList().size();
+        LOGGER.debug("runFor (" + clock() + ") took " 
                 + diff + "ns / " + diffInSec + "s (DEBUG: " + debugBrokerCreatedListSize + ")");
     }
 
     private boolean shouldPrintJobStats() {
         return settings.getPrintJobsPeriodically() 
-                && Double.valueOf(this.clock()).longValue() % 20000 == 0;
+                && Double.valueOf(clock()).longValue() % 20000 == 0;
     }
 
     private void printJobStatsAfterEndOfSimulation() {
-        if (!this.isRunning()) {
+        if (!isRunning()) {
             // LOGGER.info("CloudSimProxy.isRunning: " + cloudSimPlus.isRunning());
             LOGGER.info("End of simulation, some reality check stats:");
             printJobStats();
@@ -273,9 +274,9 @@ public class CloudSimProxy {
     }
 
     public void printJobStats() {
-        LOGGER.info("All jobs: " + this.jobs.size());
+        LOGGER.info("All jobs: " + jobs.size());
         Map<Cloudlet.Status, Integer> countByStatus = new HashMap<>();
-        for (Cloudlet c : this.jobs) {
+        for (Cloudlet c : jobs) {
             final Cloudlet.Status status = c.getStatus();
             int count = countByStatus.getOrDefault(status, 0);
             countByStatus.put(status, count + 1);
@@ -286,13 +287,13 @@ public class CloudSimProxy {
         }
 
         LOGGER.info("Jobs which are still queued");
-        for(Cloudlet cloudlet : this.jobs) {
+        for(Cloudlet cloudlet : jobs) {
             if (Cloudlet.Status.QUEUED.equals(cloudlet.getStatus())) {
                 printCloudlet(cloudlet);
             }
         }
         LOGGER.info("Jobs which are still executed");
-        for(Cloudlet cloudlet : this.jobs) {
+        for(Cloudlet cloudlet : jobs) {
             if (Cloudlet.Status.INEXEC.equals(cloudlet.getStatus())) {
                 printCloudlet(cloudlet);
             }
@@ -348,10 +349,10 @@ public class CloudSimProxy {
         previousIntervalJobId = nextVmId;
         List<Cloudlet> jobsToSubmit = new ArrayList<>();
 
-        while (toAddJobId < this.jobs.size() && 
-                this.jobs.get(toAddJobId).getSubmissionDelay() <= target) {
+        while (toAddJobId < jobs.size() && 
+                jobs.get(toAddJobId).getSubmissionDelay() <= target) {
             // we process every cloudlet only once here...
-            final Cloudlet cloudlet = this.jobs.get(toAddJobId);
+            final Cloudlet cloudlet = jobs.get(toAddJobId);
 
             // the job should enter the cluster once target is crossed
             cloudlet.setSubmissionDelay(1.0);
@@ -372,12 +373,12 @@ public class CloudSimProxy {
             potentiallyWaitingJobs.addAll(jobsToSubmit);
         }
 
-        int pctSubmitted = (int) ((toAddJobId / (double) this.jobs.size()) * 10000d);
+        int pctSubmitted = (int) ((toAddJobId / (double) jobs.size()) * 10000d);
         int upper = pctSubmitted / 100;
         int lower = pctSubmitted % 100;
         LOGGER.info(
                 "Simulation progress: submitted: " + upper + "." + lower + "% "
-                + "Waiting list size: " + this.broker.getCloudletWaitingList().size());
+                + "Waiting list size: " + broker.getCloudletWaitingList().size());
     }
 
     private void submitCloudletsList(final List<Cloudlet> jobsToSubmit) {
@@ -396,7 +397,7 @@ public class CloudSimProxy {
     }
 
     private boolean hasUnfinishedJobs() {
-        return this.finishedIds.size() < this.jobs.size();
+        return finishedIds.size() < jobs.size();
     }
 
     public int getLastCreatedVmId() {
@@ -404,7 +405,7 @@ public class CloudSimProxy {
     }
 
     public long getNumberOfActiveCores() {
-        final Optional<Long> reduce = this.broker
+        final Optional<Long> reduce = broker
                 .getVmExecList()
                 .parallelStream()
                 .map(Vm::getPesNumber)
@@ -434,7 +435,7 @@ public class CloudSimProxy {
         int jobsWaitingSubmittedInTheInterval = 0;
         for (Cloudlet cloudlet : potentiallyWaitingJobs) {
             if (!cloudlet.getStatus().equals(Cloudlet.Status.INEXEC)) {
-                double systemEntryTime = this.originalSubmissionDelay.get(cloudlet.getId());
+                double systemEntryTime = originalSubmissionDelay.get(cloudlet.getId());
                 if (systemEntryTime >= start) {
                     jobsWaitingSubmittedInTheInterval++;
                 }
@@ -445,7 +446,7 @@ public class CloudSimProxy {
 
     public int getSubmittedJobsCount() {
         // this is incremented every time job is submitted
-        return this.toAddJobId;
+        return toAddJobId;
     }
 
     public double[] getVmMemoryUsage() {
@@ -458,22 +459,15 @@ public class CloudSimProxy {
         return memPercentUsage;
     }
 
-    public boolean addNewVm(final String type, final long vmId) {
-        LOGGER.debug("Agent action: Create a " + type + " VM");
+    public boolean addNewVm(final String type, final long hostId) {
+        LOGGER.debug("Agent action: Create a " + type + " VM on host " + hostId);
 
-        final Host host = broker.getVmExecList()
-                .parallelStream()
-                .filter(vm -> vmId == vm.getId())
-                .findFirst()
-                .map(Vm::getHost)
-                .orElse(Host.NULL);
+        final Host host = datacenter.getHostById(hostId);
         
         if (host == Host.NULL) {
-            LOGGER.debug("Vm creating ignored, no vm with given id found");
+            LOGGER.debug("Vm creating ignored, no host with given id found");
             return false;
         }
-
-        final long hostId = host.getId();
 
         final Vm newVm = createVm(type);
         newVm.setDescription(type + "-" + hostId);
@@ -484,11 +478,11 @@ public class CloudSimProxy {
         }
 
         vmCost.addNewVmToList(newVm);
-        this.nextVmId++;
+        nextVmId++;
 
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
-        final double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
+        final double delay = (45 + Math.random() * 52) / simulationSpeedUp;
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
         broker.submitVm(newVm);
@@ -502,7 +496,7 @@ public class CloudSimProxy {
         Vm newVm = createVm(type);
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
-        final double delay = (45 + Math.random() * 52) / this.simulationSpeedUp;
+        final double delay = (45 + Math.random() * 52) / simulationSpeedUp;
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
         LOGGER.debug("Agent action: Create a " + type + " VM");
@@ -653,19 +647,19 @@ public class CloudSimProxy {
     }
 
     public double clock() {
-        return this.cloudSimPlus.clock();
+        return cloudSimPlus.clock();
     }
 
     public long getNumberOfFutureEvents() {
-        return this.cloudSimPlus.getNumberOfFutureEvents(simEvent -> true);
+        return cloudSimPlus.getNumberOfFutureEvents(simEvent -> true);
     }
 
     public int getWaitingJobsCount() {
-        return this.potentiallyWaitingJobs.size();
+        return potentiallyWaitingJobs.size();
     }
 
     public double getRunningCost() {
-        return vmCost.getVMCostPerIteration(this.clock());
+        return vmCost.getVMCostPerIteration(clock());
     }
 
     class DelayCloudletComparator implements Comparator<Cloudlet> {

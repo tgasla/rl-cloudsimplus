@@ -50,7 +50,7 @@ public class SimulationFactory {
 
     public synchronized WrappedSimulation create(final Map<String, String> maybeParameters) {
         String identifier = "Sim" + created;
-        this.created++;
+        created++;
 
         // get number of initial vms in
         final String initialSVmCountStr =

@@ -77,12 +77,12 @@ public class WrappedSimulation {
 
         // first attempt to store some memory
         metricsStorage.clear();
-        this.vmCounter = new VmCounter(this.settings.getMaxVmsPerSize());
-        this.vmCounter.initializeCapacity(
+        vmCounter = new VmCounter(settings.getMaxVmsPerSize());
+        vmCounter.initializeCapacity(
                 CloudSimProxy.SMALL, initialVmsCount.get(CloudSimProxy.SMALL));
-        this.vmCounter.initializeCapacity(
+        vmCounter.initializeCapacity(
                 CloudSimProxy.MEDIUM, initialVmsCount.get(CloudSimProxy.MEDIUM));
-        this.vmCounter.initializeCapacity(
+        vmCounter.initializeCapacity(
                 CloudSimProxy.LARGE, initialVmsCount.get(CloudSimProxy.LARGE));
 
         List<Cloudlet> cloudlets = initialJobsDescriptors
@@ -142,20 +142,20 @@ public class WrappedSimulation {
         double[] observation = getObservation();
         double reward = calculateReward(isValid);
 
-        this.simulationHistory.record("action[0]", action[0]);
-        this.simulationHistory.record("action[1]", action[1]);
-        this.simulationHistory.record("reward", reward);
-        this.simulationHistory.record("resourceCost", cloudSimProxy.getRunningCost());
-        this.simulationHistory.record(
-                "small_vms", this.vmCounter.getStartedVms(CloudSimProxy.SMALL));
-        this.simulationHistory.record(
-                "medium_vms", this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM));
-        this.simulationHistory.record(
-                "large_vms", this.vmCounter.getStartedVms(CloudSimProxy.LARGE));
+        simulationHistory.record("action[0]", action[0]);
+        simulationHistory.record("action[1]", action[1]);
+        simulationHistory.record("reward", reward);
+        simulationHistory.record("resourceCost", cloudSimProxy.getRunningCost());
+        simulationHistory.record(
+                "small_vms", vmCounter.getStartedVms(CloudSimProxy.SMALL));
+        simulationHistory.record(
+                "medium_vms", vmCounter.getStartedVms(CloudSimProxy.MEDIUM));
+        simulationHistory.record(
+                "large_vms", vmCounter.getStartedVms(CloudSimProxy.LARGE));
 
         if (!cloudSimProxy.isRunning()) {
-            this.simulationHistory.logHistory();
-            this.simulationHistory.reset();
+            simulationHistory.logHistory();
+            simulationHistory.reset();
         }
 
         double metricsTime = (stopMetrics - startMetrics) / 1_000_000_000d;
@@ -166,6 +166,7 @@ public class WrappedSimulation {
                 + " Action (s): " + actionTime);
 
         double cost = cloudSimProxy.getRunningCost();
+        debug("COST IS: " + cost);
         SimulationStepInfo info = new SimulationStepInfo(isValid, cost);
 
         return new SimulationStepResult(
@@ -205,8 +206,8 @@ public class WrappedSimulation {
             debug("will try to destroy vm with id = " + id);
             isValid = removeVm(id);
         }
-        // action > 0 creates a VM in the same host of VM with 
-        // Vm.id = action[0] and Vm.type = action[1]
+        // action > 0 creates a VM in host with id
+        // host.id = action[0] and Vm.type = action[1]
         else if (action[0] > 0) {
             debug("will try to create a new Vm on the same host as the vm with id = " 
                     + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
@@ -218,7 +219,7 @@ public class WrappedSimulation {
     private boolean removeVm(final long id) {
         String vmToKillType = cloudSimProxy.removeVm(id);
         if (vmToKillType != null) {
-            this.vmCounter.recordRemovedVm(vmToKillType);
+            vmCounter.recordRemovedVm(vmToKillType);
             return true;
         }
         debug("Remove vm with id " + id + " request was ignored.");
@@ -229,34 +230,38 @@ public class WrappedSimulation {
         if (!cloudSimProxy.removeRandomVm(type)) {
             debug("Removing a VM of type "
                     + type + " requested but the request was ignored. Stats: "
-                    + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
-                    + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
-                    + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
+                    + " S: " + vmCounter.getStartedVms(CloudSimProxy.SMALL)
+                    + " M: " + vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
+                    + " L: " + vmCounter.getStartedVms(CloudSimProxy.LARGE)
             );
             return false;
         }
-        this.vmCounter.recordRemovedVm(type);
+        vmCounter.recordRemovedVm(type);
         return true;
     }
 
     // adds a new vm to the same host as the vm with vmId if possible
-    private boolean addNewVm(final String type, final long vmId) {
+    private boolean addNewVm(final String type, final long hostId) {
+        // TODO: this vmCounter class should be changed so that it tracks
+        // all the vms that each host has.
+        // Not 3 numbers across the whole datacenter but instead,
+        // 3 numbers per host Map<<int>, <Map<String, int>>>
+        //                       <hostId, <"VM_SIZE", vmCount>>
         if (!vmCounter.hasCapacity(type)) {
             debug("Adding a VM of type "
                     + type + " requested but the request was ignored (MAX_VMS_PER_SIZE "
-                    + this.settings.getMaxVmsPerSize() + " reached) Stats: "
-                    + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
-                    + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
-                    + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
+                    + settings.getMaxVmsPerSize() + " reached) Stats: "
+                    + " S: " + vmCounter.getStartedVms(CloudSimProxy.SMALL)
+                    + " M: " + vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
+                    + " L: " + vmCounter.getStartedVms(CloudSimProxy.LARGE)
             );
             return false;
         }
 
-        if (!cloudSimProxy.addNewVm(type, vmId)) {
+        if (!cloudSimProxy.addNewVm(type, hostId)) {
             debug("Adding a VM of type " + type + "to host "
                     + "was requested but the request was ignored "
-                    + "because vm with given id does not exist "
-                    + "or host is not suitable");
+                    + "because the host is not suitable");
             return false;
         }
 
@@ -273,10 +278,10 @@ public class WrappedSimulation {
         else {
             debug("Adding a VM of type "
                     + type + " requested but the request was ignored (MAX_VMS_PER_SIZE "
-                    + this.settings.getMaxVmsPerSize() + " reached) Stats: "
-                    + " S: " + this.vmCounter.getStartedVms(CloudSimProxy.SMALL)
-                    + " M: " + this.vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
-                    + " L: " + this.vmCounter.getStartedVms(CloudSimProxy.LARGE)
+                    + settings.getMaxVmsPerSize() + " reached) Stats: "
+                    + " S: " + vmCounter.getStartedVms(CloudSimProxy.SMALL)
+                    + " M: " + vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
+                    + " L: " + vmCounter.getStartedVms(CloudSimProxy.LARGE)
             );
             return false;
         }
@@ -373,9 +378,8 @@ public class WrappedSimulation {
         // - any penalties from jobs waiting in the queue
         final double vmRunningCostTerm = cloudSimProxy.getRunningCost();
         final double waitingJobsTerm =
-                  this.cloudSimProxy.getWaitingJobsCount() 
-                * this.queueWaitPenalty 
-                * simulationSpeedUp;
+                cloudSimProxy.getWaitingJobsCount() 
+                * queueWaitPenalty * simulationSpeedUp;
         return - multiplier * (vmRunningCostTerm + waitingJobsTerm);
     }
 
@@ -392,6 +396,6 @@ public class WrappedSimulation {
     }
 
     public SimulationSettings getSimulationSettings() {
-        return this.settings;
+        return settings;
     }
 }

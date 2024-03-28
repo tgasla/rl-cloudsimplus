@@ -29,13 +29,13 @@ public class MetricsStorage {
     }
 
     private void ensureMetricQueuesExist() {
-        for(String metricName : this.trackedMetrics) {
-            data.put(metricName, new CircularFifoQueue<>(this.historyLength));
+        for(String metricName : trackedMetrics) {
+            data.put(metricName, new CircularFifoQueue<>(historyLength));
         }
     }
 
     private void zeroAllMetrics() {
-        for(String metricName : this.trackedMetrics) {
+        for(String metricName : trackedMetrics) {
             final CircularFifoQueue<Double> metricQueue = data.get(metricName);
             metricQueue.clear();
             fillWithZeros(metricQueue);
@@ -52,7 +52,7 @@ public class MetricsStorage {
     }
 
     private void fillWithZeros(final Queue<Double> queue) {
-        for (int i = 0; i < this.historyLength; i++) {
+        for (int i = 0; i < historyLength; i++) {
             queue.add(0.0);
         }
     }
