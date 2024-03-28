@@ -1,11 +1,17 @@
 from datetime import datetime
 
-def get_filename_id(algorithm_str, timesteps):
+def get_filename_id(env_id, algorithm_str, timesteps, retraining_env=None):
     filename_id = (
-        f"{algorithm_str}_"
-        f"{millify(timesteps)}_"
-        f"{datetime_to_str()}"
+        f"p{env_id}"
+        f"_{algorithm_str}"
+        f"_{millify(timesteps)}"
+        # f"{datetime_to_str()}"
     )
+    if retraining_env is not None:
+        filename_id = (
+            f"{filename_id}"
+            f"_r{retraining_env}"
+        )
     return filename_id
 
 def datetime_to_str():

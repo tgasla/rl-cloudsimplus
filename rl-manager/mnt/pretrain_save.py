@@ -43,16 +43,20 @@ parser.add_argument(
 args = parser.parse_args()
 algorithm_str = str(args.algorithm).upper()
 timesteps = int(args.timesteps)
-env_id = str(parser.environment)
+env_id = str(args.environment)
 
-filename_id = get_filename_id(algorithm_str, timesteps)
+filename_id = get_filename_id(
+    env_id,
+    algorithm_str,
+    timesteps
+)
 
 # Read jobs
 swf_reader = SWFReader()
-jobs = swf_reader.read("./LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 
 # Create eval dir
-eval_log_dir = f"./eval-logs/{env_id}/"
+eval_log_dir = "./eval-logs/"
 os.makedirs(eval_log_dir, exist_ok=True)
 
 eval_log_path = (
@@ -62,13 +66,11 @@ eval_log_path = (
 )
 
 # Create tensorboard dir
-tb_log_dir = f"./tb-logs/{env_id}/"
+tb_log_dir = "./tb-logs/"
 os.makedirs(tb_log_dir, exist_ok=True)
 
-tb_log_name = f"{filename_id}"
-
 # Create model storage dir
-model_storage_dir = f"./model-storage/{env_id}/"
+model_storage_dir = "./model-storage/"
 os.makedirs(model_storage_dir, exist_ok=True)
 
 model_storage_path = (
@@ -119,10 +121,12 @@ model.learn(
     total_timesteps=timesteps,
     progress_bar=False,
     reset_num_timesteps=False,
-    tb_log_name=tb_log_name,
+    tb_log_name=filename_id,
+    log_interval=1
 )
 
 # Save the agent
 model.save(model_storage_path)
 
+# Close the environment and free the resources
 env.close()

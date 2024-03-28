@@ -17,6 +17,13 @@ from utils import get_filename_id
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+learning_rate_dict = {
+    "DQN": "0.00005",
+    "DDPG": "0.0001",
+    "A2C": "0.0002",
+    "PPO": "0.0001"
+}
+
 # Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -53,26 +60,39 @@ parser.add_argument(
 args = parser.parse_args()
 algorithm_str = str(args.algorithm).upper()
 timesteps = int(args.timesteps)
-env_id = str(parser.environment)
-model_name_id = str(parser.model_name_id)
-pretraining_env_id = str(parser.pretraining_environment)
+env_id = str(args.environment)
+model_name_id = str(args.model_name_id)
+pretraining_env_id = str(args.pretraining_environment)
+
+filename_id = get_filename_id(
+    pretraining_env_id,
+    algorithm_str,
+    timesteps
+)
 
 # Read jobs
 swf_reader = SWFReader()
-jobs = swf_reader.read("./LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=100)
 
-model_storage_dir = f"./model-storage/{pretraining_env_id}/"
-model_storage_path = model_storage_dir + model_name_id
+model_storage_dir = "./model-storage/"
+model_storage_path = model_storage_dir + filename_id
 
-eval_log_dir = f"./eval-logs/{pretraining_env_id}/"
+eval_log_dir = "./eval-logs/"
 eval_log_path = (
     f"{eval_log_dir}"
-    f"{model_name_id}"
+    f"{filename_id}"
     f"_monitor.csv"
 )
 
-tb_log_dir = f"./tb-logs/{pretraining_env_id}/"
-tb_log_name = f"{model_name_id}_{env_id}"
+tb_log_dir = "./tb-logs/"
+new_filename_id = get_filename_id(
+    pretraining_env_id,
+    algorithm_str,
+    timesteps,
+    env_id
+)
+
+tb_log_name = new_filename_id
 
 # Create and wrap the environment
 env = gym.make(
@@ -125,14 +145,15 @@ model.learn(
     progress_bar=False,
     reset_num_timesteps=False,
     tb_log_name=tb_log_name,
+    learning_rate=learning_rate_dict.get(algorithm_str),
     device=device
 )
 
 env.close()
 
 new_model_path = (
-    f"{model_storage_path}"
-    f"_{env_id}"
+    f"{model_storage_dir}"
+    f"{new_filename_id}"
 )
 
 model.save(new_model_path)
@@ -140,6 +161,6 @@ model.save(new_model_path)
 os.rename(
     eval_log_path,
     f"{eval_log_dir}"
-    f"{model_name_id}"
-    f"_{env_id}"
+    f"{new_filename_id}"
+    f"_monitor.csv"
 )
