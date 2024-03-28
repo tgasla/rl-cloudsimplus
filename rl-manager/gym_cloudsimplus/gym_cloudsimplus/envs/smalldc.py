@@ -146,7 +146,7 @@ class SmallDC(gym.Env):
         result = simulation_environment.step(self.simulation_id, action)
 
         reward = result.getReward()
-        info = result.getInfo()
+        raw_info = result.getInfo()
         terminated = result.isDone()
         truncated = False
         raw_obs = result.getObs()
@@ -154,6 +154,11 @@ class SmallDC(gym.Env):
 
         if self.render_mode == "human":
             self.render()
+
+        info = {
+            "successful": raw_info.isSuccessful(),
+            "cost": raw_info.getCost()
+        }
 
         return (
             obs,
@@ -169,7 +174,11 @@ class SmallDC(gym.Env):
         
         raw_obs = result.getObs()
         obs = to_nparray(raw_obs)
-        info = result.getInfo()
+        raw_info = result.getInfo()
+        info = {
+            "successful": raw_info.isSuccessful(),
+            "cost": raw_info.getCost()
+        }
         return obs, info
 
     def render(self):

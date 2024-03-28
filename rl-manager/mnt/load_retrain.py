@@ -108,7 +108,8 @@ env = gym.make(
 env = Monitor(
     env, 
     eval_log_path, 
-    override_existing=False
+    override_existing=False,
+    info_keywords=("cost",)
 )
 
 # Add some action noise for exploration
