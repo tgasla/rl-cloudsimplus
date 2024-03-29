@@ -93,14 +93,13 @@ public class WrappedSimulation {
         debug("Calling CloudSimProxy object...");
         cloudSimProxy = new CloudSimProxy(
                 settings, 
-                initialVmsCount, 
+                initialVmsCount,
                 cloudlets, 
                 simulationSpeedUp);
 
         double[] obs = getObservation();
-        double cost = cloudSimProxy.getRunningCost();
-        SimulationStepInfo info = new SimulationStepInfo(true, cost);
-        maxCost = 0;
+
+        SimulationStepInfo info = new SimulationStepInfo(true, getMaxCost());
 
         return new SimulationResetResult(obs, info);
     }
@@ -168,11 +167,10 @@ public class WrappedSimulation {
                 + " Action (s): " + actionTime);
 
         double cost = cloudSimProxy.getRunningCost();
-        if (cost > maxCost) {
-            maxCost = cost;
-        }
-        debug("MAX COST IS: " + maxCost);
-        SimulationStepInfo info = new SimulationStepInfo(isValid, maxCost);
+        updateMaxCost(cost);
+
+        debug("Max cost is: " + maxCost);
+        SimulationStepInfo info = new SimulationStepInfo(isValid, getMaxCost());
 
         return new SimulationStepResult(
                 observation,
@@ -393,6 +391,16 @@ public class WrappedSimulation {
         return - vmCostCoef * vmRunningCostTerm 
                 - waitingJobsCoef * waitingJobsTerm 
                 - penalty;
+    }
+
+    private void updateMaxCost(double cost) {
+        if (cost > maxCost) {
+            maxCost = cost;
+        }
+    }
+
+    public double getMaxCost() {
+        return maxCost;
     }
 
     public void seed() {

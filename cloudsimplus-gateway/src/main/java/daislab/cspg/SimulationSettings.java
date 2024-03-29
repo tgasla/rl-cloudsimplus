@@ -83,6 +83,8 @@ public class SimulationSettings {
     // to set the parameters.
     // TODO: Maybe even better, write these parameter names and values into a file
     // so that both java and python can get these without repeating code.
+    // TODO: Also, initial_vm_parameters should also be here instead of inside
+    // the SimulationFactory class.
     public SimulationSettings(final Map<String, String> parameters) {
         vmRunningHourlyCost = Double.parseDouble(
                 parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));

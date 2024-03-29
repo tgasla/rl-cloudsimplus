@@ -15,6 +15,22 @@ from read_swf import SWFReader
 import dummy_agents
 from utils import get_filename_id
 
+# TODO: I should not have two independent files for pretarining and retraining
+# This way I also avoid saving and reeloading the model as this is 
+# not really needed because we do not want (at least for now) to transfer
+#the agent to a different machine. We should follow the folloiwng procedure:
+# In a single code file, 
+#   (1) instantiate the pretraining environment (env.make(..))
+#   (2) instantiate and pretrain the agent (model = algo(..) and model.learn)
+#   (3) close the environment (env.close())
+#   (4) instantiate the retraining environment (env.make(..))
+#   (5) set the new environment to the existing model (model.set_env(env))
+#   (6) do retraining (model.learn(..))
+# ATTENTION: If you really need to save and load the agent, wyou should
+# also save and load the replay  buffers for the off-policy algorithms.
+# The most clean way to do it is by checking if an algorithm inherits from
+# the OffPolicyAlgorithm class and if so, do model.load_replay_buffer(..)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Parse arguments
