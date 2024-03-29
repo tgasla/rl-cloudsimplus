@@ -215,8 +215,11 @@ gradle-app.setting
 .classpath
 
 !.env
-tb-logs
-eval-logs
+
+########## LOGS ##########
+tb-logs/
+eval-logs/
+model-storage/
 
 ########## VSCODE ##########
-.vscode
+.vscode/

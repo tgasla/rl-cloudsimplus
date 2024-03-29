@@ -126,7 +126,6 @@ model = algorithm(
 model.learn(
     total_timesteps=timesteps,
     progress_bar=True,
-    reset_num_timesteps=False,
     tb_log_name=tb_log_name
 )
 

@@ -47,11 +47,11 @@ parser.add_argument(
     type=int,
     help="The number of timesteps to train"
 )
-parser.add_argument(
-    "model_name_id",
-    type=str,
-    help="The model storage name id"
-)
+# parser.add_argument(
+#     "model_name_id",
+#     type=str,
+#     help="The model storage name id"
+# )
 parser.add_argument(
     "pretraining_environment",
     type=str,
@@ -61,7 +61,7 @@ args = parser.parse_args()
 algorithm_str = str(args.algorithm).upper()
 timesteps = int(args.timesteps)
 env_id = str(args.environment)
-model_name_id = str(args.model_name_id)
+# model_name_id = str(args.model_name_id)
 pretraining_env_id = str(args.pretraining_environment)
 
 filename_id = get_filename_id(
@@ -72,7 +72,7 @@ filename_id = get_filename_id(
 
 # Read jobs
 swf_reader = SWFReader()
-jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=10)
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=25)
 
 model_storage_dir = "./model-storage/"
 model_storage_path = model_storage_dir + filename_id
@@ -85,14 +85,14 @@ eval_log_path = (
 )
 
 tb_log_dir = "./tb-logs/"
+tb_log_name = filename_id
+
 new_filename_id = get_filename_id(
     pretraining_env_id,
     algorithm_str,
-    timesteps,
+    2 * timesteps,
     env_id
 )
-
-tb_log_name = new_filename_id
 
 # Create and wrap the environment
 env = gym.make(
@@ -109,7 +109,7 @@ env = Monitor(
     env, 
     eval_log_path, 
     override_existing=False,
-    info_keywords=("cost",)
+    info_keywords=("cost","successful")
 )
 
 # Add some action noise for exploration
@@ -126,28 +126,32 @@ else:
     algorithm = getattr(sb3, algorithm_str)
     policy = "MlpPolicy"
 
-# Instantiate the agent
-model = algorithm(
-    policy=policy, # TODO: check if we can pass None as a policy
-    env=env,
-    verbose=True,
+# Load the trained agent
+model = algorithm.load(
+    model_storage_path,
+    device=device,
     tensorboard_log=tb_log_dir,
-    # TODO: for now, all action noise is ignored in RNG algorithm
-    action_noise=action_noise,
-    device=device
+    env=env
 )
 
-# Load the trained agent
-model = algorithm.load(model_storage_path, device=device)
+# model.policy.load_state_dict()
+model.load_replay_buffer(model_storage_path + "_RP")
+# check these fixes
+# model._last_obs = None
+# model.set_env(env)
+# on learn reset_num_timesteps
+# save policy
+# also check checkpointcallback
 
 # Retrain the agent
 model.learn(
     total_timesteps=timesteps,
-    progress_bar=False,
-    reset_num_timesteps=False,
+    # The right thing to do is to pass True
+    # This way, the learning rate resets
+    # The only problem is that tensorboard recognizes
+    # it as a new model, but that's not a critical issue
+    reset_num_timesteps=True,
     tb_log_name=tb_log_name,
-    learning_rate=learning_rate_dict.get(algorithm_str),
-    device=device,
     log_interval=1
 )
 
@@ -159,6 +163,7 @@ new_model_path = (
 )
 
 model.save(new_model_path)
+model.save_replay_buffer(new_model_path + "_RP")
 
 os.rename(
     eval_log_path,

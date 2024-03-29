@@ -53,7 +53,7 @@ filename_id = get_filename_id(
 
 # Read jobs
 swf_reader = SWFReader()
-jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=10)
+jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=25)
 
 # Create eval dir
 eval_log_dir = "./eval-logs/"
@@ -120,13 +120,14 @@ model = algorithm(
 model.learn(
     total_timesteps=timesteps,
     progress_bar=False,
-    reset_num_timesteps=False,
     tb_log_name=filename_id,
     log_interval=1
 )
 
 # Save the agent
 model.save(model_storage_path)
+
+model.save_replay_buffer(model_storage_path + "_RP")
 
 # Close the environment and free the resources
 env.close()
