@@ -109,7 +109,7 @@ env = Monitor(
     env, 
     eval_log_path, 
     override_existing=False,
-    info_keywords=("cost","successful")
+    info_keywords=("cost","validCount", "actionCount")
 )
 
 # Add some action noise for exploration

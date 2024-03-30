@@ -180,7 +180,8 @@ class LargeDC(gym.Env):
         obs = to_nparray(raw_obs)
         raw_info = result.getInfo()
         info = {
-            "successful": raw_info.isSuccessful(),
+            "validCount": raw_info.getValidCount(),
+            "actionCount": raw_info.getActionCount(),
             "cost": raw_info.getCost()
         }
         return obs, info

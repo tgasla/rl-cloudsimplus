@@ -43,6 +43,8 @@ public class WrappedSimulation {
     private CloudSimProxy cloudSimProxy;
     private VmCounter vmCounter;
     private double maxCost = 0.0;
+    private int validCount = 0;
+    private int actionCount = 0;
 
     public WrappedSimulation(final SimulationSettings simulationSettings,
                              final String identifier,
@@ -99,7 +101,14 @@ public class WrappedSimulation {
 
         double[] obs = getObservation();
 
-        SimulationStepInfo info = new SimulationStepInfo(true, getMaxCost());
+        resetMaxCost();
+        resetValidCount();
+        resetActionCount();
+
+        SimulationStepInfo info = new SimulationStepInfo(
+                validCount, 
+                actionCount,
+                getMaxCost());
 
         return new SimulationResetResult(obs, info);
     }
@@ -170,7 +179,17 @@ public class WrappedSimulation {
         updateMaxCost(cost);
 
         debug("Max cost is: " + maxCost);
-        SimulationStepInfo info = new SimulationStepInfo(isValid, getMaxCost());
+
+        if (isValid) {
+            validCount += 1;
+        }
+
+        actionCount += 1;
+
+        SimulationStepInfo info = new SimulationStepInfo(
+                validCount,
+                actionCount,
+                getMaxCost());
 
         return new SimulationStepResult(
                 observation,
@@ -399,8 +418,20 @@ public class WrappedSimulation {
         }
     }
 
+    private void resetMaxCost() {
+        maxCost = 0.0;
+    }
+
     public double getMaxCost() {
         return maxCost;
+    }
+
+    private void resetActionCount() {
+        actionCount = 0;
+    }
+
+    private void resetValidCount() {
+        validCount = 0;
     }
 
     public void seed() {

@@ -8,18 +8,26 @@ import java.util.Arrays;
 */
 public class SimulationStepInfo {
 
-    private final boolean successful;
+    private final int validCount;
+    private final int actionCount;
     private final double cost;
 
-    public SimulationStepInfo(final boolean successful,
-                                final double cost) {
+    public SimulationStepInfo(
+            final int validCount,
+            final int actionCount,
+            final double cost) {
 
-        this.successful = successful;
+        this.validCount = validCount;
+        this.actionCount = actionCount;
         this.cost = cost;
     }
 
-    public boolean isSuccessful() {
-        return successful;
+    public int getValidCount() {
+        return validCount;
+    }
+
+    public int getActionCount() {
+        return actionCount;
     }
 
     public double getCost() {
@@ -29,7 +37,8 @@ public class SimulationStepInfo {
     @Override
     public String toString() {
         return "SimulationStepInfo{"
-                + "successful=" + successful
+                + "validCount=" + validCount
+                + ", actionCount=" + actionCount
                 + ", cost=" + cost
                 + '}';
     }

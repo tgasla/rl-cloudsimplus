@@ -86,7 +86,11 @@ env = gym.make(
 
 # Monitor needs the environment to have a render_mode set
 # If render_mode is None, it will give a warning.
-env = Monitor(env, eval_log_path, info_keywords=("cost",))
+env = Monitor(
+    env, 
+    eval_log_path, 
+    info_keywords=("cost","validCount", "actionCount")
+)
 
 # Add some action noise for exploration
 n_actions = env.action_space.shape[-1]
