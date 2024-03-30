@@ -160,7 +160,8 @@ class LargeDC(gym.Env):
             self.render()
 
         info = {
-            "successful": raw_info.isSuccessful(),
+            "validCount": raw_info.getValidCount(),
+            "actionCount": raw_info.getActionCount(),
             "cost": raw_info.getCost()
         }
 
