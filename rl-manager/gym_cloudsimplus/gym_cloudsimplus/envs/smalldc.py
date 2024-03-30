@@ -74,7 +74,7 @@ class SmallDC(gym.Env):
             low=np.array([-1, 0]), 
             high=np.array([1, 1]),
             shape=(2,),
-            dtype=np.float32
+            dtype=np.float64
         )
 
         self.observation_space = spaces.Box(
