@@ -74,7 +74,7 @@ class LargeDC(gym.Env):
             low=np.array([-1.0, 0.0]), 
             high=np.array([1.0, 1.0]),
             shape=(2,),
-            # py4j translates this tuple of doubles into ArrayList<>
+            # py4j translates this np.array of doubles into ArrayList<>
             dtype=np.float64
         )
 
