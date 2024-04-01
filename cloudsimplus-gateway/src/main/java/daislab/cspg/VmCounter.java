@@ -4,21 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /*
- * Class to count the number of VMs, so we can keep track of them.
- * We do not allow the creation of a new VM if we have reached the maxVmsPerSize.
- * TODO: check if I can do it using the VmCount functionality of the cloudsimplus.
+ * Class to count the number of VMs per type, so we can keep track them.
+ * Otherwise for each step we need to do a parallel stream and count every type, which can be slow.
 */
 public class VmCounter {
-    private final long maxVmsPerSize;
     private final Map<String, Long> vmCounts = new HashMap<>();
-
-    public VmCounter(final long maxVmsPerSize) {
-        this.maxVmsPerSize = maxVmsPerSize;
-    }
-
-    public boolean hasCapacity(final String type) {
-        return getCurrentOfType(type) < maxVmsPerSize;
-    }
 
     public void recordNewVm(final String type) {
         final Long currentOfType = getCurrentOfType(type);

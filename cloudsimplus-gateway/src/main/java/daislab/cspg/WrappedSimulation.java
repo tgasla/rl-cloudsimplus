@@ -80,7 +80,7 @@ public class WrappedSimulation {
 
         // first attempt to store some memory
         metricsStorage.clear();
-        vmCounter = new VmCounter(settings.getMaxVmsPerSize());
+        vmCounter = new VmCounter();
         vmCounter.initializeCapacity(
                 CloudSimProxy.SMALL, initialVmsCount.get(CloudSimProxy.SMALL));
         vmCounter.initializeCapacity(
@@ -268,24 +268,8 @@ public class WrappedSimulation {
         return true;
     }
 
-    // adds a new vm to the same host as the vm with vmId if possible
+    // adds a new vm to the host with hostid if possible
     private boolean addNewVm(final String type, final long hostId) {
-        // TODO: this vmCounter class should be changed so that it tracks
-        // all the vms that each host has.
-        // Not 3 numbers across the whole datacenter but instead,
-        // 3 numbers per host Map<<int>, <Map<String, int>>>
-        //                       <hostId, <"VM_SIZE", vmCount>>
-        if (!vmCounter.hasCapacity(type)) {
-            debug("Adding a VM of type "
-                    + type + " requested but the request was ignored (MAX_VMS_PER_SIZE "
-                    + settings.getMaxVmsPerSize() + " reached) Stats: "
-                    + " S: " + vmCounter.getStartedVms(CloudSimProxy.SMALL)
-                    + " M: " + vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
-                    + " L: " + vmCounter.getStartedVms(CloudSimProxy.LARGE)
-            );
-            return false;
-        }
-
         if (!cloudSimProxy.addNewVm(type, hostId)) {
             debug("Adding a VM of type " + type + " to host "
                     + "was requested but the request was ignored "
@@ -298,21 +282,10 @@ public class WrappedSimulation {
     }
 
     private boolean addNewVm(final String type) {
-        if (vmCounter.hasCapacity(type)) {
-            cloudSimProxy.addNewVm(type);
-            vmCounter.recordNewVm(type);
-            return true;
-        }
-        else {
-            debug("Adding a VM of type "
-                    + type + " requested but the request was ignored (MAX_VMS_PER_SIZE "
-                    + settings.getMaxVmsPerSize() + " reached) Stats: "
-                    + " S: " + vmCounter.getStartedVms(CloudSimProxy.SMALL)
-                    + " M: " + vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
-                    + " L: " + vmCounter.getStartedVms(CloudSimProxy.LARGE)
-            );
-            return false;
-        }
+        cloudSimProxy.addNewVm(type);
+        vmCounter.recordNewVm(type);
+        
+        return true;
     }
 
     private double percentileOrZero(
