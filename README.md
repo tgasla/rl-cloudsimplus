@@ -126,9 +126,14 @@ docker compose --profile cuda up --build
 ```
 
 # 4. Stop application
-To stop the application and clear unused data, use the following command:
+To stop the application, use the following command:
 ```
-docker compose down && docker system prune -f
+docker compose down
+```
+
+if you also want to clear docker unused data, use the following command:
+```
+docker system prune -f
 ```
 
 # Acknowledgements
