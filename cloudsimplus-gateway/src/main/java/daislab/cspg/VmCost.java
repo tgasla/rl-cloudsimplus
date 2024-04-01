@@ -44,6 +44,10 @@ public class VmCost {
         createdVms.clear();
     }
 
+    // Why calculate this list at each iteration and 
+    // do not have simply a counter for each type?
+    // Maybe because if payForFullHour is true, we want to keep counting a vm
+    // which has been created but stopped.
     public double getVMCostPerIteration(final double clock) {
         double totalCost = 0.0;
         List<Vm> toRemove = new ArrayList<>();

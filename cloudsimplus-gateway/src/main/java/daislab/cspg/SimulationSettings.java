@@ -23,7 +23,7 @@ public class SimulationSettings {
     private final long hostBw;
     private final long hostRam;
     private final long hostSize;
-    private final int hostPeCnt;
+    private final long hostPeCnt;
     private final double queueWaitPenalty;
     private final long datacenterHostsCnt;
     private final long basicVmRam;
@@ -49,7 +49,7 @@ public class SimulationSettings {
 //                 getEnvironmentVariable("HOST_RAM", "65536"));
 //         hostSize = Long.parseLong(
 //                 getEnvironmentVariable("HOST_SIZE", "16000"));
-//         hostPeCnt = Integer.parseInt(
+//         hostPeCnt = Long.parseLong(
 //                 getEnvironmentVariable("HOST_PE_CNT", "14"));
 //         queueWaitPenalty = Double.parseDouble(
 //                 getEnvironmentVariable("QUEUE_WAIT_PENALTY", "0.00001"));
@@ -96,7 +96,7 @@ public class SimulationSettings {
                 parameters.getOrDefault("HOST_RAM", "65536"));
         hostSize = Long.parseLong(
                 parameters.getOrDefault("HOST_SIZE", "16000"));
-        hostPeCnt = Integer.parseInt(
+        hostPeCnt = Long.parseLong(
                 parameters.getOrDefault("HOST_PE_CNT", "14"));
         queueWaitPenalty = Double.parseDouble(
                 parameters.getOrDefault("QUEUE_WAIT_PENALTY", "0.00001"));
@@ -163,7 +163,7 @@ public class SimulationSettings {
         return hostSize;
     }
 
-    public int getHostPeCnt() {
+    public long getHostPeCnt() {
         return hostPeCnt;
     }
 

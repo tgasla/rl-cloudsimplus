@@ -58,9 +58,9 @@ public class CloudSimProxy {
     private final List<Cloudlet> potentiallyWaitingJobs = new ArrayList<>(1024);
     private final List<Cloudlet> alreadyStarted = new ArrayList<>(128);
     private final Set<Long> finishedIds = new HashSet<>();
+    private long nextVmId = 0;
     private int toAddJobId = 0;
     private int previousIntervalJobId = 0;
-    private int nextVmId;
 
     public CloudSimProxy(final SimulationSettings settings,
                          final Map<String, Integer> initialVmsCount,
@@ -76,8 +76,6 @@ public class CloudSimProxy {
                 settings.getVmRunningHourlyCost(),
                 simulationSpeedUp,
                 settings.isPayingForTheFullHour());
-
-        nextVmId = 0;
 
         final List<? extends Vm> smallVmList = createVmList(initialVmsCount.get(SMALL), SMALL);
         final List<? extends Vm> mediumVmList = createVmList(initialVmsCount.get(MEDIUM), MEDIUM);
@@ -143,8 +141,8 @@ public class CloudSimProxy {
         List<Vm> vmList = new ArrayList<>(vmCount);
 
         for (int i = 0; i < vmCount; i++) {
-            // 1 VM == 1 HOST for simplicity
             vmList.add(createVm(type));
+            nextVmId++;
         }
 
         return vmList;

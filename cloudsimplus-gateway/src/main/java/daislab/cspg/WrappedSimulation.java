@@ -198,7 +198,7 @@ public class WrappedSimulation {
 
         debug("action is " + action[0] + ", " + action[1]);
 
-        boolean isValid = true;
+        final boolean isValid;
         final long id;
         final int vmTypeIndex;
 
