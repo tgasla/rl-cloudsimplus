@@ -39,8 +39,9 @@ https://docs.docker.com/compose/install/
 
 ### 1.3 Install Java 21 JDK and JRE
 You can install OpenJDK Java 21 using [brew](https://brew.sh/)
-
-`brew install openjdk@21`
+```
+brew install openjdk@21
+```
 
 <!--
 or you can also try Azul Zulu
@@ -119,16 +120,15 @@ If you want the manager image to have NVIDIA CUDA GPU access you need to downloa
 docker compose --profile cuda up
 ```
 
-> [!NOTE]  
-> If you want to use both the --profile and --build flags, the correct syntax is the following:
-> ```
-> docker compose --profile cuda up --build
-> ```
+If you want to use both the --profile and --build flags, the correct syntax is the following:
+```
+docker compose --profile cuda up --build
+```
 
 # 4. Stop application
-To stop the application, use the folloiwng command:
+To stop the application and clear unused data, use the following commands:
 ```
-docker compose down
+docker compose down && docker system prune -f
 ```
 
 # Acknowledgements
