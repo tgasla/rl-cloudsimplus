@@ -211,26 +211,32 @@ public class WrappedSimulation {
         debug("action is " + action[0] + ", " + action[1]);
 
         boolean isValid = true;
-        final long id = continuousToPositiveDiscrete(
-                    action[0], 
-                    cloudSimProxy.getLastCreatedVmId());
-
-        final int vmTypeIndex = (int) continuousToPositiveDiscrete(
-            action[1],
-            CloudSimProxy.VM_TYPES.length - 1);
-
-        debug("translated action[0] = " + id);
+        final long id;
+        final int vmTypeIndex;
 
         // action[0] = 0 does nothing
 
-        // action < 0 destroys a VM with VmId = Math.abs(scaled_action)
+        // action < 0 destroys a VM with Vm.id = id
         if (action[0] < 0) {
+            id = continuousToPositiveDiscrete(
+                action[0],
+                cloudSimProxy.getLastCreatedVmId());
+            debug("translated action[0] = " + id);
             debug("will try to destroy vm with id = " + id);
             isValid = removeVm(id);
         }
-        // action > 0 creates a VM in host with id
-        // host.id = action[0] and Vm.type = action[1]
+        // action > 0 creates a VM in host host.id = id
+        // and Vm.type = action[1]
         else if (action[0] > 0) {
+            id = continuousToPositiveDiscrete(
+                action[0],
+                settings.getDatacenterHostsCnt());
+
+            vmTypeIndex = (int) continuousToPositiveDiscrete(
+                action[1],
+                CloudSimProxy.VM_TYPES.length - 1);
+
+            debug("translated action[0] = " + id);
             debug("will try to create a new Vm on the same host as the vm with id = " 
                     + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
             isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);

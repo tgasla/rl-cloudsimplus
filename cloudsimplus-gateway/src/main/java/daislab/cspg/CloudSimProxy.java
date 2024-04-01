@@ -647,6 +647,10 @@ public class CloudSimProxy {
                 + brokerTime);
     }
 
+    public Datacenter getDatacenter() {
+        return datacenter;
+    }
+
     public double clock() {
         return cloudSimPlus.clock();
     }

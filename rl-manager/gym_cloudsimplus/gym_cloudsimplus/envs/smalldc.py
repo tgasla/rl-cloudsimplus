@@ -71,8 +71,8 @@ class SmallDC(gym.Env):
         super().__init__()
 
         self.action_space = spaces.Box(
-            low=np.array([-1, 0]), 
-            high=np.array([1, 1]),
+            low=np.array([-1.0, 0.0]), 
+            high=np.array([1.0, 1.0]),
             shape=(2,),
             dtype=np.float64
         )

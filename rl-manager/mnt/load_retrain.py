@@ -24,6 +24,9 @@ learning_rate_dict = {
     "PPO": "0.0001"
 }
 
+# TODO: I need to pass the trained model filepath as argument and
+# then the parameters of the new model (timesteps, env)
+
 # Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -84,15 +87,15 @@ eval_log_path = (
     f"_monitor.csv"
 )
 
-tb_log_dir = "./tb-logs/"
-tb_log_name = filename_id
-
 new_filename_id = get_filename_id(
     pretraining_env_id,
     algorithm_str,
-    2 * timesteps,
+    5 * timesteps + timesteps,
     env_id
 )
+
+tb_log_dir = "./tb-logs/"
+tb_log_name = new_filename_id
 
 # Create and wrap the environment
 env = gym.make(
@@ -143,9 +146,11 @@ model.load_replay_buffer(model_storage_path + "_RP")
 # save policy
 # also check checkpointcallback
 
+model.learning_rate = learning_rate_dict.get(algorithm_str)
+
 # Retrain the agent
 model.learn(
-    total_timesteps=timesteps,
+    total_timesteps= 5 * timesteps,
     # The right thing to do is to pass True
     # This way, the learning rate resets
     # The only problem is that tensorboard recognizes
