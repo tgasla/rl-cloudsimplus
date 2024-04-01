@@ -58,7 +58,7 @@ public class CloudSimProxy {
     private final List<Cloudlet> potentiallyWaitingJobs = new ArrayList<>(1024);
     private final List<Cloudlet> alreadyStarted = new ArrayList<>(128);
     private final Set<Long> finishedIds = new HashSet<>();
-    private long nextVmId = 0;
+    private int nextVmId = 0;
     private int toAddJobId = 0;
     private int previousIntervalJobId = 0;
 

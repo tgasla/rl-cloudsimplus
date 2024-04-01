@@ -202,8 +202,6 @@ public class WrappedSimulation {
         final long id;
         final int vmTypeIndex;
 
-        // action[0] = 0 does nothing
-
         // action < 0 destroys a VM with Vm.id = id
         if (action[0] < 0) {
             id = continuousToPositiveDiscrete(
@@ -212,7 +210,9 @@ public class WrappedSimulation {
             debug("translated action[0] = " + id);
             debug("will try to destroy vm with id = " + id);
             isValid = removeVm(id);
+            return isValid;
         }
+
         // action > 0 creates a VM in host host.id = id
         // and Vm.type = action[1]
         else if (action[0] > 0) {
@@ -228,8 +228,12 @@ public class WrappedSimulation {
             debug("Will try to create a new Vm on the same host as the vm with id = " 
                     + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
             isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);
+            return isValid;
         }
-        return isValid;
+        else {
+            // action[0] = 0 does nothing
+            return true;
+        }
     }
 
     private boolean removeVm(final long id) {
