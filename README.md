@@ -120,13 +120,13 @@ If you want the manager image to have NVIDIA CUDA GPU access you need to downloa
 docker compose --profile cuda up
 ```
 
-If you want to use both the --profile and --build flags, the correct syntax is the following:
+If you want to use both the --profile and --build flags, use the following command:
 ```
 docker compose --profile cuda up --build
 ```
 
 # 4. Stop application
-To stop the application and clear unused data, use the following commands:
+To stop the application and clear unused data, use the following command:
 ```
 docker compose down && docker system prune -f
 ```
