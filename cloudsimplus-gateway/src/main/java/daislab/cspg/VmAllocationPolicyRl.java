@@ -32,6 +32,9 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
                     + "Reason: " + suitability.toString());
             return suitability;
         }
+
+        // set the desctiption to be the vm type
+        vm.setDescription(vmDescription.substring(0, index));
         LOGGER.debug("New vm creation and allocation with RL policy was successful!");
         return suitability;
     }

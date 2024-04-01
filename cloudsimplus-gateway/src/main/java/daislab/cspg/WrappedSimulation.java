@@ -41,7 +41,6 @@ public class WrappedSimulation {
     private final SimulationSettings settings;
     private final SimulationHistory simulationHistory;
     private CloudSimProxy cloudSimProxy;
-    private VmCounter vmCounter;
     private double maxCost = 0.0;
     private int validCount = 0;
     private int actionCount = 0;
@@ -80,13 +79,6 @@ public class WrappedSimulation {
 
         // first attempt to store some memory
         metricsStorage.clear();
-        vmCounter = new VmCounter();
-        vmCounter.initializeCapacity(
-                CloudSimProxy.SMALL, initialVmsCount.get(CloudSimProxy.SMALL));
-        vmCounter.initializeCapacity(
-                CloudSimProxy.MEDIUM, initialVmsCount.get(CloudSimProxy.MEDIUM));
-        vmCounter.initializeCapacity(
-                CloudSimProxy.LARGE, initialVmsCount.get(CloudSimProxy.LARGE));
 
         List<Cloudlet> cloudlets = initialJobsDescriptors
                 .stream()
@@ -157,11 +149,7 @@ public class WrappedSimulation {
         simulationHistory.record("reward", reward);
         simulationHistory.record("resourceCost", cloudSimProxy.getRunningCost());
         simulationHistory.record(
-                "small_vms", vmCounter.getStartedVms(CloudSimProxy.SMALL));
-        simulationHistory.record(
-                "medium_vms", vmCounter.getStartedVms(CloudSimProxy.MEDIUM));
-        simulationHistory.record(
-                "large_vms", vmCounter.getStartedVms(CloudSimProxy.LARGE));
+                "vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
 
         if (!cloudSimProxy.isRunning()) {
             simulationHistory.logHistory();
@@ -236,8 +224,8 @@ public class WrappedSimulation {
                 action[1],
                 CloudSimProxy.VM_TYPES.length - 1);
 
-            debug("translated action[0] = " + id);
-            debug("will try to create a new Vm on the same host as the vm with id = " 
+            debug("Translated action[0] = " + id);
+            debug("Will try to create a new Vm on the same host as the vm with id = " 
                     + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
             isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);
         }
@@ -245,46 +233,32 @@ public class WrappedSimulation {
     }
 
     private boolean removeVm(final long id) {
-        String vmToKillType = cloudSimProxy.removeVm(id);
-        if (vmToKillType == null) {
-            debug("Remove vm with id " + id + " request was ignored.");
+        if (!cloudSimProxy.removeVm(id)) {
+            debug("Removing a VM with id " + id + " action is invalid. Ignoring.");
             return false;
         }
-        vmCounter.recordRemovedVm(vmToKillType);
         return true;
     }
 
     private boolean removeRandomVm(final String type) {
         if (!cloudSimProxy.removeRandomVm(type)) {
-            debug("Removing a VM of type "
-                    + type + " requested but the request was ignored. Stats: "
-                    + " S: " + vmCounter.getStartedVms(CloudSimProxy.SMALL)
-                    + " M: " + vmCounter.getStartedVms(CloudSimProxy.MEDIUM)
-                    + " L: " + vmCounter.getStartedVms(CloudSimProxy.LARGE)
-            );
+            debug("Removing a random VM of type " + type + " is invalid. Ignoring.");
             return false;
         }
-        vmCounter.recordRemovedVm(type);
         return true;
     }
 
     // adds a new vm to the host with hostid if possible
     private boolean addNewVm(final String type, final long hostId) {
         if (!cloudSimProxy.addNewVm(type, hostId)) {
-            debug("Adding a VM of type " + type + " to host "
-                    + "was requested but the request was ignored "
-                    + "because the host is not suitable");
+            debug("Adding a VM of type " + type + " to host " + hostId + " is invalid. Ignoring");
             return false;
         }
-
-        vmCounter.recordNewVm(type);
         return true;
     }
 
     private boolean addNewVm(final String type) {
-        cloudSimProxy.addNewVm(type);
-        vmCounter.recordNewVm(type);
-        
+        cloudSimProxy.addNewVm(type);        
         return true;
     }
 

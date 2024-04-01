@@ -506,8 +506,9 @@ public class CloudSimProxy {
     }
 
     // if a vm is destroyed, this method returns the type of it.
-    public String removeVm(final long id) {
-        final Vm vmToKill = broker.getVmExecList()
+    public boolean removeVm(final long id) {
+        List<Vm> vmExecList = broker.getVmExecList(); 
+        Vm vmToKill = vmExecList
                 .parallelStream()
                 .filter(vm -> id == vm.getId())
                 .findFirst()
@@ -515,25 +516,16 @@ public class CloudSimProxy {
 
         if (vmToKill == Vm.NULL) {
             LOGGER.warn("Can't kill the VM with id " + id + ". No such vm found.");
-            return null;
+            return false;
         }
 
-        String vmType = vmToKill.getDescription();
-
-        LOGGER.debug("vmType = " + vmType);
-
-        List<Vm> vmsOfType = broker.getVmExecList()
-                .parallelStream()
-                .filter(vm -> vmType.equals((vm.getDescription())))
-                .collect(Collectors.toList());
-        LOGGER.debug("Agent action: Remove VM with id " + id);
-        if (canKillVm(vmType, vmsOfType.size())) {
-            destroyVm(vmToKill);
-            return vmType;
-        } else {
-            LOGGER.warn("Can't kill the VM. It is the only SMALL one running");
-            return null;
+        if (vmExecList.size() == 1) {
+            LOGGER.warn("Can't kill VM as it is the only one running.");
+            return false;
         }
+
+        destroyVm(vmToKill);
+        return true;
     }
 
     // TODO: I should avoid repeating code here.
@@ -541,27 +533,25 @@ public class CloudSimProxy {
     public boolean removeRandomVm(String type) {
         List<Vm> vmExecList = broker.getVmExecList();
 
+        if (vmExecList.size() == 1) {
+            LOGGER.warn("Can't kill VM as it is the only one running.");
+            return false;
+        }
+
         List<Vm> vmsOfType = vmExecList
                 .parallelStream()
                 .filter(vm -> type.equals((vm.getDescription())))
                 .collect(Collectors.toList());
         LOGGER.debug("Agent action: Remove a " + type + " VM");
-        if (canKillVm(type, vmsOfType.size())) {
-            int vmToKillIdx = random.nextInt(vmsOfType.size());
-            destroyVm(vmsOfType.get(vmToKillIdx));
-            return true;
-        } else {
-            LOGGER.warn("Can't kill the VM. It is the only SMALL one running");
+
+        if (vmsOfType.size() == 0) {
+            LOGGER.warn("Can't kill VM of type " + type + " as no vms of this type are running");
             return false;
         }
-    }
 
-    private boolean canKillVm(final String type, final int size) {
-        if (SMALL.equals(type)) {
-            return size > 1;
-        }
-
-        return size > 0;
+        int vmToKillIdx = random.nextInt(vmsOfType.size());
+        destroyVm(vmsOfType.get(vmToKillIdx));
+        return true;
     }
 
     private Cloudlet resetCloudlet(final Cloudlet cloudlet) {
@@ -645,6 +635,10 @@ public class CloudSimProxy {
                 + affectedCloudlets.size()
                 + " cloudlets took (s): "
                 + brokerTime);
+    }
+
+    public DatacenterBrokerFirstFitFixed getBroker() {
+        return broker;
     }
 
     public Datacenter getDatacenter() {
