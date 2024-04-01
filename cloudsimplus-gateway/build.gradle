@@ -100,6 +100,7 @@ docker {
 }
 
 dockerCreateDockerfile {
+    // TODO: I need to check whether this is needed or the javaopts that I have in the dockerfile
     environmentVariable 'JAVA_OPTS', '-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external'
 }
 

@@ -230,7 +230,7 @@ public class WrappedSimulation {
         else if (action[0] > 0) {
             id = continuousToPositiveDiscrete(
                 action[0],
-                settings.getDatacenterHostsCnt());
+                settings.getDatacenterHostsCnt() - 1);
 
             vmTypeIndex = (int) continuousToPositiveDiscrete(
                 action[1],
@@ -287,7 +287,7 @@ public class WrappedSimulation {
         }
 
         if (!cloudSimProxy.addNewVm(type, hostId)) {
-            debug("Adding a VM of type " + type + "to host "
+            debug("Adding a VM of type " + type + " to host "
                     + "was requested but the request was ignored "
                     + "because the host is not suitable");
             return false;
