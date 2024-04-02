@@ -238,13 +238,13 @@ public class WrappedSimulation {
         return true;
     }
 
-    private boolean removeRandomVm(final String type) {
-        if (!cloudSimProxy.removeRandomVm(type)) {
-            debug("Removing a random VM of type " + type + " is invalid. Ignoring.");
-            return false;
-        }
-        return true;
-    }
+    // private boolean removeRandomVm(final String type) {
+    //     if (!cloudSimProxy.removeRandomVm(type)) {
+    //         debug("Removing a random VM of type " + type + " is invalid. Ignoring.");
+    //         return false;
+    //     }
+    //     return true;
+    // }
 
     // adds a new vm to the host with hostid if possible
     private boolean addNewVm(final String type, final long hostId) {
@@ -255,10 +255,10 @@ public class WrappedSimulation {
         return true;
     }
 
-    private boolean addNewVm(final String type) {
-        cloudSimProxy.addNewVm(type);        
-        return true;
-    }
+    // private boolean addNewVm(final String type) {
+    //     cloudSimProxy.addNewVm(type);        
+    //     return true;
+    // }
 
     private double percentileOrZero(
             final double[] values, 

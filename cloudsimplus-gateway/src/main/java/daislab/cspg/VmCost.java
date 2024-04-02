@@ -19,7 +19,6 @@ public class VmCost {
 
     private final double secondsInIteration;
     private final double perIterationBasicVMCost;
-    private final double speedUp;
     
     private List<Vm> createdVms = new ArrayList<>();
     private boolean payForFullHour;
@@ -27,7 +26,6 @@ public class VmCost {
 
     public VmCost(final double perHourVMCost, final double speedUp, final boolean payForFullHour) {
         this.payForFullHour = payForFullHour;
-        this.speedUp = speedUp;
         
         secondsInIteration = speedUp;
         iterationsInHour = 3600 / secondsInIteration;

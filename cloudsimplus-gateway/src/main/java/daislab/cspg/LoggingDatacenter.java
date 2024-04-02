@@ -4,8 +4,6 @@ import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
 import org.cloudsimplus.core.Simulation;
 import org.cloudsimplus.datacenters.DatacenterSimple;
 import org.cloudsimplus.hosts.Host;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 

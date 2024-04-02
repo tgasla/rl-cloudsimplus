@@ -73,12 +73,18 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         field.set(this, value);
     }
 
-    private Object getPrivateFieldValue(final String fieldName, final Object source)
+    private Set<?> getPrivateFieldValueAsSet(final String fieldName, final Object source)
             throws IllegalAccessException, NoSuchFieldException {
 
         final Field field = CloudletSchedulerAbstract.class.getDeclaredField(fieldName);
         field.setAccessible(true);
-        return field.get(source);
+        Object fieldValue = field.get(source);
+        if (fieldValue instanceof Set) {
+            return (Set<?>) fieldValue;
+        } else {
+            // Handle the case where the field value is not a Set appropriately
+            return null;
+        }
     }
 
     // It is safe to override this function:
@@ -89,8 +95,12 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
             setPrivateField("cloudletWaitingList", new ArrayList<>());
             setPrivateField("cloudletExecList", new ArrayList<>());
 
-            Set cloudletReturnedList = (Set) getPrivateFieldValue("cloudletReturnedList", this);
-            cloudletReturnedList.clear();
+            Set<?> cloudletReturnedList = 
+                    getPrivateFieldValueAsSet("cloudletReturnedList", this);
+                    
+            if (cloudletReturnedList != null) {
+                cloudletReturnedList.clear();
+            }
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }

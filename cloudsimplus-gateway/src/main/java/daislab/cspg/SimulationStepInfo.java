@@ -1,7 +1,5 @@
 package daislab.cspg;
 
-import java.util.Arrays;
-
 /*
  * Class that represents the info object that is returned as part of the
  * result of each step method call.
