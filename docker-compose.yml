@@ -5,7 +5,11 @@ services:
     image: gateway:1.9.1
     container_name: gateway
     environment:
-      JAVA_OPTS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external"
+      JAVA_OPTS: >
+        -XX:+UnlockExperimentalVMOptions
+        -XX:+UseCGroupMemoryLimitForHeap
+        -XX:+HeapDumpOnOutOfMemoryError
+        -XX:HeapDumpPath=/external
 
   # # uses port 5432
   # database:
@@ -41,8 +45,13 @@ services:
       - ./rl-manager/mnt:/mgr/mnt
       - ./tb-logs:/mgr/tb-logs
       - ./eval-logs:/mgr/eval-logs
-    # command: python3 mnt/pretrain_save.py ${ENV} ${ALGORITHM} ${TIMESTEPS}
-    command: python3 mnt/load_retrain.py ${ENV} ${ALGORITHM} ${TIMESTEPS} ${PRETRAINING_ENV}
+    command: >
+      python3 mnt/run.py 
+      --algo=${ALGO}
+      --pretrain-env=${PRETRAIN_ENV}
+      --pretrain-timesteps=${PRETRAIN_TIMESTEPS}
+      --transfer-env=${TRANSFER_ENV}
+      --transfer-timesteps=${TRANSFER_TIMESTEPS}
 
   manager-cuda:
     <<: *cpu

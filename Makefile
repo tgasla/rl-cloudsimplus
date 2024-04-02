@@ -12,12 +12,12 @@ build-tensorboard:
 	docker build -t tensorboard tensorboard
 
 build-gateway:
-	cd cloudsimplus-gateway && sudo ./gradlew build --warning-mode all
-	cd cloudsimplus-gateway && sudo ./gradlew dockerBuildImage
+	cd cloudsimplus-gateway && ./gradlew build --warning-mode all
+	cd cloudsimplus-gateway && ./gradlew dockerBuildImage
 
 build-gateway-debug:
-	cd cloudsimplus-gateway && sudo ./gradlew build --warning-mode all -Dlog.level=DEBUG
-	cd cloudsimplus-gateway && sudo ./gradlew dockerBuildImage
+	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=DEBUG
+	cd cloudsimplus-gateway && ./gradlew dockerBuildImage
 
 build-manager:
 	docker build -t manager:${MANAGER_VERSION} rl-manager
@@ -43,7 +43,7 @@ rmi-manager:
 	docker stop manager && docker rmi --force manager:${MANAGER_VERSION}
 
 clean-gateway:
-	cd cloudsimplus-gateway && sudo ./gradlew clean
+	cd cloudsimplus-gateway && ./gradlew clean
 
 prune-all:
 	docker system prune -f
