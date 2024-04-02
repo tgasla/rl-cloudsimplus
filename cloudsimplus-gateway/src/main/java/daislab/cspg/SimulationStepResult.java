@@ -45,8 +45,8 @@ public class SimulationStepResult {
         return "SimulationStepResult{"
                 + ", obs=" + Arrays.toString(obs)
                 + ", reward=" + reward
-                + "done=" + done
-                + "info=" + info.toString()
+                + ", done=" + done
+                + ", info=" + info.toString()
                 + '}';
     }
 }

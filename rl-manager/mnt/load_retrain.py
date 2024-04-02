@@ -80,18 +80,18 @@ jobs = swf_reader.read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=25)
 model_storage_dir = "./model-storage/"
 model_storage_path = model_storage_dir + filename_id
 
-eval_log_dir = "./eval-logs/"
-eval_log_path = (
-    f"{eval_log_dir}"
-    f"{filename_id}"
-    f"_monitor.csv"
-)
-
 new_filename_id = get_filename_id(
     pretraining_env_id,
     algorithm_str,
     5 * timesteps + timesteps,
     env_id
+)
+
+eval_log_dir = "./eval-logs/"
+eval_log_path = (
+    f"{eval_log_dir}"
+    f"{new_filename_id}"
+    f"_monitor.csv"
 )
 
 tb_log_dir = "./tb-logs/"
@@ -111,8 +111,7 @@ env = gym.make(
 env = Monitor(
     env, 
     eval_log_path, 
-    override_existing=False,
-    info_keywords=("cost","validCount", "actionCount")
+    info_keywords=("cost", "validCount")
 )
 
 # Add some action noise for exploration
@@ -169,10 +168,3 @@ new_model_path = (
 
 model.save(new_model_path)
 model.save_replay_buffer(new_model_path + "_RP")
-
-os.rename(
-    eval_log_path,
-    f"{eval_log_dir}"
-    f"{new_filename_id}"
-    f"_monitor.csv"
-)

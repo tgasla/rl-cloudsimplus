@@ -159,7 +159,6 @@ class SmallDC(gym.Env):
 
         info = {
             "validCount": raw_info.getValidCount(),
-            "actionCount": raw_info.getActionCount(),
             "cost": raw_info.getCost()
         }
 
@@ -180,7 +179,6 @@ class SmallDC(gym.Env):
         raw_info = result.getInfo()
         info = {
             "validCount": raw_info.getValidCount(),
-            "actionCount": raw_info.getActionCount(),
             "cost": raw_info.getCost()
         }
         return obs, info

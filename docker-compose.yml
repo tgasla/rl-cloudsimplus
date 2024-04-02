@@ -41,8 +41,8 @@ services:
       - ./rl-manager/mnt:/mgr/mnt
       - ./tb-logs:/mgr/tb-logs
       - ./eval-logs:/mgr/eval-logs
-    command: python3 mnt/pretrain_save.py ${ENV} ${ALGORITHM} ${TIMESTEPS}
-    # command: python3 mnt/load_retrain.py ${ENV} ${ALGORITHM} ${TIMESTEPS} ${PRETRAINING_ENV}
+    # command: python3 mnt/pretrain_save.py ${ENV} ${ALGORITHM} ${TIMESTEPS}
+    command: python3 mnt/load_retrain.py ${ENV} ${ALGORITHM} ${TIMESTEPS} ${PRETRAINING_ENV}
 
   manager-cuda:
     <<: *cpu

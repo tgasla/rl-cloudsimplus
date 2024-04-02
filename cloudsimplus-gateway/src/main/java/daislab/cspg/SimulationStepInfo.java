@@ -9,25 +9,18 @@ import java.util.Arrays;
 public class SimulationStepInfo {
 
     private final int validCount;
-    private final int actionCount;
     private final double cost;
 
     public SimulationStepInfo(
             final int validCount,
-            final int actionCount,
             final double cost) {
 
         this.validCount = validCount;
-        this.actionCount = actionCount;
         this.cost = cost;
     }
 
     public int getValidCount() {
         return validCount;
-    }
-
-    public int getActionCount() {
-        return actionCount;
     }
 
     public double getCost() {
@@ -38,7 +31,6 @@ public class SimulationStepInfo {
     public String toString() {
         return "SimulationStepInfo{"
                 + "validCount=" + validCount
-                + ", actionCount=" + actionCount
                 + ", cost=" + cost
                 + '}';
     }

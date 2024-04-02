@@ -108,7 +108,7 @@ env = gym.make(
 env = Monitor(
     env, 
     eval_log_path, 
-    info_keywords=("cost","validCount", "actionCount")
+    info_keywords=("cost","validCount")
 )
 
 # Add some action noise for exploration

@@ -43,7 +43,6 @@ public class WrappedSimulation {
     private CloudSimProxy cloudSimProxy;
     private double maxCost = 0.0;
     private int validCount = 0;
-    private int actionCount = 0;
 
     public WrappedSimulation(final SimulationSettings simulationSettings,
                              final String identifier,
@@ -95,11 +94,9 @@ public class WrappedSimulation {
 
         resetMaxCost();
         resetValidCount();
-        resetActionCount();
 
         SimulationStepInfo info = new SimulationStepInfo(
-                validCount, 
-                actionCount,
+                validCount,
                 getMaxCost());
 
         return new SimulationResetResult(obs, info);
@@ -172,11 +169,8 @@ public class WrappedSimulation {
             validCount += 1;
         }
 
-        actionCount += 1;
-
         SimulationStepInfo info = new SimulationStepInfo(
                 validCount,
-                actionCount,
                 getMaxCost());
 
         return new SimulationStepResult(
@@ -381,10 +375,6 @@ public class WrappedSimulation {
 
     public double getMaxCost() {
         return maxCost;
-    }
-
-    private void resetActionCount() {
-        actionCount = 0;
     }
 
     private void resetValidCount() {
