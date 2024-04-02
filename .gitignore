@@ -8,6 +8,9 @@
 # Log file
 *.log
 
+# Bin directory
+bin/
+
 # BlueJ files
 *.ctxt
 
