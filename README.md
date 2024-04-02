@@ -1,4 +1,4 @@
-# 1. Prerequisites
+# 1. Requirements
 
 <details><summary><b>Linux Debian 12/11/10</b></summary>
     
