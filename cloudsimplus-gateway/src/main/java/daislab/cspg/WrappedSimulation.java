@@ -40,6 +40,7 @@ public class WrappedSimulation {
     private CloudSimProxy cloudSimProxy;
     private int validCount = 0;
     private double maxCost = 0.0;
+    private long maxWaitingJobsCount = 0;
     private double meanJobWaitPenalty = 0.0;
     private double meanCostPenalty = 0.0;
     private int stepCount;
@@ -89,6 +90,7 @@ public class WrappedSimulation {
         double[] obs = getObservation();
 
         resetMaxCost();
+        resetMaxWaitingJobsCount();
         resetValidCount();
         resetMeanJobWaitPenalty();
         resetMeanCostPenalty();
@@ -164,13 +166,16 @@ public class WrappedSimulation {
         double cost = cloudSimProxy.getRunningCost();
         double jobWaitPenalty =
                 cloudSimProxy.getWaitingJobsCount() 
-                * settings.getQueueWaitPenalty() * settings.getSimulationSpeedup();
+                * settings.getQueueWaitPenalty() 
+                * settings.getSimulationSpeedup();
 
         updateMaxCost(cost);
+        updateMaxWaitingJobsCount(cloudSimProxy.getWaitingJobsCount());
         updateMeanJobWaitPenalty(-settings.getRewardJobWaitCoef() * jobWaitPenalty);
         updateMeanCostPenalty(-settings.getRewardVmCostCoef() * cost);
 
         debug("Max cost: " + getMaxCost() + "\n"
+                + "Max waiting jobs count: " + getMaxWaitingJobsCount() + "\n"
                 + "Mean job wait penalty: " + getMeanJobWaitPenalty() + "\n"
                 + "Mean cost penalty: " + getMeanCostPenalty() + "\n");
 
@@ -371,11 +376,9 @@ public class WrappedSimulation {
         final double vmCostCoef = settings.getRewardVmCostCoef();
         final double invalidCoef = settings.getRewardInvalidCoef();
         
-        final double vmCostPenalty = cloudSimProxy.getRunningCost();
-        final double jobWaitPenalty =
-        cloudSimProxy.getWaitingJobsCount() 
-        * settings.getQueueWaitPenalty() * settings.getSimulationSpeedup();
-        final int invalidActionPenalty = (isValid) ? 0 : 1000;
+        final double vmCostPenalty = getVmAllocatedRatio();
+        final double jobWaitPenalty = getWaitingJobsRatioGlobal();
+        final int invalidActionPenalty = (isValid) ? 0 : 1;
         
         if (!isValid) {
             info("Penalty given to the agent because the selected action was not possible");
@@ -397,6 +400,20 @@ public class WrappedSimulation {
     private void updateMaxCost(double cost) {
         if (cost > maxCost) {
             maxCost = cost;
+        }
+    }
+
+    private void resetMaxWaitingJobsCount() {
+        maxWaitingJobsCount = 0;
+    }
+
+    private long getMaxWaitingJobsCount() {
+        return maxWaitingJobsCount;
+    }
+
+    private void updateMaxWaitingJobsCount(long waitingJobsCount) {
+        if (waitingJobsCount > maxWaitingJobsCount) {
+            maxWaitingJobsCount = waitingJobsCount;
         }
     }
 
