@@ -63,21 +63,21 @@ parser.add_argument(
 )
 parser.add_argument(
     "--reward-job-wait-coef",
-    type=float,
+    type=str,
     help=("The coefficient of the reward function term that is responsible ",
         "for the job waiting penalty"
     )
 )
 parser.add_argument(
     "--reward-vm-cost-coef",
-    type=float,
+    type=str,
     help=("The coefficient of the reward function term that is responsible ",
         "for the vm cost penalty"
     )
 )
 parser.add_argument(
     "--reward-invalid-coef",
-    type=float,
+    type=str,
     help=("The coefficient of the reward function term that is responsible ",
         "for the invalid action penalty"
     )
@@ -88,9 +88,9 @@ pretrain_env = str(args.pretrain_env)
 pretrain_timesteps = int(args.pretrain_timesteps)
 transfer_env = str(args.transfer_env)
 transfer_timesteps = int(args.transfer_timesteps)
-reward_job_wait_coef=float(args.reward_job_wait_coef)
-reward_vm_cost_coef=float(args.reward_vm_cost_coef)
-reward_invalid_coef=float(args.reward_invalid_coef)
+reward_job_wait_coef=str(args.reward_job_wait_coef)
+reward_vm_cost_coef=str(args.reward_vm_cost_coef)
+reward_invalid_coef=str(args.reward_invalid_coef)
 
 experiment_id = FilenameFormatter.create_filename_id(
     algorithm_str,
