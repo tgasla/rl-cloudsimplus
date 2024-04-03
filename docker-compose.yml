@@ -52,6 +52,7 @@ services:
       --pretrain-timesteps=${PRETRAIN_TIMESTEPS}
       --transfer-env=${TRANSFER_ENV}
       --transfer-timesteps=${TRANSFER_TIMESTEPS}
+      --simulation-speedup=${SIMULATION_SPEEDUP}
       --reward-job-wait-coef=${REWARD_JOB_WAIT_COEF}
       --reward-vm-cost-coef=${REWARD_VM_COST_COEF}
       --reward-invalid-coef=${REWARD_INVALID_COEF}

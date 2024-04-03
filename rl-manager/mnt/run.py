@@ -62,6 +62,11 @@ parser.add_argument(
     help="The number of timesteps to perform after the environment transfer"
 )
 parser.add_argument(
+    "--simulation-speedup", 
+    type=str,
+    help="This affects the job arrival time"
+)
+parser.add_argument(
     "--reward-job-wait-coef",
     type=str,
     help=("The coefficient of the reward function term that is responsible ",
@@ -88,6 +93,7 @@ pretrain_env = str(args.pretrain_env)
 pretrain_timesteps = int(args.pretrain_timesteps)
 transfer_env = str(args.transfer_env)
 transfer_timesteps = int(args.transfer_timesteps)
+simulation_speedup = str(args.simulation_speedup)
 reward_job_wait_coef=str(args.reward_job_wait_coef)
 reward_vm_cost_coef=str(args.reward_vm_cost_coef)
 reward_invalid_coef=str(args.reward_invalid_coef)
@@ -132,7 +138,7 @@ model_storage_path = (
 env = gym.make(
     pretrain_env,
     jobs_as_json=json.dumps(jobs),
-    simulation_speedup="1000",
+    simulation_speedup=simulation_speedup,
     reward_job_wait_coef=reward_job_wait_coef,
     reward_vm_cost_coef=reward_vm_cost_coef,
     reward_invalid_coef=reward_invalid_coef,
@@ -221,7 +227,7 @@ new_tb_log_name = new_filename_id
 new_env = gym.make(
     transfer_env,
     jobs_as_json=json.dumps(jobs),
-    simulation_speedup="1000",
+    simulation_speedup=simulation_speedup,
     reward_job_wait_coef=reward_job_wait_coef,
     reward_vm_cost_coef=reward_vm_cost_coef,
     reward_invalid_coef=reward_invalid_coef,
