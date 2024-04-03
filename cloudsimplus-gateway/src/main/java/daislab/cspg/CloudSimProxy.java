@@ -51,7 +51,6 @@ public class CloudSimProxy {
     private final SimulationSettings settings;
     private final VmCost vmCost;
     private final Datacenter datacenter;
-    private final double simulationSpeedUp;
     private final Map<Long, Double> originalSubmissionDelay = new HashMap<>();
     private final Random random = new Random(System.currentTimeMillis());
     private final List<Cloudlet> jobs = new ArrayList<>();
@@ -64,17 +63,15 @@ public class CloudSimProxy {
 
     public CloudSimProxy(final SimulationSettings settings,
                          final Map<String, Integer> initialVmsCount,
-                         final List<Cloudlet> inputJobs,
-                         final double simulationSpeedUp) {
+                         final List<Cloudlet> inputJobs) {
         this.settings = settings;
-        this.simulationSpeedUp = simulationSpeedUp;
         
         cloudSimPlus = new CloudSimPlus(0.01);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         datacenter = createDatacenter();
         vmCost = new VmCost(
                 settings.getVmRunningHourlyCost(),
-                simulationSpeedUp,
+                settings.getSimulationSpeedup(),
                 settings.isPayingForTheFullHour());
 
         final List<? extends Vm> smallVmList = createVmList(initialVmsCount.get(SMALL), SMALL);
@@ -481,7 +478,8 @@ public class CloudSimProxy {
 
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
-        final double delay = (45 + Math.random() * 52) / simulationSpeedUp;
+        final double delay = 
+                (45 + Math.random() * 52) / settings.getSimulationSpeedup();
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
         broker.submitVm(newVm);
@@ -495,7 +493,8 @@ public class CloudSimProxy {
         Vm newVm = createVm(type);
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
-        final double delay = (45 + Math.random() * 52) / simulationSpeedUp;
+        final double delay = 
+                (45 + Math.random() * 52) / settings.getSimulationSpeedup();
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
         LOGGER.debug("Agent action: Create a " + type + " VM");
@@ -633,6 +632,10 @@ public class CloudSimProxy {
                 + affectedCloudlets.size()
                 + " cloudlets took (s): "
                 + brokerTime);
+    }
+
+    public CloudSimPlus getSimulation() {
+        return cloudSimPlus;
     }
 
     public DatacenterBrokerFirstFitFixed getBroker() {

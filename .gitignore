@@ -217,12 +217,14 @@ gradle-app.setting
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
-!.env
 
-########## LOGS ##########
+# Docker compose environment variables
+.env
+
+# Log directories
 tb-logs/
 eval-logs/
 model-storage/
 
-########## VSCODE ##########
+# VSCode hidden files
 .vscode/

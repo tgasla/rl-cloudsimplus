@@ -18,6 +18,7 @@ import java.util.Map;
 */
 public class SimulationSettings {
 
+    private final double simulationSpeedup;
     private final double vmRunningHourlyCost;
     private final long hostPeMips;
     private final long hostBw;
@@ -30,10 +31,12 @@ public class SimulationSettings {
     private final long basicVmPeCount;
     private final double vmStartupDelay;
     private final double vmShutdownDelay;
-    private final long maxVmsPerSize;
     private final boolean printJobsPeriodically;
     private final boolean payingForTheFullHour;
     private final boolean storeCreatedCloudletsDatacenterBroker;
+    private final double rewardJobWaitCoef;
+    private final double rewardVmCostCoef;
+    private final double rewardInvalidCoef;
 
     // Get SimulationSettings from environment variables,
     //  if an environment variable is not set, a default value is given
@@ -86,6 +89,8 @@ public class SimulationSettings {
     // TODO: Also, initial_vm_parameters should also be here instead of inside
     // the SimulationFactory class.
     public SimulationSettings(final Map<String, String> parameters) {
+        simulationSpeedup = Double.parseDouble(
+                parameters.getOrDefault("SIMULATION_SPEEDUP", "1.0"));
         vmRunningHourlyCost = Double.parseDouble(
                 parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));
         hostPeMips = Long.parseLong(
@@ -110,11 +115,6 @@ public class SimulationSettings {
                 parameters.getOrDefault("VM_STARTUP_DELAY", "0"));
         vmShutdownDelay = Double.parseDouble(
                 parameters.getOrDefault("VM_SHUTDOWN_DELAY", "0"));
-
-        // we can have as many VMs as the number of hosts, 
-        // as every host can have 1 small, 1 medium and 1 large Vm
-        maxVmsPerSize = Long.parseLong(
-                parameters.getOrDefault("MAX_VMS_PER_SIZE", "3000"));
         printJobsPeriodically = Boolean.parseBoolean(
                 parameters.getOrDefault("PRINT_JOBS_PERIODICALLY", "false"));
         payingForTheFullHour = Boolean.parseBoolean(
@@ -122,25 +122,39 @@ public class SimulationSettings {
         storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(
                 parameters.getOrDefault(
                 "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
+        rewardJobWaitCoef = Double.parseDouble(
+            parameters.getOrDefault("REWARD_JOB_WAIT_COEF", "1"));
+        rewardVmCostCoef = Double.parseDouble(
+            parameters.getOrDefault("REWARD_VM_COST_COEF", "1"));
+        rewardInvalidCoef = Double.parseDouble(
+            parameters.getOrDefault("REWARD_INVALID_COEF", "1"));
     }
 
     @Override
     public String toString() {
         return "SimulationSettings{" +
-                "\nvmRunningHourlyCost=" + vmRunningHourlyCost +
-                "\n, hostPeMips=" + hostPeMips +
-                "\n, hostBw=" + hostBw +
-                "\n, hostRam=" + hostRam +
-                "\n, hostSize=" + hostSize +
-                "\n, hostPeCnt=" + hostPeCnt +
-                "\n, queueWaitPenalty=" + queueWaitPenalty +
-                "\n, datacenterHostsCnt=" + datacenterHostsCnt +
-                "\n, basicVmRam=" + basicVmRam +
-                "\n, basicVmPeCount=" + basicVmPeCount +
-                "\n, maxVmsPerSize=" + maxVmsPerSize +
-                "\n, printJobsPeriodically=" + printJobsPeriodically +
-                "\n, payingForTheFullHour=" + payingForTheFullHour +
-                "\n}";
+            "\nsimulationSpeedups=" + simulationSpeedup +
+            "\n, vmRunningHourlyCost=" + vmRunningHourlyCost +
+            "\n, hostPeMips=" + hostPeMips +
+            "\n, hostBw=" + hostBw +
+            "\n, hostRam=" + hostRam +
+            "\n, hostSize=" + hostSize +
+            "\n, hostPeCnt=" + hostPeCnt +
+            "\n, queueWaitPenalty=" + queueWaitPenalty +
+            "\n, datacenterHostsCnt=" + datacenterHostsCnt +
+            "\n, basicVmRam=" + basicVmRam +
+            "\n, basicVmPeCount=" + basicVmPeCount +
+            "\n, printJobsPeriodically=" + printJobsPeriodically +
+            "\n, payingForTheFullHour=" + payingForTheFullHour +
+            "\n, storeCreatedCloudletsDatacenterBroker=" + storeCreatedCloudletsDatacenterBroker +
+            "\n, rewardJobWaitCoef=" + rewardJobWaitCoef + 
+            "\n, rewardCostCoef=" + rewardVmCostCoef +
+            "\n, rewardInvalidCoef=" + rewardInvalidCoef +
+            "\n}";
+    }
+
+    public double getSimulationSpeedup() {
+        return simulationSpeedup;
     }
 
     public double getVmRunningHourlyCost() {
@@ -204,16 +218,7 @@ public class SimulationSettings {
     }
 
     public long getAvailableCores() {
-        // we can have 2 cores for a small VM, 
-        // 4 for Medium and 8 for a large one
-        return maxVmsPerSize
-                * (basicVmPeCount
-                + basicVmPeCount * 2
-                + basicVmPeCount * 4);
-    }
-
-    public long getMaxVmsPerSize() {
-        return maxVmsPerSize;
+        return datacenterHostsCnt * hostPeCnt;
     }
 
     public boolean getPrintJobsPeriodically() {
@@ -226,5 +231,17 @@ public class SimulationSettings {
 
     public boolean isStoreCreatedCloudletsDatacenterBroker() {
         return storeCreatedCloudletsDatacenterBroker;
+    }
+
+    public double getRewardJobWaitCoef() {
+        return rewardJobWaitCoef;
+    }
+
+    public double getRewardVmCostCoef() {
+        return rewardVmCostCoef;
+    }
+
+    public double getRewardInvalidCoef() {
+        return rewardInvalidCoef;
     }
 }

@@ -24,10 +24,10 @@ public class VmCost {
     private boolean payForFullHour;
     private double iterationsInHour;
 
-    public VmCost(final double perHourVMCost, final double speedUp, final boolean payForFullHour) {
+    public VmCost(final double perHourVMCost, final double speedup, final boolean payForFullHour) {
         this.payForFullHour = payForFullHour;
         
-        secondsInIteration = speedUp;
+        secondsInIteration = speedup;
         iterationsInHour = 3600 / secondsInIteration;
 
         final double perSecondVMCost = perHourVMCost * 0.00028; // 1/3600

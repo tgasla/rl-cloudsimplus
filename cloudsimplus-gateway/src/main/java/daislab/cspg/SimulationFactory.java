@@ -23,12 +23,6 @@ public class SimulationFactory {
     public static final String SPLIT_LARGE_JOBS = "SPLIT_LARGE_JOBS";
     public static final String SPLIT_LARGE_JOBS_DEFAULT = "true";
 
-    public static final String QUEUE_WAIT_PENALTY = "QUEUE_WAIT_PENALTY";
-    public static final String QUEUE_WAIT_PENALTY_DEFAULT = "0.00001";
-
-    public static final String SIMULATION_SPEEDUP = "SIMULATION_SPEEDUP";
-    public static final String SIMULATION_SPEEDUP_DEFAULT = "1.0";
-
     public static final String INITIAL_L_VM_COUNT = "INITIAL_L_VM_COUNT";
     public static final String INITIAL_M_VM_COUNT = "INITIAL_M_VM_COUNT";
     public static final String INITIAL_S_VM_COUNT = "INITIAL_S_VM_COUNT";
@@ -65,19 +59,8 @@ public class SimulationFactory {
                 maybeParameters.getOrDefault(INITIAL_L_VM_COUNT, INITIAL_VM_COUNT_DEFAULT);
         final int initialLVmCount =
                 Integer.parseInt(initialLVmCountStr);
-
-        final String simulationSpeedUpStr =
-                maybeParameters.getOrDefault(SIMULATION_SPEEDUP, SIMULATION_SPEEDUP_DEFAULT);
-        final double simulationSpeedUp =
-                Double.parseDouble(simulationSpeedUpStr);
-
         final String sourceOfJobs =
                 maybeParameters.getOrDefault(SOURCE_OF_JOBS, SOURCE_OF_JOBS_DEFAULT);
-
-        final String queueWaitPenaltyStr =
-                maybeParameters.getOrDefault(QUEUE_WAIT_PENALTY, QUEUE_WAIT_PENALTY_DEFAULT);
-        final double queueWaitPenalty = Double.parseDouble(queueWaitPenaltyStr);
-
         final String splitLargeJobsStr =
                 maybeParameters.getOrDefault(SPLIT_LARGE_JOBS, SPLIT_LARGE_JOBS_DEFAULT);
         final boolean splitLargeJobs =
@@ -87,9 +70,11 @@ public class SimulationFactory {
         LOGGER.info("-> initialSVmCount: " + initialSVmCount);
         LOGGER.info("-> initialMVmCount: " + initialMVmCount);
         LOGGER.info("-> initialLVmCount: " + initialLVmCount);
-        LOGGER.info("-> simulationSpeedUp: " + simulationSpeedUp);
-        LOGGER.info("-> queueWaitPenalty: " + queueWaitPenalty);
         LOGGER.info("-> splitLargeJobs: " + splitLargeJobs);
+
+        final SimulationSettings settings = new SimulationSettings(maybeParameters);
+        LOGGER.info("Simulation settings dump");
+        LOGGER.info(settings.toString());
 
         final List<CloudletDescriptor> jobs;
 
@@ -103,20 +88,16 @@ public class SimulationFactory {
             case SOURCE_OF_JOBS_PARAMS:
                 // fall-through
             default:
-                jobs = loadJobsFromParams(maybeParameters, simulationSpeedUp);
+                jobs = loadJobsFromParams(maybeParameters, settings.getSimulationSpeedup());
         }
 
-        final SimulationSettings settings = new SimulationSettings(maybeParameters);
-        LOGGER.info("Simulation settings dump");
-        LOGGER.info(settings.toString());
-
-        final List<CloudletDescriptor> splitted;
+        final List<CloudletDescriptor> splittedJobs;
         if (splitLargeJobs) {
             LOGGER.info("Splitting large jobs");
-            splitted = splitLargeJobs(jobs, settings);
+            splittedJobs = splitLargeJobs(jobs, settings);
         } else {
             LOGGER.info("Not applying the splitting algorithm - using raw jobs");
-            splitted = jobs;
+            splittedJobs = jobs;
         }
 
         return new WrappedSimulation(
@@ -127,9 +108,7 @@ public class SimulationFactory {
                     this.put(CloudSimProxy.MEDIUM, initialMVmCount);
                     this.put(CloudSimProxy.LARGE, initialLVmCount);
                 }},
-                simulationSpeedUp,
-                queueWaitPenalty,
-                splitted);
+                splittedJobs);
     }
 
     private List<CloudletDescriptor> splitLargeJobs(
@@ -178,7 +157,7 @@ public class SimulationFactory {
 
     private List<CloudletDescriptor> loadJobsFromParams(
             final Map<String, String> maybeParameters, 
-            final double simulationSpeedUp) {
+            final double simulationSpeedup) {
 
         List<CloudletDescriptor> retVal = new ArrayList<>();
         final String jobsAsJson = maybeParameters.getOrDefault(JOBS, JOBS_DEFAULT);
@@ -187,7 +166,7 @@ public class SimulationFactory {
                 gson.fromJson(jobsAsJson, cloudletDescriptors);
 
         for (CloudletDescriptor cloudletDescriptor : deserialized) {
-            retVal.add(speedUp(cloudletDescriptor, simulationSpeedUp));
+            retVal.add(speedup(cloudletDescriptor, simulationSpeedup));
         }
 
         LOGGER.info("Deserialized " + retVal.size() + " jobs");
@@ -195,18 +174,18 @@ public class SimulationFactory {
         return retVal;
     }
 
-    private CloudletDescriptor speedUp(
+    private CloudletDescriptor speedup(
             final CloudletDescriptor cloudletDescriptor, 
-            final double simulationSpeedUp) {
+            final double simulationSpeedup) {
                 
         final long cloudletDescriptorMi = cloudletDescriptor.getMi();
         final long nonNegativeMi = cloudletDescriptorMi < 1 ? 1 : cloudletDescriptorMi;
-        final long speededUpMi = (long) (nonNegativeMi / simulationSpeedUp);
+        final long speededUpMi = (long) (nonNegativeMi / simulationSpeedup);
         final long newMi = speededUpMi == 0 ? 1 : speededUpMi;
         final long submissionDelayReal = cloudletDescriptor
                 .getSubmissionDelay() < 0 ? 0L : cloudletDescriptor.getSubmissionDelay();
 
-        final long submissionDelay = (long) (submissionDelayReal / simulationSpeedUp);
+        final long submissionDelay = (long) (submissionDelayReal / simulationSpeedup);
         final int numberOfCores = cloudletDescriptor.
                 getNumberOfCores() < 0 ? 1 : cloudletDescriptor.getNumberOfCores();
 

@@ -127,7 +127,13 @@ class SmallDC(gym.Env):
             "PAYING_FOR_THE_FULL_HOUR":
                 kwargs.get("paying_for_the_full_hour", "false"),
             "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER":
-                kwargs.get("storeCreatedCloudletsDatacenterBroker", "false")
+                kwargs.get("storeCreatedCloudletsDatacenterBroker", "false"),
+            "REWARD_JOB_WAIT_COEF":
+                kwargs.get("reward_job_wait_coef", "1"),
+            "REWARD_VM_COST_COEF":
+                kwargs.get("reward_vm_cost_coef", "1"),
+            "REWARD_INVALID_TERM_COEF":
+                kwargs.get("reward_invalid_coef", "1")
         }
 
         render_mode = kwargs.get("render_mode", None)
@@ -159,7 +165,8 @@ class SmallDC(gym.Env):
 
         info = {
             "validCount": raw_info.getValidCount(),
-            "cost": raw_info.getCost()
+            "meanJobWaitPenalty": raw_info.getMeanJobWaitPenalty(),
+            "meanCostPenalty": raw_info.getMeanCostPenalty()
         }
 
         return (
@@ -179,7 +186,8 @@ class SmallDC(gym.Env):
         raw_info = result.getInfo()
         info = {
             "validCount": raw_info.getValidCount(),
-            "cost": raw_info.getCost()
+            "meanJobWaitPenalty": raw_info.getMeanJobWaitPenalty(),
+            "meanCostPenalty": raw_info.getMeanCostPenalty()
         }
         return obs, info
 
@@ -214,7 +222,7 @@ class SmallDC(gym.Env):
 
     def close(self):
         # close the resources
-        simulation_environment.close(self.simulation_id)
+        gateway.close()
 
     def seed(self):
         simulation_environment.seed(self.simulation_id)

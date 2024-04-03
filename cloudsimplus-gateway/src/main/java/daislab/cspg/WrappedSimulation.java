@@ -20,9 +20,7 @@ public class WrappedSimulation {
             LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
     private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
     
-    private final double queueWaitPenalty;
     private final List<CloudletDescriptor> initialJobsDescriptors;
-    private final double simulationSpeedUp;
     private final List<String> metricsNames = Arrays.asList(
             "vmAllocatedRatioHistory",
             "avgCPUUtilizationHistory",
@@ -41,21 +39,20 @@ public class WrappedSimulation {
     private final SimulationSettings settings;
     private final SimulationHistory simulationHistory;
     private CloudSimProxy cloudSimProxy;
-    private double maxCost = 0.0;
     private int validCount = 0;
+    private double maxCost = 0.0;
+    private double meanJobWaitPenalty = 0.0;
+    private double meanCostPenalty = 0.0;
+    private int stepCount;
 
     public WrappedSimulation(final SimulationSettings simulationSettings,
                              final String identifier,
                              final Map<String, Integer> initialVmsCount,
-                             final double simulationSpeedUp,
-                             final double queueWaitPenalty,
                              final List<CloudletDescriptor> jobs) {
         this.settings = simulationSettings;
         this.identifier = identifier;
         this.initialVmsCount = initialVmsCount;
         this.initialJobsDescriptors = jobs;
-        this.simulationSpeedUp = simulationSpeedUp;
-        this.queueWaitPenalty = queueWaitPenalty;
         this.simulationHistory = new SimulationHistory();
 
         info("Creating simulation: " + identifier);
@@ -76,6 +73,8 @@ public class WrappedSimulation {
     public SimulationResetResult reset() {
         info("Reset initiated");
 
+        stepCount = 0;
+
         // first attempt to store some memory
         metricsStorage.clear();
 
@@ -87,23 +86,25 @@ public class WrappedSimulation {
         cloudSimProxy = new CloudSimProxy(
                 settings, 
                 initialVmsCount,
-                cloudlets, 
-                simulationSpeedUp);
+                cloudlets);
 
         double[] obs = getObservation();
 
         resetMaxCost();
         resetValidCount();
+        resetMeanJobWaitPenalty();
+        resetMeanCostPenalty();
 
-        SimulationStepInfo info = new SimulationStepInfo(
-                validCount,
-                getMaxCost());
+        SimulationStepInfo info = new SimulationStepInfo(0,0,0);
 
         return new SimulationResetResult(obs, info);
     }
 
     public void close() {
-        info("Simulation is synchronous - doing nothing");
+        info("Terminating simulation...");
+        if (cloudSimProxy.isRunning()) {
+            cloudSimProxy.getSimulation().terminate();
+        }
     }
 
     public String render() {
@@ -125,6 +126,8 @@ public class WrappedSimulation {
         if (cloudSimProxy == null) {
             throw new RuntimeException("Simulation not reset! Please call the reset() function!");
         }
+
+        stepCount++;
 
         debug("Executing action: " + action[0] + ", " + action[1]);
 
@@ -161,17 +164,26 @@ public class WrappedSimulation {
                 + " Action (s): " + actionTime);
 
         double cost = cloudSimProxy.getRunningCost();
-        updateMaxCost(cost);
+        double jobWaitPenalty =
+                cloudSimProxy.getWaitingJobsCount() 
+                * settings.getQueueWaitPenalty() * settings.getSimulationSpeedup();
 
-        debug("Max cost is: " + maxCost);
+        updateMaxCost(cost);
+        updateMeanJobWaitPenalty(-jobWaitPenalty);
+        updateMeanCostPenalty(-cost);
+
+        debug("Max cost: " + getMaxCost() + "\n"
+                + "Mean job wait penalty: " + getMeanJobWaitPenalty() + "\n"
+                + "Mean cost penalty: " + getMeanCostPenalty() + "\n");
 
         if (isValid) {
-            validCount += 1;
+            validCount++;
         }
-
+        
         SimulationStepInfo info = new SimulationStepInfo(
-                validCount,
-                getMaxCost());
+                getValidCount(),
+                getMeanJobWaitPenalty(),
+                getMeanCostPenalty());
 
         return new SimulationStepResult(
                 observation,
@@ -281,17 +293,27 @@ public class WrappedSimulation {
         double waitingJobsRatioGlobal = getWaitingJobsRatioGlobal();
         double waitingJobsRatioRecent = getWaitingJobsRatioRecent();
 
-        metricsStorage.updateMetric("vmAllocatedRatioHistory", getVmAllocatedRatio());
-        metricsStorage.updateMetric("avgCPUUtilizationHistory", safeMean(cpuPercentUsage));
+        metricsStorage.updateMetric(
+                "vmAllocatedRatioHistory",
+                getVmAllocatedRatio());
+        metricsStorage.updateMetric(
+                "avgCPUUtilizationHistory",
+                safeMean(cpuPercentUsage));
         metricsStorage.updateMetric(
                 "p90CPUUtilizationHistory", 
                 percentileOrZero(cpuPercentUsage, 0.90));
-        metricsStorage.updateMetric("avgMemoryUtilizationHistory", safeMean(memPercentageUsage));
+        metricsStorage.updateMetric(
+                "avgMemoryUtilizationHistory",
+                safeMean(memPercentageUsage));
         metricsStorage.updateMetric(
                 "p90MemoryUtilizationHistory", 
                 percentileOrZero(memPercentageUsage, 0.90));
-        metricsStorage.updateMetric("waitingJobsRatioGlobalHistory", waitingJobsRatioGlobal);
-        metricsStorage.updateMetric("waitingJobsRatioRecentHistory", waitingJobsRatioRecent);
+        metricsStorage.updateMetric(
+                "waitingJobsRatioGlobalHistory",
+                waitingJobsRatioGlobal);
+        metricsStorage.updateMetric(
+                "waitingJobsRatioRecentHistory",
+                waitingJobsRatioRecent);
     }
 
     private double getWaitingJobsRatioRecent() {
@@ -343,24 +365,35 @@ public class WrappedSimulation {
     }
 
     private double calculateReward(final boolean isValid) {
-        final int penalty = (isValid) ? 0 : 1000;
-        final double vmCostCoef = 1;
-        final double waitingJobsCoef = 1;
-
+        /* reward is the negative cost of running the infrastructure
+         * minus any penalties from jobs waiting in the queue
+         * minus penalty if action was invalid
+        */ 
+        final double jobWaitCoef = settings.getRewardJobWaitCoef();
+        final double vmCostCoef = settings.getRewardVmCostCoef();
+        final double invalidCoef = settings.getRewardInvalidCoef();
+        
+        final double vmCostPenalty = cloudSimProxy.getRunningCost();
+        final double jobWaitPenalty =
+        cloudSimProxy.getWaitingJobsCount() 
+        * settings.getQueueWaitPenalty() * settings.getSimulationSpeedup();
+        final int invalidActionPenalty = (isValid) ? 0 : 1000;
+        
         if (!isValid) {
-            info("Penalty given to the agent because the action was not possible");
+            info("Penalty given to the agent because the selected action was not possible");
         }
-        // reward is the negative cost of running the infrastructure
-        // - any penalties from jobs waiting in the queue
-        // - penalty if action was invalid
-        final double vmRunningCostTerm = cloudSimProxy.getRunningCost();
-        final double waitingJobsTerm =
-                cloudSimProxy.getWaitingJobsCount() 
-                * queueWaitPenalty * simulationSpeedUp;
-                
-        return - vmCostCoef * vmRunningCostTerm 
-                - waitingJobsCoef * waitingJobsTerm 
-                - penalty;
+
+        return - jobWaitCoef * jobWaitPenalty 
+                - vmCostCoef * vmCostPenalty
+                - invalidCoef * invalidActionPenalty;
+    }
+
+    public int getStepCount() {
+        return stepCount;
+    }
+
+    private void resetStepCount() {
+        stepCount = 0;
     }
 
     private void updateMaxCost(double cost) {
@@ -369,16 +402,44 @@ public class WrappedSimulation {
         }
     }
 
-    private void resetMaxCost() {
-        maxCost = 0.0;
+    private void updateMeanCostPenalty(double costPenalty) {
+        meanCostPenalty = (meanCostPenalty * (stepCount - 1) + costPenalty) / stepCount;
+    }
+
+    private void updateMeanJobWaitPenalty(double jobWaitPenalty) {
+        meanJobWaitPenalty = (meanJobWaitPenalty * (stepCount - 1) + jobWaitPenalty) / stepCount;
     }
 
     public double getMaxCost() {
         return maxCost;
     }
 
+    private int getValidCount() {
+        return validCount;
+    }
+
+    private double getMeanJobWaitPenalty() {
+        return meanJobWaitPenalty;
+    }
+
+    private double getMeanCostPenalty() {
+        return meanCostPenalty;
+    }
+
+    private void resetMaxCost() {
+        maxCost = 0.0;
+    }
+
     private void resetValidCount() {
         validCount = 0;
+    }
+
+    private void resetMeanCostPenalty() {
+        meanCostPenalty = 0.0;
+    }
+
+    private void resetMeanJobWaitPenalty() {
+        meanJobWaitPenalty = 0.0;
     }
 
     public void seed() {

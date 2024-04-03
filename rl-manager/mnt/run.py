@@ -61,12 +61,36 @@ parser.add_argument(
     type=int,
     help="The number of timesteps to perform after the environment transfer"
 )
+parser.add_argument(
+    "--reward-job-wait-coef",
+    type=float,
+    help=("The coefficient of the reward function term that is responsible ",
+        "for the job waiting penalty"
+    )
+)
+parser.add_argument(
+    "--reward-vm-cost-coef",
+    type=float,
+    help=("The coefficient of the reward function term that is responsible ",
+        "for the vm cost penalty"
+    )
+)
+parser.add_argument(
+    "--reward-invalid-coef",
+    type=float,
+    help=("The coefficient of the reward function term that is responsible ",
+        "for the invalid action penalty"
+    )
+)
 args = parser.parse_args()
 algorithm_str = str(args.algo).upper()
 pretrain_env = str(args.pretrain_env)
 pretrain_timesteps = int(args.pretrain_timesteps)
 transfer_env = str(args.transfer_env)
 transfer_timesteps = int(args.transfer_timesteps)
+reward_job_wait_coef=float(args.reward_job_wait_coef)
+reward_vm_cost_coef=float(args.reward_vm_cost_coef)
+reward_invalid_coef=float(args.reward_invalid_coef)
 
 experiment_id = FilenameFormatter.create_filename_id(
     algorithm_str,
@@ -109,6 +133,9 @@ env = gym.make(
     pretrain_env,
     jobs_as_json=json.dumps(jobs),
     simulation_speedup="10000",
+    reward_job_wait_coef=reward_job_wait_coef,
+    reward_vm_cost_coef=reward_vm_cost_coef,
+    reward_invalid_coef=reward_invalid_coef,
     split_large_jobs="true",
     render_mode="ansi"
 )
@@ -118,14 +145,7 @@ env = gym.make(
 env = Monitor(
     env, 
     eval_log_path, 
-    info_keywords=("cost", "validCount")
-)
-
-# Add some action noise for exploration
-n_actions = env.action_space.shape[-1]
-action_noise = NormalActionNoise(
-    mean=np.zeros(n_actions), 
-    sigma=0.1 * np.ones(n_actions)
+    info_keywords=("validCount", "meanJobWaitPenalty", "meanCostPenalty")
 )
 
 # Select the appropriate algorithm
@@ -142,10 +162,20 @@ model = algorithm(
     env=env,
     verbose=True,
     tensorboard_log=tb_log_dir,
-    # TODO: for now, all action noise is ignored in RNG algorithm
-    action_noise=action_noise,
     device=device
 )
+
+# Add some action noise for exploration if applicable
+if algorithm_str == "DDPG" or \
+    algorithm_str == "TD3" or \
+    algorithm_str == "SAC":
+
+    n_actions = env.action_space.shape[-1]
+    action_noise = NormalActionNoise(
+        mean=np.zeros(n_actions), 
+        sigma=0.1 * np.ones(n_actions)
+    )
+    model.action_noise = action_noise
 
 # Train the agent
 model.learn(
@@ -158,7 +188,7 @@ model.learn(
 model.save(model_storage_path)
 
 # Save the replay buffer if the algorithm has one
-if (issubclass(algorithm, OffPolicyAlgorithm)):
+if issubclass(algorithm, OffPolicyAlgorithm):
     model.save_replay_buffer(model_storage_path + "_RP")
 
 # Close the environment and free the resources
@@ -190,6 +220,9 @@ new_env = gym.make(
     transfer_env,
     jobs_as_json=json.dumps(jobs),
     simulation_speedup="10000",
+    reward_job_wait_coef=reward_job_wait_coef,
+    reward_vm_cost_coef=reward_vm_cost_coef,
+    reward_invalid_coef=reward_invalid_coef,
     split_large_jobs="true",
     render_mode="ansi"
 )
@@ -199,7 +232,7 @@ new_env = gym.make(
 new_env = Monitor(
     new_env, 
     new_eval_log_path, 
-    info_keywords=("cost", "validCount")
+    info_keywords=("validCount", "meanJobWaitPenalty", "meanCostPenalty")
 )
 
 # Load the trained agent
@@ -211,7 +244,7 @@ model = algorithm.load(
 )
 
 # Load the replay buffer if the algorithm has one
-if (issubclass(algorithm, OffPolicyAlgorithm)): 
+if issubclass(algorithm, OffPolicyAlgorithm): 
    model.load_replay_buffer(model_storage_path + "_RP")
 
 # Set the learning rate to a small initial value
@@ -229,6 +262,8 @@ model.learn(
     log_interval=1
 )
 
+env.close()
+
 # Save the new model
 new_model_path = (
     f"{model_storage_dir}"
@@ -238,5 +273,5 @@ new_model_path = (
 model.save(new_model_path)
 
 # Save the new replay buffer if the algorithm has one
-if (issubclass(algorithm, OffPolicyAlgorithm)): 
+if issubclass(algorithm, OffPolicyAlgorithm): 
     model.save_replay_buffer(new_model_path + "_RP")

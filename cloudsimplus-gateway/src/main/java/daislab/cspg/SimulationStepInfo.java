@@ -7,29 +7,37 @@ package daislab.cspg;
 public class SimulationStepInfo {
 
     private final int validCount;
-    private final double cost;
+    private final double meanJobWaitPenalty;
+    private final double meanCostPenalty;
 
     public SimulationStepInfo(
             final int validCount,
-            final double cost) {
+            final double meanJobWaitPenalty,
+            final double meanCostPenalty) {
 
         this.validCount = validCount;
-        this.cost = cost;
+        this.meanJobWaitPenalty = meanJobWaitPenalty;
+        this.meanCostPenalty = meanCostPenalty;
     }
 
     public int getValidCount() {
         return validCount;
     }
+    
+    public double getMeanJobWaitPenalty() {
+        return meanJobWaitPenalty;
+    }
 
-    public double getCost() {
-        return cost;
+    public double getMeanCostPenalty() {
+        return meanCostPenalty;
     }
 
     @Override
     public String toString() {
         return "SimulationStepInfo{"
                 + "validCount=" + validCount
-                + ", cost=" + cost
+                + ", meanCostPenalty=" + meanCostPenalty
+                + ", meanJobWaitPenalty=" + meanJobWaitPenalty
                 + '}';
     }
 }
