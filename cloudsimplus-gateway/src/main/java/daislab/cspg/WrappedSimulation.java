@@ -33,7 +33,6 @@ public class WrappedSimulation {
 
     private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
     private final Gson gson = new Gson();
-    private final double INTERVAL = 1.0;
     private final String identifier;
     private final Map<String, Integer> initialVmsCount;
     private final SimulationSettings settings;
@@ -82,7 +81,6 @@ public class WrappedSimulation {
                 .stream()
                 .map(CloudletDescriptor::toCloudlet)
                 .collect(Collectors.toList());
-        debug("Calling CloudSimProxy object...");
         cloudSimProxy = new CloudSimProxy(
                 settings, 
                 initialVmsCount,
@@ -95,7 +93,7 @@ public class WrappedSimulation {
         resetMeanJobWaitPenalty();
         resetMeanCostPenalty();
 
-        SimulationStepInfo info = new SimulationStepInfo(0,0,0);
+        SimulationStepInfo info = new SimulationStepInfo(0, 0, 0);
 
         return new SimulationResetResult(obs, info);
     }
@@ -134,7 +132,7 @@ public class WrappedSimulation {
         long startAction = System.nanoTime();
         boolean isValid = executeAction(action);
         long stopAction = System.nanoTime();
-        cloudSimProxy.runFor(INTERVAL);
+        cloudSimProxy.runFor(settings.getStepTimeInterval());
 
         long startMetrics = System.nanoTime();
         collectMetrics();
@@ -169,8 +167,8 @@ public class WrappedSimulation {
                 * settings.getQueueWaitPenalty() * settings.getSimulationSpeedup();
 
         updateMaxCost(cost);
-        updateMeanJobWaitPenalty(-jobWaitPenalty);
-        updateMeanCostPenalty(-cost);
+        updateMeanJobWaitPenalty(-settings.getRewardJobWaitCoef() * jobWaitPenalty);
+        updateMeanCostPenalty(-settings.getRewardVmCostCoef() * cost);
 
         debug("Max cost: " + getMaxCost() + "\n"
                 + "Mean job wait penalty: " + getMeanJobWaitPenalty() + "\n"
@@ -322,7 +320,7 @@ public class WrappedSimulation {
         if (submittedJobsCountLastInterval == 0) {
             return 0.0;
         }
-        return cloudSimProxy.getWaitingJobsCountInterval(INTERVAL) 
+        return cloudSimProxy.getWaitingJobsCountInterval(settings.getStepTimeInterval()) 
                 / (double) submittedJobsCountLastInterval;
     }
 

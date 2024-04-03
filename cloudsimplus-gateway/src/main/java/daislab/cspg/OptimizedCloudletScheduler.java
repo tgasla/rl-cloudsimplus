@@ -79,12 +79,12 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         final Field field = CloudletSchedulerAbstract.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         Object fieldValue = field.get(source);
-        if (fieldValue instanceof Set) {
-            return (Set<?>) fieldValue;
-        } else {
-            // Handle the case where the field value is not a Set appropriately
+        
+        if (!(fieldValue instanceof Set)) {
             return null;
         }
+        
+        return (Set<?>) fieldValue;
     }
 
     // It is safe to override this function:

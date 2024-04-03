@@ -100,13 +100,13 @@ public class CloudSimProxy {
     }
 
     private void scheduleAdditionalCloudletProcessingEvent(final List<Cloudlet> jobs) {
-        // a second after every cloudlet will be submitted we add an event - this should prevent
-        // the simulation from ending while we have some jobs to schedule
+        // a timestep after every cloudlet will be submitted we add an event
+        // this should prevent the simulation from ending while we have some jobs to schedule
         jobs.forEach(c ->
                 cloudSimPlus.send(
                         datacenter,
                         datacenter,
-                        c.getSubmissionDelay() + 1.0,
+                        c.getSubmissionDelay() + settings.getStepTimeInterval(),
                         CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING,
                         null
                 )
@@ -157,8 +157,7 @@ public class CloudSimProxy {
                 .setBw(settings.getBasicVmBw())
                 .setSize(settings.getBasicVmSize())
                 .setCloudletScheduler(new OptimizedCloudletScheduler())
-                .setDescription(type)
-                .setShutDownDelay(settings.getVmShutdownDelay());
+                .setDescription(type);
         
         return vm;
     }
@@ -239,7 +238,7 @@ public class CloudSimProxy {
         // as we re-schedule cloudlets when VMs get killed
         // to avoid OOMing we need to clear that list
         // it is a safe operation in our environment, because that list is only used in
-        // CloudSim+ when a VM is being upscaled (we don't do that)
+        // CloudSimPlus when a VM is being upscaled (we don't do that)
         if (!settings.isStoreCreatedCloudletsDatacenterBroker()) {
             broker.getCloudletCreatedList().clear();
         }
@@ -248,11 +247,8 @@ public class CloudSimProxy {
         long diff = end - start;
         double diffInSec = ((double) diff) / 1_000_000_000L;
 
-        // TODO: can be removed after validating the fix of OOM
-        // should always be zero
-        final int debugBrokerCreatedListSize = broker.getCloudletCreatedList().size();
         LOGGER.debug("runFor (" + clock() + ") took " 
-                + diff + "ns / " + diffInSec + "s (DEBUG: " + debugBrokerCreatedListSize + ")");
+                + diff + "ns / " + diffInSec + "s");
     }
 
     private boolean shouldPrintJobStats() {
@@ -262,7 +258,7 @@ public class CloudSimProxy {
 
     private void printJobStatsAfterEndOfSimulation() {
         if (!isRunning()) {
-            // LOGGER.info("CloudSimProxy.isRunning: " + cloudSimPlus.isRunning());
+            // LOGGER.info("cloudSimPlus.isRunning: " + cloudSimPlus.isRunning());
             LOGGER.info("End of simulation, some reality check stats:");
             printJobStats();
         }
@@ -298,7 +294,7 @@ public class CloudSimProxy {
     private void printCloudlet(final Cloudlet cloudlet) {
         LOGGER.info("Cloudlet: " + cloudlet.getId());
         LOGGER.info("Number of PEs: " + cloudlet.getPesNumber());
-        LOGGER.info("Number of MIPS: " + cloudlet.getLength());
+        LOGGER.info("Total length in MIs: " + cloudlet.getTotalLength());
         LOGGER.info("Submission delay: " + cloudlet.getSubmissionDelay());
         LOGGER.info("Started: " + cloudlet.getStartTime());
         final Vm vm = cloudlet.getVm();
@@ -346,11 +342,13 @@ public class CloudSimProxy {
 
         while (toAddJobId < jobs.size() && 
                 jobs.get(toAddJobId).getSubmissionDelay() <= target) {
+            // LOGGER.debug("job.submissionDelay: " + jobs.get(toAddJobId).getSubmissionDelay()
+            //         + ", target: " + target);
             // we process every cloudlet only once here...
             final Cloudlet cloudlet = jobs.get(toAddJobId);
 
             // the job should enter the cluster once target is crossed
-            cloudlet.setSubmissionDelay(1.0);
+            cloudlet.setSubmissionDelay(settings.getStepTimeInterval());
             cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
                 @Override
                 public void update(CloudletVmEventInfo info) {
@@ -478,6 +476,7 @@ public class CloudSimProxy {
 
         // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
         // from anecdotal exp the startup time can be as fast as 45s
+        // TODO: update it according to the updated version of the paper
         final double delay = 
                 (45 + Math.random() * 52) / settings.getSimulationSpeedup();
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
@@ -496,7 +495,7 @@ public class CloudSimProxy {
         final double delay = 
                 (45 + Math.random() * 52) / settings.getSimulationSpeedup();
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
-        newVm.setSubmissionDelay(delay);
+        // newVm.setSubmissionDelay(delay);
         LOGGER.debug("Agent action: Create a " + type + " VM");
         broker.submitVm(newVm);
         LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
@@ -613,7 +612,7 @@ public class CloudSimProxy {
             }
 
             if (submissionDelay < currentClock) {
-                submissionDelay = 1.0;
+                submissionDelay = settings.getStepTimeInterval();
             } else {
                 // if the Cloudlet still hasn't been started, 
                 // let it start at the scheduled time.

@@ -180,14 +180,14 @@ public class SimulationFactory {
                 
         final long cloudletDescriptorMi = cloudletDescriptor.getMi();
         final long nonNegativeMi = cloudletDescriptorMi < 1 ? 1 : cloudletDescriptorMi;
-        final long speededUpMi = (long) (nonNegativeMi / simulationSpeedup);
-        final long newMi = speededUpMi == 0 ? 1 : speededUpMi;
+        final long speededupMi = (long) (nonNegativeMi / simulationSpeedup);
+        final long newMi = speededupMi == 0 ? 1 : speededupMi;
         final long submissionDelayReal = cloudletDescriptor
                 .getSubmissionDelay() < 0 ? 0L : cloudletDescriptor.getSubmissionDelay();
 
         final long submissionDelay = (long) (submissionDelayReal / simulationSpeedup);
-        final int numberOfCores = cloudletDescriptor.
-                getNumberOfCores() < 0 ? 1 : cloudletDescriptor.getNumberOfCores();
+        final int numberOfCores = cloudletDescriptor
+                .getNumberOfCores() < 0 ? 1 : cloudletDescriptor.getNumberOfCores();
 
         return new CloudletDescriptor(
                 cloudletDescriptor.getJobId(),

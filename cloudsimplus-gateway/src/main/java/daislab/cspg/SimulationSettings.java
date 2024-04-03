@@ -19,6 +19,7 @@ import java.util.Map;
 public class SimulationSettings {
 
     private final double simulationSpeedup;
+    private final double stepTimeInterval;
     private final double vmRunningHourlyCost;
     private final long hostPeMips;
     private final long hostBw;
@@ -91,6 +92,8 @@ public class SimulationSettings {
     public SimulationSettings(final Map<String, String> parameters) {
         simulationSpeedup = Double.parseDouble(
                 parameters.getOrDefault("SIMULATION_SPEEDUP", "1.0"));
+        stepTimeInterval = Double.parseDouble(
+                    parameters.getOrDefault("STEP_TIME_INTERVAL", "1.0"));
         vmRunningHourlyCost = Double.parseDouble(
                 parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));
         hostPeMips = Long.parseLong(
@@ -133,7 +136,8 @@ public class SimulationSettings {
     @Override
     public String toString() {
         return "SimulationSettings{" +
-            "\nsimulationSpeedups=" + simulationSpeedup +
+            "\nsimulationSpeedup=" + simulationSpeedup +
+            "\n, stepTimeInterval=" + stepTimeInterval +
             "\n, vmRunningHourlyCost=" + vmRunningHourlyCost +
             "\n, hostPeMips=" + hostPeMips +
             "\n, hostBw=" + hostBw +
@@ -155,6 +159,10 @@ public class SimulationSettings {
 
     public double getSimulationSpeedup() {
         return simulationSpeedup;
+    }
+
+    public double getStepTimeInterval() {
+        return stepTimeInterval;
     }
 
     public double getVmRunningHourlyCost() {

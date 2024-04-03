@@ -132,7 +132,7 @@ model_storage_path = (
 env = gym.make(
     pretrain_env,
     jobs_as_json=json.dumps(jobs),
-    simulation_speedup="10000",
+    simulation_speedup="1000",
     reward_job_wait_coef=reward_job_wait_coef,
     reward_vm_cost_coef=reward_vm_cost_coef,
     reward_invalid_coef=reward_invalid_coef,
@@ -164,6 +164,8 @@ model = algorithm(
     tensorboard_log=tb_log_dir,
     device=device
 )
+
+# TODO: A2C and PPO take a n_steps parameter also :) check it out
 
 # Add some action noise for exploration if applicable
 if algorithm_str == "DDPG" or \
@@ -219,7 +221,7 @@ new_tb_log_name = new_filename_id
 new_env = gym.make(
     transfer_env,
     jobs_as_json=json.dumps(jobs),
-    simulation_speedup="10000",
+    simulation_speedup="1000",
     reward_job_wait_coef=reward_job_wait_coef,
     reward_vm_cost_coef=reward_vm_cost_coef,
     reward_invalid_coef=reward_invalid_coef,

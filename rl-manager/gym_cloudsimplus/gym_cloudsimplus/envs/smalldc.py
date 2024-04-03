@@ -132,7 +132,7 @@ class SmallDC(gym.Env):
                 kwargs.get("reward_job_wait_coef", "1"),
             "REWARD_VM_COST_COEF":
                 kwargs.get("reward_vm_cost_coef", "1"),
-            "REWARD_INVALID_TERM_COEF":
+            "REWARD_INVALID_COEF":
                 kwargs.get("reward_invalid_coef", "1")
         }
 
