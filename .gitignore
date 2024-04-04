@@ -225,6 +225,7 @@ gradle-app.setting
 tb-logs/
 eval-logs/
 model-storage/
+job-logs/
 
 # VSCode hidden files
 .vscode/
