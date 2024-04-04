@@ -130,10 +130,12 @@ class SmallDC(gym.Env):
                 kwargs.get("storeCreatedCloudletsDatacenterBroker", "false"),
             "REWARD_JOB_WAIT_COEF":
                 kwargs.get("reward_job_wait_coef", "1"),
-            "REWARD_VM_COST_COEF":
-                kwargs.get("reward_vm_cost_coef", "1"),
+            "REWARD_UTILIZATION_COEF":
+                kwargs.get("reward_utilization_coef", "1"),
             "REWARD_INVALID_COEF":
-                kwargs.get("reward_invalid_coef", "1")
+                kwargs.get("reward_invalid_coef", "1"),
+            "CSV_FILENAME":
+                kwargs.get("csv_filename", "job_log.csv")
         }
 
         render_mode = kwargs.get("render_mode", None)
@@ -166,7 +168,7 @@ class SmallDC(gym.Env):
         info = {
             "validCount": raw_info.getValidCount(),
             "meanJobWaitPenalty": raw_info.getMeanJobWaitPenalty(),
-            "meanCostPenalty": raw_info.getMeanCostPenalty()
+            "meanUtilizationPenalty": raw_info.getMeanUtilizationPenalty()
         }
 
         return (
@@ -187,7 +189,7 @@ class SmallDC(gym.Env):
         info = {
             "validCount": raw_info.getValidCount(),
             "meanJobWaitPenalty": raw_info.getMeanJobWaitPenalty(),
-            "meanCostPenalty": raw_info.getMeanCostPenalty()
+            "meanUtilizationPenalty": raw_info.getMeanUtilizationPenalty()
         }
         return obs, info
 

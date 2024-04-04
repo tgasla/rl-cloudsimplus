@@ -3,10 +3,14 @@ package daislab.cspg;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterAll;
 
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
+import java.io.IOException;
+import java.io.File;
+import org.apache.commons.io.FileUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,5 +45,15 @@ public class CloudletDescriptorTest {
         System.out.println(deserialized);
 
         assertEquals(2, deserialized.size());
+    }
+    
+    @AfterAll
+    public static void deleteJobLogDirectory() {
+        // Recursively delete the tempDirectory and its contents
+        try {
+            FileUtils.deleteDirectory(new File("./job-logs"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

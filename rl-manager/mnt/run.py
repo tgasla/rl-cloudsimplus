@@ -26,6 +26,12 @@ learning_rate_dict = {
     "PPO": "0.0001"
 }
 
+monitor_info_keywords = (
+    "validCount",
+    "meanJobWaitPenalty",
+    "meanUtilizationPenalty"
+)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Parse arguments
@@ -74,10 +80,10 @@ parser.add_argument(
     )
 )
 parser.add_argument(
-    "--reward-vm-cost-coef",
+    "--reward-utilization-coef",
     type=str,
     help=("The coefficient of the reward function term that is responsible ",
-        "for the vm cost penalty"
+        "for the utilization penalty"
     )
 )
 parser.add_argument(
@@ -95,11 +101,14 @@ transfer_env = str(args.transfer_env)
 transfer_timesteps = int(args.transfer_timesteps)
 simulation_speedup = str(args.simulation_speedup)
 reward_job_wait_coef=str(args.reward_job_wait_coef)
-reward_vm_cost_coef=str(args.reward_vm_cost_coef)
+reward_utilization_coef=str(args.reward_utilization_coef)
 reward_invalid_coef=str(args.reward_invalid_coef)
 
 experiment_id = FilenameFormatter.create_filename_id(
     algorithm_str,
+    reward_job_wait_coef,
+    reward_utilization_coef,
+    reward_invalid_coef,
     pretrain_env,
     pretrain_timesteps
 )
@@ -140,8 +149,9 @@ env = gym.make(
     jobs_as_json=json.dumps(jobs),
     simulation_speedup=simulation_speedup,
     reward_job_wait_coef=reward_job_wait_coef,
-    reward_vm_cost_coef=reward_vm_cost_coef,
+    reward_utilization_coef=reward_utilization_coef,
     reward_invalid_coef=reward_invalid_coef,
+    csv_filename=filename_id,
     split_large_jobs="true",
     render_mode="ansi"
 )
@@ -151,7 +161,7 @@ env = gym.make(
 env = Monitor(
     env, 
     eval_log_path, 
-    info_keywords=("validCount", "meanJobWaitPenalty", "meanCostPenalty")
+    info_keywords=monitor_info_keywords
 )
 
 # Select the appropriate algorithm
@@ -207,6 +217,9 @@ del model
 
 new_experiment_id = FilenameFormatter.create_filename_id(
     algorithm_str,
+    reward_job_wait_coef,
+    reward_utilization_coef,
+    reward_invalid_coef,
     pretrain_env,
     pretrain_timesteps,
     transfer_env,
@@ -229,8 +242,9 @@ new_env = gym.make(
     jobs_as_json=json.dumps(jobs),
     simulation_speedup=simulation_speedup,
     reward_job_wait_coef=reward_job_wait_coef,
-    reward_vm_cost_coef=reward_vm_cost_coef,
+    reward_utilization_coef=reward_utilization_coef,
     reward_invalid_coef=reward_invalid_coef,
+    csv_filename=new_filename_id,
     split_large_jobs="true",
     render_mode="ansi"
 )
@@ -240,7 +254,7 @@ new_env = gym.make(
 new_env = Monitor(
     new_env, 
     new_eval_log_path, 
-    info_keywords=("validCount", "meanJobWaitPenalty", "meanCostPenalty")
+    info_keywords=monitor_info_keywords
 )
 
 # Load the trained agent

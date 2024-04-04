@@ -10,14 +10,14 @@
 plugins {
   id 'java'
   id 'application'
-  id 'com.github.johnrengelman.shadow' version '8.1.1'
+//   id 'com.github.johnrengelman.shadow' version '8.1.1'
   id 'com.bmuschko.docker-java-application' version '9.4.0'
 }
 
 //https://stackoverflow.com/questions/29593500/how-can-i-set-the-compileoptions-for-my-gradle-java-plugin
 tasks.withType(JavaCompile) {
     configure(options) {
-        options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
+        options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked' << '-Xdiags:verbose'
     }
 }
 
@@ -63,10 +63,12 @@ dependencies {
     implementation 'net.sf.py4j:py4j:0.10.9.7'
     implementation 'ch.qos.logback:logback-classic:1.5.3'
     implementation 'org.apache.commons:commons-collections4:4.4'
+    implementation 'org.apache.commons:commons-csv:1.10.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'org.postgresql:postgresql:42.7.3'
-    implementation 'org.hamcrest:hamcrest:2.2'
-
+    
+    testImplementation 'commons-io:commons-io:2.16.0'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
 }
@@ -99,9 +101,13 @@ docker {
     }
 }
 
+// You can add environment variables either here or in the docker-compose.yml
 dockerCreateDockerfile {
-    // TODO: I need to check whether this is needed or the javaopts that I have in the dockerfile
-    environmentVariable 'JAVA_OPTS', '-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/external'
+    environmentVariable 'JAVA_OPTS',
+        '-XX:+UnlockExperimentalVMOptions ' +
+        '-XX:+UseCGroupMemoryLimitForHeap ' +
+        '-XX:+HeapDumpOnOutOfMemoryError ' +
+        '-XX:HeapDumpPath=/external'
 }
 
 java {

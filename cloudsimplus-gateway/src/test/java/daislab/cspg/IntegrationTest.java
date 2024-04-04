@@ -2,12 +2,16 @@ package daislab.cspg;
 
 import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterAll;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.IOException;
+import java.io.File;
+import org.apache.commons.io.FileUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -257,5 +261,15 @@ public class IntegrationTest {
         multiSimulationEnvironment.close(simulationId);
 
         assertNotEquals(1000, stepsExecuted);
+    }
+   
+    @AfterAll
+    public static void deleteJobLogDirectory() {
+        // Recursively delete the tempDirectory and its contents
+        try {
+            FileUtils.deleteDirectory(new File("./job-logs"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

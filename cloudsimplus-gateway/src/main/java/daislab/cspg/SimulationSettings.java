@@ -19,7 +19,7 @@ import java.util.Map;
 public class SimulationSettings {
 
     private final double simulationSpeedup;
-    private final double stepTimeInterval;
+    private final double timestepInterval;
     private final double vmRunningHourlyCost;
     private final long hostPeMips;
     private final long hostBw;
@@ -36,8 +36,9 @@ public class SimulationSettings {
     private final boolean payingForTheFullHour;
     private final boolean storeCreatedCloudletsDatacenterBroker;
     private final double rewardJobWaitCoef;
-    private final double rewardVmCostCoef;
+    private final double rewardUtilizationCoef;
     private final double rewardInvalidCoef;
+    private final String csvFilename;
 
     // Get SimulationSettings from environment variables,
     //  if an environment variable is not set, a default value is given
@@ -91,78 +92,81 @@ public class SimulationSettings {
     // the SimulationFactory class.
     public SimulationSettings(final Map<String, String> parameters) {
         simulationSpeedup = Double.parseDouble(
-                parameters.getOrDefault("SIMULATION_SPEEDUP", "1.0"));
-        stepTimeInterval = Double.parseDouble(
-                    parameters.getOrDefault("STEP_TIME_INTERVAL", "1.0"));
+            parameters.getOrDefault("SIMULATION_SPEEDUP", "1.0"));
+        timestepInterval = Double.parseDouble(
+            parameters.getOrDefault("TIMESTEP_INTERVAL", "1.0"));
         vmRunningHourlyCost = Double.parseDouble(
-                parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));
+            parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.2"));
         hostPeMips = Long.parseLong(
-                parameters.getOrDefault("HOST_PE_MIPS", "10000"));
+            parameters.getOrDefault("HOST_PE_MIPS", "10000"));
         hostBw = Long.parseLong(
-                parameters.getOrDefault("HOST_BW", "50000"));
+            parameters.getOrDefault("HOST_BW", "50000"));
         hostRam = Long.parseLong(
-                parameters.getOrDefault("HOST_RAM", "65536"));
+            parameters.getOrDefault("HOST_RAM", "65536"));
         hostSize = Long.parseLong(
-                parameters.getOrDefault("HOST_SIZE", "16000"));
+            parameters.getOrDefault("HOST_SIZE", "16000"));
         hostPeCnt = Long.parseLong(
-                parameters.getOrDefault("HOST_PE_CNT", "14"));
+            parameters.getOrDefault("HOST_PE_CNT", "14"));
         queueWaitPenalty = Double.parseDouble(
-                parameters.getOrDefault("QUEUE_WAIT_PENALTY", "0.00001"));
+            parameters.getOrDefault("QUEUE_WAIT_PENALTY", "0.00001"));
         datacenterHostsCnt = Long.parseLong(
-                parameters.getOrDefault("DATACENTER_HOSTS_CNT", "3000"));
+            parameters.getOrDefault("DATACENTER_HOSTS_CNT", "3000"));
         basicVmRam = Long.parseLong(
-                parameters.getOrDefault("BASIC_VM_RAM", "8192"));
+            parameters.getOrDefault("BASIC_VM_RAM", "8192"));
         basicVmPeCount = Long.parseLong(
-                parameters.getOrDefault("BASIC_VM_PE_CNT", "2"));
+            parameters.getOrDefault("BASIC_VM_PE_CNT", "2"));
         vmStartupDelay = Double.parseDouble(
-                parameters.getOrDefault("VM_STARTUP_DELAY", "0"));
+            parameters.getOrDefault("VM_STARTUP_DELAY", "0"));
         vmShutdownDelay = Double.parseDouble(
-                parameters.getOrDefault("VM_SHUTDOWN_DELAY", "0"));
+            parameters.getOrDefault("VM_SHUTDOWN_DELAY", "0"));
         printJobsPeriodically = Boolean.parseBoolean(
-                parameters.getOrDefault("PRINT_JOBS_PERIODICALLY", "false"));
+            parameters.getOrDefault("PRINT_JOBS_PERIODICALLY", "false"));
         payingForTheFullHour = Boolean.parseBoolean(
-                parameters.getOrDefault("PAYING_FOR_THE_FULL_HOUR", "false"));
+            parameters.getOrDefault("PAYING_FOR_THE_FULL_HOUR", "false"));
         storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(
-                parameters.getOrDefault(
-                "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
+            parameters.getOrDefault(
+            "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
         rewardJobWaitCoef = Double.parseDouble(
             parameters.getOrDefault("REWARD_JOB_WAIT_COEF", "1"));
-        rewardVmCostCoef = Double.parseDouble(
-            parameters.getOrDefault("REWARD_VM_COST_COEF", "1"));
+        rewardUtilizationCoef = Double.parseDouble(
+            parameters.getOrDefault("REWARD_UTILIZATION_COEF", "1"));
         rewardInvalidCoef = Double.parseDouble(
             parameters.getOrDefault("REWARD_INVALID_COEF", "1"));
+        csvFilename =
+            parameters.getOrDefault("CSV_FILENAME", "job_log.csv");
     }
 
     @Override
     public String toString() {
-        return "SimulationSettings{" +
-            "\nsimulationSpeedup=" + simulationSpeedup +
-            "\n, stepTimeInterval=" + stepTimeInterval +
-            "\n, vmRunningHourlyCost=" + vmRunningHourlyCost +
-            "\n, hostPeMips=" + hostPeMips +
-            "\n, hostBw=" + hostBw +
-            "\n, hostRam=" + hostRam +
-            "\n, hostSize=" + hostSize +
-            "\n, hostPeCnt=" + hostPeCnt +
-            "\n, queueWaitPenalty=" + queueWaitPenalty +
-            "\n, datacenterHostsCnt=" + datacenterHostsCnt +
-            "\n, basicVmRam=" + basicVmRam +
-            "\n, basicVmPeCount=" + basicVmPeCount +
-            "\n, printJobsPeriodically=" + printJobsPeriodically +
-            "\n, payingForTheFullHour=" + payingForTheFullHour +
-            "\n, storeCreatedCloudletsDatacenterBroker=" + storeCreatedCloudletsDatacenterBroker +
-            "\n, rewardJobWaitCoef=" + rewardJobWaitCoef + 
-            "\n, rewardCostCoef=" + rewardVmCostCoef +
-            "\n, rewardInvalidCoef=" + rewardInvalidCoef +
-            "\n}";
+        return "SimulationSettings {" +
+            "simulationSpeedup=" + simulationSpeedup + ",\n" +
+            "timestepInterval=" + timestepInterval + ",\n" +
+            "vmRunningHourlyCost=" + vmRunningHourlyCost + ",\n" + 
+            "hostPeMips=" + hostPeMips + ",\n" +
+            "hostBw=" + hostBw + ",\n" +
+            "hostRam=" + hostRam + ",\n" +
+            "hostSize=" + hostSize + ",\n" +
+            "hostPeCnt=" + hostPeCnt + ",\n" +
+            "queueWaitPenalty=" + queueWaitPenalty + ",\n" +
+            "datacenterHostsCnt=" + datacenterHostsCnt + ",\n" +
+            "basicVmRam=" + basicVmRam + ",\n" +
+            "basicVmPeCount=" + basicVmPeCount + ",\n" +
+            "printJobsPeriodically=" + printJobsPeriodically + ",\n" +
+            "payingForTheFullHour=" + payingForTheFullHour +
+            "storeCreatedCloudletsDatacenterBroker=" + storeCreatedCloudletsDatacenterBroker + ",\n" +
+            "rewardJobWaitCoef=" + rewardJobWaitCoef + ",\n" +
+            "rewardUtilizationCoef=" + rewardUtilizationCoef + ",\n" +
+            "rewardInvalidCoef=" + rewardInvalidCoef + ",\n" +
+            "csvFilename=" + csvFilename + ",\n" +
+            "}";
     }
 
     public double getSimulationSpeedup() {
         return simulationSpeedup;
     }
 
-    public double getStepTimeInterval() {
-        return stepTimeInterval;
+    public double getTimestepInterval() {
+        return timestepInterval;
     }
 
     public double getVmRunningHourlyCost() {
@@ -245,11 +249,15 @@ public class SimulationSettings {
         return rewardJobWaitCoef;
     }
 
-    public double getRewardVmCostCoef() {
-        return rewardVmCostCoef;
+    public double getRewardUtilizationCoef() {
+        return rewardUtilizationCoef;
     }
 
     public double getRewardInvalidCoef() {
         return rewardInvalidCoef;
+    }
+
+    public String getCsvFilename() {
+        return csvFilename;
     }
 }

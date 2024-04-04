@@ -17,18 +17,18 @@ import static org.apache.commons.math3.stat.StatUtils.percentile;
 public class WrappedSimulation {
 
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
+        LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
     private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
     
     private final List<CloudletDescriptor> initialJobsDescriptors;
     private final List<String> metricsNames = Arrays.asList(
-            "vmAllocatedRatioHistory",
-            "avgCPUUtilizationHistory",
-            "p90CPUUtilizationHistory",
-            "avgMemoryUtilizationHistory",
-            "p90MemoryUtilizationHistory",
-            "waitingJobsRatioGlobalHistory",
-            "waitingJobsRatioRecentHistory"
+        "vmAllocatedRatioHistory",
+        "avgCPUUtilizationHistory",
+        "p90CPUUtilizationHistory",
+        "avgMemoryUtilizationHistory",
+        "p90MemoryUtilizationHistory",
+        "waitingJobsRatioGlobalHistory",
+        "waitingJobsRatioRecentHistory"
     );
 
     private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
@@ -38,18 +38,20 @@ public class WrappedSimulation {
     private final SimulationSettings settings;
     private final SimulationHistory simulationHistory;
     private CloudSimProxy cloudSimProxy;
-    private int validCount = 0;
-    private double maxCost = 0.0;
     private long maxWaitingJobsCount = 0;
     private double meanJobWaitPenalty = 0.0;
-    private double meanCostPenalty = 0.0;
+    private double meanUtilizationPenalty = 0.0;
     private int stepCount;
+    private int validCount = 0;
+    private double maxCost = 0.0;
 
-    public WrappedSimulation(final SimulationSettings simulationSettings,
-                             final String identifier,
-                             final Map<String, Integer> initialVmsCount,
-                             final List<CloudletDescriptor> jobs) {
-        this.settings = simulationSettings;
+    public WrappedSimulation(
+        final SimulationSettings settings,
+        final String identifier,
+        final Map<String, Integer> initialVmsCount,
+        final List<CloudletDescriptor> jobs
+    ) {
+        this.settings = settings;
         this.identifier = identifier;
         this.initialVmsCount = initialVmsCount;
         this.initialJobsDescriptors = jobs;
@@ -79,13 +81,13 @@ public class WrappedSimulation {
         metricsStorage.clear();
 
         List<Cloudlet> cloudlets = initialJobsDescriptors
-                .stream()
-                .map(CloudletDescriptor::toCloudlet)
-                .collect(Collectors.toList());
+            .stream()
+            .map(CloudletDescriptor::toCloudlet)
+            .collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(
-                settings, 
-                initialVmsCount,
-                cloudlets);
+            settings, 
+            initialVmsCount,
+            cloudlets);
 
         double[] obs = getObservation();
 
@@ -93,7 +95,7 @@ public class WrappedSimulation {
         resetMaxWaitingJobsCount();
         resetValidCount();
         resetMeanJobWaitPenalty();
-        resetMeanCostPenalty();
+        resetMeanUtilizationPenalty();
 
         SimulationStepInfo info = new SimulationStepInfo(0, 0, 0);
 
@@ -109,13 +111,13 @@ public class WrappedSimulation {
 
     public String render() {
         double[][] renderedEnv = {
-                metricsStorage.metricValuesAsPrimitives("vmAllocatedRatioHistory"),
-                metricsStorage.metricValuesAsPrimitives("avgCPUUtilizationHistory"),
-                metricsStorage.metricValuesAsPrimitives("p90CPUUtilizationHistory"),
-                metricsStorage.metricValuesAsPrimitives("avgMemoryUtilizationHistory"),
-                metricsStorage.metricValuesAsPrimitives("p90MemoryUtilizationHistory"),
-                metricsStorage.metricValuesAsPrimitives("waitingJobsRatioGlobalHistory"),
-                metricsStorage.metricValuesAsPrimitives("waitingJobsRatioRecentHistory")
+            metricsStorage.metricValuesAsPrimitives("vmAllocatedRatioHistory"),
+            metricsStorage.metricValuesAsPrimitives("avgCPUUtilizationHistory"),
+            metricsStorage.metricValuesAsPrimitives("p90CPUUtilizationHistory"),
+            metricsStorage.metricValuesAsPrimitives("avgMemoryUtilizationHistory"),
+            metricsStorage.metricValuesAsPrimitives("p90MemoryUtilizationHistory"),
+            metricsStorage.metricValuesAsPrimitives("waitingJobsRatioGlobalHistory"),
+            metricsStorage.metricValuesAsPrimitives("waitingJobsRatioRecentHistory")
         };
 
         return gson.toJson(renderedEnv);
@@ -134,7 +136,7 @@ public class WrappedSimulation {
         long startAction = System.nanoTime();
         boolean isValid = executeAction(action);
         long stopAction = System.nanoTime();
-        cloudSimProxy.runFor(settings.getStepTimeInterval());
+        cloudSimProxy.runFor(settings.getTimestepInterval());
 
         long startMetrics = System.nanoTime();
         collectMetrics();
@@ -149,7 +151,7 @@ public class WrappedSimulation {
         simulationHistory.record("reward", reward);
         simulationHistory.record("resourceCost", cloudSimProxy.getRunningCost());
         simulationHistory.record(
-                "vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
+            "vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
 
         if (!cloudSimProxy.isRunning()) {
             simulationHistory.logHistory();
@@ -159,25 +161,23 @@ public class WrappedSimulation {
         double metricsTime = (stopMetrics - startMetrics) / 1_000_000_000d;
         double actionTime = (stopAction - startAction) / 1_000_000_000d;
         debug("Step finished (action: " + action[0] + ", " + action[1] + ") is done: " + done
-                + " Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents()
-                + " Metrics (s): " + metricsTime
-                + " Action (s): " + actionTime);
+            + " Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents()
+            + " Metrics (s): " + metricsTime
+            + " Action (s): " + actionTime);
 
-        double cost = cloudSimProxy.getRunningCost();
-        double jobWaitPenalty =
-                cloudSimProxy.getWaitingJobsCount() 
-                * settings.getQueueWaitPenalty() 
-                * settings.getSimulationSpeedup();
+        double jobWaitPenalty = getWaitingJobsRatioGlobal();
+        double utilizationPenalty = getVmAllocatedRatio();
 
-        updateMaxCost(cost);
+        updateMaxCost(cloudSimProxy.getRunningCost());
         updateMaxWaitingJobsCount(cloudSimProxy.getWaitingJobsCount());
-        updateMeanJobWaitPenalty(-settings.getRewardJobWaitCoef() * jobWaitPenalty);
-        updateMeanCostPenalty(-settings.getRewardVmCostCoef() * cost);
 
-        debug("Max cost: " + getMaxCost() + "\n"
-                + "Max waiting jobs count: " + getMaxWaitingJobsCount() + "\n"
-                + "Mean job wait penalty: " + getMeanJobWaitPenalty() + "\n"
-                + "Mean cost penalty: " + getMeanCostPenalty() + "\n");
+        updateMeanJobWaitPenalty(-settings.getRewardJobWaitCoef() * jobWaitPenalty);
+        updateMeanUtilizationPenalty(-settings.getRewardUtilizationCoef() * utilizationPenalty);
+
+        debug("Max cost: " + getMaxCost()
+            + " Max waiting jobs count: " + getMaxWaitingJobsCount()
+            + " Mean job wait penalty: " + getMeanJobWaitPenalty()
+            + " Mean utilization penalty: " + getMeanUtilizationPenalty());
 
         if (isValid) {
             validCount++;
@@ -186,13 +186,13 @@ public class WrappedSimulation {
         SimulationStepInfo info = new SimulationStepInfo(
                 getValidCount(),
                 getMeanJobWaitPenalty(),
-                getMeanCostPenalty());
+                getMeanUtilizationPenalty());
 
         return new SimulationStepResult(
-                observation,
-                reward,
-                done,
-                info
+            observation,
+            reward,
+            done,
+            info
         );
     }
 
@@ -325,7 +325,7 @@ public class WrappedSimulation {
         if (submittedJobsCountLastInterval == 0) {
             return 0.0;
         }
-        return cloudSimProxy.getWaitingJobsCountInterval(settings.getStepTimeInterval()) 
+        return cloudSimProxy.getWaitingJobsCountInterval(settings.getTimestepInterval()) 
                 / (double) submittedJobsCountLastInterval;
     }
 
@@ -373,10 +373,10 @@ public class WrappedSimulation {
          * minus penalty if action was invalid
         */ 
         final double jobWaitCoef = settings.getRewardJobWaitCoef();
-        final double vmCostCoef = settings.getRewardVmCostCoef();
+        final double utilizationCoef = settings.getRewardutilizationCoefCoef();
         final double invalidCoef = settings.getRewardInvalidCoef();
         
-        final double vmCostPenalty = getVmAllocatedRatio();
+        final double utilizationPenalty = getVmAllocatedRatio();
         final double jobWaitPenalty = getWaitingJobsRatioGlobal();
         final int invalidActionPenalty = (isValid) ? 0 : 1;
         
@@ -385,7 +385,7 @@ public class WrappedSimulation {
         }
 
         return - jobWaitCoef * jobWaitPenalty 
-                - vmCostCoef * vmCostPenalty
+                - utilizationCoef * utilizationPenalty
                 - invalidCoef * invalidActionPenalty;
     }
 
@@ -417,8 +417,9 @@ public class WrappedSimulation {
         }
     }
 
-    private void updateMeanCostPenalty(double costPenalty) {
-        meanCostPenalty = (meanCostPenalty * (stepCount - 1) + costPenalty) / stepCount;
+    private void updateMeanUtilizationPenalty(double utilizationPenalty) {
+        meanUtilizationPenalty 
+                = (meanUtilizationPenalty * (stepCount - 1) +  utilizationPenalty) / stepCount;
     }
 
     private void updateMeanJobWaitPenalty(double jobWaitPenalty) {
@@ -437,8 +438,8 @@ public class WrappedSimulation {
         return meanJobWaitPenalty;
     }
 
-    private double getMeanCostPenalty() {
-        return meanCostPenalty;
+    private double getMeanUtilizationPenalty() {
+        return meanUtilizationPenalty;
     }
 
     private void resetMaxCost() {
@@ -449,8 +450,8 @@ public class WrappedSimulation {
         validCount = 0;
     }
 
-    private void resetMeanCostPenalty() {
-        meanCostPenalty = 0.0;
+    private void resetMeanUtilizationPenalty() {
+        meanUtilizationPenalty = 0.0;
     }
 
     private void resetMeanJobWaitPenalty() {

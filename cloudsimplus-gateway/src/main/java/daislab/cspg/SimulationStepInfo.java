@@ -8,16 +8,16 @@ public class SimulationStepInfo {
 
     private final int validCount;
     private final double meanJobWaitPenalty;
-    private final double meanCostPenalty;
+    private final double meanUtilizationPenalty;
 
     public SimulationStepInfo(
             final int validCount,
             final double meanJobWaitPenalty,
-            final double meanCostPenalty) {
+            final double meanUtilizationPenalty) {
 
         this.validCount = validCount;
         this.meanJobWaitPenalty = meanJobWaitPenalty;
-        this.meanCostPenalty = meanCostPenalty;
+        this.meanUtilizationPenalty = meanUtilizationPenalty;
     }
 
     public int getValidCount() {
@@ -28,15 +28,15 @@ public class SimulationStepInfo {
         return meanJobWaitPenalty;
     }
 
-    public double getMeanCostPenalty() {
-        return meanCostPenalty;
+    public double getMeanUtilizationPenalty() {
+        return meanUtilizationPenalty;
     }
 
     @Override
     public String toString() {
         return "SimulationStepInfo{"
                 + "validCount=" + validCount
-                + ", meanCostPenalty=" + meanCostPenalty
+                + ", meanUtilizationPenalty=" + meanUtilizationPenalty
                 + ", meanJobWaitPenalty=" + meanJobWaitPenalty
                 + '}';
     }

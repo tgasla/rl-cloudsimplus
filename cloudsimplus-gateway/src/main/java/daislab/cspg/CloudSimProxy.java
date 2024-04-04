@@ -21,6 +21,7 @@ import org.cloudsimplus.listeners.EventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -57,6 +58,7 @@ public class CloudSimProxy {
     private final List<Cloudlet> potentiallyWaitingJobs = new ArrayList<>(1024);
     private final List<Cloudlet> alreadyStarted = new ArrayList<>(128);
     private final Set<Long> finishedIds = new HashSet<>();
+    private final CsvWriter csvWriter;
     private int nextVmId = 0;
     private int toAddJobId = 0;
     private int previousIntervalJobId = 0;
@@ -65,6 +67,11 @@ public class CloudSimProxy {
                          final Map<String, Integer> initialVmsCount,
                          final List<Cloudlet> inputJobs) {
         this.settings = settings;
+
+        String csvFilename = settings.getCsvFilename();
+        String[] csvHeader = {"jobId", "vm", "submitTime", "finishTime"};
+
+        csvWriter = new CsvWriter("./job-logs", csvFilename, csvHeader);
         
         cloudSimPlus = new CloudSimPlus(0.01);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
@@ -106,7 +113,7 @@ public class CloudSimProxy {
                 cloudSimPlus.send(
                         datacenter,
                         datacenter,
-                        c.getSubmissionDelay() + settings.getStepTimeInterval(),
+                        c.getSubmissionDelay() + settings.getTimestepInterval(),
                         CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING,
                         null
                 )
@@ -229,6 +236,7 @@ public class CloudSimProxy {
 
         cancelInvalidEvents();
         printJobStatsAfterEndOfSimulation();
+        closeCsvAfterEndOfSimulation();
 
         if (shouldPrintJobStats()) {
             printJobStats();
@@ -261,6 +269,12 @@ public class CloudSimProxy {
             // LOGGER.info("cloudSimPlus.isRunning: " + cloudSimPlus.isRunning());
             LOGGER.info("End of simulation, some reality check stats:");
             printJobStats();
+        }
+    }
+
+    private void closeCsvAfterEndOfSimulation() {
+        if (!isRunning() && csvWriter != null) {
+            csvWriter.close();
         }
     }
 
@@ -341,20 +355,30 @@ public class CloudSimProxy {
         List<Cloudlet> jobsToSubmit = new ArrayList<>();
 
         while (toAddJobId < jobs.size() && 
-                jobs.get(toAddJobId).getSubmissionDelay() <= target) {
+            jobs.get(toAddJobId).getSubmissionDelay() <= target) {
             // LOGGER.debug("job.submissionDelay: " + jobs.get(toAddJobId).getSubmissionDelay()
             //         + ", target: " + target);
             // we process every cloudlet only once here...
             final Cloudlet cloudlet = jobs.get(toAddJobId);
+            final double cloudletOriginalSubmissionDelay = cloudlet.getSubmissionDelay();
 
             // the job should enter the cluster once target is crossed
-            cloudlet.setSubmissionDelay(settings.getStepTimeInterval());
+            cloudlet.setSubmissionDelay(settings.getTimestepInterval());
             cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
                 @Override
                 public void update(CloudletVmEventInfo info) {
                     LOGGER.debug("Cloudlet: " + cloudlet.getId() 
                             + " that was running on vm "
                             + cloudlet.getVm().getId() + " finished.");
+                    
+                    Object[] csvRow = {
+                        cloudlet.getId(),
+                        cloudlet.getVm().getId(),
+                        cloudletOriginalSubmissionDelay,
+                        cloudSimPlus.clock()
+                    };
+
+                    csvWriter.writeRow(csvRow);
                     finishedIds.add(info.getCloudlet().getId());
                 }
             });
@@ -612,7 +636,7 @@ public class CloudSimProxy {
             }
 
             if (submissionDelay < currentClock) {
-                submissionDelay = settings.getStepTimeInterval();
+                submissionDelay = settings.getTimestepInterval();
             } else {
                 // if the Cloudlet still hasn't been started, 
                 // let it start at the scheduled time.

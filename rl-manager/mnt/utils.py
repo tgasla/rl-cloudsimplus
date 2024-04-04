@@ -11,7 +11,10 @@ class FilenameFormatter(object):
     
     @staticmethod
     def create_filename_id(
-        algorithm_str, 
+        algorithm_str,
+        reward_job_wait_coef,
+        reward_vm_cost_coef,
+        reward_invalid_coef,
         pretrain_env, 
         pretrain_timesteps,
         transfer_env=None,
@@ -19,6 +22,9 @@ class FilenameFormatter(object):
     ):
         filename_id = (
             f"{algorithm_str}"
+            f"_Q{reward_job_wait_coef}"
+            f"_U{reward_vm_cost_coef}"
+            f"_I{reward_invalid_coef}"
             f"_p{pretrain_env}"
             f"_{FilenameFormatter._millify(pretrain_timesteps)}"
         )

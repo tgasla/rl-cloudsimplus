@@ -2,12 +2,16 @@ package daislab.cspg;
 
 import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterAll;
 
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.IOException;
+import java.io.File;
+import org.apache.commons.io.FileUtils;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,5 +53,15 @@ public class VMCountOverflowTest {
 
         multiSimulationEnvironment.close(simulationId);
         assertTrue(i < 1000, "There should be much less than a 1000 iterations!");
+    }
+        
+    @AfterAll
+    public static void deleteJobLogDirectory() {
+        // Recursively delete the tempDirectory and its contents
+        try {
+            FileUtils.deleteDirectory(new File("./job-logs"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

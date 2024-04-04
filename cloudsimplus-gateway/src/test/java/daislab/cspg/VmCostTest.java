@@ -4,6 +4,10 @@ import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterAll;
+
+import java.io.File;
+import org.apache.commons.io.FileUtils;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.number.IsCloseTo.closeTo;
@@ -43,5 +47,15 @@ public class VmCostTest {
 
     private Vm createVmM() {
         return new VmSimple(mipsCapacity, 4).setDescription("M");
+    }
+        
+    @AfterAll
+    public static void deleteJobLogDirectory() {
+        // Recursively delete the tempDirectory and its contents
+        try {
+            FileUtils.deleteDirectory(new File("./job-logs"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
