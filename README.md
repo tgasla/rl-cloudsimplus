@@ -1,9 +1,7 @@
-<!--
 <div align="center">
 <a href="https://app.codacy.com/gh/tgasla/rl-cloudsimplus/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img src="https://app.codacy.com/project/badge/Grade/e22788c9fc3c488598520c7fa35840cc" alt="Codacy Badge"></a>
 <a href="https://github.com/tgasla/rl-cloudsimplus/blob/main/LICENSE"><img src="https://img.shields.io/github/license/tgasla/rl-cloudsimplus?" alt="GPLv3 License"></a>
 </div>
--->
 
 # 1. Requirements
 
