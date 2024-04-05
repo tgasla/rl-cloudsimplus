@@ -97,7 +97,7 @@ public class IntegrationTest {
         int stepsExecuted = 1;
         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
         while (!step.isDone()) {
-            System.out.println("Executing step: " + stepsExecuted);
+            // System.out.println("Executing step: " + stepsExecuted);
             step = multiSimulationEnvironment.step(simulationId, nopAction);
             stepsExecuted++;
         }
@@ -129,7 +129,7 @@ public class IntegrationTest {
 
         double maxCoreRatio = 0.0;
         while (!step.isDone()) {
-            System.out.println("Executing step: " + stepsExecuted);
+            // System.out.println("Executing step: " + stepsExecuted);
 
             ArrayList<Double> createSVmAction = new ArrayList<Double>(List.of(0.1, 0.0));
 
@@ -183,7 +183,7 @@ public class IntegrationTest {
         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
 
         while (!step.isDone()) {
-            System.out.println("Executing step: " + stepsExecuted);
+            // System.out.println("Executing step: " + stepsExecuted);
 
             if (stepsExecuted == 20) {
                 // delete a SMALL VM
@@ -237,7 +237,7 @@ public class IntegrationTest {
         int stepsExecuted = 1;
 
         while (!step.isDone()) {
-            System.out.println("Executing step: " + stepsExecuted);
+            // System.out.println("Executing step: " + stepsExecuted);
 
             ArrayList<Double> removeSVmAction = new ArrayList<Double>(List.of(-0.1, 0.0));
 

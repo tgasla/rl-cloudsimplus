@@ -137,8 +137,6 @@ public class SimulationFactory {
 				int pesForThisSplit = (i < splitCount - 1) 
 					? normalSplitPesNumber 
 					: jobPesNumber - (normalSplitPesNumber * (splitCount - 1));
-				System.out.println("miforthissplit:" + miForThisSplit);
-				System.out.println("pesforthissplit" + pesForThisSplit);
 				CloudletDescriptor splittedDescriptor = new CloudletDescriptor(
 					splittedId++, 
 					cloudletDescriptor.getSubmissionDelay(),
