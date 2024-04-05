@@ -98,6 +98,8 @@ class SmallDC(gym.Env):
                 kwargs.get("simulation_speedup", "1.0"),
             "SPLIT_LARGE_JOBS":
                 kwargs.get("split_large_jobs", "false"),
+            "MAX_PES_PER_JOB":
+                kwargs.get("max_pes_per_job", "1"),
             "QUEUE_WAIT_PENALTY":
                 kwargs.get("queue_wait_penalty", "0.00001"),
             "VM_RUNNING_HOURLY_COST":

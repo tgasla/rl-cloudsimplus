@@ -91,6 +91,12 @@ parser.add_argument(
         "for the invalid action penalty"
     )
 )
+parser.add_argument(
+    "--max-pes-per-job",
+    type=str,
+    help=("The maximum amount of CPU cores to allow each job to allocate")
+)
+
 args = parser.parse_args()
 algorithm_str = str(args.algo).upper()
 pretrain_env = str(args.pretrain_env)
@@ -101,6 +107,7 @@ simulation_speedup = str(args.simulation_speedup)
 reward_job_wait_coef=str(args.reward_job_wait_coef)
 reward_utilization_coef=str(args.reward_utilization_coef)
 reward_invalid_coef=str(args.reward_invalid_coef)
+max_pes_per_job=str(args.max_pes_per_job)
 
 experiment_id = FilenameFormatter.create_filename_id(
     algorithm_str,
@@ -133,6 +140,7 @@ env = gym.make(
     reward_utilization_coef=reward_utilization_coef,
     reward_invalid_coef=reward_invalid_coef,
     split_large_jobs="true",
+    max_pes_per_job=max_pes_per_job,
     job_log_dir=log_dir,
     render_mode="ansi"
 )
@@ -219,6 +227,7 @@ new_env = gym.make(
     reward_utilization_coef=reward_utilization_coef,
     reward_invalid_coef=reward_invalid_coef,
     split_large_jobs="true",
+    max_pes_per_job=max_pes_per_job,
     job_log_dir=new_log_dir,
     render_mode="ansi"
 )

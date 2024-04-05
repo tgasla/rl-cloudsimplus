@@ -24,6 +24,9 @@ public class SimulationFactory {
     public static final String SPLIT_LARGE_JOBS = "SPLIT_LARGE_JOBS";
     public static final String SPLIT_LARGE_JOBS_DEFAULT = "true";
 
+    public static final String MAX_PES_PER_JOB = "MAX_PES_PER_JOB";
+    public static final String MAX_PES_PER_JOB_DEFAULT = "1";
+
     public static final String INITIAL_L_VM_COUNT = "INITIAL_L_VM_COUNT";
     public static final String INITIAL_M_VM_COUNT = "INITIAL_M_VM_COUNT";
     public static final String INITIAL_S_VM_COUNT = "INITIAL_S_VM_COUNT";
@@ -49,29 +52,34 @@ public class SimulationFactory {
 
         // get number of initial vms in
         final String initialSVmCountStr =
-                maybeParameters.getOrDefault(INITIAL_S_VM_COUNT, INITIAL_VM_COUNT_DEFAULT);
+            maybeParameters.getOrDefault(INITIAL_S_VM_COUNT, INITIAL_VM_COUNT_DEFAULT);
         final int initialSVmCount =
-                Integer.parseInt(initialSVmCountStr);
+            Integer.parseInt(initialSVmCountStr);
         final String initialMVmCountStr =
-                maybeParameters.getOrDefault(INITIAL_M_VM_COUNT, INITIAL_VM_COUNT_DEFAULT);
+            maybeParameters.getOrDefault(INITIAL_M_VM_COUNT, INITIAL_VM_COUNT_DEFAULT);
         final int initialMVmCount =
-                Integer.parseInt(initialMVmCountStr);
+            Integer.parseInt(initialMVmCountStr);
         final String initialLVmCountStr =
-                maybeParameters.getOrDefault(INITIAL_L_VM_COUNT, INITIAL_VM_COUNT_DEFAULT);
+            maybeParameters.getOrDefault(INITIAL_L_VM_COUNT, INITIAL_VM_COUNT_DEFAULT);
         final int initialLVmCount =
-                Integer.parseInt(initialLVmCountStr);
+            Integer.parseInt(initialLVmCountStr);
         final String sourceOfJobs =
-                maybeParameters.getOrDefault(SOURCE_OF_JOBS, SOURCE_OF_JOBS_DEFAULT);
+            maybeParameters.getOrDefault(SOURCE_OF_JOBS, SOURCE_OF_JOBS_DEFAULT);
         final String splitLargeJobsStr =
-                maybeParameters.getOrDefault(SPLIT_LARGE_JOBS, SPLIT_LARGE_JOBS_DEFAULT);
+            maybeParameters.getOrDefault(SPLIT_LARGE_JOBS, SPLIT_LARGE_JOBS_DEFAULT);
         final boolean splitLargeJobs =
-                Boolean.parseBoolean(splitLargeJobsStr.toLowerCase());
+            Boolean.parseBoolean(splitLargeJobsStr.toLowerCase());
+        final String maxPesPerJobStr =
+            maybeParameters.getOrDefault(MAX_PES_PER_JOB, MAX_PES_PER_JOB_DEFAULT);
+        final int maxPesPerJob =
+            Integer.parseInt(maxPesPerJobStr);
 
         LOGGER.info("Simulation parameters: ");
         LOGGER.info("-> initialSVmCount: " + initialSVmCount);
         LOGGER.info("-> initialMVmCount: " + initialMVmCount);
         LOGGER.info("-> initialLVmCount: " + initialLVmCount);
         LOGGER.info("-> splitLargeJobs: " + splitLargeJobs);
+        LOGGER.info("-> maxPesPerJob: " + maxPesPerJob);
 
         final SimulationSettings settings = new SimulationSettings(maybeParameters);
         LOGGER.info("Simulation settings dump");
@@ -93,7 +101,6 @@ public class SimulationFactory {
         }
 
         if (splitLargeJobs) {
-            final int maxPesPerJob = 1;
             LOGGER.info("Splitting large jobs");
             jobs = splitLargeJobs(jobs, maxPesPerJob, settings);
         }

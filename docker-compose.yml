@@ -50,6 +50,7 @@ services:
       --reward-job-wait-coef=${REWARD_JOB_WAIT_COEF}
       --reward-utilization-coef=${REWARD_UTILIZATION_COEF}
       --reward-invalid-coef=${REWARD_INVALID_COEF}
+      --max-pes-per-job=${MAX_PES_PER_JOB}
 
   manager-cuda:
     <<: *cpu
