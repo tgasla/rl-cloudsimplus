@@ -1,5 +1,7 @@
 # 1. Requirements
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/80861b4143584a29a78f7b5fb460e012)](https://app.codacy.com/gh/tgasla/rl-cloudsimplus?utm_source=github.com&utm_medium=referral&utm_content=tgasla/rl-cloudsimplus&utm_campaign=Badge_Grade)
+
 <details><summary><b>Linux Debian 12/11/10</b></summary>
     
 ### 1.1 Install Docker
