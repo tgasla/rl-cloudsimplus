@@ -17,7 +17,7 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
 
         if (index == -1) {
             LOGGER.debug("Desciption does not contain the hostId to place the vm."
-                    + " This is for the initial vms. Placing them using simple policy.");
+                + " This is for the initial vms. Placing them using simple policy.");
             suitability = super.allocateHostForVm(vm);
             return suitability;
         }
@@ -28,8 +28,8 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
         suitability = allocateHostForVm(vm, host);
         if (!suitability.fully()) {
             LOGGER.debug("This should never be printed as it is already checked.\n"
-                    + "Action failed because host is not suitable.\n"
-                    + "Reason: " + suitability.toString());
+                + "Action failed because host is not suitable.\n"
+                + "Reason: " + suitability.toString());
             return suitability;
         }
 

@@ -11,7 +11,7 @@ import java.util.List;
 import java.io.File;
 import org.apache.commons.io.FileUtils;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CloudletDescriptorTest {
 

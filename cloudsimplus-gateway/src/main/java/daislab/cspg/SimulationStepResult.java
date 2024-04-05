@@ -13,11 +13,12 @@ public class SimulationStepResult {
     private final boolean done;
     private final SimulationStepInfo info;
 
-    public SimulationStepResult(final double[] obs, 
-                                final double reward,
-                                final boolean done,
-                                final SimulationStepInfo info) {
-        
+    public SimulationStepResult(
+        final double[] obs, 
+        final double reward,
+        final boolean done,
+        final SimulationStepInfo info
+    ) {
         this.obs = obs;
         this.reward = reward;
         this.done = done;
@@ -43,10 +44,10 @@ public class SimulationStepResult {
     @Override
     public String toString() {
         return "SimulationStepResult{"
-                + ", obs=" + Arrays.toString(obs)
-                + ", reward=" + reward
-                + ", done=" + done
-                + ", info=" + info.toString()
-                + '}';
+            + ", obs=" + Arrays.toString(obs)
+            + ", reward=" + reward
+            + ", done=" + done
+            + ", info=" + info.toString()
+            + '}';
     }
 }

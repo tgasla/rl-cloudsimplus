@@ -11,9 +11,10 @@ public class SimulationResetResult {
     private final double[] obs;
     private final SimulationStepInfo info;
 
-    public SimulationResetResult(final double[] obs, 
-                                final SimulationStepInfo info) {
-
+    public SimulationResetResult(
+        final double[] obs, 
+        final SimulationStepInfo info
+    ) {
         this.obs = obs;
         this.info = info;
     }
@@ -29,8 +30,8 @@ public class SimulationResetResult {
     @Override
     public String toString() {
         return "SimulationStepResult{"
-                + ", obs=" + Arrays.toString(obs)
-                + ", info=" + info.toString()
-                + '}';
+            + ", obs=" + Arrays.toString(obs)
+            + ", info=" + info.toString()
+            + '}';
     }
 }

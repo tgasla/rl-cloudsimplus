@@ -40,46 +40,6 @@ public class SimulationSettings {
     private final double rewardInvalidCoef;
     private final String csvFilename;
 
-    // Get SimulationSettings from environment variables,
-    //  if an environment variable is not set, a default value is given
-//     public SimulationSettings() {
-//         // Host size is big enough to host a m5a.2xlarge VM
-//         vmRunningHourlyCost = Double.parseDouble(
-//                 getEnvironmentVariable("VM_RUNNING_HOURLY_COST", "0.2"));
-//         hostPeMips = Long.parseLong(
-//                 getEnvironmentVariable("HOST_PE_MIPS", "10000"));
-//         hostBw = Long.parseLong(
-//                 getEnvironmentVariable("HOST_BW", "50000"));
-//         hostRam = Long.parseLong(
-//                 getEnvironmentVariable("HOST_RAM", "65536"));
-//         hostSize = Long.parseLong(
-//                 getEnvironmentVariable("HOST_SIZE", "16000"));
-//         hostPeCnt = Long.parseLong(
-//                 getEnvironmentVariable("HOST_PE_CNT", "14"));
-//         queueWaitPenalty = Double.parseDouble(
-//                 getEnvironmentVariable("QUEUE_WAIT_PENALTY", "0.00001"));
-//         datacenterHostsCnt = Long.parseLong(
-//                 getEnvironmentVariable("DATACENTER_HOSTS_CNT", "3000"));
-//         basicVmRam = Long.parseLong(
-//                 getEnvironmentVariable("BASIC_VM_RAM", "8192"));
-//         basicVmPeCount = Long.parseLong(
-//                 getEnvironmentVariable("BASIC_VM_PE_CNT", "2"));
-//         vmShutdownDelay = Double.parseDouble(
-//                 getEnvironmentVariable("VM_SHUTDOWN_DELAY", "0"));
-
-//         // we can have as many VMs as the number of hosts, 
-//         // as every host can have 1 small, 1 medium and 1 large Vm
-//         maxVmsPerSize = Long.parseLong(
-//                 getEnvironmentVariable("MAX_VMS_PER_SIZE", "3000"));
-//         printJobsPeriodically = Boolean.parseBoolean(
-//                 getEnvironmentVariable("PRINT_JOBS_PERIODICALLY", "false"));
-//         payingForTheFullHour = Boolean.parseBoolean(
-//                 getEnvironmentVariable("PAYING_FOR_THE_FULL_HOUR", "false"));
-//         storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(
-//                 getEnvironmentVariable(
-//                 "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
-//     }
-
     // Get SimulationSettings from parameters
     // passed from the python client endpoint - the Gymnasium environment,
     // if an environment variable is not set, a default value is given

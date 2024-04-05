@@ -16,10 +16,10 @@ import java.util.Map;
 public class SimulationFactory {
 
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(SimulationFactory.class.getSimpleName());
+		LoggerFactory.getLogger(SimulationFactory.class.getSimpleName());
 
     private static final Type cloudletDescriptors =
-            new TypeToken<List<CloudletDescriptor>>() {}.getType();
+		new TypeToken<List<CloudletDescriptor>>() {}.getType();
 
     public static final String SPLIT_LARGE_JOBS = "SPLIT_LARGE_JOBS";
     public static final String SPLIT_LARGE_JOBS_DEFAULT = "true";
@@ -102,14 +102,14 @@ public class SimulationFactory {
         }
 
         return new WrappedSimulation(
-                settings,
-                identifier,
-                new HashMap<String, Integer>() {{
-                    this.put(CloudSimProxy.SMALL, initialSVmCount);
-                    this.put(CloudSimProxy.MEDIUM, initialMVmCount);
-                    this.put(CloudSimProxy.LARGE, initialLVmCount);
-                }},
-                splittedJobs);
+			settings,
+			identifier,
+			new HashMap<String, Integer>() {{
+				this.put(CloudSimProxy.SMALL, initialSVmCount);
+				this.put(CloudSimProxy.MEDIUM, initialMVmCount);
+				this.put(CloudSimProxy.LARGE, initialLVmCount);
+			}},
+			splittedJobs);
     }
 
 	private List<CloudletDescriptor> splitLargeJobs(
@@ -117,40 +117,40 @@ public class SimulationFactory {
         final SimulationSettings settings
 	) {
     
-	final int splittedJobMaxPes = 2;
-    List<CloudletDescriptor> splitted = new ArrayList<>();
-    int splittedId = 0;
+		final int splittedJobMaxPes = 2;
+			List<CloudletDescriptor> splitted = new ArrayList<>();
+			int splittedId = 0;
 
-	for (CloudletDescriptor cloudletDescriptor : jobs) {
-		int jobPesNumber = cloudletDescriptor.getNumberOfCores();
-		int splitCount = Math.max((jobPesNumber + splittedJobMaxPes - 1) / splittedJobMaxPes, 1);
-        int normalSplitPesNumber = jobPesNumber / splitCount;
-		long totalMi = cloudletDescriptor.getMi();
-		long normalSplitMi = totalMi / splitCount;
+		for (CloudletDescriptor cloudletDescriptor : jobs) {
+			int jobPesNumber = cloudletDescriptor.getNumberOfCores();
+			int splitCount = Math.max((jobPesNumber + splittedJobMaxPes - 1) / splittedJobMaxPes, 1);
+			int normalSplitPesNumber = jobPesNumber / splitCount;
+			long totalMi = cloudletDescriptor.getMi();
+			long normalSplitMi = totalMi / splitCount;
 
-		// Distribute the MI and PEs for each split part
-		for (int i = 0; i < splitCount; i++) {
-			// Last split might have different MI due to remainder
-			long miForThisSplit = (i < splitCount - 1) 
-				? normalSplitMi 
-				: totalMi - (normalSplitMi * (splitCount - 1));
-            int pesForThisSplit = (i < splitCount - 1) 
-				? normalSplitPesNumber 
-				: jobPesNumber - (normalSplitPesNumber * (splitCount - 1));
-			System.out.println("miforthissplit:" + miForThisSplit);
-			System.out.println("pesforthissplit" + pesForThisSplit);
-            CloudletDescriptor splittedDescriptor = new CloudletDescriptor(
-				splittedId++, 
-				cloudletDescriptor.getSubmissionDelay(),
-				// we divide by the pesNumber because cloudSimPlus do not parallelize jobs :)
-				// so we artificially do it here.
-				miForThisSplit / pesForThisSplit, 
-				pesForThisSplit
-			);
-			
-			splitted.add(splittedDescriptor);
+			// Distribute the MI and PEs for each split part
+			for (int i = 0; i < splitCount; i++) {
+				// Last split might have different MI due to remainder
+				long miForThisSplit = (i < splitCount - 1) 
+					? normalSplitMi 
+					: totalMi - (normalSplitMi * (splitCount - 1));
+				int pesForThisSplit = (i < splitCount - 1) 
+					? normalSplitPesNumber 
+					: jobPesNumber - (normalSplitPesNumber * (splitCount - 1));
+				System.out.println("miforthissplit:" + miForThisSplit);
+				System.out.println("pesforthissplit" + pesForThisSplit);
+				CloudletDescriptor splittedDescriptor = new CloudletDescriptor(
+					splittedId++, 
+					cloudletDescriptor.getSubmissionDelay(),
+					// we divide by the pesNumber because cloudSimPlus do not parallelize jobs :)
+					// so we artificially do it here.
+					miForThisSplit / pesForThisSplit, 
+					pesForThisSplit
+				);
+				
+				splitted.add(splittedDescriptor);
+			}
 		}
-	}
 
 		LOGGER.info("Splitted: " + jobs.size() + " into " + splitted.size());
 		return splitted;
@@ -184,27 +184,27 @@ public class SimulationFactory {
         final long speededupMi = (long) (nonNegativeMi / simulationSpeedup);
         final long newMi = speededupMi == 0 ? 1 : speededupMi;
         final long submissionDelayReal = cloudletDescriptor
-                .getSubmissionDelay() < 0 ? 0L : cloudletDescriptor.getSubmissionDelay();
+			.getSubmissionDelay() < 0 ? 0L : cloudletDescriptor.getSubmissionDelay();
 
         final long submissionDelay = (long) (submissionDelayReal / simulationSpeedup);
         final int numberOfCores = cloudletDescriptor
-                .getNumberOfCores() < 0 ? 1 : cloudletDescriptor.getNumberOfCores();
+			.getNumberOfCores() < 0 ? 1 : cloudletDescriptor.getNumberOfCores();
 
         return new CloudletDescriptor(
-                cloudletDescriptor.getJobId(),
-                submissionDelay,
-                newMi,
-                numberOfCores
+			cloudletDescriptor.getJobId(),
+			submissionDelay,
+			newMi,
+			numberOfCores
         );
     }
 
     private List<CloudletDescriptor> loadJobsFromDatabase(
-            final Map<String, String> maybeParameters) {
+        final Map<String, String> maybeParameters) {
         throw new NotImplementedException("Feature not implemented yet!");
     }
 
     private List<CloudletDescriptor> loadJobsFromFile(
-                final Map<String, String> maybeParameters) {
+		final Map<String, String> maybeParameters) {
         throw new NotImplementedException("Feature not implemented yet!");
     }
 

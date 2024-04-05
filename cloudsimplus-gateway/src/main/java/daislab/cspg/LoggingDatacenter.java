@@ -10,9 +10,9 @@ import java.util.List;
 public class LoggingDatacenter extends DatacenterSimple {
 
     public LoggingDatacenter(
-            final Simulation simulation,
-            final List<? extends Host> hostList,
-            final VmAllocationPolicy vmAllocationPolicy) {
+        final Simulation simulation,
+        final List<? extends Host> hostList,
+        final VmAllocationPolicy vmAllocationPolicy) {
         super(simulation, hostList, vmAllocationPolicy);
     }
 
@@ -21,8 +21,8 @@ public class LoggingDatacenter extends DatacenterSimple {
         final double retVal = super.updateCloudletProcessing();
 
         LOGGER.debug("updateCloudletProcessing: "
-                + retVal + " (if equal to Double.MAX_VALUE: "
-                + Double.MAX_VALUE + " no further processing scheduled");
+            + retVal + " (if equal to Double.MAX_VALUE: "
+            + Double.MAX_VALUE + " no further processing scheduled");
 
         return retVal;
     }

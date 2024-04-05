@@ -16,17 +16,17 @@ public class Main {
         MultiSimulationEnvironment simulationEnvironment = new MultiSimulationEnvironment();
         InetAddress all = InetAddress.getByName("0.0.0.0");
         GatewayServer gatewayServer = new GatewayServer(
-                simulationEnvironment,
-                GatewayServer.DEFAULT_PORT,
-                all,
-                GatewayServer.DEFAULT_CONNECT_TIMEOUT,
-                GatewayServer.DEFAULT_READ_TIMEOUT,
-                null,
-                new CallbackClient(GatewayServer.DEFAULT_PYTHON_PORT, all)
+            simulationEnvironment,
+            GatewayServer.DEFAULT_PORT,
+            all,
+            GatewayServer.DEFAULT_CONNECT_TIMEOUT,
+            GatewayServer.DEFAULT_READ_TIMEOUT,
+            null,
+            new CallbackClient(GatewayServer.DEFAULT_PYTHON_PORT, all)
         );
         LOGGER.info("Starting server: " 
-                + gatewayServer.getAddress() + " "
-                + gatewayServer.getPort());
+            + gatewayServer.getAddress() + " "
+            + gatewayServer.getPort());
         gatewayServer.start();
     }
 }

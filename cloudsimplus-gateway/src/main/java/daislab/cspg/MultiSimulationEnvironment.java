@@ -12,12 +12,12 @@ import java.util.Map;
 public class MultiSimulationEnvironment {
 
     private Map<String, WrappedSimulation> simulations = 
-            Collections.synchronizedMap(new HashMap<>());
+        Collections.synchronizedMap(new HashMap<>());
 
     private SimulationFactory simulationFactory = new SimulationFactory();
 
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
+        LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
 
     public String createSimulation(final Map<String, String> maybeParameters) {
         WrappedSimulation simulation = simulationFactory.create(maybeParameters);
@@ -57,8 +57,8 @@ public class MultiSimulationEnvironment {
     public SimulationStepResult step(final String simulationIdentifier, final ArrayList<Double> action) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
         final double[] action_double = action.stream()
-                .mapToDouble(Double::doubleValue)
-                .toArray();
+            .mapToDouble(Double::doubleValue)
+            .toArray();
         return simulation.step(action_double);
     }
 

@@ -17,10 +17,11 @@ public class CloudletDescriptor {
     private final int numberOfCores;
 
     public CloudletDescriptor(
-                final int jobId,
-                final long submissionDelay,
-                final long mi,
-                final int numberOfCores) {
+        final int jobId,
+        final long submissionDelay,
+        final long mi,
+        final int numberOfCores
+    ) {
         this.jobId = jobId;
         this.submissionDelay = submissionDelay;
         this.mi = mi;
@@ -62,20 +63,20 @@ public class CloudletDescriptor {
     @Override
     public String toString() {
         return "CloudletDescriptor{"
-                + "jobId=" + jobId
-                + ", submissionDelay=" + submissionDelay
-                + ", mi=" + mi
-                + ", numberOfCores=" + numberOfCores
-                + '}';
+            + "jobId=" + jobId
+            + ", submissionDelay=" + submissionDelay
+            + ", mi=" + mi
+            + ", numberOfCores=" + numberOfCores
+            + '}';
     }
 
     public Cloudlet toCloudlet() {
         Cloudlet cloudlet = new CloudletSimple(jobId, mi, numberOfCores)
-                .setFileSize(DataCloudTags.DEFAULT_MTU)
-                .setOutputSize(DataCloudTags.DEFAULT_MTU)
-                .setUtilizationModelCpu(new UtilizationModelFull());
-                // .setUtilizationModelRam(new UtilizationModelStochastic(UtilizationModel.Unit.PERCENTAGE))
-                // .setUtilizationModelBw(new UtilizationModelStochastic(UtilizationModel.Unit.PERCENTAGE));
+            .setFileSize(DataCloudTags.DEFAULT_MTU)
+            .setOutputSize(DataCloudTags.DEFAULT_MTU)
+            .setUtilizationModelCpu(new UtilizationModelFull());
+            // .setUtilizationModelRam(new UtilizationModelStochastic(UtilizationModel.Unit.PERCENTAGE))
+            // .setUtilizationModelBw(new UtilizationModelStochastic(UtilizationModel.Unit.PERCENTAGE));
         cloudlet.setSubmissionDelay(submissionDelay);
         return cloudlet;
     }
