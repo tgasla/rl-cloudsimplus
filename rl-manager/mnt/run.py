@@ -11,6 +11,7 @@ import stable_baselines3 as sb3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.off_policy_algorithm import OffPolicyAlgorithm
+from stable_baselines3.common.callbacks import CallbackList, CheckpointCallback, EvalCallback
 # from stable_baselines3.common import results_plotter
 # from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
 import dummy_agents
@@ -143,6 +144,8 @@ model_storage_path = (
     f"{filename_id}"
 )
 
+tb_log_name = filename_id
+
 # Create and wrap the environment
 env = gym.make(
     pretrain_env,
@@ -195,19 +198,49 @@ if algorithm_str == "DDPG" or \
     )
     model.action_noise = action_noise
 
+
+# Separate evaluation env
+eval_env = gym.make(
+    pretrain_env,
+    jobs_as_json=json.dumps(jobs),
+    simulation_speedup=simulation_speedup,
+    reward_job_wait_coef=reward_job_wait_coef,
+    reward_utilization_coef=reward_utilization_coef,
+    reward_invalid_coef=reward_invalid_coef,
+    split_large_jobs="true",
+    render_mode="ansi"
+)
+
+# trigger this callback on new best to save the replay buffer
+callback_on_best = CheckpointCallback(
+    save_freq=1, 
+    save_path=model_storage_dir,
+    name_prefix=filename_id,
+    save_replay_buffer=True
+)
+
+eval_callback = EvalCallback(
+    eval_env,
+    # best_model_save_path=f"./model-storage/{filename_id}",
+    log_path=eval_log_dir + filename_id,
+    eval_freq=1000,
+    callback_on_new_best=callback_on_best
+)
+
 # Train the agent
 model.learn(
     total_timesteps=pretrain_timesteps,
-    tb_log_name=filename_id,
-    log_interval=1
+    tb_log_name=tb_log_name,
+    log_interval=1,
+    callback=eval_callback
 )
 
-# Save the agent
-model.save(model_storage_path)
+# # Save the agent
+# model.save(model_storage_path)
 
-# Save the replay buffer if the algorithm has one
-if issubclass(algorithm, OffPolicyAlgorithm):
-    model.save_replay_buffer(model_storage_path + "_RP")
+# # Save the replay buffer if the algorithm has one
+# if hasattr(model, "replay_buffer"):
+#     model.save_replay_buffer(model_storage_path + "_RP")
 
 # Close the environment and free the resources
 env.close()
@@ -272,6 +305,34 @@ if issubclass(algorithm, OffPolicyAlgorithm):
 # Set the learning rate to a small initial value
 model.learning_rate = learning_rate_dict.get(algorithm_str)
 
+# Separate evaluation env
+eval_env = gym.make(
+    transfer_env,
+    jobs_as_json=json.dumps(jobs),
+    simulation_speedup=simulation_speedup,
+    reward_job_wait_coef=reward_job_wait_coef,
+    reward_utilization_coef=reward_utilization_coef,
+    reward_invalid_coef=reward_invalid_coef,
+    split_large_jobs="true",
+    render_mode="ansi"
+)
+
+# trigger this callback on new best to save the replay buffer
+callback_on_best = CheckpointCallback(
+    save_freq=1, 
+    save_path=model_storage_dir,
+    name_prefix=new_filename_id,
+    save_replay_buffer=True
+)
+
+eval_callback = EvalCallback(
+    eval_env,
+    # best_model_save_path=f"./model-storage/{new_filename_id}",
+    log_path=eval_log_dir + new_filename_id,
+    eval_freq=1000,
+    callback_on_new_best=callback_on_best
+)
+
 # Retrain the agent initializing the weights from the saved agent
 model.learn(
     total_timesteps= transfer_timesteps,
@@ -281,19 +342,20 @@ model.learn(
     # it as a new model, but that's not a critical issue for now
     reset_num_timesteps=True,
     tb_log_name=new_tb_log_name,
-    log_interval=1
+    log_interval=1,
+    callback=eval_callback
 )
 
 env.close()
 
-# Save the new model
-new_model_path = (
-    f"{model_storage_dir}"
-    f"{new_filename_id}"
-)
+# # Save the new model
+# new_model_path = (
+#     f"{model_storage_dir}"
+#     f"{new_filename_id}"
+# )
 
-model.save(new_model_path)
+# model.save(new_model_path)
 
-# Save the new replay buffer if the algorithm has one
-if issubclass(algorithm, OffPolicyAlgorithm): 
-    model.save_replay_buffer(new_model_path + "_RP")
+# # Save the new replay buffer if the algorithm has one
+# if hasattr(self.model, "replay_buffer"):
+#     model.save_replay_buffer(new_model_path + "_RP")

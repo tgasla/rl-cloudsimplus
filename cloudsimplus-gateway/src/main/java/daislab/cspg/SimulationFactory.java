@@ -77,7 +77,7 @@ public class SimulationFactory {
         LOGGER.info("Simulation settings dump");
         LOGGER.info(settings.toString());
 
-        final List<CloudletDescriptor> jobs;
+        List<CloudletDescriptor> jobs;
 
         switch (sourceOfJobs) {
             case SOURCE_OF_JOBS_DATABASE:
@@ -92,13 +92,10 @@ public class SimulationFactory {
                 jobs = loadJobsFromParams(maybeParameters, settings.getSimulationSpeedup());
         }
 
-        final List<CloudletDescriptor> splittedJobs;
         if (splitLargeJobs) {
+            final int maxPesPerJob = 1;
             LOGGER.info("Splitting large jobs");
-            splittedJobs = splitLargeJobs(jobs, settings);
-        } else {
-            LOGGER.info("Not applying the splitting algorithm - using raw jobs");
-            splittedJobs = jobs;
+            jobs = splitLargeJobs(jobs, maxPesPerJob, settings);
         }
 
         return new WrappedSimulation(
@@ -109,21 +106,21 @@ public class SimulationFactory {
 				this.put(CloudSimProxy.MEDIUM, initialMVmCount);
 				this.put(CloudSimProxy.LARGE, initialLVmCount);
 			}},
-			splittedJobs);
+			jobs);
     }
 
 	private List<CloudletDescriptor> splitLargeJobs(
         final List<CloudletDescriptor> jobs,
+        final int maxPesPerJob,
         final SimulationSettings settings
 	) {
-    
-		final int splittedJobMaxPes = 2;
-			List<CloudletDescriptor> splitted = new ArrayList<>();
-			int splittedId = 0;
+
+        List<CloudletDescriptor> splitted = new ArrayList<>();
+        int splittedId = 0;
 
 		for (CloudletDescriptor cloudletDescriptor : jobs) {
 			int jobPesNumber = cloudletDescriptor.getNumberOfCores();
-			int splitCount = Math.max((jobPesNumber + splittedJobMaxPes - 1) / splittedJobMaxPes, 1);
+			int splitCount = Math.max((jobPesNumber + maxPesPerJob - 1) / maxPesPerJob, 1);
 			int normalSplitPesNumber = jobPesNumber / splitCount;
 			long totalMi = cloudletDescriptor.getMi();
 			long normalSplitMi = totalMi / splitCount;
@@ -155,8 +152,9 @@ public class SimulationFactory {
 	}
 
     private List<CloudletDescriptor> loadJobsFromParams(
-            final Map<String, String> maybeParameters, 
-            final double simulationSpeedup) {
+        final Map<String, String> maybeParameters, 
+        final double simulationSpeedup
+    ) {
 
         List<CloudletDescriptor> retVal = new ArrayList<>();
         final String jobsAsJson = maybeParameters.getOrDefault(JOBS, JOBS_DEFAULT);
@@ -174,25 +172,21 @@ public class SimulationFactory {
     }
 
     private CloudletDescriptor speedup(
-            final CloudletDescriptor cloudletDescriptor, 
-            final double simulationSpeedup) {
-                
-        final long cloudletDescriptorMi = cloudletDescriptor.getMi();
-        final long nonNegativeMi = cloudletDescriptorMi < 1 ? 1 : cloudletDescriptorMi;
-        final long speededupMi = (long) (nonNegativeMi / simulationSpeedup);
-        final long newMi = speededupMi == 0 ? 1 : speededupMi;
-        final long submissionDelayReal = cloudletDescriptor
-			.getSubmissionDelay() < 0 ? 0L : cloudletDescriptor.getSubmissionDelay();
-
-        final long submissionDelay = (long) (submissionDelayReal / simulationSpeedup);
-        final int numberOfCores = cloudletDescriptor
-			.getNumberOfCores() < 0 ? 1 : cloudletDescriptor.getNumberOfCores();
+        final CloudletDescriptor cloudletDescriptor, 
+        final double simulationSpeedup
+    ) {
+    
+        final long cloudletMi = cloudletDescriptor.getMi();
+        final long newMi = Math.max((long) (cloudletMi / simulationSpeedup), 1);
+        final long cloudletDelay = cloudletDescriptor.getSubmissionDelay();
+        final long newDelay = Math.max((long) (cloudletDelay / simulationSpeedup), 0);
+        final int pesNumber = Math.max(cloudletDescriptor.getNumberOfCores(), 1);
 
         return new CloudletDescriptor(
 			cloudletDescriptor.getJobId(),
-			submissionDelay,
+			newDelay,
 			newMi,
-			numberOfCores
+			pesNumber
         );
     }
 
