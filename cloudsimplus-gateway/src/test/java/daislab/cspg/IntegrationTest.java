@@ -84,7 +84,7 @@ public class IntegrationTest {
         // a the small chunk to have 2*10*10000 MIPS (2 because the smallest virtual machine
         // has 2 cores, doesn't matter for the bigger ones).
         CloudletDescriptor cloudletDescriptor =
-                new CloudletDescriptor(1, 10, (2*10*10000)*3, 2+2+2);
+                new CloudletDescriptor(1, 10, 3 * (2 * 10 * 10000), 2 + 2 + 2);
 
         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
 

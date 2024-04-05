@@ -8,7 +8,6 @@ import org.junit.jupiter.api.AfterAll;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
-import java.io.IOException;
 import java.io.File;
 import org.apache.commons.io.FileUtils;
 

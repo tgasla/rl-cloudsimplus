@@ -3,7 +3,10 @@ package daislab.cspg;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.cloudlets.CloudletSimple;
 import org.cloudsimplus.util.DataCloudTags;
+import org.cloudsimplus.utilizationmodels.UtilizationModel;
 import org.cloudsimplus.utilizationmodels.UtilizationModelFull;
+import org.cloudsimplus.utilizationmodels.UtilizationModelPlanetLab;
+import org.cloudsimplus.utilizationmodels.UtilizationModelStochastic;
 
 import java.util.Objects;
 
@@ -70,7 +73,9 @@ public class CloudletDescriptor {
         Cloudlet cloudlet = new CloudletSimple(jobId, mi, numberOfCores)
                 .setFileSize(DataCloudTags.DEFAULT_MTU)
                 .setOutputSize(DataCloudTags.DEFAULT_MTU)
-                .setUtilizationModel(new UtilizationModelFull());
+                .setUtilizationModelCpu(new UtilizationModelFull());
+                // .setUtilizationModelRam(new UtilizationModelStochastic(UtilizationModel.Unit.PERCENTAGE))
+                // .setUtilizationModelBw(new UtilizationModelStochastic(UtilizationModel.Unit.PERCENTAGE));
         cloudlet.setSubmissionDelay(submissionDelay);
         return cloudlet;
     }

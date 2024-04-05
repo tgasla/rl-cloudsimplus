@@ -373,7 +373,7 @@ public class WrappedSimulation {
          * minus penalty if action was invalid
         */ 
         final double jobWaitCoef = settings.getRewardJobWaitCoef();
-        final double utilizationCoef = settings.getRewardutilizationCoefCoef();
+        final double utilizationCoef = settings.getRewardUtilizationCoef();
         final double invalidCoef = settings.getRewardInvalidCoef();
         
         final double utilizationPenalty = getVmAllocatedRatio();
