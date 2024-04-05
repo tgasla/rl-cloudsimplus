@@ -54,13 +54,13 @@ public class VMCountOverflowTest {
         assertTrue(i < 1000, "There should be much less than a 1000 iterations!");
     }
         
-    @AfterAll
-    public static void deleteJobLogDirectory() {
-        // Recursively delete the tempDirectory and its contents
-        try {
-            FileUtils.deleteDirectory(new File("./job-logs"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    // @AfterAll
+    // public static void deleteJobLogDirectory() {
+    //     // Recursively delete the tempDirectory and its contents
+    //     try {
+    //         FileUtils.deleteDirectory(new File("./logs"));
+    //     } catch (Exception e) {
+    //         e.printStackTrace();
+    //     }
+    // }
 }

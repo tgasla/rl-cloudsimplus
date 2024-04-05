@@ -10,11 +10,8 @@ import torch
 import stable_baselines3 as sb3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.off_policy_algorithm import OffPolicyAlgorithm
-from stable_baselines3.common.callbacks import CallbackList, CheckpointCallback, EvalCallback
-# from stable_baselines3.common import results_plotter
-# from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
 import dummy_agents
+from SaveOnBestTrainingRewardCallback import SaveOnBestTrainingRewardCallback
 from utils import FilenameFormatter, SWFReader
 
 def datetime_to_str():
@@ -121,30 +118,11 @@ filename_id = timestamp + "_" + experiment_id
 # Read jobs
 jobs = SWFReader.swf_read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=25)
 
-# Create eval dir
-eval_log_dir = "./eval-logs/"
-os.makedirs(eval_log_dir, exist_ok=True)
+base_log_dir = "./logs/"
 
-eval_log_path = (
-    f"{eval_log_dir}"
-    f"{filename_id}"
-    f"_monitor.csv"
-)
-
-# Create tensorboard dir
-tb_log_dir = "./tb-logs/"
-os.makedirs(tb_log_dir, exist_ok=True)
-
-# Create model storage dir
-model_storage_dir = "./model-storage/"
-os.makedirs(model_storage_dir, exist_ok=True)
-
-model_storage_path = (
-    f"{model_storage_dir}"
-    f"{filename_id}"
-)
-
-tb_log_name = filename_id
+# Create folder if needed
+log_dir = f"{base_log_dir}{filename_id}_1"
+os.makedirs(log_dir, exist_ok=True)
 
 # Create and wrap the environment
 env = gym.make(
@@ -154,8 +132,8 @@ env = gym.make(
     reward_job_wait_coef=reward_job_wait_coef,
     reward_utilization_coef=reward_utilization_coef,
     reward_invalid_coef=reward_invalid_coef,
-    csv_filename=filename_id,
     split_large_jobs="true",
+    job_log_dir=log_dir,
     render_mode="ansi"
 )
 
@@ -163,34 +141,31 @@ env = gym.make(
 # If render_mode is None, it will give a warning.
 env = Monitor(
     env, 
-    eval_log_path, 
+    log_dir,
     info_keywords=monitor_info_keywords
 )
 
 # Select the appropriate algorithm
-if algorithm_str == "RNG":
-    algorithm = getattr(dummy_agents, algorithm_str)
-    policy = "RngPolicy"
-else:
+if hasattr(sb3, algorithm_str):
     algorithm = getattr(sb3, algorithm_str)
     policy = "MlpPolicy"
+else:
+    algorithm = getattr(dummy_agents, algorithm_str)
+    policy = "RngPolicy"
 
 # Instantiate the agent
 model = algorithm(
     policy=policy,
     env=env,
     verbose=True,
-    tensorboard_log=tb_log_dir,
+    tensorboard_log=base_log_dir,
     device=device
 )
 
 # TODO: A2C and PPO take a n_steps parameter also :) check it out
 
 # Add some action noise for exploration if applicable
-if algorithm_str == "DDPG" or \
-    algorithm_str == "TD3" or \
-    algorithm_str == "SAC":
-
+if hasattr(model, "action_noise"):
     n_actions = env.action_space.shape[-1]
     action_noise = NormalActionNoise(
         mean=np.zeros(n_actions), 
@@ -198,49 +173,19 @@ if algorithm_str == "DDPG" or \
     )
     model.action_noise = action_noise
 
-
-# Separate evaluation env
-eval_env = gym.make(
-    pretrain_env,
-    jobs_as_json=json.dumps(jobs),
-    simulation_speedup=simulation_speedup,
-    reward_job_wait_coef=reward_job_wait_coef,
-    reward_utilization_coef=reward_utilization_coef,
-    reward_invalid_coef=reward_invalid_coef,
-    split_large_jobs="true",
-    render_mode="ansi"
-)
-
-# trigger this callback on new best to save the replay buffer
-callback_on_best = CheckpointCallback(
-    save_freq=1, 
-    save_path=model_storage_dir,
-    name_prefix=filename_id,
+callback = SaveOnBestTrainingRewardCallback(
+    check_freq=100,
+    log_dir=log_dir,
     save_replay_buffer=True
-)
-
-eval_callback = EvalCallback(
-    eval_env,
-    # best_model_save_path=f"./model-storage/{filename_id}",
-    log_path=eval_log_dir + filename_id,
-    eval_freq=1000,
-    callback_on_new_best=callback_on_best
 )
 
 # Train the agent
 model.learn(
     total_timesteps=pretrain_timesteps,
-    tb_log_name=tb_log_name,
+    tb_log_name=filename_id,
     log_interval=1,
-    callback=eval_callback
+    callback=callback
 )
-
-# # Save the agent
-# model.save(model_storage_path)
-
-# # Save the replay buffer if the algorithm has one
-# if hasattr(model, "replay_buffer"):
-#     model.save_replay_buffer(model_storage_path + "_RP")
 
 # Close the environment and free the resources
 env.close()
@@ -261,13 +206,9 @@ new_experiment_id = FilenameFormatter.create_filename_id(
 
 new_filename_id = timestamp + "_" + new_experiment_id
 
-new_eval_log_path = (
-    f"{eval_log_dir}"
-    f"{new_filename_id}"
-    f"_monitor.csv"
-)
-
-new_tb_log_name = new_filename_id
+# Create folder if needed
+new_log_dir = f"{base_log_dir}{new_filename_id}_1"
+os.makedirs(new_log_dir, exist_ok=True)
 
 # Create and wrap the environment
 new_env = gym.make(
@@ -277,8 +218,8 @@ new_env = gym.make(
     reward_job_wait_coef=reward_job_wait_coef,
     reward_utilization_coef=reward_utilization_coef,
     reward_invalid_coef=reward_invalid_coef,
-    csv_filename=new_filename_id,
     split_large_jobs="true",
+    job_log_dir=new_log_dir,
     render_mode="ansi"
 )
 
@@ -286,51 +227,29 @@ new_env = gym.make(
 # If render_mode is None, it will give a warning.
 new_env = Monitor(
     new_env, 
-    new_eval_log_path, 
+    new_log_dir,
     info_keywords=monitor_info_keywords
 )
 
 # Load the trained agent
 model = algorithm.load(
-    model_storage_path,
+    f"{log_dir}/best_model",
     device=device,
-    tensorboard_log=tb_log_dir,
+    tensorboard_log=base_log_dir,
     env=new_env
 )
 
 # Load the replay buffer if the algorithm has one
-if issubclass(algorithm, OffPolicyAlgorithm): 
-   model.load_replay_buffer(model_storage_path + "_RP")
+if hasattr(model, "replay_buffer"):
+   model.load_replay_buffer(f"{log_dir}/best_model_replay_buffer")
 
 # Set the learning rate to a small initial value
 model.learning_rate = learning_rate_dict.get(algorithm_str)
 
-# Separate evaluation env
-eval_env = gym.make(
-    transfer_env,
-    jobs_as_json=json.dumps(jobs),
-    simulation_speedup=simulation_speedup,
-    reward_job_wait_coef=reward_job_wait_coef,
-    reward_utilization_coef=reward_utilization_coef,
-    reward_invalid_coef=reward_invalid_coef,
-    split_large_jobs="true",
-    render_mode="ansi"
-)
-
-# trigger this callback on new best to save the replay buffer
-callback_on_best = CheckpointCallback(
-    save_freq=1, 
-    save_path=model_storage_dir,
-    name_prefix=new_filename_id,
+callback = SaveOnBestTrainingRewardCallback(
+    check_freq=1,
+    log_dir=new_log_dir,
     save_replay_buffer=True
-)
-
-eval_callback = EvalCallback(
-    eval_env,
-    # best_model_save_path=f"./model-storage/{new_filename_id}",
-    log_path=eval_log_dir + new_filename_id,
-    eval_freq=1000,
-    callback_on_new_best=callback_on_best
 )
 
 # Retrain the agent initializing the weights from the saved agent
@@ -341,21 +260,9 @@ model.learn(
     # The only problem is that tensorboard recognizes
     # it as a new model, but that's not a critical issue for now
     reset_num_timesteps=True,
-    tb_log_name=new_tb_log_name,
+    tb_log_name=new_filename_id,
     log_interval=1,
-    callback=eval_callback
+    callback=callback
 )
 
 env.close()
-
-# # Save the new model
-# new_model_path = (
-#     f"{model_storage_dir}"
-#     f"{new_filename_id}"
-# )
-
-# model.save(new_model_path)
-
-# # Save the new replay buffer if the algorithm has one
-# if hasattr(self.model, "replay_buffer"):
-#     model.save_replay_buffer(new_model_path + "_RP")

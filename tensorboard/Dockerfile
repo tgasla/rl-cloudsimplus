@@ -1,6 +1,5 @@
 FROM python:3.12
 
-RUN mkdir -p /tb
 RUN pip3 install --upgrade pip
 RUN pip3 install tensorboard
 
@@ -16,4 +15,4 @@ RUN apt-get update \
         /usr/share/doc \
         /usr/share/doc-base
 
-CMD ["tensorboard", "--logdir", "/tb-logs/", "--host", "0.0.0.0", "--port", "6006"] 
+CMD ["tensorboard", "--logdir", "/logs/", "--host", "0.0.0.0", "--port", "6006"] 

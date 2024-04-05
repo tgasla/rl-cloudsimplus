@@ -69,10 +69,10 @@ public class CloudSimProxy {
     ) {
         this.settings = settings;
 
-        String csvFilename = settings.getCsvFilename();
+        String jobLogDir = settings.getJobLogDir();
         String[] csvHeader = {"jobId", "vm", "submitTime", "finishTime"};
 
-        csvWriter = new CsvWriter("./job-logs", csvFilename, csvHeader);
+        csvWriter = new CsvWriter(jobLogDir, "job_log.csv", csvHeader);
         
         cloudSimPlus = new CloudSimPlus(0.01);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);

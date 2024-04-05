@@ -222,10 +222,8 @@ gradle-app.setting
 .env
 
 # Log directories
-tb-logs/
-eval-logs/
-model-storage/
-job-logs/
+logs/
+old_logs/
 
 # VSCode hidden files
 .vscode/

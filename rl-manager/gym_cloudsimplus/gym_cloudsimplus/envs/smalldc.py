@@ -134,8 +134,8 @@ class SmallDC(gym.Env):
                 kwargs.get("reward_utilization_coef", "1"),
             "REWARD_INVALID_COEF":
                 kwargs.get("reward_invalid_coef", "1"),
-            "CSV_FILENAME":
-                kwargs.get("csv_filename", "job_log.csv")
+            "JOB_LOG_DIR":
+                kwargs.get("job_log_dir", "./logs")
         }
 
         render_mode = kwargs.get("render_mode", None)

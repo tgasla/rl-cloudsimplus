@@ -23,7 +23,7 @@ build-manager:
 	docker build -t manager:${MANAGER_VERSION} rl-manager
 
 run-tensorboard:
-	docker run --rm --name tensorboard -t -d -v ./tb-logs/:/tb-logs/ -p 80:6006 tensorboard
+	docker run --rm --name tensorboard -t -d -v ./logs/:/logs/ -p 80:6006 tensorboard
 
 run-compose-detached:
 	docker compose up -d

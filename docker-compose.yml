@@ -5,7 +5,7 @@ services:
     image: gateway:1.9.1
     container_name: gateway
     volumes:
-      - ./job-logs:/app/job-logs
+      - ./logs:/app/logs
 
   # # uses port 5432
   # database:
@@ -37,10 +37,8 @@ services:
       # BATCH_SIZE: 128
       # EPISODES_CNT: 25
     volumes:
-      - ./model-storage:/mgr/model-storage
+      - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
-      - ./tb-logs:/mgr/tb-logs
-      - ./eval-logs:/mgr/eval-logs
     command: >
       python3 mnt/run.py 
       --algo=${ALGO}

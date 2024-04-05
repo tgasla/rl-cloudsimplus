@@ -74,6 +74,7 @@ public class WrappedSimulation {
 
     public SimulationResetResult reset() {
         info("Reset initiated");
+        info("job count: " + initialJobsDescriptors.size());
 
         stepCount = 0;
 
@@ -87,7 +88,8 @@ public class WrappedSimulation {
         cloudSimProxy = new CloudSimProxy(
             settings, 
             initialVmsCount,
-            cloudlets);
+            cloudlets
+        );
 
         double[] obs = getObservation();
 

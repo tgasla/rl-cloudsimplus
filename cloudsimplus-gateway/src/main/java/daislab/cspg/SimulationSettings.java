@@ -38,7 +38,7 @@ public class SimulationSettings {
     private final double rewardJobWaitCoef;
     private final double rewardUtilizationCoef;
     private final double rewardInvalidCoef;
-    private final String csvFilename;
+    private final String jobLogDir;
 
     // Get SimulationSettings from parameters
     // passed from the python client endpoint - the Gymnasium environment,
@@ -92,8 +92,8 @@ public class SimulationSettings {
             parameters.getOrDefault("REWARD_UTILIZATION_COEF", "1"));
         rewardInvalidCoef = Double.parseDouble(
             parameters.getOrDefault("REWARD_INVALID_COEF", "1"));
-        csvFilename =
-            parameters.getOrDefault("CSV_FILENAME", "job_log.csv");
+        jobLogDir =
+            parameters.getOrDefault("JOB_LOG_DIR", "./logs");
     }
 
     @Override
@@ -117,7 +117,7 @@ public class SimulationSettings {
             "rewardJobWaitCoef=" + rewardJobWaitCoef + ",\n" +
             "rewardUtilizationCoef=" + rewardUtilizationCoef + ",\n" +
             "rewardInvalidCoef=" + rewardInvalidCoef + ",\n" +
-            "csvFilename=" + csvFilename + ",\n" +
+            "jobLogDir=" + jobLogDir + ",\n" +
             "}";
     }
 
@@ -217,7 +217,7 @@ public class SimulationSettings {
         return rewardInvalidCoef;
     }
 
-    public String getCsvFilename() {
-        return csvFilename;
+    public String getJobLogDir() {
+        return jobLogDir;
     }
 }
