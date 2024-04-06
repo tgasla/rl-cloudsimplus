@@ -17,11 +17,14 @@ https://docs.docker.com/compose/install/
 
 You can install OpenJDK 21 JDK and JRE
 
-`sudo apt-get install openjdk-21-jdk openjdk-21-jre`
+```
+sudo apt-get install openjdk-21-jdk openjdk-21-jre
+```
 
-### 1.4 Make sure that the environment variable JAVA_HOME is set to the right path
-
-`export JAVA_HOME=/usr/lib/jvm/java-21-openjdk`
+### 1.4 Set the JAVA_HOME environment variable to the right path
+```
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+```
 
 <!--
 ### 1.5 Select the correct Gradle version
