@@ -123,7 +123,7 @@ If you want to see only the manager output use:
 docker compose manager run
 ```
 
-If you want the manager image to have NVIDIA CUDA GPU access you need to download the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) then use the following command:
+If you want the manager image to have NVIDIA CUDA GPU access you need to download the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and then use the following command:
 ```
 docker compose --profile cuda up
 ```
@@ -139,7 +139,7 @@ To stop the application, use the following command:
 docker compose down
 ```
 
-if you also want to clear docker unused data, use the following command:
+If you also want to clear docker unused data, use the following command:
 ```
 docker system prune -f
 ```
