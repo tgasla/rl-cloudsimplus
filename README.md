@@ -88,9 +88,9 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 -->
 </details>
 
-# 2. Build images
+## 2. Build images
 
-## 2.1 Build gateway image
+### 2.1 Build gateway image
 Use the folloiwng command to build the gateway image:
 ```
 make build-gateway
@@ -101,13 +101,13 @@ To enable debugging and show DEBUG log messages use the following command:
 make build-gateway-debug
 ```
 
-## 2.2 Build manager image
+### 2.2 Build manager image
 To build the manager image use the fowllowing command:
 ```
 make build-manager
 ```
 
-# 3. Start application
+## 3. Start application
 Use the folloiwng command:
 ```
 docker compose up
@@ -133,7 +133,7 @@ If you want to use both the --profile and --build flags, use the following comma
 docker compose --profile cuda up --build
 ```
 
-# 4. Stop application
+## 4. Stop application
 To stop the application, use the following command:
 ```
 docker compose down
@@ -144,7 +144,7 @@ If you also want to clear docker unused data, use the following command:
 docker system prune -f
 ```
 
-# Acknowledgements
+## Acknowledgements
 
 This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, and easy to use Java 17+ framework for modeling and simulation of cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
 
