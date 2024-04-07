@@ -340,6 +340,7 @@ public class WrappedSimulation {
         return cloudSimProxy.getWaitingJobsCount() / (double) submittedJobsCount;
     }
 
+    // TODO: rename to datacenter resource usage
     private double getVmAllocatedRatio() {
         return ((double) cloudSimProxy.getNumberOfActiveCores()) / settings.getAvailableCores();
     }
@@ -378,17 +379,17 @@ public class WrappedSimulation {
         final double utilizationCoef = settings.getRewardUtilizationCoef();
         final double invalidCoef = settings.getRewardInvalidCoef();
         
-        final double utilizationPenalty = getVmAllocatedRatio();
-        final double jobWaitPenalty = getWaitingJobsRatioGlobal();
-        final int invalidActionPenalty = (isValid) ? 0 : 1;
+        final double utilizationPenalty = - getVmAllocatedRatio();
+        final double jobWaitPenalty = - getWaitingJobsRatioGlobal();
+        final int invalidActionPenalty = - (isValid) ? 0 : 1;
         
         if (!isValid) {
             info("Penalty given to the agent because the selected action was not possible");
         }
 
-        return - jobWaitCoef * jobWaitPenalty 
-                - utilizationCoef * utilizationPenalty
-                - invalidCoef * invalidActionPenalty;
+        return jobWaitCoef * jobWaitPenalty
+                + utilizationCoef * utilizationPenalty
+                + invalidCoef * invalidActionPenalty;
     }
 
     public int getStepCount() {

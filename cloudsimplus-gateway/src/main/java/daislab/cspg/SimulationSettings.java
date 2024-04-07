@@ -26,7 +26,7 @@ public class SimulationSettings {
     private final long hostRam;
     private final long hostSize;
     private final long hostPeCnt;
-    private final double queueWaitPenalty;
+    private final double queueWaitPenalty; //TODO: delete it, unused
     private final long datacenterHostsCnt;
     private final long basicVmRam;
     private final long basicVmPeCount;

@@ -45,6 +45,7 @@ public class CloudSimProxy {
 
     private static final Logger LOGGER = 
         LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
+    private static final double minTimeBetweenEvents = 0.1;
 
     private final DatacenterBrokerFirstFitFixed broker;
     private final CloudSimPlus cloudSimPlus;
@@ -74,7 +75,7 @@ public class CloudSimProxy {
 
         csvWriter = new CsvWriter(jobLogDir, "job_log.csv", csvHeader);
         
-        cloudSimPlus = new CloudSimPlus(0.01);
+        cloudSimPlus = new CloudSimPlus(minTimeBetweenEvents);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         datacenter = createDatacenter();
         vmCost = new VmCost(
@@ -96,7 +97,7 @@ public class CloudSimProxy {
         scheduleAdditionalCloudletProcessingEvent(jobs);
 
         cloudSimPlus.startSync();
-        runFor(0.1);
+        runFor();
     }
 
     public boolean allJobsFinished() {
@@ -499,11 +500,8 @@ public class CloudSimProxy {
         vmCost.addNewVmToList(newVm);
         nextVmId++;
 
-        // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
-        // from anecdotal exp the startup time can be as fast as 45s
-        // TODO: update it according to the updated version of the paper
-        final double delay = 
-            (45 + Math.random() * 52) / settings.getSimulationSpeedup();
+        // assuming average delay 56s as in 10.48550/arXiv.2107.03467
+        final double delay = 56 / settings.getSimulationSpeedup();
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
         broker.submitVm(newVm);
@@ -513,18 +511,18 @@ public class CloudSimProxy {
 
     // TODO: I should avoid repeating code here.
     // I should call addNewVm(type, vmId) inside this method
-    public void addNewVm(String type) {
-        Vm newVm = createVm(type);
-        // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
-        // from anecdotal exp the startup time can be as fast as 45s
-        final double delay = 
-                (45 + Math.random() * 52) / settings.getSimulationSpeedup();
-        // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
-        // newVm.setSubmissionDelay(delay);
-        LOGGER.debug("Agent action: Create a " + type + " VM");
-        broker.submitVm(newVm);
-        LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
-    }
+    // public void addNewVm(String type) {
+    //     Vm newVm = createVm(type);
+    //     // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
+    //     // from anecdotal exp the startup time can be as fast as 45s
+    //     final double delay = 
+    //             (45 + Math.random() * 52) / settings.getSimulationSpeedup();
+    //     // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
+    //     // newVm.setSubmissionDelay(delay);
+    //     LOGGER.debug("Agent action: Create a " + type + " VM");
+    //     broker.submitVm(newVm);
+    //     LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
+    // }
 
     // if a vm is destroyed, this method returns the type of it.
     public boolean removeVm(final long id) {
@@ -551,29 +549,29 @@ public class CloudSimProxy {
 
     // TODO: I should avoid repeating code here.
     // I should reuse code from removeVm(id)
-    public boolean removeRandomVm(String type) {
-        List<Vm> vmExecList = broker.getVmExecList();
+    // public boolean removeRandomVm(String type) {
+    //     List<Vm> vmExecList = broker.getVmExecList();
 
-        if (vmExecList.size() == 1) {
-            LOGGER.warn("Can't kill VM as it is the only one running.");
-            return false;
-        }
+    //     if (vmExecList.size() == 1) {
+    //         LOGGER.warn("Can't kill VM as it is the only one running.");
+    //         return false;
+    //     }
 
-        List<Vm> vmsOfType = vmExecList
-            .parallelStream()
-            .filter(vm -> type.equals((vm.getDescription())))
-            .collect(Collectors.toList());
-        LOGGER.debug("Agent action: Remove a " + type + " VM");
+    //     List<Vm> vmsOfType = vmExecList
+    //         .parallelStream()
+    //         .filter(vm -> type.equals((vm.getDescription())))
+    //         .collect(Collectors.toList());
+    //     LOGGER.debug("Agent action: Remove a " + type + " VM");
 
-        if (vmsOfType.size() == 0) {
-            LOGGER.warn("Can't kill VM of type " + type + " as no vms of this type are running");
-            return false;
-        }
+    //     if (vmsOfType.size() == 0) {
+    //         LOGGER.warn("Can't kill VM of type " + type + " as no vms of this type are running");
+    //         return false;
+    //     }
 
-        int vmToKillIdx = random.nextInt(vmsOfType.size());
-        destroyVm(vmsOfType.get(vmToKillIdx));
-        return true;
-    }
+    //     int vmToKillIdx = random.nextInt(vmsOfType.size());
+    //     destroyVm(vmsOfType.get(vmToKillIdx));
+    //     return true;
+    // }
 
     private Cloudlet resetCloudlet(final Cloudlet cloudlet) {
         cloudlet.setVm(Vm.NULL);

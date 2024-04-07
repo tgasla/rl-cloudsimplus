@@ -75,8 +75,6 @@ public class CloudletDescriptor {
             .setFileSize(DataCloudTags.DEFAULT_MTU)
             .setOutputSize(DataCloudTags.DEFAULT_MTU)
             .setUtilizationModelCpu(new UtilizationModelFull());
-            // .setUtilizationModelRam(new UtilizationModelStochastic(UtilizationModel.Unit.PERCENTAGE))
-            // .setUtilizationModelBw(new UtilizationModelStochastic(UtilizationModel.Unit.PERCENTAGE));
         cloudlet.setSubmissionDelay(submissionDelay);
         return cloudlet;
     }

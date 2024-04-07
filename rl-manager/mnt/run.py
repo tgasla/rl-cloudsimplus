@@ -182,7 +182,7 @@ if hasattr(model, "action_noise"):
     model.action_noise = action_noise
 
 callback = SaveOnBestTrainingRewardCallback(
-    check_freq=100,
+    check_freq=10_000,
     log_dir=log_dir,
     save_replay_buffer=True
 )
@@ -256,7 +256,7 @@ if hasattr(model, "replay_buffer"):
 model.learning_rate = learning_rate_dict.get(algorithm_str)
 
 callback = SaveOnBestTrainingRewardCallback(
-    check_freq=1,
+    check_freq=10_000,
     log_dir=new_log_dir,
     save_replay_buffer=True
 )

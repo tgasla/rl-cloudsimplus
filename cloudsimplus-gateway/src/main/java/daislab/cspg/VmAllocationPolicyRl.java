@@ -16,7 +16,7 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
         final Host host;
 
         if (index == -1) {
-            LOGGER.debug("Desciption does not contain the hostId to place the vm."
+            LOGGER.debug("Description does not contain the hostId to place the vm."
                 + " This is for the initial vms. Placing them using simple policy.");
             suitability = super.allocateHostForVm(vm);
             return suitability;
@@ -35,7 +35,7 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
 
         // set the desctiption to be the vm type
         vm.setDescription(vmDescription.substring(0, index));
-        LOGGER.debug("New vm creation and allocation with RL policy was successful!");
+        LOGGER.debug("New vm " + vm.getId() + "allocated to host " + hostId);
         return suitability;
     }
 }
