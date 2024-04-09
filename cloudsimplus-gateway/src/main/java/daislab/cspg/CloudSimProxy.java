@@ -71,7 +71,7 @@ public class CloudSimProxy {
         this.settings = settings;
 
         String jobLogDir = settings.getJobLogDir();
-        String[] csvHeader = {"jobId", "vm", "submitTime", "finishTime"};
+        String[] csvHeader = {"jobId", "vmId", "arrivalTime", "execStartTime", "execFinishTime"};
 
         csvWriter = new CsvWriter(jobLogDir, "job_log.csv", csvHeader);
         
@@ -97,7 +97,7 @@ public class CloudSimProxy {
         scheduleAdditionalCloudletProcessingEvent(jobs);
 
         cloudSimPlus.startSync();
-        runFor();
+        runFor(minTimeBetweenEvents);
     }
 
     public boolean allJobsFinished() {
@@ -166,7 +166,8 @@ public class CloudSimProxy {
             .setBw(settings.getBasicVmBw())
             .setSize(settings.getBasicVmSize())
             .setCloudletScheduler(new OptimizedCloudletScheduler())
-            .setDescription(type);
+            .setDescription(type)
+            .setShutDownDelay(settings.getVmShutdownDelay());
         
         return vm;
     }
@@ -362,10 +363,17 @@ public class CloudSimProxy {
             //         + ", target: " + target);
             // we process every cloudlet only once here...
             final Cloudlet cloudlet = jobs.get(toAddJobId);
-            final double cloudletOriginalSubmissionDelay = cloudlet.getSubmissionDelay();
+            final double cloudletArrivalTime = cloudlet.getSubmissionDelay();
 
             // the job should enter the cluster once target is crossed
             cloudlet.setSubmissionDelay(settings.getTimestepInterval());
+            // cloudlet.setDcArrivalTime(cloudletArrivalTime);
+            cloudlet.addOnStartListener(new EventListener<CloudletVmEventInfo>() {
+                @Override
+                public void update(CloudletVmEventInfo info) {                    
+                    cloudlet.setStartTime(cloudSimPlus.clock());
+                }
+            });
             cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
                 @Override
                 public void update(CloudletVmEventInfo info) {
@@ -376,7 +384,8 @@ public class CloudSimProxy {
                     Object[] csvRow = {
                         cloudlet.getId(),
                         cloudlet.getVm().getId(),
-                        cloudletOriginalSubmissionDelay,
+                        cloudlet.getDcArrivalTime(),
+                        cloudlet.getStartTime(),
                         cloudSimPlus.clock()
                     };
 
@@ -501,7 +510,7 @@ public class CloudSimProxy {
         nextVmId++;
 
         // assuming average delay 56s as in 10.48550/arXiv.2107.03467
-        final double delay = 56 / settings.getSimulationSpeedup();
+        final double delay = 56;
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
         broker.submitVm(newVm);

@@ -60,8 +60,9 @@ class SWFReader(object):
         }
     
     @staticmethod
-    def swf_read(filename, jobs_to_read=None):
+    def swf_read(filename, jobs_to_read=None, relative_submission_delay=True):
         jobs = []
+        previous_submit_time = None
         with open(filename, 'r') as f:
             jobs_read = 0
             for line in f.readlines():
@@ -79,16 +80,31 @@ class SWFReader(object):
                 run_time = int(line_splitted[3])
                 allocated_cores = int(line_splitted[4])
                 status = int(line_splitted[10])
-                mips = 1250
+                # mips = 1250
+                # controls how long jobs run
+                mips = 10000
 
-                if (run_time > 0 and allocated_cores > 0 and status == 0):
-                    cloudlet = SWFReader._as_cloudlet_descriptor_dict(
-                        job_id,
-                        submit_time,
-                        run_time,
-                        mips,
-                        allocated_cores
-                    )
-                    jobs.append(cloudlet)
-                    jobs_read += 1
+                if status != 0 or run_time <= 0 or allocated_cores <= 0:
+                    continue
+
+                if relative_submission_delay:
+                    if previous_submit_time is None:
+                        # The first job's relative submission time is 0
+                        previous_submit_time = submit_time
+                        submit_time = 0
+                    else:
+                        # Update submit_time to be relative to the previous job
+                        original_submit_time = submit_time
+                        submit_time -= previous_submit_time
+                        previous_submit_time = original_submit_time
+                    
+                cloudlet = SWFReader._as_cloudlet_descriptor_dict(
+                    job_id,
+                    submit_time,
+                    run_time,
+                    mips,
+                    allocated_cores
+                )
+                jobs.append(cloudlet)
+                jobs_read += 1
         return jobs

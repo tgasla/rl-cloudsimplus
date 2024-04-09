@@ -81,7 +81,7 @@ class LargeDC(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=1,
-            shape=(7,),
+            shape=(5,),
             dtype=np.float32
         )
 
@@ -101,12 +101,16 @@ class LargeDC(gym.Env):
                 kwargs.get("split_large_jobs", "false"),
             "MAX_PES_PER_JOB":
                 kwargs.get("max_pes_per_job", "1"),
-            "QUEUE_WAIT_PENALTY":
-                kwargs.get("queue_wait_penalty", "0.00001"),
+            # "QUEUE_WAIT_PENALTY":
+            #     kwargs.get("queue_wait_penalty", "0.00001"),
+            # "VM_RUNNING_HOURLY_COST":
+            #     kwargs.get("vm_running_hourly_cost", "0.2"),
             "VM_RUNNING_HOURLY_COST":
-                kwargs.get("vm_running_hourly_cost", "0.2"),
+                kwargs.get("vm_running_hourly_cost", "0.086"),
+            # "HOST_PE_MIPS":
+            #     kwargs.get("host_pe_mips", "222122"),
             "HOST_PE_MIPS":
-                kwargs.get("host_pe_mips", "222122"),
+                kwargs.get("host_pe_mips", "30000"),
             "HOST_BW":
                 kwargs.get("host_bw", "100000"),
             # 192 GB of RAM = 192 * 1024 MB
@@ -123,9 +127,9 @@ class LargeDC(gym.Env):
             "BASIC_VM_PE_CNT":
                 kwargs.get("basic_vm_pe_count","2"),
             "VM_SHUTDOWN_DELAY":
-                kwargs.get("vm_shutdown_delay", "0.0"),
-            "MAX_VMS_PER_SIZE":
-                kwargs.get("max_vms_per_size", "500"),
+                kwargs.get("vm_shutdown_delay", "25.0"),
+            # "MAX_VMS_PER_SIZE":
+            #     kwargs.get("max_vms_per_size", "500"),
             "PRINT_JOBS_PERIODICALLY":
                 kwargs.get("print_jobs_periodically", "false"),
             "PAYING_FOR_THE_FULL_HOUR":

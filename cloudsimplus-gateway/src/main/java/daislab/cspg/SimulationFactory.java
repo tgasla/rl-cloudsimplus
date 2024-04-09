@@ -184,7 +184,13 @@ public class SimulationFactory {
     ) {
     
         final long cloudletMi = cloudletDescriptor.getMi();
-        final long newMi = Math.max((long) (cloudletMi / simulationSpeedup), 1);
+        final long newMi = Math.max(cloudletMi, 1);
+        // if you uncomment the line below, then simulationSpeedup controls two things:
+        // 1. how fast are jobs coming and
+        // 2. how long do jobs run
+        // Hoever, it is better to control only 1. and let 2. be controlled by the
+        // MIPS number in utils.py
+        // final long newMi = Math.max((long) (cloudletMi / simulationSpeedup), 1);
         final long cloudletDelay = cloudletDescriptor.getSubmissionDelay();
         final long newDelay = Math.max((long) (cloudletDelay / simulationSpeedup), 0);
         final int pesNumber = Math.max(cloudletDescriptor.getNumberOfCores(), 1);

@@ -80,7 +80,7 @@ class SmallDC(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=1,
-            shape=(7,),
+            shape=(5,),
             dtype=np.float32
         )
 
@@ -105,7 +105,7 @@ class SmallDC(gym.Env):
             "VM_RUNNING_HOURLY_COST":
                 kwargs.get("vm_running_hourly_cost", "0.2"),
             "HOST_PE_MIPS":
-                kwargs.get("host_pe_mips", "10000"),
+                kwargs.get("host_pe_mips", "20000"),
             "HOST_BW":
                 kwargs.get("host_bw", "50000"),
             "HOST_RAM":
@@ -113,7 +113,7 @@ class SmallDC(gym.Env):
             "HOST_SIZE":
                 kwargs.get("hostSize", "16000"),
             "HOST_PE_CNT":
-                kwargs.get("hostPeCnt", "14"),
+                kwargs.get("hostPeCnt", "20"),
             "DATACENTER_HOSTS_CNT":
                 kwargs.get("datacenter_hosts_cnt", "50"),
             "BASIC_VM_RAM":
@@ -121,9 +121,9 @@ class SmallDC(gym.Env):
             "BASIC_VM_PE_CNT":
                 kwargs.get("basic_vm_pe_count","2"),
             "VM_SHUTDOWN_DELAY":
-                kwargs.get("vm_shutdown_delay", "0.0"),
-            "MAX_VMS_PER_SIZE":
-                kwargs.get("max_vms_per_size", "50"),
+                kwargs.get("vm_shutdown_delay", "25.0"),
+            # "MAX_VMS_PER_SIZE":
+            #     kwargs.get("max_vms_per_size", "50"),
             "PRINT_JOBS_PERIODICALLY":
                 kwargs.get("print_jobs_periodically", "false"),
             "PAYING_FOR_THE_FULL_HOUR":

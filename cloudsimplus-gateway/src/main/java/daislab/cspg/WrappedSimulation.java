@@ -25,8 +25,8 @@ public class WrappedSimulation {
         "vmAllocatedRatioHistory",
         "avgCPUUtilizationHistory",
         "p90CPUUtilizationHistory",
-        "avgMemoryUtilizationHistory",
-        "p90MemoryUtilizationHistory",
+        // "avgMemoryUtilizationHistory",
+        // "p90MemoryUtilizationHistory",
         "waitingJobsRatioGlobalHistory",
         "waitingJobsRatioRecentHistory"
     );
@@ -116,8 +116,8 @@ public class WrappedSimulation {
             metricsStorage.metricValuesAsPrimitives("vmAllocatedRatioHistory"),
             metricsStorage.metricValuesAsPrimitives("avgCPUUtilizationHistory"),
             metricsStorage.metricValuesAsPrimitives("p90CPUUtilizationHistory"),
-            metricsStorage.metricValuesAsPrimitives("avgMemoryUtilizationHistory"),
-            metricsStorage.metricValuesAsPrimitives("p90MemoryUtilizationHistory"),
+            // metricsStorage.metricValuesAsPrimitives("avgMemoryUtilizationHistory"),
+            // metricsStorage.metricValuesAsPrimitives("p90MemoryUtilizationHistory"),
             metricsStorage.metricValuesAsPrimitives("waitingJobsRatioGlobalHistory"),
             metricsStorage.metricValuesAsPrimitives("waitingJobsRatioRecentHistory")
         };
@@ -307,12 +307,12 @@ public class WrappedSimulation {
         metricsStorage.updateMetric(
                 "p90CPUUtilizationHistory", 
                 percentileOrZero(cpuPercentUsage, 0.90));
-        metricsStorage.updateMetric(
-                "avgMemoryUtilizationHistory",
-                safeMean(memPercentageUsage));
-        metricsStorage.updateMetric(
-                "p90MemoryUtilizationHistory", 
-                percentileOrZero(memPercentageUsage, 0.90));
+        // metricsStorage.updateMetric(
+        //         "avgMemoryUtilizationHistory",
+        //         safeMean(memPercentageUsage));
+        // metricsStorage.updateMetric(
+        //         "p90MemoryUtilizationHistory", 
+        //         percentileOrZero(memPercentageUsage, 0.90));
         metricsStorage.updateMetric(
                 "waitingJobsRatioGlobalHistory",
                 waitingJobsRatioGlobal);
@@ -351,8 +351,8 @@ public class WrappedSimulation {
                 metricsStorage.getLastMetricValue("vmAllocatedRatioHistory"),
                 metricsStorage.getLastMetricValue("avgCPUUtilizationHistory"),
                 metricsStorage.getLastMetricValue("p90CPUUtilizationHistory"),
-                metricsStorage.getLastMetricValue("avgMemoryUtilizationHistory"),
-                metricsStorage.getLastMetricValue("p90MemoryUtilizationHistory"),
+                // metricsStorage.getLastMetricValue("avgMemoryUtilizationHistory"),
+                // metricsStorage.getLastMetricValue("p90MemoryUtilizationHistory"),
                 metricsStorage.getLastMetricValue("waitingJobsRatioGlobalHistory"),
                 metricsStorage.getLastMetricValue("waitingJobsRatioRecentHistory")
         };
@@ -381,7 +381,7 @@ public class WrappedSimulation {
         
         final double utilizationPenalty = - getVmAllocatedRatio();
         final double jobWaitPenalty = - getWaitingJobsRatioGlobal();
-        final int invalidActionPenalty = - (isValid) ? 0 : 1;
+        final int invalidActionPenalty = (isValid) ? 0 : -1;
         
         if (!isValid) {
             info("Penalty given to the agent because the selected action was not possible");
