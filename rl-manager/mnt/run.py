@@ -143,6 +143,9 @@ env = gym.make(
     pretrain_env,
     jobs_as_json=json.dumps(jobs),
     simulation_speedup=simulation_speedup,
+    datacenter_hosts_cnt=10,
+    host_pe_mips=10,
+    host_pe_cnt=10,
     reward_job_wait_coef=reward_job_wait_coef,
     reward_utilization_coef=reward_utilization_coef,
     reward_invalid_coef=reward_invalid_coef,
@@ -207,6 +210,10 @@ env.close()
 
 # Delete model
 del model
+
+# if no transfer env is specified, exit
+if transfer_env == "":
+    exit()
 
 new_experiment_id = FilenameFormatter.create_filename_id(
     algorithm_str,

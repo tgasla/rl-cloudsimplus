@@ -117,9 +117,9 @@ class LargeDC(gym.Env):
             "HOST_RAM":
                 kwargs.get("host_ram", "196608"),
             "HOST_SIZE":
-                kwargs.get("hostSize", "400000"),
+                kwargs.get("host_size", "400000"),
             "HOST_PE_CNT":
-                kwargs.get("hostPeCnt", "40"),
+                kwargs.get("host_pe_cnt", "40"),
             "DATACENTER_HOSTS_CNT":
                 kwargs.get("datacenter_hosts_cnt", "500"),
             "BASIC_VM_RAM":
@@ -135,7 +135,7 @@ class LargeDC(gym.Env):
             "PAYING_FOR_THE_FULL_HOUR":
                 kwargs.get("paying_for_the_full_hour", "false"),
             "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER":
-                kwargs.get("storeCreatedCloudletsDatacenterBroker", "false"),
+                kwargs.get("store_created_cloudlets_datacenter_broker", "false"),
             "REWARD_JOB_WAIT_COEF":
                 kwargs.get("reward_job_wait_coef", "1"),
             "REWARD_UTILIZATION_COEF":

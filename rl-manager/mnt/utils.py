@@ -81,10 +81,10 @@ class WorkloadUtils(object):
         df = pd.read_csv(filename, sep=",")
         for i in df.index:
             cloudlet = CloudletDescriptor.as_cloudlet_descriptor_dict(
-                df.job_id[i],
-                df.arrival_time[i],
-                df.mi[i],
-                df.allocated_cores[i]
+                int(df.job_id[i]),
+                int(df.arrival_time[i]),
+                int(df.mi[i]),
+                int(df.allocated_cores[i])
             )
             jobs.append(cloudlet)
         return jobs

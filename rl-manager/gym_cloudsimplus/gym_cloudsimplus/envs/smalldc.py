@@ -103,7 +103,7 @@ class SmallDC(gym.Env):
             "QUEUE_WAIT_PENALTY":
                 kwargs.get("queue_wait_penalty", "0.00001"),
             "VM_RUNNING_HOURLY_COST":
-                kwargs.get("vm_running_hourly_cost", "0.2"),
+                kwargs.get("vm_running_hourly_cost", "0.086"),
             "HOST_PE_MIPS":
                 kwargs.get("host_pe_mips", "20000"),
             "HOST_BW":
@@ -111,9 +111,9 @@ class SmallDC(gym.Env):
             "HOST_RAM":
                 kwargs.get("host_ram", "65536"),
             "HOST_SIZE":
-                kwargs.get("hostSize", "16000"),
+                kwargs.get("host_size", "16000"),
             "HOST_PE_CNT":
-                kwargs.get("hostPeCnt", "20"),
+                kwargs.get("host_pe_cnt", "20"),
             "DATACENTER_HOSTS_CNT":
                 kwargs.get("datacenter_hosts_cnt", "50"),
             "BASIC_VM_RAM":
@@ -129,7 +129,7 @@ class SmallDC(gym.Env):
             "PAYING_FOR_THE_FULL_HOUR":
                 kwargs.get("paying_for_the_full_hour", "false"),
             "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER":
-                kwargs.get("storeCreatedCloudletsDatacenterBroker", "false"),
+                kwargs.get("store_created_cloudlets_datacenter_broker", "false"),
             "REWARD_JOB_WAIT_COEF":
                 kwargs.get("reward_job_wait_coef", "1"),
             "REWARD_UTILIZATION_COEF":

@@ -502,7 +502,8 @@ public class CloudSimProxy {
         newVm.setDescription(type + "-" + hostId);
 
         if (!host.isSuitableForVm(newVm)) {
-            LOGGER.debug("Vm creating ignored, host not suitable");
+            LOGGER.debug("Vm creating ignored, host not suitable: " 
+                + host.getSuitabilityFor(newVm).toString());
             return false;
         }
 
