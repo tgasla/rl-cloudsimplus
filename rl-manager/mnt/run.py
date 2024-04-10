@@ -6,13 +6,14 @@ import numpy as np
 import gymnasium as gym
 import gym_cloudsimplus
 import torch
+import pandas as pd
 
 import stable_baselines3 as sb3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
 import dummy_agents
-from SaveOnBestTrainingRewardCallback import SaveOnBestTrainingRewardCallback
-from utils import FilenameFormatter, SWFReader
+from save_on_best_training_reward_callback import SaveOnBestTrainingRewardCallback
+from utils import FilenameFormatter, WorkloadUtils
 
 def datetime_to_str():
     return datetime.now().strftime("%y%m%d-%H%M%S")
@@ -96,6 +97,11 @@ parser.add_argument(
     type=str,
     help=("The maximum amount of CPU cores to allow each job to allocate")
 )
+parser.add_argument(
+    "--job-trace-file",
+    type=str,
+    help=("The filename of the job trace file that will be used for training")
+)
 
 args = parser.parse_args()
 algorithm_str = str(args.algo).upper()
@@ -108,6 +114,7 @@ reward_job_wait_coef=str(args.reward_job_wait_coef)
 reward_utilization_coef=str(args.reward_utilization_coef)
 reward_invalid_coef=str(args.reward_invalid_coef)
 max_pes_per_job=str(args.max_pes_per_job)
+job_trace_file=str(args.job_trace_file)
 
 experiment_id = FilenameFormatter.create_filename_id(
     algorithm_str,
@@ -123,7 +130,7 @@ timestamp = datetime_to_str()
 filename_id = timestamp + "_" + experiment_id
 
 # Read jobs
-jobs = SWFReader.swf_read("mnt/LLNL-Atlas-2006-2.1-cln.swf", jobs_to_read=25)
+jobs = WorkloadUtils.read_csv(f"mnt/traces/{job_trace_file}.csv")
 
 base_log_dir = "./logs/"
 

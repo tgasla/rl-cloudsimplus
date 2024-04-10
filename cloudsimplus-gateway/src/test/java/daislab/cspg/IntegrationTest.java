@@ -262,13 +262,13 @@ public class IntegrationTest {
         assertNotEquals(1000, stepsExecuted);
     }
    
-    // @AfterAll
-    // public static void deleteJobLogDirectory() {
-    //     // Recursively delete the tempDirectory and its contents
-    //     try {
-    //         FileUtils.deleteDirectory(new File("./logs"));
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //     }
-    // }
+    @AfterAll
+    public static void deleteJobLogDirectory() {
+        // Recursively delete the tempDirectory and its contents
+        try {
+            FileUtils.deleteDirectory(new File("./logs"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

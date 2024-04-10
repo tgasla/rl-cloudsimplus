@@ -46,13 +46,13 @@ public class CloudletDescriptorTest {
         assertEquals(2, deserialized.size());
     }
     
-    // @AfterAll
-    // public static void deleteJobLogDirectory() {
-    //     // Recursively delete the tempDirectory and its contents
-    //     try {
-    //         FileUtils.deleteDirectory(new File("./logs"));
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //     }
-    // }
+    @AfterAll
+    public static void deleteJobLogDirectory() {
+        // Recursively delete the tempDirectory and its contents
+        try {
+            FileUtils.deleteDirectory(new File("./logs"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -49,13 +49,13 @@ public class VmCostTest {
         return new VmSimple(mipsCapacity, 4).setDescription("M");
     }
         
-    // @AfterAll
-    // public static void deleteJobLogDirectory() {
-    //     // Recursively delete the tempDirectory and its contents
-    //     try {
-    //         FileUtils.deleteDirectory(new File("./logs"));
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //     }
-    // }
+    @AfterAll
+    public static void deleteJobLogDirectory() {
+        // Recursively delete the tempDirectory and its contents
+        try {
+            FileUtils.deleteDirectory(new File("./logs"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

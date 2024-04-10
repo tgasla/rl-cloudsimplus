@@ -51,6 +51,7 @@ services:
       --reward-utilization-coef=${REWARD_UTILIZATION_COEF}
       --reward-invalid-coef=${REWARD_INVALID_COEF}
       --max-pes-per-job=${MAX_PES_PER_JOB}
+      --job-trace-file=${JOB_TRACE_FILE}
 
   manager-cuda:
     <<: *cpu
