@@ -200,8 +200,9 @@ public class WrappedSimulation {
 
     private long continuousToPositiveDiscrete(
             final double continuous, 
-            final long maxDiscreteValue) {
-        final long discrete = Long.valueOf(Math.round(continuous * maxDiscreteValue));
+            final long bucketsNum) {
+            final long discrete =
+                (long) Math.min(Math.floor(continuous * bucketsNum), bucketsNum - 1);
         return Math.abs(discrete);
     }
 
@@ -217,7 +218,7 @@ public class WrappedSimulation {
         if (action[0] < 0) {
             id = continuousToPositiveDiscrete(
                 action[0],
-                cloudSimProxy.getLastCreatedVmId());
+                cloudSimProxy.getLastCreatedVmId() + 1);
             debug("translated action[0] = " + id);
             debug("will try to destroy vm with id = " + id);
             isValid = removeVm(id);
@@ -229,11 +230,11 @@ public class WrappedSimulation {
         else if (action[0] > 0) {
             id = continuousToPositiveDiscrete(
                 action[0],
-                settings.getDatacenterHostsCnt() - 1);
+                settings.getDatacenterHostsCnt());
 
             vmTypeIndex = (int) continuousToPositiveDiscrete(
                 action[1],
-                CloudSimProxy.VM_TYPES.length - 1);
+                CloudSimProxy.VM_TYPES.length);
 
             debug("Translated action[0] = " + id);
             debug("Will try to create a new Vm on the same host as the vm with id = " 
