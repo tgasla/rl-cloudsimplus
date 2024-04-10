@@ -103,12 +103,8 @@ class LargeDC(gym.Env):
                 kwargs.get("max_pes_per_job", "1"),
             # "QUEUE_WAIT_PENALTY":
             #     kwargs.get("queue_wait_penalty", "0.00001"),
-            # "VM_RUNNING_HOURLY_COST":
-            #     kwargs.get("vm_running_hourly_cost", "0.2"),
             "VM_RUNNING_HOURLY_COST":
                 kwargs.get("vm_running_hourly_cost", "0.086"),
-            # "HOST_PE_MIPS":
-            #     kwargs.get("host_pe_mips", "222122"),
             "HOST_PE_MIPS":
                 kwargs.get("host_pe_mips", "30000"),
             "HOST_BW":
@@ -117,7 +113,7 @@ class LargeDC(gym.Env):
             "HOST_RAM":
                 kwargs.get("host_ram", "196608"),
             "HOST_SIZE":
-                kwargs.get("host_size", "400000"),
+                kwargs.get("host_size", "500000"),
             "HOST_PE_CNT":
                 kwargs.get("host_pe_cnt", "40"),
             "DATACENTER_HOSTS_CNT":
@@ -126,10 +122,10 @@ class LargeDC(gym.Env):
                 kwargs.get("basic_vm_ram", "8192"),
             "BASIC_VM_PE_CNT":
                 kwargs.get("basic_vm_pe_count","2"),
+            "VM_STARTUP_DELAY":
+                kwargs.get("vm_startup_delay","0"),
             "VM_SHUTDOWN_DELAY":
-                kwargs.get("vm_shutdown_delay", "25.0"),
-            # "MAX_VMS_PER_SIZE":
-            #     kwargs.get("max_vms_per_size", "500"),
+                kwargs.get("vm_shutdown_delay", "0"),
             "PRINT_JOBS_PERIODICALLY":
                 kwargs.get("print_jobs_periodically", "false"),
             "PAYING_FOR_THE_FULL_HOUR":
@@ -137,11 +133,11 @@ class LargeDC(gym.Env):
             "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER":
                 kwargs.get("store_created_cloudlets_datacenter_broker", "false"),
             "REWARD_JOB_WAIT_COEF":
-                kwargs.get("reward_job_wait_coef", "1"),
+                kwargs.get("reward_job_wait_coef", "0.3"),
             "REWARD_UTILIZATION_COEF":
-                kwargs.get("reward_utilization_coef", "1"),
+                kwargs.get("reward_utilization_coef", "0.3"),
             "REWARD_INVALID_COEF":
-                kwargs.get("reward_invalid_coef", "1"),
+                kwargs.get("reward_invalid_coef", "0.4"),
             "JOB_LOG_DIR":
                 kwargs.get("job_log_dir", "./logs")
         }

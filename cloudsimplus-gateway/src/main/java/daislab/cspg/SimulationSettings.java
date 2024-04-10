@@ -26,10 +26,11 @@ public class SimulationSettings {
     private final long hostRam;
     private final long hostSize;
     private final long hostPeCnt;
-    private final double queueWaitPenalty; //TODO: delete it, unused
     private final long datacenterHostsCnt;
     private final long basicVmRam;
     private final long basicVmPeCount;
+    private final long basicVmSize;
+    private final long basicVmBw;
     private final double vmStartupDelay;
     private final double vmShutdownDelay;
     private final boolean printJobsPeriodically;
@@ -64,17 +65,19 @@ public class SimulationSettings {
         hostRam = Long.parseLong(
             parameters.getOrDefault("HOST_RAM", "65536"));
         hostSize = Long.parseLong(
-            parameters.getOrDefault("HOST_SIZE", "16000"));
+            parameters.getOrDefault("HOST_SIZE", "100000"));
         hostPeCnt = Long.parseLong(
             parameters.getOrDefault("HOST_PE_CNT", "14"));
-        queueWaitPenalty = Double.parseDouble(
-            parameters.getOrDefault("QUEUE_WAIT_PENALTY", "0.00001"));
         datacenterHostsCnt = Long.parseLong(
             parameters.getOrDefault("DATACENTER_HOSTS_CNT", "3000"));
         basicVmRam = Long.parseLong(
             parameters.getOrDefault("BASIC_VM_RAM", "8192"));
         basicVmPeCount = Long.parseLong(
             parameters.getOrDefault("BASIC_VM_PE_CNT", "2"));
+        basicVmSize = Long.parseLong(
+            parameters.getOrDefault("BASIC_VM_SIZE", "4000"));
+        basicVmBw = Long.parseLong(
+            parameters.getOrDefault("BASIC_VM_BW", "1000"));
         vmStartupDelay = Double.parseDouble(
             parameters.getOrDefault("VM_STARTUP_DELAY", "0"));
         vmShutdownDelay = Double.parseDouble(
@@ -98,7 +101,7 @@ public class SimulationSettings {
 
     @Override
     public String toString() {
-        return "SimulationSettings {" +
+        return "SimulationSettings {" + "\n" +
             "simulationSpeedup=" + simulationSpeedup + ",\n" +
             "timestepInterval=" + timestepInterval + ",\n" +
             "vmRunningHourlyCost=" + vmRunningHourlyCost + ",\n" + 
@@ -107,12 +110,15 @@ public class SimulationSettings {
             "hostRam=" + hostRam + ",\n" +
             "hostSize=" + hostSize + ",\n" +
             "hostPeCnt=" + hostPeCnt + ",\n" +
-            "queueWaitPenalty=" + queueWaitPenalty + ",\n" +
             "datacenterHostsCnt=" + datacenterHostsCnt + ",\n" +
             "basicVmRam=" + basicVmRam + ",\n" +
             "basicVmPeCount=" + basicVmPeCount + ",\n" +
+            "basicVmSize=" + basicVmSize + ",\n" +
+            "basicVmBw=" + basicVmBw + ",\n" +
+            "vmStartupDelay" + vmStartupDelay + ",\n" +
+            "vmShutdownDelay" + vmShutdownDelay + ",\n" +
             "printJobsPeriodically=" + printJobsPeriodically + ",\n" +
-            "payingForTheFullHour=" + payingForTheFullHour +
+            "payingForTheFullHour=" + payingForTheFullHour + ",\n" +
             "storeCreatedCloudletsDatacenterBroker=" + storeCreatedCloudletsDatacenterBroker + ",\n" +
             "rewardJobWaitCoef=" + rewardJobWaitCoef + ",\n" +
             "rewardUtilizationCoef=" + rewardUtilizationCoef + ",\n" +
@@ -153,10 +159,6 @@ public class SimulationSettings {
         return hostPeCnt;
     }
 
-    public double getQueueWaitPenalty() {
-        return queueWaitPenalty;
-    }
-
     public long getDatacenterHostsCnt() {
         return datacenterHostsCnt;
     }
@@ -178,11 +180,11 @@ public class SimulationSettings {
     }
 
     public long getBasicVmSize() {
-        return hostSize / 4;
+        return basicVmSize;
     }
 
     public long getBasicVmBw() {
-        return hostBw / 4;
+        return basicVmBw;
     }
 
     public long getBasicVmRam() {

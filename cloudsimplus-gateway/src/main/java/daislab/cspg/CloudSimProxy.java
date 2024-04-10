@@ -502,16 +502,15 @@ public class CloudSimProxy {
         newVm.setDescription(type + "-" + hostId);
 
         if (!host.isSuitableForVm(newVm)) {
-            LOGGER.debug("Vm creating ignored, host not suitable: " 
-                + host.getSuitabilityFor(newVm).toString());
+            LOGGER.debug("Vm creating ignored, host not suitable");
             return false;
         }
 
         vmCost.addNewVmToList(newVm);
         nextVmId++;
 
-        // assuming average delay 56s as in 10.48550/arXiv.2107.03467
-        final double delay = 56;
+        // assuming average startup delay is 56s as in 10.48550/arXiv.2107.03467
+        final double delay = settings.getVmStartupDelay();
         // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
         newVm.setSubmissionDelay(delay);
         broker.submitVm(newVm);
@@ -535,16 +534,12 @@ public class CloudSimProxy {
     // }
 
     // if a vm is destroyed, this method returns the type of it.
-    public boolean removeVm(final long id) {
+    public boolean removeVm(final int index) {
         List<Vm> vmExecList = broker.getVmExecList(); 
-        Vm vmToKill = vmExecList
-            .parallelStream()
-            .filter(vm -> id == vm.getId())
-            .findFirst()
-            .orElse(Vm.NULL);
+        Vm vmToKill = vmExecList.get(index);
 
         if (vmToKill == Vm.NULL) {
-            LOGGER.warn("Can't kill the VM with id " + id + ". No such vm found.");
+            LOGGER.warn("Can't kill the VM with index " + index + ". No such vm found.");
             return false;
         }
 
@@ -692,7 +687,6 @@ public class CloudSimProxy {
     }
 
     class DelayCloudletComparator implements Comparator<Cloudlet> {
-
         @Override
         public int compare(Cloudlet left, Cloudlet right) {
             final double diff = left.getSubmissionDelay() - right.getSubmissionDelay();

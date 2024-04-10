@@ -143,9 +143,9 @@ env = gym.make(
     pretrain_env,
     jobs_as_json=json.dumps(jobs),
     simulation_speedup=simulation_speedup,
-    datacenter_hosts_cnt=10,
-    host_pe_mips=10,
-    host_pe_cnt=10,
+    datacenter_hosts_cnt="10",
+    host_pe_mips="10",
+    host_pe_cnt="10",
     reward_job_wait_coef=reward_job_wait_coef,
     reward_utilization_coef=reward_utilization_coef,
     reward_invalid_coef=reward_invalid_coef,
@@ -175,7 +175,7 @@ else:
 model = algorithm(
     policy=policy,
     env=env,
-    verbose=True,
+    verbose=1,
     tensorboard_log=base_log_dir,
     device=device
 )
@@ -210,6 +210,40 @@ env.close()
 
 # Delete model
 del model
+
+
+# deploy agent for evaluation and log (state, action, reward)
+# Load the trained agent
+model = algorithm.load(
+    f"{log_dir}/best_model",
+    device=device,
+    env=env
+)
+
+
+obs, info = env.reset()
+done = False
+timestep_list = []
+while not done:
+    action = model.predict(obs)  # agent policy that uses the observation and info
+    obs, reward, terminated, truncated, info = env.step(action)
+    timestep_list.append(
+        {"s1":obs[0]},
+        {"s2":obs[1]},
+        {"s3":obs[2]},
+        {"s4":obs[3]},
+        {"s5":obs[4]},
+        {"action":action},
+        {"reward":reward},
+    )
+
+    done = terminated or truncated
+
+pd.DataFrame(timestep_list).to_csv(log_dir + "best_model_actions.csv")
+
+env.close()
+del model
+
 
 # if no transfer env is specified, exit
 if transfer_env == "":
@@ -277,7 +311,7 @@ callback = SaveOnBestTrainingRewardCallback(
 
 # Retrain the agent initializing the weights from the saved agent
 model.learn(
-    total_timesteps= transfer_timesteps,
+    total_timesteps = transfer_timesteps,
     # The right thing to do is to set reset_num_timesteps=True
     # This way, the learning restarts
     # The only problem is that tensorboard recognizes

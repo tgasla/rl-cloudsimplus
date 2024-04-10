@@ -25,6 +25,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         super().__init__(verbose)
         self.check_freq = check_freq
         self.log_dir = log_dir
+        self.save_replay_buffer = save_replay_buffer,
         self.save_path = os.path.join(log_dir, "best_model")
         self.best_mean_reward = -np.inf
 
@@ -47,7 +48,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                   if self.verbose >= 1:
                     print(f"Saving new best model to {self.save_path}")
                   self.model.save(self.save_path)
-                  if hasattr(self.model, "replay_buffer") and self.model.replay_buffer is not None:
+                  if hasattr(self.model, "replay_buffer") \
+                	and self.model.replay_buffer is not None \
+                  	and self.save_replay_buffer:
                     # If model has a replay buffer, save it
                     replay_buffer_path = os.path.join(self.log_dir, "best_model_replay_buffer")
                     if self.verbose >= 1:

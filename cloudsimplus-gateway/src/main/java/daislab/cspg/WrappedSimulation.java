@@ -15,7 +15,6 @@ import com.google.gson.Gson;
 import static org.apache.commons.math3.stat.StatUtils.percentile;
 
 public class WrappedSimulation {
-
     private static final Logger LOGGER =
         LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
     private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
@@ -39,11 +38,11 @@ public class WrappedSimulation {
     private final SimulationHistory simulationHistory;
     private CloudSimProxy cloudSimProxy;
     private long maxWaitingJobsCount = 0;
+    private long maxRunningVms = 0;
     private double meanJobWaitPenalty = 0.0;
     private double meanUtilizationPenalty = 0.0;
     private int stepCount;
     private int validCount = 0;
-    private double maxCost = 0.0;
 
     public WrappedSimulation(
         final SimulationSettings settings,
@@ -92,8 +91,7 @@ public class WrappedSimulation {
         );
 
         double[] obs = getObservation();
-
-        resetMaxCost();
+        resetMaxRunningVms();
         resetMaxWaitingJobsCount();
         resetValidCount();
         resetMeanJobWaitPenalty();
@@ -151,7 +149,7 @@ public class WrappedSimulation {
         simulationHistory.record("action[0]", action[0]);
         simulationHistory.record("action[1]", action[1]);
         simulationHistory.record("reward", reward);
-        simulationHistory.record("resourceCost", cloudSimProxy.getRunningCost());
+        simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
         simulationHistory.record(
             "vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
 
@@ -170,25 +168,25 @@ public class WrappedSimulation {
         double jobWaitPenalty = getWaitingJobsRatioGlobal();
         double utilizationPenalty = getVmAllocatedRatio();
 
-        updateMaxCost(cloudSimProxy.getRunningCost());
+        updateMaxRunningVms(cloudSimProxy.getBroker().getVmExecList().size());
         updateMaxWaitingJobsCount(cloudSimProxy.getWaitingJobsCount());
 
         updateMeanJobWaitPenalty(-settings.getRewardJobWaitCoef() * jobWaitPenalty);
         updateMeanUtilizationPenalty(-settings.getRewardUtilizationCoef() * utilizationPenalty);
 
-        debug("Max cost: " + getMaxCost()
+        debug("Max episode running vms: " + getMaxRunningVms()
             + " Max waiting jobs count: " + getMaxWaitingJobsCount()
-            + " Mean job wait penalty: " + getMeanJobWaitPenalty()
-            + " Mean utilization penalty: " + getMeanUtilizationPenalty());
+            + " Mean episode job wait penalty: " + getMeanJobWaitPenalty()
+            + " Mean episode utilization penalty: " + getMeanUtilizationPenalty());
 
         if (isValid) {
             validCount++;
         }
         
         SimulationStepInfo info = new SimulationStepInfo(
-                getValidCount(),
-                getMeanJobWaitPenalty(),
-                getMeanUtilizationPenalty());
+            getValidCount(),
+            getMeanJobWaitPenalty(),
+            getMeanUtilizationPenalty());
 
         return new SimulationStepResult(
             observation,
@@ -212,16 +210,17 @@ public class WrappedSimulation {
 
         final boolean isValid;
         final long id;
+        final int index;
         final int vmTypeIndex;
 
-        // action < 0 destroys a VM with Vm.id = id
+        // action < 0 destroys the VM with VM.index = index
         if (action[0] < 0) {
-            id = continuousToPositiveDiscrete(
+            index = (int) continuousToPositiveDiscrete(
                 action[0],
-                cloudSimProxy.getLastCreatedVmId() + 1);
-            debug("translated action[0] = " + id);
-            debug("will try to destroy vm with id = " + id);
-            isValid = removeVm(id);
+                cloudSimProxy.getBroker().getVmExecList().size());
+            debug("translated action[0] = " + index);
+            debug("will try to destroy vm with index = " + index);
+            isValid = removeVm(index);
             return isValid;
         }
 
@@ -248,9 +247,9 @@ public class WrappedSimulation {
         }
     }
 
-    private boolean removeVm(final long id) {
-        if (!cloudSimProxy.removeVm(id)) {
-            debug("Removing a VM with id " + id + " action is invalid. Ignoring.");
+    private boolean removeVm(final int index) {
+        if (!cloudSimProxy.removeVm(index)) {
+            debug("Removing a VM with index " + index + " action is invalid. Ignoring.");
             return false;
         }
         return true;
@@ -380,17 +379,17 @@ public class WrappedSimulation {
         final double utilizationCoef = settings.getRewardUtilizationCoef();
         final double invalidCoef = settings.getRewardInvalidCoef();
         
-        final double utilizationPenalty = - getVmAllocatedRatio();
-        final double jobWaitPenalty = - getWaitingJobsRatioGlobal();
-        final int invalidActionPenalty = (isValid) ? 0 : -1;
+        final double utilizationPenalty = getVmAllocatedRatio();
+        final double jobWaitPenalty = getWaitingJobsRatioGlobal();
+        final int invalidActionPenalty = (isValid) ? 0 : 1;
         
         if (!isValid) {
             info("Penalty given to the agent because the selected action was not possible");
         }
 
-        return jobWaitCoef * jobWaitPenalty
-                + utilizationCoef * utilizationPenalty
-                + invalidCoef * invalidActionPenalty;
+        return - jobWaitCoef * jobWaitPenalty
+                - utilizationCoef * utilizationPenalty
+                - invalidCoef * invalidActionPenalty;
     }
 
     public int getStepCount() {
@@ -401,18 +400,26 @@ public class WrappedSimulation {
         stepCount = 0;
     }
 
-    private void updateMaxCost(double cost) {
-        if (cost > maxCost) {
-            maxCost = cost;
-        }
+    private void resetMaxRunningVms() {
+        maxRunningVms = 0;
     }
 
     private void resetMaxWaitingJobsCount() {
         maxWaitingJobsCount = 0;
     }
 
+    private long getMaxRunningVms() {
+        return maxRunningVms;
+    }
+
     private long getMaxWaitingJobsCount() {
         return maxWaitingJobsCount;
+    }
+
+    private void updateMaxRunningVms(long runningVms) {
+        if (runningVms > maxRunningVms) {
+            maxRunningVms = runningVms;
+        }
     }
 
     private void updateMaxWaitingJobsCount(long waitingJobsCount) {
@@ -430,10 +437,6 @@ public class WrappedSimulation {
         meanJobWaitPenalty = (meanJobWaitPenalty * (stepCount - 1) + jobWaitPenalty) / stepCount;
     }
 
-    public double getMaxCost() {
-        return maxCost;
-    }
-
     private int getValidCount() {
         return validCount;
     }
@@ -444,10 +447,6 @@ public class WrappedSimulation {
 
     private double getMeanUtilizationPenalty() {
         return meanUtilizationPenalty;
-    }
-
-    private void resetMaxCost() {
-        maxCost = 0.0;
     }
 
     private void resetValidCount() {
