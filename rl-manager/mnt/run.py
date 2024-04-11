@@ -27,9 +27,9 @@ learning_rate_dict = {
 }
 
 monitor_info_keywords = (
-    "valid_count",
-    "mean_job_wait_penalty",
-    "mean_utilization_penalty"
+    "ep_job_wait_rew_mean",
+    "ep_util_rew_mean",
+    "ep_valid_count",
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -177,7 +177,7 @@ else:
 # Instantiate the agent
 model = algorithm(
     policy=policy,
-    env=env,
+    env=venv,
     verbose=1,
     tensorboard_log=base_log_dir,
     device=device
@@ -196,8 +196,7 @@ if hasattr(model, "action_noise"):
 
 callback = SaveOnBestTrainingRewardCallback(
     check_freq=10_000,
-    log_dir=log_dir,
-    save_replay_buffer=True
+    log_dir=log_dir
 )
 
 # Train the agent
@@ -323,7 +322,6 @@ model.learning_rate = learning_rate_dict.get(algorithm_str)
 callback = SaveOnBestTrainingRewardCallback(
     check_freq=10_000,
     log_dir=new_log_dir,
-    save_replay_buffer=True
 )
 
 # Retrain the agent initializing the weights from the saved agent

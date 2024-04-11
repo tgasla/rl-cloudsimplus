@@ -140,6 +140,10 @@ public class WrappedSimulation {
 
         long startAction = System.nanoTime();
         boolean isValid = executeAction(action);
+        if (isValid) {
+            epValidCount++;
+        }
+
         long stopAction = System.nanoTime();
         cloudSimProxy.runFor(settings.getTimestepInterval());
 
@@ -172,7 +176,7 @@ public class WrappedSimulation {
 
         double jobWaitReward = - settings.getRewardJobWaitCoef() * getWaitingJobsRatioGlobal();
         double utilReward = - settings.getRewardUtilizationCoef() * getVmAllocatedRatio();
-        double invalidReward = - settings.getRewardInvalidCoef() * (isValid ? 1 : 0);
+        double invalidReward = - settings.getRewardInvalidCoef() * (isValid ? 0 : 1);
 
         updateEpWaitingJobsCountMax(cloudSimProxy.getWaitingJobsCount());
         updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
@@ -186,12 +190,8 @@ public class WrappedSimulation {
             + " Max episode running vms count: " + getEpRunningVmsCountMax()
             + " Job wait reward: " + jobWaitReward
             + " Utilization reward: " + utilReward
-            + " Invalid reward" + invalidReward
+            + " Invalid reward: " + invalidReward
         );
-
-        if (isValid) {
-            epValidCount++;
-        }
         
         SimulationStepInfo info = new SimulationStepInfo(
             jobWaitReward,
@@ -409,7 +409,7 @@ public class WrappedSimulation {
         
         final double jobWaitReward = getWaitingJobsRatioGlobal();
         final double utilReward = getVmAllocatedRatio();
-        final int invalidReward = (isValid) ? 0 : 1;
+        final int invalidReward = isValid ? 0 : 1;
         
         if (!isValid) {
             info("Penalty given to the agent because the selected action was not possible");

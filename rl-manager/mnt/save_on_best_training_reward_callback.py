@@ -20,9 +20,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 		self,
 		check_freq: int,
 		log_dir: str,
-		save_replay_buffer: bool,
-		verbose: int = 1,
-		save_best_episode_transitions: bool = True
+		save_replay_buffer: bool = True,
+		save_best_episode_details: bool = True,
+		verbose: int = 1
 	):    
 		super().__init__(verbose)
 		self.check_freq = check_freq
@@ -30,7 +30,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 		self.save_replay_buffer = save_replay_buffer,
 		self.save_path = os.path.join(log_dir, "best_model")
 		self.best_mean_reward = -np.inf
-		self.save_best_episode_transitions = save_best_episode_transitions
+		self.save_best_episode_details = save_best_episode_details
+	
+	def get(self, attr):
+		return self.training_env.env_method("get_wrapper_attr", attr)
 
 	def _on_step(self) -> bool:
 		if self.n_calls % self.check_freq == 0:
@@ -42,7 +45,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 				mean_reward = np.mean(y[-100:])
 				if self.verbose >= 1:
 					print(f"Num timesteps: {self.num_timesteps}")
-					print(f"Best mean reward: {self.best_mean_reward:.2f} - Last mean reward per episode: {mean_reward:.2f}")
+					print((
+						f"Best mean reward: {self.best_mean_reward:.2f} "
+						f"- Last mean reward per episode: {mean_reward:.2f}"
+					))
 
 				# New best model, you could save the agent here
 				if mean_reward > self.best_mean_reward:
@@ -55,21 +61,24 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 						and self.model.replay_buffer is not None \
 						and self.save_replay_buffer:
 						# If model has a replay buffer, save it
-						replay_buffer_path = os.path.join(self.log_dir, "best_model_replay_buffer")
+						replay_buffer_path = os.path.join(
+							self.log_dir, 
+							"best_model_replay_buffer"
+						)
 						if self.verbose >= 1:
-							print(f"Saving replay buffer to {replay_buffer_path}")
+							print((
+								f"Saving replay buffer to"
+		 						f"{replay_buffer_path}"
+							))
 						self.model.save_replay_buffer(replay_buffer_path)
-					if self.save_best_episode_transitions:
-						transitions_dict = {
-							"state": self.training_env.ep_states,
-							"action": self.training_env.ep_actions,
-							"reward": self.training_env.ep_rewards,
-							"job_wait_reward": self.training_env.ep_job_wait_rewards,
-							"utilization_reward": self.training_env.ep_utilization_rewards,
-							"invalid_reward": self.training_env.ep_invalid_rewards,
-							"next_state": self.training_env.ep_next_states
-						}
-						df = pd.DataFrame(transitions_dict)
-						episode_transitions_path = os.path.join(self.log_dir, "best_model_actions.csv")
-						df.to_csv(episode_transitions_path)
+					if self.save_best_episode_details:
+						episode_details = self.get("episode_details")[0]
+						del episode_details["state"][-1]
+						
+						df = pd.DataFrame(episode_details)
+						episode_details_path = os.path.join(
+							self.log_dir, 
+							"best_model_actions.csv"
+						)
+						df.to_csv(episode_details_path)
 		return True

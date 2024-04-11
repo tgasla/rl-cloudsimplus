@@ -60,6 +60,8 @@ class SmallDC(gym.Env):
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
         self.simulation_environment = self.gateway.entry_point
 
+        self.episode_details = None
+
         self.action_space = spaces.Box(
             low=np.array([-1.0, 0.0]), 
             high=np.array([1.0, 1.0]),
@@ -147,20 +149,25 @@ class SmallDC(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        self.ep_states = []
-        self.ep_actions = []
-        self.ep_rewards = []
-        self.ep_next_states = []
+        self.episode_details = {
+            "state": [],
+            "action": [],
+            "reward": [],
+            "job_wait_reward": [],
+            "util_reward": [],
+            "invalid_reward": [],
+            "next_state": []
+        }
         
         result = self.simulation_environment.reset(self.simulation_id)
-        self.simulation_environment.seed(seed)
+        self.simulation_environment.seed(self.simulation_id)
 
         raw_obs = result.getObs()
         obs = self._to_nparray(raw_obs)
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
         
-        self.ep_states.append(obs)
+        self.episode_details["state"].append(list(raw_obs))
         
         return obs, info
 
@@ -176,13 +183,14 @@ class SmallDC(gym.Env):
 
         info = self._raw_info_to_dict(raw_info)
 
-        self.ep_actions.append(action)
-        self.ep_rewards.append(reward)
-        self.ep_job_wait_rewards.append(info["step_job_wait_penalty"])
-        self.ep_utilization_rewards.append(info["step_utilization_penalty"])
-        self.ep_invalid_rewards.append(info["invalid_penalty"])
-        self.ep_next_states.append(obs)
-        self.ep_states.append(obs)
+        self.episode_details["action"].append(action.tolist())
+        self.episode_details["reward"].append(reward)
+        self.episode_details["job_wait_reward"].append(info["job_wait_reward"])
+        self.episode_details["util_reward"].append(info["util_reward"])
+        self.episode_details["invalid_reward"].append(info["invalid_reward"])
+        self.episode_details["next_state"].append(list(raw_obs))
+
+        self.episode_details["state"].append(list(raw_obs))
 
         if self.render_mode == "human":
             self.render()
@@ -210,8 +218,8 @@ class SmallDC(gym.Env):
         if self.render_mode == "human":
             print("Observation state:")
             print("-" * 40)
-            print(f"vmAllocatedRatio: {obs_data[1]}")
-            print(f"avgCPUUtilization: {obs_data[0]}")
+            print(f"vmAllocatedRatio: {obs_data[0]}")
+            print(f"avgCPUUtilization: {obs_data[1]}")
             print(f"p90CPUUtilization: {obs_data[2]}")
             print(f"avgMemoryUtilization: {obs_data[3]}")
             print(f"p90MemoryUtilization: {obs_data[4]}")
@@ -234,7 +242,7 @@ class SmallDC(gym.Env):
             "util_reward": raw_info.getUtilReward(),
             "invalid_reward": raw_info.getInvalidReward(),
             "ep_job_wait_rew_mean": raw_info.getEpJobWaitRewardMean(),
-            "ep_utilization_rew_mean": raw_info.getEpUtilRewardMean(),
+            "ep_util_rew_mean": raw_info.getEpUtilRewardMean(),
             "ep_valid_count": raw_info.getEpValidCount()
         }
         return info
