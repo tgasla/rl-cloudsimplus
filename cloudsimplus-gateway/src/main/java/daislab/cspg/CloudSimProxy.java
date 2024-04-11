@@ -354,7 +354,7 @@ public class CloudSimProxy {
     }
 
     private void scheduleJobsUntil(final double target) {
-        previousIntervalJobId = nextVmId;
+        previousIntervalJobId = toAddJobId;
         List<Cloudlet> jobsToSubmit = new ArrayList<>();
 
         while (toAddJobId < jobs.size() && 
