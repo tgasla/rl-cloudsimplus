@@ -21,13 +21,13 @@ public class WrappedSimulation {
     
     private final List<CloudletDescriptor> initialJobsDescriptors;
     private final List<String> metricsNames = Arrays.asList(
-        "vmAllocatedRatioHistory",
-        "avgCPUUtilizationHistory",
-        "p90CPUUtilizationHistory",
-        // "avgMemoryUtilizationHistory",
-        // "p90MemoryUtilizationHistory",
-        "waitingJobsRatioGlobalHistory",
-        "waitingJobsRatioRecentHistory"
+        "vmAllocatedRatio",
+        "avgCpuUtilization",
+        "p90CpuUtilization",
+        // "avgMemoryUtilization",
+        // "p90MemoryUtilization",
+        "waitingJobsRatioGlobal",
+        "waitingJobsRatioTimestep"
     );
 
     private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
@@ -37,12 +37,15 @@ public class WrappedSimulation {
     private final SimulationSettings settings;
     private final SimulationHistory simulationHistory;
     private CloudSimProxy cloudSimProxy;
-    private long maxWaitingJobsCount = 0;
-    private long maxRunningVms = 0;
-    private double meanJobWaitPenalty = 0.0;
-    private double meanUtilizationPenalty = 0.0;
     private int stepCount;
-    private int validCount = 0;
+    private double jobWaitReward;
+    private double utilReward;
+    private double invalidReward;
+    private double epJobWaitRewardMean = 0.0;
+    private double epUtilRewardMean = 0.0;
+    private int epValidCount = 0;
+    private long epWaitingJobsCountMax = 0;
+    private long epRunningVmsCountMax = 0;
 
     public WrappedSimulation(
         final SimulationSettings settings,
@@ -91,13 +94,14 @@ public class WrappedSimulation {
         );
 
         double[] obs = getObservation();
-        resetMaxRunningVms();
-        resetMaxWaitingJobsCount();
-        resetValidCount();
-        resetMeanJobWaitPenalty();
-        resetMeanUtilizationPenalty();
 
-        SimulationStepInfo info = new SimulationStepInfo(0, 0, 0);
+        resetEpJobWaitRewardMean();
+        resetEpUtilRewardMean();
+        resetEpValidCount();
+        resetEpWaitingJobsCountMax();
+        resetEpRunningVmsCountMax();
+
+        SimulationStepInfo info = new SimulationStepInfo();
 
         return new SimulationResetResult(obs, info);
     }
@@ -111,19 +115,20 @@ public class WrappedSimulation {
 
     public String render() {
         double[][] renderedEnv = {
-            metricsStorage.metricValuesAsPrimitives("vmAllocatedRatioHistory"),
-            metricsStorage.metricValuesAsPrimitives("avgCPUUtilizationHistory"),
-            metricsStorage.metricValuesAsPrimitives("p90CPUUtilizationHistory"),
-            // metricsStorage.metricValuesAsPrimitives("avgMemoryUtilizationHistory"),
-            // metricsStorage.metricValuesAsPrimitives("p90MemoryUtilizationHistory"),
-            metricsStorage.metricValuesAsPrimitives("waitingJobsRatioGlobalHistory"),
-            metricsStorage.metricValuesAsPrimitives("waitingJobsRatioRecentHistory")
+            metricsStorage.metricValuesAsPrimitives("vmAllocatedRatio"),
+            metricsStorage.metricValuesAsPrimitives("avgCpuUtilization"),
+            metricsStorage.metricValuesAsPrimitives("p9CpuUtilization"),
+            // metricsStorage.metricValuesAsPrimitives("avgMemoryUtilization"),
+            // metricsStorage.metricValuesAsPrimitives("p90MemoryUtilization"),
+            metricsStorage.metricValuesAsPrimitives("waitingJobsRatioGlobal"),
+            metricsStorage.metricValuesAsPrimitives("waitingJobsRatioTimestep")
         };
 
         return gson.toJson(renderedEnv);
     }
 
     public SimulationStepResult step(final double[] action) {
+        // debug("action received");
 
         if (cloudSimProxy == null) {
             throw new RuntimeException("Simulation not reset! Please call the reset() function!");
@@ -165,28 +170,37 @@ public class WrappedSimulation {
             + " Metrics (s): " + metricsTime
             + " Action (s): " + actionTime);
 
-        double jobWaitPenalty = getWaitingJobsRatioGlobal();
-        double utilizationPenalty = getVmAllocatedRatio();
+        double jobWaitReward = - settings.getRewardJobWaitCoef() * getWaitingJobsRatioGlobal();
+        double utilReward = - settings.getRewardUtilizationCoef() * getVmAllocatedRatio();
+        double invalidReward = - settings.getRewardInvalidCoef() * (isValid ? 1 : 0);
 
-        updateMaxRunningVms(cloudSimProxy.getBroker().getVmExecList().size());
-        updateMaxWaitingJobsCount(cloudSimProxy.getWaitingJobsCount());
+        updateEpWaitingJobsCountMax(cloudSimProxy.getWaitingJobsCount());
+        updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
 
-        updateMeanJobWaitPenalty(-settings.getRewardJobWaitCoef() * jobWaitPenalty);
-        updateMeanUtilizationPenalty(-settings.getRewardUtilizationCoef() * utilizationPenalty);
+        updateEpJobWaitRewardMean(-settings.getRewardJobWaitCoef() * jobWaitReward);
+        updateEpUtilRewardMean(-settings.getRewardUtilizationCoef() * utilReward);
 
-        debug("Max episode running vms: " + getMaxRunningVms()
-            + " Max waiting jobs count: " + getMaxWaitingJobsCount()
-            + " Mean episode job wait penalty: " + getMeanJobWaitPenalty()
-            + " Mean episode utilization penalty: " + getMeanUtilizationPenalty());
+        debug(" Mean episode job wait reward: " + getEpJobWaitRewardMean()
+            + " Mean episode utilization reward: " + getEpUtilRewardMean()
+            + " Max episode waiting jobs count: " + getEpWaitingJobsCountMax()
+            + " Max episode running vms count: " + getEpRunningVmsCountMax()
+            + " Job wait reward: " + jobWaitReward
+            + " Utilization reward: " + utilReward
+            + " Invalid reward" + invalidReward
+        );
 
         if (isValid) {
-            validCount++;
+            epValidCount++;
         }
         
         SimulationStepInfo info = new SimulationStepInfo(
-            getValidCount(),
-            getMeanJobWaitPenalty(),
-            getMeanUtilizationPenalty());
+            jobWaitReward,
+            utilReward,
+            invalidReward,
+            getEpJobWaitRewardMean(),
+            getEpUtilRewardMean(),
+            getEpValidCount()
+        );
 
         return new SimulationStepResult(
             observation,
@@ -196,12 +210,22 @@ public class WrappedSimulation {
         );
     }
 
-    private long continuousToPositiveDiscrete(
+    private long continuousToDiscrete(
             final double continuous, 
             final long bucketsNum) {
+            /*
+             * Explanation:
+             * floor(continuous * bucketsNum) will give you the discrete value
+             * but, in case of cont = 1, then the discrete value 
+             * will be equal to bucketsNum.
+             * However, we want to map the continuous value to the
+             * range of [0,bucketsNum-1].
+             * So, Math.min ensures that the maximum allowed
+             * discrete value will be buckets-1.
+             */
             final long discrete =
                 (long) Math.min(Math.floor(continuous * bucketsNum), bucketsNum - 1);
-        return Math.abs(discrete);
+        return discrete;
     }
 
     private boolean executeAction(final double[] action) {
@@ -215,9 +239,14 @@ public class WrappedSimulation {
 
         // action < 0 destroys the VM with VM.index = index
         if (action[0] < 0) {
-            index = (int) continuousToPositiveDiscrete(
-                action[0],
+            index = (int) continuousToDiscrete(
+                Math.abs(action[0]),
                 cloudSimProxy.getBroker().getVmExecList().size());
+
+            if (index < 0) {
+                debug("No active Vms. Ignoring action...");
+                return false;
+            }
             debug("translated action[0] = " + index);
             debug("will try to destroy vm with index = " + index);
             isValid = removeVm(index);
@@ -227,16 +256,16 @@ public class WrappedSimulation {
         // action > 0 creates a VM in host host.id = id
         // and Vm.type = action[1]
         else if (action[0] > 0) {
-            id = continuousToPositiveDiscrete(
+            id = continuousToDiscrete(
                 action[0],
                 settings.getDatacenterHostsCnt());
 
-            vmTypeIndex = (int) continuousToPositiveDiscrete(
+            vmTypeIndex = (int) continuousToDiscrete(
                 action[1],
                 CloudSimProxy.VM_TYPES.length);
 
             debug("Translated action[0] = " + id);
-            debug("Will try to create a new Vm on the same host as the vm with id = " 
+            debug("Will try to create a new Vm host with id = " 
                     + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
             isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);
             return isValid;
@@ -296,32 +325,32 @@ public class WrappedSimulation {
         Arrays.sort(memPercentageUsage);
 
         double waitingJobsRatioGlobal = getWaitingJobsRatioGlobal();
-        double waitingJobsRatioRecent = getWaitingJobsRatioRecent();
+        double waitingJobsRatioTimestep = getWaitingJobsRatioTimestep();
 
         metricsStorage.updateMetric(
-                "vmAllocatedRatioHistory",
-                getVmAllocatedRatio());
+            "vmAllocatedRatio",
+            getVmAllocatedRatio());
         metricsStorage.updateMetric(
-                "avgCPUUtilizationHistory",
-                safeMean(cpuPercentUsage));
+            "avgCpuUtilization",
+            safeMean(cpuPercentUsage));
         metricsStorage.updateMetric(
-                "p90CPUUtilizationHistory", 
-                percentileOrZero(cpuPercentUsage, 0.90));
+            "p90CpuUtilization", 
+            percentileOrZero(cpuPercentUsage, 0.90));
         // metricsStorage.updateMetric(
-        //         "avgMemoryUtilizationHistory",
-        //         safeMean(memPercentageUsage));
+        //     "avgMemoryUtilization",
+        //     safeMean(memPercentageUsage));
         // metricsStorage.updateMetric(
-        //         "p90MemoryUtilizationHistory", 
-        //         percentileOrZero(memPercentageUsage, 0.90));
+            // "p90MemoryUtilization", 
+            // percentileOrZero(memPercentageUsage, 0.90));
         metricsStorage.updateMetric(
-                "waitingJobsRatioGlobalHistory",
-                waitingJobsRatioGlobal);
+            "waitingJobsRatioGlobal",
+            waitingJobsRatioGlobal);
         metricsStorage.updateMetric(
-                "waitingJobsRatioRecentHistory",
-                waitingJobsRatioRecent);
+            "waitingJobsRatioTimestep",
+            waitingJobsRatioTimestep);
     }
 
-    private double getWaitingJobsRatioRecent() {
+    private double getWaitingJobsRatioTimestep() {
         final int submittedJobsCountLastInterval =
             cloudSimProxy.getSubmittedJobsCountLastInterval();
         if (submittedJobsCountLastInterval == 0) {
@@ -345,16 +374,15 @@ public class WrappedSimulation {
         return ((double) cloudSimProxy.getNumberOfActiveCores()) / settings.getAvailableCores();
     }
 
-
     private double[] getObservation() {
         return new double[] {
-                metricsStorage.getLastMetricValue("vmAllocatedRatioHistory"),
-                metricsStorage.getLastMetricValue("avgCPUUtilizationHistory"),
-                metricsStorage.getLastMetricValue("p90CPUUtilizationHistory"),
-                // metricsStorage.getLastMetricValue("avgMemoryUtilizationHistory"),
-                // metricsStorage.getLastMetricValue("p90MemoryUtilizationHistory"),
-                metricsStorage.getLastMetricValue("waitingJobsRatioGlobalHistory"),
-                metricsStorage.getLastMetricValue("waitingJobsRatioRecentHistory")
+            metricsStorage.getLastMetricValue("vmAllocatedRatio"),
+            metricsStorage.getLastMetricValue("avgCpuUtilization"),
+            metricsStorage.getLastMetricValue("p90CpuUtilization"),
+            // metricsStorage.getLastMetricValue("avgMemoryUtilization"),
+            // metricsStorage.getLastMetricValue("p90MemoryUtilization"),
+            metricsStorage.getLastMetricValue("waitingJobsRatioGlobal"),
+            metricsStorage.getLastMetricValue("waitingJobsRatioTimestep")
         };
     }
 
@@ -379,17 +407,17 @@ public class WrappedSimulation {
         final double utilizationCoef = settings.getRewardUtilizationCoef();
         final double invalidCoef = settings.getRewardInvalidCoef();
         
-        final double utilizationPenalty = getVmAllocatedRatio();
-        final double jobWaitPenalty = getWaitingJobsRatioGlobal();
-        final int invalidActionPenalty = (isValid) ? 0 : 1;
+        final double jobWaitReward = getWaitingJobsRatioGlobal();
+        final double utilReward = getVmAllocatedRatio();
+        final int invalidReward = (isValid) ? 0 : 1;
         
         if (!isValid) {
             info("Penalty given to the agent because the selected action was not possible");
         }
 
-        return - jobWaitCoef * jobWaitPenalty
-                - utilizationCoef * utilizationPenalty
-                - invalidCoef * invalidActionPenalty;
+        return - jobWaitCoef * jobWaitReward
+                - utilizationCoef * utilReward
+                - invalidCoef * invalidReward;
     }
 
     public int getStepCount() {
@@ -400,65 +428,71 @@ public class WrappedSimulation {
         stepCount = 0;
     }
 
-    private void resetMaxRunningVms() {
-        maxRunningVms = 0;
+    private void resetEpRunningVmsCountMax() {
+        epRunningVmsCountMax = 0;
     }
 
-    private void resetMaxWaitingJobsCount() {
-        maxWaitingJobsCount = 0;
+    private void resetEpWaitingJobsCountMax() {
+        epWaitingJobsCountMax = 0;
     }
 
-    private long getMaxRunningVms() {
-        return maxRunningVms;
+    private long getEpRunningVmsCountMax() {
+        return epRunningVmsCountMax;
     }
 
-    private long getMaxWaitingJobsCount() {
-        return maxWaitingJobsCount;
+    private long getEpWaitingJobsCountMax() {
+        return epWaitingJobsCountMax;
     }
 
-    private void updateMaxRunningVms(long runningVms) {
-        if (runningVms > maxRunningVms) {
-            maxRunningVms = runningVms;
+    private void updateEpRunningVmsMax(long runningVms) {
+        if (runningVms > epRunningVmsCountMax) {
+            epRunningVmsCountMax = runningVms;
         }
     }
 
-    private void updateMaxWaitingJobsCount(long waitingJobsCount) {
-        if (waitingJobsCount > maxWaitingJobsCount) {
-            maxWaitingJobsCount = waitingJobsCount;
+    private void updateEpWaitingJobsCountMax(long waitingJobsCount) {
+        if (waitingJobsCount > epWaitingJobsCountMax) {
+            epWaitingJobsCountMax = waitingJobsCount;
         }
     }
 
-    private void updateMeanUtilizationPenalty(double utilizationPenalty) {
-        meanUtilizationPenalty 
-                = (meanUtilizationPenalty * (stepCount - 1) +  utilizationPenalty) / stepCount;
+    private void updateEpRunningVmsCountMax(long runningVms) {
+        if (runningVms > epRunningVmsCountMax) {
+            epRunningVmsCountMax = runningVms;
+        }
+    }
+    
+    private void updateEpJobWaitRewardMean(double jobWaitReward) {
+        epJobWaitRewardMean = (epJobWaitRewardMean * (stepCount - 1) + jobWaitReward) / stepCount;
     }
 
-    private void updateMeanJobWaitPenalty(double jobWaitPenalty) {
-        meanJobWaitPenalty = (meanJobWaitPenalty * (stepCount - 1) + jobWaitPenalty) / stepCount;
+    private void updateEpUtilRewardMean(double utilReward) {
+        epUtilRewardMean
+                = (epUtilRewardMean * (stepCount - 1) +  utilReward) / stepCount;
     }
 
-    private int getValidCount() {
-        return validCount;
+    private double getEpJobWaitRewardMean() {
+        return epJobWaitRewardMean;
     }
 
-    private double getMeanJobWaitPenalty() {
-        return meanJobWaitPenalty;
+    private double getEpUtilRewardMean() {
+        return epUtilRewardMean;
     }
 
-    private double getMeanUtilizationPenalty() {
-        return meanUtilizationPenalty;
+    private int getEpValidCount() {
+        return epValidCount;
     }
 
-    private void resetValidCount() {
-        validCount = 0;
+    private void resetEpJobWaitRewardMean() {
+        epJobWaitRewardMean = 0.0;
+    }
+    
+    private void resetEpUtilRewardMean() {
+        epUtilRewardMean = 0.0;
     }
 
-    private void resetMeanUtilizationPenalty() {
-        meanUtilizationPenalty = 0.0;
-    }
-
-    private void resetMeanJobWaitPenalty() {
-        meanJobWaitPenalty = 0.0;
+    private void resetEpValidCount() {
+        epValidCount = 0;
     }
 
     public void seed() {

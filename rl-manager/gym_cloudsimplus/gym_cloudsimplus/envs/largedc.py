@@ -170,9 +170,10 @@ class LargeDC(gym.Env):
             self.render()
 
         info = {
-            "validCount": raw_info.getValidCount(),
-            "meanJobWaitPenalty": raw_info.getMeanJobWaitPenalty(),
-            "meanUtilizationPenalty": raw_info.getMeanUtilizationPenalty()
+            "is_valid": raw_info.isValid(),
+            "valid_count": raw_info.getValidCount(),
+            "mean_job_wait_penalty": raw_info.getMeanJobWaitPenalty(),
+            "mean_utilization_penalty": raw_info.getMeanUtilizationPenalty()
         }
 
         return (
@@ -191,9 +192,10 @@ class LargeDC(gym.Env):
         obs = to_nparray(raw_obs)
         raw_info = result.getInfo()
         info = {
-            "validCount": raw_info.getValidCount(),
-            "meanJobWaitPenalty": raw_info.getMeanJobWaitPenalty(),
-            "meanUtilizationPenalty": raw_info.getMeanUtilizationPenalty()
+            "is_valid": raw_info.isValid(),
+            "valid_count": raw_info.getValidCount(),
+            "mean_job_wait_penalty": raw_info.getMeanJobWaitPenalty(),
+            "mean_utilization_penalty": raw_info.getMeanUtilizationPenalty()
         }
         return obs, info
 

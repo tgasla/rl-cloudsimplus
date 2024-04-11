@@ -21,7 +21,6 @@ public class IntegrationTest {
 	private static final int initialLVmCount = 1;
 	private static final long basicVmPeCount = 2;
 	private static final long datacenterHostsCnt = 3000;
-	private static final long maxVmsPerSize = datacenterHostsCnt;
 	private static final long hostPeMips = 10000;
 	private static final int hostPeCnt = 14;
     private static final ArrayList<Double> nopAction = new ArrayList<Double>(List.of(0.0, 0.0));
@@ -39,7 +38,6 @@ public class IntegrationTest {
         parameters.put("INITIAL_M_VM_COUNT", String.valueOf(initialMVmCount));
         parameters.put("INITIAL_L_VM_COUNT", String.valueOf(initialLVmCount));
         parameters.put("DATACENTER_HOSTS_CNT", String.valueOf(datacenterHostsCnt));
-        parameters.put("MAX_VMS_PER_SIZE", String.valueOf(maxVmsPerSize));
         parameters.put("HOST_PE_CNT", String.valueOf(hostPeCnt));
         parameters.put("HOST_PE_MIPS", String.valueOf(hostPeMips));
         parameters.put("BASIC_VM_PE_CNT", String.valueOf(basicVmPeCount));

@@ -11,6 +11,7 @@ import pandas as pd
 import stable_baselines3 as sb3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv
 import dummy_agents
 from save_on_best_training_reward_callback import SaveOnBestTrainingRewardCallback
 from utils import FilenameFormatter, WorkloadUtils
@@ -26,9 +27,9 @@ learning_rate_dict = {
 }
 
 monitor_info_keywords = (
-    "validCount",
-    "meanJobWaitPenalty",
-    "meanUtilizationPenalty"
+    "valid_count",
+    "mean_job_wait_penalty",
+    "mean_utilization_penalty"
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -135,7 +136,7 @@ jobs = WorkloadUtils.read_csv(f"mnt/traces/{job_trace_file}.csv")
 base_log_dir = "./logs/"
 
 # Create folder if needed
-log_dir = f"{base_log_dir}{filename_id}_1"
+log_dir = f"{base_log_dir}{filename_id}_1/"
 os.makedirs(log_dir, exist_ok=True)
 
 # Create and wrap the environment
@@ -157,11 +158,13 @@ env = gym.make(
 
 # Monitor needs the environment to have a render_mode set
 # If render_mode is None, it will give a warning.
-env = Monitor(
+menv = Monitor(
     env, 
     log_dir,
     info_keywords=monitor_info_keywords
 )
+
+venv = DummyVecEnv([lambda: menv])
 
 # Select the appropriate algorithm
 if hasattr(sb3, algorithm_str):
@@ -213,36 +216,50 @@ del model
 
 
 # deploy agent for evaluation and log (state, action, reward)
-# Load the trained agent
-model = algorithm.load(
-    f"{log_dir}/best_model",
-    device=device,
-    env=env
-)
+# Create the environment
+# env = gym.make(
+#     pretrain_env,
+#     jobs_as_json=json.dumps(jobs),
+#     simulation_speedup=simulation_speedup,
+#     datacenter_hosts_cnt="10",
+#     host_pe_mips="10",
+#     host_pe_cnt="10",
+#     reward_job_wait_coef=reward_job_wait_coef,
+#     reward_utilization_coef=reward_utilization_coef,
+#     reward_invalid_coef=reward_invalid_coef,
+#     split_large_jobs="true",
+#     max_pes_per_job=max_pes_per_job,
+#     job_log_dir=log_dir,
+#     render_mode="ansi"
+# )
 
+# # Load the trained agent
+# model = algorithm.load(
+#     f"{log_dir}best_model",
+#     device=device,
+#     env=venv
+# )
 
-obs, info = env.reset()
-done = False
-timestep_list = []
-while not done:
-    action = model.predict(obs)  # agent policy that uses the observation and info
-    obs, reward, terminated, truncated, info = env.step(action)
-    timestep_list.append(
-        {"s1":obs[0]},
-        {"s2":obs[1]},
-        {"s3":obs[2]},
-        {"s4":obs[3]},
-        {"s5":obs[4]},
-        {"action":action},
-        {"reward":reward},
-    )
+# obs = venv.reset()
+# done = False
+# timestep_list = []
+# while not done:
+#     action, _ = model.predict(obs)  # agent policy that uses the observation and info
+#     next_obs, reward, done, info = env.step(action)
+#     timestep_list.append(
+#         {
+#             "state": obs,
+#             "action": action,
+#             "total_reward": reward,
+#             "job_wait_reward": info.get,
+#             "next_obs": next_obs
+#         }
+#     )
 
-    done = terminated or truncated
+# pd.DataFrame(timestep_list).to_csv(f"{log_dir}best_model_actions.csv")
 
-pd.DataFrame(timestep_list).to_csv(log_dir + "best_model_actions.csv")
-
-env.close()
-del model
+# env.close()
+# del model
 
 
 # if no transfer env is specified, exit
@@ -290,7 +307,7 @@ new_env = Monitor(
 
 # Load the trained agent
 model = algorithm.load(
-    f"{log_dir}/best_model",
+    f"{log_dir}best_model",
     device=device,
     tensorboard_log=base_log_dir,
     env=new_env
@@ -298,7 +315,7 @@ model = algorithm.load(
 
 # Load the replay buffer if the algorithm has one
 if hasattr(model, "replay_buffer"):
-   model.load_replay_buffer(f"{log_dir}/best_model_replay_buffer")
+   model.load_replay_buffer(f"{log_dir}best_model_replay_buffer")
 
 # Set the learning rate to a small initial value
 model.learning_rate = learning_rate_dict.get(algorithm_str)

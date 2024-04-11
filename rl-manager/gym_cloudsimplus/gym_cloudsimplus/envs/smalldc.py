@@ -42,33 +42,23 @@ All values are within range [0,1]
 "waitingJobsRatioRecentHistory"
 """
 
-address = os.getenv("CLOUDSIM_GATEWAY_HOST", "gateway")
-port = os.getenv("CLOUDSIM_GATEWAY_PORT", "25333")
-
-parameters = GatewayParameters(
-    address=address,
-    port=int(port),
-    auto_convert=True
-)
-gateway = JavaGateway(gateway_parameters=parameters)
-simulation_environment = gateway.entry_point
-
-
-def to_string(java_array):
-    return gateway.jvm.java.util.Arrays.toString(java_array)
-
-
-def to_nparray(raw_obs):
-    obs = list(raw_obs)
-    return np.array(obs, dtype=np.float32)
-
 
 # Based on https://gymnasium.farama.org/api/env/
 class SmallDC(gym.Env):
     metadata = {"render_modes": ["human", "ansi"]}
+    address = os.getenv("CLOUDSIM_GATEWAY_HOST", "gateway")
+    port = os.getenv("CLOUDSIM_GATEWAY_PORT", "25333")
+    parameters = GatewayParameters(
+        address=address,
+        port=int(port),
+        auto_convert=True
+    )
 
     def __init__(self, **kwargs):
         super().__init__()
+
+        self.gateway = JavaGateway(gateway_parameters=self.parameters)
+        self.simulation_environment = self.gateway.entry_point
 
         self.action_space = spaces.Box(
             low=np.array([-1.0, 0.0]), 
@@ -152,26 +142,50 @@ class SmallDC(gym.Env):
         elif "jobs_from_file" in kwargs:
             params["JOBS_FILE"] = kwargs["jobs_from_file"]
 
-        self.simulation_id = simulation_environment.createSimulation(params)
+        self.simulation_id = self.simulation_environment.createSimulation(params)
+
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+
+        self.ep_states = []
+        self.ep_actions = []
+        self.ep_rewards = []
+        self.ep_next_states = []
+        
+        result = self.simulation_environment.reset(self.simulation_id)
+        self.simulation_environment.seed(seed)
+
+        raw_obs = result.getObs()
+        obs = self._to_nparray(raw_obs)
+        raw_info = result.getInfo()
+        info = self._raw_info_to_dict(raw_info)
+        
+        self.ep_states.append(obs)
+        
+        return obs, info
 
     def step(self, action):
-        result = simulation_environment.step(self.simulation_id, action)
+        result = self.simulation_environment.step(self.simulation_id, action)
 
         reward = result.getReward()
         raw_info = result.getInfo()
         terminated = result.isDone()
         truncated = False
         raw_obs = result.getObs()
-        obs = to_nparray(raw_obs)
+        obs = self._to_nparray(raw_obs)
+
+        info = self._raw_info_to_dict(raw_info)
+
+        self.ep_actions.append(action)
+        self.ep_rewards.append(reward)
+        self.ep_job_wait_rewards.append(info["step_job_wait_penalty"])
+        self.ep_utilization_rewards.append(info["step_utilization_penalty"])
+        self.ep_invalid_rewards.append(info["invalid_penalty"])
+        self.ep_next_states.append(obs)
+        self.ep_states.append(obs)
 
         if self.render_mode == "human":
             self.render()
-
-        info = {
-            "validCount": raw_info.getValidCount(),
-            "meanJobWaitPenalty": raw_info.getMeanJobWaitPenalty(),
-            "meanUtilizationPenalty": raw_info.getMeanUtilizationPenalty()
-        }
 
         return (
             obs,
@@ -180,20 +194,6 @@ class SmallDC(gym.Env):
             truncated,
             info
         )
-
-    def reset(self, seed=None, options=None):
-        super().reset(seed=seed)
-        result = simulation_environment.reset(self.simulation_id)
-        
-        raw_obs = result.getObs()
-        obs = to_nparray(raw_obs)
-        raw_info = result.getInfo()
-        info = {
-            "validCount": raw_info.getValidCount(),
-            "meanJobWaitPenalty": raw_info.getMeanJobWaitPenalty(),
-            "meanUtilizationPenalty": raw_info.getMeanUtilizationPenalty()
-        }
-        return obs, info
 
     def render(self):
         if self.render_mode is None:
@@ -205,28 +205,40 @@ class SmallDC(gym.Env):
             )
             return
         # result is a string with arrays encoded as json
-        result = simulation_environment.render(self.simulation_id)
+        result = self.simulation_environment.render(self.simulation_id)
         obs_data = json.loads(result)
         if self.render_mode == "human":
             print("Observation state:")
             print("-" * 40)
-            print(f"avgCPUUtilizationHistory: {obs_data[0]}")
-            print(f"vmAllocatedRatioHistory: {obs_data[1]}")
-            print(f"p90CPUUtilizationHistory: {obs_data[2]}")
-            print(f"avgMemoryUtilizationHistory: {obs_data[3]}")
-            print(f"p90MemoryUtilizationHistory: {obs_data[4]}")
-            print(f"waitingJobsRatioGlobalHistory: {obs_data[5]}")
-            print(f"waitingJobsRatioRecentHistory: {obs_data[6]}")
+            print(f"vmAllocatedRatio: {obs_data[1]}")
+            print(f"avgCPUUtilization: {obs_data[0]}")
+            print(f"p90CPUUtilization: {obs_data[2]}")
+            print(f"avgMemoryUtilization: {obs_data[3]}")
+            print(f"p90MemoryUtilization: {obs_data[4]}")
+            print(f"waitingJobsRatioGlobal: {obs_data[5]}")
+            print(f"waitingJobsRatioTimestep: {obs_data[6]}")
             print("-" * 40)
             return
         elif self.render_mode == "ansi":
             return str(obs_data)
         else:
             return super().render()
-
+    
     def close(self):
         # close the resources
-        gateway.close()
+        self.gateway.close()
+    
+    def _raw_info_to_dict(self, raw_info):
+        info = {
+            "job_wait_reward": raw_info.getJobWaitReward(),
+            "util_reward": raw_info.getUtilReward(),
+            "invalid_reward": raw_info.getInvalidReward(),
+            "ep_job_wait_rew_mean": raw_info.getEpJobWaitRewardMean(),
+            "ep_utilization_rew_mean": raw_info.getEpUtilRewardMean(),
+            "ep_valid_count": raw_info.getEpValidCount()
+        }
+        return info
 
-    def seed(self):
-        simulation_environment.seed(self.simulation_id)
+    def _to_nparray(self, raw_obs):
+        obs = list(raw_obs)
+        return np.array(obs, dtype=np.float32)

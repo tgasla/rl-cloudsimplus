@@ -71,7 +71,7 @@ public class CloudSimProxy {
         this.settings = settings;
 
         String jobLogDir = settings.getJobLogDir();
-        String[] csvHeader = {"jobId", "vmId", "arrivalTime", "execStartTime", "execFinishTime"};
+        String[] csvHeader = {"jobId", "vmId", "vmType", "arrivalTime", "execStartTime", "execFinishTime"};
 
         csvWriter = new CsvWriter(jobLogDir, "job_log.csv", csvHeader);
         
@@ -384,6 +384,7 @@ public class CloudSimProxy {
                     Object[] csvRow = {
                         cloudlet.getId(),
                         cloudlet.getVm().getId(),
+                        cloudlet.getVm().getDescription(),
                         cloudlet.getDcArrivalTime(),
                         cloudlet.getStartTime(),
                         cloudSimPlus.clock()
@@ -535,13 +536,15 @@ public class CloudSimProxy {
 
     // if a vm is destroyed, this method returns the type of it.
     public boolean removeVm(final int index) {
-        List<Vm> vmExecList = broker.getVmExecList(); 
+        List<Vm> vmExecList = broker.getVmExecList();
+        LOGGER.debug("vmExecList.size = " + vmExecList);
+
         Vm vmToKill = vmExecList.get(index);
 
-        if (vmToKill == Vm.NULL) {
-            LOGGER.warn("Can't kill the VM with index " + index + ". No such vm found.");
-            return false;
-        }
+        // if (vmToKill == Vm.NULL) {
+        //     LOGGER.warn("Can't kill the VM with index " + index + ". No such vm found.");
+        //     return false;
+        // }
 
         if (vmExecList.size() == 1) {
             LOGGER.warn("Can't kill VM as it is the only one running.");

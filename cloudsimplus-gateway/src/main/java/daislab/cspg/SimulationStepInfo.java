@@ -6,38 +6,71 @@ package daislab.cspg;
 */
 public class SimulationStepInfo {
 
-    private final int validCount;
-    private final double meanJobWaitPenalty;
-    private final double meanUtilizationPenalty;
+    private final double jobWaitReward;
+    private final double utilReward;
+    private final double invalidReward;
+    private final double epJobWaitRewardMean;
+    private final double epUtilRewardMean;
+    private final int epValidCount;
+
+    public SimulationStepInfo() {
+        this.jobWaitReward = 0;
+        this.utilReward = 0;
+        this.invalidReward = 0;
+        this.epJobWaitRewardMean = 0;
+        this.epUtilRewardMean = 0;
+        this.epValidCount = 0;
+    }
 
     public SimulationStepInfo(
-        final int validCount,
-        final double meanJobWaitPenalty,
-        final double meanUtilizationPenalty
+        final double jobWaitReward,
+        final double utilReward,
+        final double invalidReward,
+        final double epJobWaitRewardMean,
+        final double epUtilRewardMean,
+        final int epValidCount
     ) {
-        this.validCount = validCount;
-        this.meanJobWaitPenalty = meanJobWaitPenalty;
-        this.meanUtilizationPenalty = meanUtilizationPenalty;
+        this.jobWaitReward = jobWaitReward;
+        this.utilReward = utilReward;
+        this.invalidReward = invalidReward;
+        this.epJobWaitRewardMean = epJobWaitRewardMean;
+        this.epUtilRewardMean = epUtilRewardMean;
+        this.epValidCount = epValidCount;
     }
 
-    public int getValidCount() {
-        return validCount;
-    }
-    
-    public double getMeanJobWaitPenalty() {
-        return meanJobWaitPenalty;
+    public double getJobWaitReward() {
+        return jobWaitReward;
     }
 
-    public double getMeanUtilizationPenalty() {
-        return meanUtilizationPenalty;
+    public double getUtilReward() {
+        return utilReward;
+    }
+
+    public double getInvalidReward() {
+        return invalidReward;
+    }
+
+    public double getEpJobWaitRewardMean() {
+        return epJobWaitRewardMean;
+    }
+
+    public double getEpUtilRewardMean() {
+        return epUtilRewardMean;
+    }
+
+    public int getEpValidCount() {
+        return epValidCount;
     }
 
     @Override
     public String toString() {
         return "SimulationStepInfo{"
-            + "validCount=" + validCount
-            + ", meanUtilizationPenalty=" + meanUtilizationPenalty
-            + ", meanJobWaitPenalty=" + meanJobWaitPenalty
+            + "jobWaitReward" + jobWaitReward
+            + ", utilReward=" + utilReward
+            + ", invalidReward=" + invalidReward
+            + ", epJobWaitRewardMean" + epJobWaitRewardMean
+            + ", epUtilRewardMean=" + epUtilRewardMean
+            + ", epValidCount=" + epValidCount
             + '}';
     }
 }
