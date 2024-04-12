@@ -252,7 +252,7 @@ public class CloudSimProxy {
 
         cancelInvalidEvents();
         printJobStatsAfterEndOfSimulation();
-        closeCsvAfterEndOfSimulation();
+        // closeCsvAfterEndOfSimulation();
 
         if (shouldPrintJobStats()) {
             printJobStats();
