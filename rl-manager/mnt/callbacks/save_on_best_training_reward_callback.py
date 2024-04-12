@@ -35,7 +35,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 		self.save_best_episode_metrics = save_best_episode_metrics
 	
 	def get(self, attr):
-		return self.training_env.env_method("get_wrapper_attr", attr)
+		return self.training_env.env_method("get_wrapper_attr", attr)[0]
 
 	def _on_step(self) -> bool:
 		if self.n_calls % self.check_freq == 0:
@@ -74,7 +74,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 							))
 						self.model.save_replay_buffer(replay_buffer_path)
 					if self.save_best_episode_rl_details:
-						episode_details = self.get("episode_details")[0]
+						episode_details = self.get("episode_details")
 						del episode_details["state"][-1]
 						
 						df = pd.DataFrame(episode_details)
@@ -93,11 +93,11 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 						vm_metrics_path = os.path.join(self.log_dir, "vm_metrics.csv")
 						job_metrics_path = os.path.join(self.log_dir, "job_metrics.csv")
 
-						host_metrics = self.get("host_metrics")[0]
+						host_metrics = self.get("host_metrics")
 						host_metrics_df = pd.DataFrame(host_metrics)
-						vm_metrics = self.get("vm_metrics")[0]
+						vm_metrics = self.get("vm_metrics")
 						vm_metrics_df = pd.DataFrame(vm_metrics)
-						job_metrics = self.get("job_metrics")[0]
+						job_metrics = self.get("job_metrics")
 						job_metrics_df = pd.DataFrame(job_metrics)
 						
 						if self.verbose >= 1:

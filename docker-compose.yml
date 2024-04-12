@@ -1,21 +1,10 @@
 version: '3.1'
-services:
-  # uses port 25333
+services: # uses port 25333
   gateway:
     image: gateway:1.9.1
     container_name: gateway
     volumes:
       - ./logs:/app/logs
-
-  # # uses port 5432
-  # database:
-  #   image: postgres
-  #   container_name: database
-  #   restart: always
-  #   environment:
-  #     POSTGRES_USER: samm
-  #     POSTGRES_PASSWORD: samm_secret
-  #     POSTGRES_DB: samm_db
 
   manager: &cpu
     profiles: [""]
@@ -24,34 +13,36 @@ services:
     build: rl-manager
     depends_on:
       - gateway
-      # - database
     environment:
       CLOUDSIM_GATEWAY_HOST: gateway
       CLOUDSIM_GATEWAY_PORT: 25333
-      # POSTGRES_HOST: database
-      # POSTGRES_PORT: 5432
-      # POSTGRES_USER: samm
-      # POSTGRES_PASSWORD: samm_secret
-      # POSTGRES_DB: samm_db
-      # TEST_CASE: model
-      # BATCH_SIZE: 128
-      # EPISODES_CNT: 25
     volumes:
       - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
     command: >
       python3 mnt/run.py 
       --algo=${ALGO}
-      --pretrain-env=${PRETRAIN_ENV}
       --pretrain-timesteps=${PRETRAIN_TIMESTEPS}
-      --transfer-env=${TRANSFER_ENV}
+      --pretrain-hosts=${PRETRAIN_HOSTS}
+      --pretrain-host-pes=${PRETRAIN_HOST_PES}
+      --pretrain-host-pe-mips=${PRETRAIN_HOST_PE_MIPS}
+      --pretrain-job-trace-filename=${PRETRAIN_JOB_TRACE_FILENAME}
+      --pretrain-max-pes-per-job=${PRETRAIN_MAX_PES_PER_JOB}
+      --pretrain-reward-job-wait-coef=${PRETRAIN_REWARD_JOB_WAIT_COEF}
+      --pretrain-reward-util-coef=${PRETRAIN_REWARD_UTIL_COEF}
+      --pretrain-reward-invalid-coef=${PRETRAIN_REWARD_INVALID_COEF}
+      --pretrain-dir=${PRETRAIN_DIR}
       --transfer-timesteps=${TRANSFER_TIMESTEPS}
+      --transfer-hosts=${TRANSFER_HOSTS}
+      --transfer-host-pes=${TRANSFER_HOST_PES}
+      --transfer-host-pe-mips=${TRANSFER_HOST_PE_MIPS} 
+      --transfer-job-trace-filename=${TRANSFER_JOB_TRACE_FILENAME}
+      --transfer-max-pes-per-job=${TRANSFER_MAX_PES_PER_JOB}
+      --transfer-reward-job-wait-coef=${TRANSFER_REWARD_JOB_WAIT_COEF}
+      --transfer-reward-util-coef=${TRANSFER_REWARD_UTIL_COEF}
+      --transfer-reward-invalid-coef=${TRANSFER_REWARD_INVALID_COEF}
       --simulation-speedup=${SIMULATION_SPEEDUP}
-      --reward-job-wait-coef=${REWARD_JOB_WAIT_COEF}
-      --reward-utilization-coef=${REWARD_UTILIZATION_COEF}
-      --reward-invalid-coef=${REWARD_INVALID_COEF}
-      --max-pes-per-job=${MAX_PES_PER_JOB}
-      --job-trace-file=${JOB_TRACE_FILE}
+
 
   manager-cuda:
     <<: *cpu

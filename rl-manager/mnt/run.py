@@ -1,20 +1,21 @@
 import os
 from datetime import datetime
-import argparse
 import json
 import numpy as np
 import gymnasium as gym
 import gym_cloudsimplus
 import torch
-import pandas as pd
 
 import stable_baselines3 as sb3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
-import dummy_agents
-from save_on_best_training_reward_callback import SaveOnBestTrainingRewardCallback
-from utils import FilenameFormatter, WorkloadUtils
+import custom_agents
+from callbacks.save_on_best_training_reward_callback import SaveOnBestTrainingRewardCallback
+
+from utils.filename_generator import generate_filename
+from utils.argparser import parse_args
+from utils.trace_utils import csv_to_cloudlet_descriptor
 
 def datetime_to_str():
     return datetime.now().strftime("%y%m%d-%H%M%S")
@@ -34,265 +35,136 @@ monitor_info_keywords = (
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Parse arguments
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--pretrain-env", 
-    type=str,
-    choices=["SmallDC-v0", "LargeDC-v0"],
-    help="The environment to pretrain the agent on"
-)
-parser.add_argument(
-    "--algo", 
-    type=str,
-    choices=[
-        "DQN", "A2C", "PPO", 
-        "RNG", "DDPG", "HER", 
-        "SAC", "TD3"
-    ],
-    help="The RL algorithm that is used for training"
-)
-parser.add_argument(
-    "--pretrain-timesteps",
-    type=int,
-    help="The number of timesteps to pretrain"
-)
-parser.add_argument(
-    "--transfer-env",
-    type=str,
-    help="The environment to transfer the agent after pretraining"
-)
-parser.add_argument(
-    "--transfer-timesteps",
-    type=int,
-    help="The number of timesteps to perform after the environment transfer"
-)
-parser.add_argument(
-    "--simulation-speedup", 
-    type=str,
-    help="This affects the job arrival time"
-)
-parser.add_argument(
-    "--reward-job-wait-coef",
-    type=str,
-    help=("The coefficient of the reward function term that is responsible ",
-        "for the job waiting penalty"
+args = parse_args()
+
+# if pretrain dir is blank then you should pretrain first,
+# otherwise load agent from pretrain dir
+if args.pretrain_dir == "":
+    experiment_id = generate_filename(
+        args.algorithm_str,
+        args.pretrain_reward_job_wait_coef,
+        args.pretrain_reward_util_coef,
+        args.pretrain_reward_invalid_coef,
+        args.pretrain_timesteps,
+        args.pretrain_job_trace_filename
     )
-)
-parser.add_argument(
-    "--reward-utilization-coef",
-    type=str,
-    help=("The coefficient of the reward function term that is responsible ",
-        "for the utilization penalty"
+
+    timestamp = datetime_to_str()
+
+    filename_id = timestamp + "_" + experiment_id
+
+    # Read jobs
+    jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{args.pretrain_job_trace_filename}.csv")
+
+    base_log_dir = "./logs/"
+
+    log_dir = f"{base_log_dir}{filename_id}_1/"
+    ## Create folder if needed
+    # os.makedirs(log_dir, exist_ok=True)
+
+    # Create and wrap the environment
+    env = gym.make(
+        "SingleDC-v0",
+        datacenter_hosts_cnt=args.pretrain_hosts,
+        host_pe_mips=args.pretrain_host_pe_mips,
+        host_pe_cnt=args.pretrain_host_pes,
+        reward_job_wait_coef=args.pretrain_reward_job_wait_coef,
+        reward_util_coef=args.pretrain_reward_util_coef,
+        reward_invalid_coef=args.pretrain_reward_invalid_coef,
+        jobs_as_json=json.dumps(jobs),
+        max_pes_per_job=args.pretrain_max_pes_per_job,
+        simulation_speedup=args.simulation_speedup,
+        render_mode="ansi"
     )
-)
-parser.add_argument(
-    "--reward-invalid-coef",
-    type=str,
-    help=("The coefficient of the reward function term that is responsible ",
-        "for the invalid action penalty"
+
+    # Monitor needs the environment to have a render_mode set
+    # If render_mode is None, it will give a warning.
+    menv = Monitor(
+        env, 
+        log_dir,
+        info_keywords=monitor_info_keywords
     )
-)
-parser.add_argument(
-    "--max-pes-per-job",
-    type=str,
-    help=("The maximum amount of CPU cores to allow each job to allocate")
-)
-parser.add_argument(
-    "--job-trace-file",
-    type=str,
-    help=("The filename of the job trace file that will be used for training")
-)
 
-args = parser.parse_args()
-algorithm_str = str(args.algo).upper()
-pretrain_env = str(args.pretrain_env)
-pretrain_timesteps = int(args.pretrain_timesteps)
-transfer_env = str(args.transfer_env)
-transfer_timesteps = int(args.transfer_timesteps)
-simulation_speedup = str(args.simulation_speedup)
-reward_job_wait_coef=str(args.reward_job_wait_coef)
-reward_utilization_coef=str(args.reward_utilization_coef)
-reward_invalid_coef=str(args.reward_invalid_coef)
-max_pes_per_job=str(args.max_pes_per_job)
-job_trace_file=str(args.job_trace_file)
+    venv = DummyVecEnv([lambda: menv])
 
-experiment_id = FilenameFormatter.create_filename_id(
-    algorithm_str,
-    reward_job_wait_coef,
-    reward_utilization_coef,
-    reward_invalid_coef,
-    pretrain_env,
-    pretrain_timesteps
-)
+    # Select the appropriate algorithm
+    if hasattr(sb3, args.algorithm_str):
+        algorithm = getattr(sb3, args.algorithm_str)
+        policy = "MlpPolicy"
+    else:
+        algorithm = getattr(custom_agents, args.algorithm_str)
+        policy = "RngPolicy"
 
-timestamp = datetime_to_str()
-
-filename_id = timestamp + "_" + experiment_id
-
-# Read jobs
-jobs = WorkloadUtils.read_csv(f"mnt/traces/{job_trace_file}.csv")
-
-base_log_dir = "./logs/"
-
-# Create folder if needed
-log_dir = f"{base_log_dir}{filename_id}_1/"
-os.makedirs(log_dir, exist_ok=True)
-
-# Create and wrap the environment
-env = gym.make(
-    pretrain_env,
-    jobs_as_json=json.dumps(jobs),
-    simulation_speedup=simulation_speedup,
-    datacenter_hosts_cnt="10",
-    host_pe_mips="10",
-    host_pe_cnt="10",
-    reward_job_wait_coef=reward_job_wait_coef,
-    reward_utilization_coef=reward_utilization_coef,
-    reward_invalid_coef=reward_invalid_coef,
-    split_large_jobs="true",
-    max_pes_per_job=max_pes_per_job,
-    job_log_dir=log_dir,
-    render_mode="ansi"
-)
-
-# Monitor needs the environment to have a render_mode set
-# If render_mode is None, it will give a warning.
-menv = Monitor(
-    env, 
-    log_dir,
-    info_keywords=monitor_info_keywords
-)
-
-venv = DummyVecEnv([lambda: menv])
-
-# Select the appropriate algorithm
-if hasattr(sb3, algorithm_str):
-    algorithm = getattr(sb3, algorithm_str)
-    policy = "MlpPolicy"
-else:
-    algorithm = getattr(dummy_agents, algorithm_str)
-    policy = "RngPolicy"
-
-# Instantiate the agent
-model = algorithm(
-    policy=policy,
-    env=venv,
-    verbose=1,
-    tensorboard_log=base_log_dir,
-    device=device
-)
-
-# TODO: A2C and PPO take a n_steps parameter also :) check it out
-
-# Add some action noise for exploration if applicable
-if hasattr(model, "action_noise"):
-    n_actions = env.action_space.shape[-1]
-    action_noise = NormalActionNoise(
-        mean=np.zeros(n_actions), 
-        sigma=0.1 * np.ones(n_actions)
+    # Instantiate the agent
+    model = algorithm(
+        policy=policy,
+        env=venv,
+        verbose=1,
+        tensorboard_log=base_log_dir,
+        device=device
     )
-    model.action_noise = action_noise
 
-callback = SaveOnBestTrainingRewardCallback(
-    check_freq=10_000,
-    log_dir=log_dir
-)
+    # TODO: A2C and PPO take a n_steps parameter also :) check it out
 
-# Train the agent
-model.learn(
-    total_timesteps=pretrain_timesteps,
-    tb_log_name=filename_id,
-    log_interval=1,
-    callback=callback
-)
+    # Add some action noise for exploration if applicable
+    if hasattr(model, "action_noise"):
+        n_actions = env.action_space.shape[-1]
+        action_noise = NormalActionNoise(
+            mean=np.zeros(n_actions), 
+            sigma=0.1 * np.ones(n_actions)
+        )
+        model.action_noise = action_noise
 
-# Close the environment and free the resources
-env.close()
+    callback = SaveOnBestTrainingRewardCallback(
+        check_freq=10_000,
+        log_dir=log_dir
+    )
 
-# Delete model
-del model
+    # Train the agent
+    model.learn(
+        total_timesteps=args.pretrain_timesteps,
+        tb_log_name=filename_id,
+        log_interval=1,
+        callback=callback
+    )
 
+    # Close the environment and free the resources
+    env.close()
 
-# deploy agent for evaluation and log (state, action, reward)
-# Create the environment
-# env = gym.make(
-#     pretrain_env,
-#     jobs_as_json=json.dumps(jobs),
-#     simulation_speedup=simulation_speedup,
-#     datacenter_hosts_cnt="10",
-#     host_pe_mips="10",
-#     host_pe_cnt="10",
-#     reward_job_wait_coef=reward_job_wait_coef,
-#     reward_utilization_coef=reward_utilization_coef,
-#     reward_invalid_coef=reward_invalid_coef,
-#     split_large_jobs="true",
-#     max_pes_per_job=max_pes_per_job,
-#     job_log_dir=log_dir,
-#     render_mode="ansi"
-# )
+    # Delete model
+    del model
 
-# # Load the trained agent
-# model = algorithm.load(
-#     f"{log_dir}best_model",
-#     device=device,
-#     env=venv
-# )
-
-# obs = venv.reset()
-# done = False
-# timestep_list = []
-# while not done:
-#     action, _ = model.predict(obs)  # agent policy that uses the observation and info
-#     next_obs, reward, done, info = env.step(action)
-#     timestep_list.append(
-#         {
-#             "state": obs,
-#             "action": action,
-#             "total_reward": reward,
-#             "job_wait_reward": info.get,
-#             "next_obs": next_obs
-#         }
-#     )
-
-# pd.DataFrame(timestep_list).to_csv(f"{log_dir}best_model_actions.csv")
-
-# env.close()
-# del model
-
-
-# if no transfer env is specified, exit
-if transfer_env == "":
+# if no transfer timesteps is specified, exit
+if args.transfer_timesteps == "":
     exit()
 
-new_experiment_id = FilenameFormatter.create_filename_id(
-    algorithm_str,
-    reward_job_wait_coef,
-    reward_utilization_coef,
-    reward_invalid_coef,
-    pretrain_env,
-    pretrain_timesteps,
-    transfer_env,
-    transfer_timesteps
+new_experiment_id = generate_filename(
+    algorithm_str=args.algorithm_str,
+    transfer_timesteps=args.transfer_timesteps,
+    transfer_reward_job_wait_coef=args.transfer_reward_job_wait_coef,
+    transfer_reward_util_coef=args.transfer_reward_util_coef,
+    transfer_reward_invalid_coef=args.transfer_reward_invalid_coef,
+    pretrain_dir=filename_id
 )
 
 new_filename_id = timestamp + "_" + new_experiment_id
 
-# Create folder if needed
 new_log_dir = f"{base_log_dir}{new_filename_id}_1"
-os.makedirs(new_log_dir, exist_ok=True)
+## Create folder if needed
+# os.makedirs(new_log_dir, exist_ok=True)
 
 # Create and wrap the environment
 new_env = gym.make(
-    transfer_env,
+    "SingleDC-v0",
+    datacenter_hosts_cnt=args.transfer_hosts,
+    host_pe_mips=args.transfer_host_pe_mips,
+    host_pe_cnt=args.transfer_host_pes,
+    reward_job_wait_coef=args.transfer_reward_job_wait_coef,
+    reward_util_coef=args.transfer_reward_util_coef,
+    reward_invalid_coef=args.transfer_reward_invalid_coef,
     jobs_as_json=json.dumps(jobs),
-    simulation_speedup=simulation_speedup,
-    reward_job_wait_coef=reward_job_wait_coef,
-    reward_utilization_coef=reward_utilization_coef,
-    reward_invalid_coef=reward_invalid_coef,
-    split_large_jobs="true",
-    max_pes_per_job=max_pes_per_job,
-    job_log_dir=new_log_dir,
+    max_pes_per_job=args.transfer_max_pes_per_job,
+    simulation_speedup=args.simulation_speedup,
     render_mode="ansi"
 )
 
@@ -317,7 +189,7 @@ if hasattr(model, "replay_buffer"):
    model.load_replay_buffer(f"{log_dir}best_model_replay_buffer")
 
 # Set the learning rate to a small initial value
-model.learning_rate = learning_rate_dict.get(algorithm_str)
+model.learning_rate = learning_rate_dict.get(args.algorithm_str)
 
 callback = SaveOnBestTrainingRewardCallback(
     check_freq=10_000,
@@ -326,7 +198,7 @@ callback = SaveOnBestTrainingRewardCallback(
 
 # Retrain the agent initializing the weights from the saved agent
 model.learn(
-    total_timesteps = transfer_timesteps,
+    total_timesteps = args.transfer_timesteps,
     # The right thing to do is to set reset_num_timesteps=True
     # This way, the learning restarts
     # The only problem is that tensorboard recognizes

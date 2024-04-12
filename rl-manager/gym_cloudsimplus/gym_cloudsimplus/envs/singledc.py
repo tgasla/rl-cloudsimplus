@@ -4,6 +4,7 @@ import json
 from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
 import numpy as np
+from typing import Literal
 
 # TODO: the two environments should inherit a BaseEnvironment class
 # so I do not have to repeat the same code in both of them
@@ -44,7 +45,7 @@ All values are within range [0,1]
 
 
 # Based on https://gymnasium.farama.org/api/env/
-class SmallDC(gym.Env):
+class SingleDC(gym.Env):
     metadata = {"render_modes": ["human", "ansi"]}
     address = os.getenv("CLOUDSIM_GATEWAY_HOST", "gateway")
     port = os.getenv("CLOUDSIM_GATEWAY_PORT", "25333")
@@ -54,7 +55,22 @@ class SmallDC(gym.Env):
         auto_convert=True
     )
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        split_large_jobs: str = Literal["true"],
+        max_pes_per_job: str = Literal["1"],
+        host_pe_mips: str = Literal["10"],
+        host_pe_cnt: str = Literal["10"],
+        datacenter_hosts_cnt: str = Literal["10"],
+        reward_job_wait_coef: str = Literal["0.3"],
+        reward_util_coef: str = Literal["0.3"],
+        reward_invalid_coef: str = Literal["0.4"],
+        jobs_as_json: str = None,
+        jobs_from_file: str = None,
+        simulation_speedup: str = Literal["1"],
+        render_mode: str = None
+    ):
+        
         super().__init__()
 
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
@@ -83,69 +99,27 @@ class SmallDC(gym.Env):
         # to the java cloudsimplus gateway.
         # If a parameter is not defined, it gets a default value.
         params = {
-            "INITIAL_L_VM_COUNT":
-                kwargs.get("initial_l_vm_count", "1"),
-            "INITIAL_M_VM_COUNT":
-                kwargs.get("initial_m_vm_count", "1"),
-            "INITIAL_S_VM_COUNT":
-                kwargs.get("initial_s_vm_count", "1"),
-            "SIMULATION_SPEEDUP":
-                kwargs.get("simulation_speedup", "1.0"),
-            "SPLIT_LARGE_JOBS":
-                kwargs.get("split_large_jobs", "false"),
-            "MAX_PES_PER_JOB":
-                kwargs.get("max_pes_per_job", "1"),
-            "QUEUE_WAIT_PENALTY":
-                kwargs.get("queue_wait_penalty", "0.00001"),
-            "VM_RUNNING_HOURLY_COST":
-                kwargs.get("vm_running_hourly_cost", "0.086"),
-            "HOST_PE_MIPS":
-                kwargs.get("host_pe_mips", "20000"),
-            "HOST_BW":
-                kwargs.get("host_bw", "50000"),
-            "HOST_RAM":
-                kwargs.get("host_ram", "65536"),
-            "HOST_SIZE":
-                kwargs.get("host_size", "500000"),
-            "HOST_PE_CNT":
-                kwargs.get("host_pe_cnt", "20"),
-            "DATACENTER_HOSTS_CNT":
-                kwargs.get("datacenter_hosts_cnt", "50"),
-            "BASIC_VM_RAM":
-                kwargs.get("basic_vm_ram", "8192"),
-            "BASIC_VM_PE_CNT":
-                kwargs.get("basic_vm_pe_count","2"),
-            "VM_STARTUP_DELAY":
-                kwargs.get("vm_startup_delay","0"),
-            "VM_SHUTDOWN_DELAY":
-                kwargs.get("vm_shutdown_delay", "0"),
-            "PRINT_JOBS_PERIODICALLY":
-                kwargs.get("print_jobs_periodically", "false"),
-            "PAYING_FOR_THE_FULL_HOUR":
-                kwargs.get("paying_for_the_full_hour", "false"),
-            "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER":
-                kwargs.get("store_created_cloudlets_datacenter_broker", "false"),
-            "REWARD_JOB_WAIT_COEF":
-                kwargs.get("reward_job_wait_coef", "0.3"),
-            "REWARD_UTILIZATION_COEF":
-                kwargs.get("reward_utilization_coef", "0.3"),
-            "REWARD_INVALID_COEF":
-                kwargs.get("reward_invalid_coef", "0.4"),
-            "JOB_LOG_DIR":
-                kwargs.get("job_log_dir", "./logs")
+            "SPLIT_LARGE_JOBS": split_large_jobs,
+            "MAX_PES_PER_JOB": max_pes_per_job,
+            "HOST_PE_MIPS": host_pe_mips,
+            "HOST_PE_CNT": host_pe_cnt,
+            "DATACENTER_HOSTS_CNT" :datacenter_hosts_cnt,
+            "REWARD_JOB_WAIT_COEF": reward_job_wait_coef,
+            "REWARD_UTILIZATION_COEF": reward_util_coef,
+            "REWARD_INVALID_COEF": reward_invalid_coef,
+            "SIMULATION_SPEEDUP": simulation_speedup
         }
 
-        render_mode = kwargs.get("render_mode", None)
         assert render_mode is None \
             or render_mode in self.metadata["render_modes"]
     
         self.render_mode = render_mode
 
-        if "jobs_as_json" in kwargs:
+        if jobs_as_json is not None:
             params["SOURCE_OF_JOBS"] = "PARAMS"
-            params["JOBS"] = kwargs["jobs_as_json"]
-        elif "jobs_from_file" in kwargs:
-            params["JOBS_FILE"] = kwargs["jobs_from_file"]
+            params["JOBS"] = jobs_as_json
+        elif "jobs_from_file" is not None:
+            params["JOBS_FILE"] = jobs_from_file
 
         self.simulation_id = self.simulation_environment.createSimulation(params)
 

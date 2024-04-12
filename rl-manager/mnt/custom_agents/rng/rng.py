@@ -14,7 +14,7 @@ from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.vec_env import VecEnv
 
-from dummy_agents.rng.policies import RngPolicy
+from custom_agents.common.policies import RngPolicy
 
 SelfRNG = TypeVar("SelfRNG", bound="RNG")
 
