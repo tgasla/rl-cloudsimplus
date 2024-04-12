@@ -103,12 +103,22 @@ make build-gateway-debug
 ```
 
 ### 2. Build manager image
-To build the manager image use the fowllowing command:
+To build the manager image use the following command:
 ```
 make build-manager
 ```
 
+### 3. Build TensorBoard image
+```
+make build-tensorboard
+```
+
 ## Start application
+First start TensorBoard:
+```
+make run-tensorboard
+```
+
 Use the folloiwng command:
 ```
 docker compose up
