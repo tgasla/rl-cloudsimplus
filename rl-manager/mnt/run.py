@@ -41,12 +41,16 @@ args = parse_args()
 # otherwise load agent from pretrain dir
 if args.pretrain_dir == "":
     experiment_id = generate_filename(
-        args.algorithm_str,
-        args.pretrain_reward_job_wait_coef,
-        args.pretrain_reward_util_coef,
-        args.pretrain_reward_invalid_coef,
-        args.pretrain_timesteps,
-        args.pretrain_job_trace_filename
+        algorithm_str=args.algorithm_str,
+        pretrain_timesteps=args.pretrain_timesteps,
+        pretrain_hosts=args.pretrain_hosts,
+        pretrain_host_pes=args.pretrain_host_pes,
+        pretrain_host_pe_mips=args.pretrain_host_pe_mips,
+        pretrain_reward_job_wait_coef=args.pretrain_reward_job_wait_coef,
+        pretrain_reward_util_coef=args.pretrain_reward_util_coef,
+        pretrain_reward_invalid_coef=args.pretrain_reward_invalid_coef,
+        pretrain_job_trace_filename=args.pretrain_job_trace_filename,
+        pretrain_max_job_pes=args.pretrain_max_job_pes
     )
 
     timestamp = datetime_to_str()
@@ -58,16 +62,17 @@ if args.pretrain_dir == "":
 
     base_log_dir = "./logs/"
 
-    log_dir = f"{base_log_dir}{filename_id}_1/"
-    ## Create folder if needed
-    # os.makedirs(log_dir, exist_ok=True)
+    log_dir = os.path.join(base_log_dir, f"{filename_id}_1")
+    
+    # Create folder if needed
+    os.makedirs(log_dir, exist_ok=True)
 
     # Create and wrap the environment
     env = gym.make(
         "SingleDC-v0",
         datacenter_hosts_cnt=args.pretrain_hosts,
         host_pe_mips=args.pretrain_host_pe_mips,
-        host_pe_cnt=args.pretrain_host_pes,
+        host_pes=args.pretrain_host_pes,
         reward_job_wait_coef=args.pretrain_reward_job_wait_coef,
         reward_util_coef=args.pretrain_reward_util_coef,
         reward_invalid_coef=args.pretrain_reward_invalid_coef,
@@ -122,7 +127,7 @@ if args.pretrain_dir == "":
 
     # Train the agent
     model.learn(
-        total_timesteps=args.pretrain_timesteps,
+        total_timesteps=int(args.pretrain_timesteps),
         tb_log_name=filename_id,
         log_interval=1,
         callback=callback
@@ -141,6 +146,11 @@ if args.transfer_timesteps == "":
 new_experiment_id = generate_filename(
     algorithm_str=args.algorithm_str,
     transfer_timesteps=args.transfer_timesteps,
+    transfer_hosts=args.transfer_hosts,
+    transfer_host_pes=args.transfer_host_pes,
+    transfer_host_pe_mips=args.transfer_host_pe_mips,
+    transfer_job_trace_filename=args.transfer_job_trace_filename,
+    transfer_max_job_pes=args.transfer_max_job_pes,
     transfer_reward_job_wait_coef=args.transfer_reward_job_wait_coef,
     transfer_reward_util_coef=args.transfer_reward_util_coef,
     transfer_reward_invalid_coef=args.transfer_reward_invalid_coef,
@@ -149,16 +159,17 @@ new_experiment_id = generate_filename(
 
 new_filename_id = timestamp + "_" + new_experiment_id
 
-new_log_dir = f"{base_log_dir}{new_filename_id}_1"
-## Create folder if needed
-# os.makedirs(new_log_dir, exist_ok=True)
+new_log_dir = os.path.join(base_log_dir, f"{new_filename_id}_1")
+
+#Create folder if needed
+os.makedirs(new_log_dir, exist_ok=True)
 
 # Create and wrap the environment
 new_env = gym.make(
     "SingleDC-v0",
     datacenter_hosts_cnt=args.transfer_hosts,
     host_pe_mips=args.transfer_host_pe_mips,
-    host_pe_cnt=args.transfer_host_pes,
+    host_pes=args.transfer_host_pes,
     reward_job_wait_coef=args.transfer_reward_job_wait_coef,
     reward_util_coef=args.transfer_reward_util_coef,
     reward_invalid_coef=args.transfer_reward_invalid_coef,
@@ -176,9 +187,11 @@ new_env = Monitor(
     info_keywords=monitor_info_keywords
 )
 
+best_model_path = os.path.join(log_dir, "best_model")
+
 # Load the trained agent
 model = algorithm.load(
-    f"{log_dir}best_model",
+    best_model_path,
     device=device,
     tensorboard_log=base_log_dir,
     env=new_env
@@ -186,7 +199,8 @@ model = algorithm.load(
 
 # Load the replay buffer if the algorithm has one
 if hasattr(model, "replay_buffer"):
-   model.load_replay_buffer(f"{log_dir}best_model_replay_buffer")
+   best_replay_buffer_path = os.path.join(log_dir, "best_replay_buffer")
+   model.load_replay_buffer(best_replay_buffer_path)
 
 # Set the learning rate to a small initial value
 model.learning_rate = learning_rate_dict.get(args.algorithm_str)
@@ -198,7 +212,7 @@ callback = SaveOnBestTrainingRewardCallback(
 
 # Retrain the agent initializing the weights from the saved agent
 model.learn(
-    total_timesteps = args.transfer_timesteps,
+    total_timesteps = int(args.transfer_timesteps),
     # The right thing to do is to set reset_num_timesteps=True
     # This way, the learning restarts
     # The only problem is that tensorboard recognizes

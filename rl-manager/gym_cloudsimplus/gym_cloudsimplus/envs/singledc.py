@@ -57,18 +57,18 @@ class SingleDC(gym.Env):
 
     def __init__(
         self,
-        split_large_jobs: str = Literal["true"],
-        max_job_pes: str = Literal["1"],
-        host_pe_mips: str = Literal["10"],
-        host_pe_cnt: str = Literal["10"],
-        datacenter_hosts_cnt: str = Literal["10"],
-        reward_job_wait_coef: str = Literal["0.3"],
-        reward_util_coef: str = Literal["0.3"],
-        reward_invalid_coef: str = Literal["0.4"],
-        jobs_as_json: str = None,
-        jobs_from_file: str = None,
-        simulation_speedup: str = Literal["1"],
-        render_mode: str = None
+        split_large_jobs = "true",
+        max_job_pes = "1",
+        host_pe_mips = "10",
+        host_pes = "10",
+        datacenter_hosts_cnt = "10",
+        reward_job_wait_coef = "0.3",
+        reward_util_coef = "0.3",
+        reward_invalid_coef = "0.4",
+        jobs_as_json = None,
+        jobs_from_file = None,
+        simulation_speedup = "1",
+        render_mode = None
     ):
         
         super().__init__()
@@ -100,13 +100,13 @@ class SingleDC(gym.Env):
         # If a parameter is not defined, it gets a default value.
         params = {
             "SPLIT_LARGE_JOBS": split_large_jobs,
-            "MAX_JOB_PES": max_job_pes,
+            "HOST_PE_CNT": host_pes,
             "HOST_PE_MIPS": host_pe_mips,
-            "HOST_PE_CNT": host_pe_cnt,
             "DATACENTER_HOSTS_CNT" :datacenter_hosts_cnt,
             "REWARD_JOB_WAIT_COEF": reward_job_wait_coef,
             "REWARD_UTILIZATION_COEF": reward_util_coef,
             "REWARD_INVALID_COEF": reward_invalid_coef,
+            "MAX_JOB_PES": max_job_pes,
             "SIMULATION_SPEEDUP": simulation_speedup
         }
 
@@ -172,8 +172,6 @@ class SingleDC(gym.Env):
         obs = self._to_nparray(raw_obs)
 
         info = self._raw_info_to_dict(raw_info)
-
-        s = list(info["host_metrics"])
 
         self.episode_details["action"].append(action)
         self.episode_details["reward"].append(reward)

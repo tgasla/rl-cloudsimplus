@@ -71,8 +71,8 @@ public class CloudSimProxy {
     ) {
         this.settings = settings;
 
-        String jobLogDir = settings.getJobLogDir();
-        String hostLogDir = jobLogDir;
+        // String jobLogDir = settings.getJobLogDir();
+        // String hostLogDir = jobLogDir;
         
         String[] jobCsvHeader = {
             "jobId", 

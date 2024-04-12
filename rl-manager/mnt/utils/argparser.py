@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class Argumenmts:
     algorithm_str: str
-    pretrain_timesteps: int
+    pretrain_timesteps: str
     pretrain_hosts: str
     pretrain_host_pes: str
     pretrain_host_pe_mips: str
@@ -14,7 +14,7 @@ class Argumenmts:
     pretrain_reward_util_coef: str
     pretrain_reward_invalid_coef: str
     pretrain_dir: str
-    transfer_timesteps: int
+    transfer_timesteps: str
     transfer_hosts: str
     transfer_host_pes: str
     transfer_host_pe_mips: str
@@ -39,7 +39,7 @@ def parse_args() -> Argumenmts:
     )
     parser.add_argument(
         "--pretrain-timesteps",
-        type=int,
+        type=str,
         help="The number of timesteps to pretrain"
     )
     parser.add_argument(
@@ -89,7 +89,7 @@ def parse_args() -> Argumenmts:
     )
     parser.add_argument(
         "--transfer-timesteps",
-        type=int,
+        type=str,
         help="The number of timesteps to perform after the environment transfer"
     )
     parser.add_argument(
@@ -142,7 +142,7 @@ def parse_args() -> Argumenmts:
 
     algorithm_str = str(args.algo).upper()
 
-    pretrain_timesteps = int(args.pretrain_timesteps)
+    pretrain_timesteps = str(args.pretrain_timesteps)
     pretrain_hosts = str(args.pretrain_hosts)
     pretrain_host_pes = str(args.pretrain_host_pes)
     pretrain_host_pe_mips = str(args.pretrain_host_pe_mips)
@@ -153,7 +153,7 @@ def parse_args() -> Argumenmts:
     pretrain_reward_invalid_coef=str(args.pretrain_reward_invalid_coef)
     pretrain_dir=str(args.pretrain_dir)
 
-    transfer_timesteps = int(args.transfer_timesteps)
+    transfer_timesteps = str(args.transfer_timesteps)
     transfer_hosts = str(args.transfer_hosts)
     transfer_host_pes = str(args.transfer_host_pes)
     transfer_host_pe_mips = str(args.transfer_host_pe_mips)
