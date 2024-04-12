@@ -124,7 +124,7 @@ If you want to see only the manager output use:
 docker compose manager run
 ```
 
-If you want the manager image to have NVIDIA CUDA GPU access you need to download the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and then use the following command:
+If you want the manager image to have NVIDIA [CUDA](https://developer.nvidia.com/cuda-downloads) GPU access you need to download the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and then use the following command:
 ```
 docker compose --profile cuda up
 ```
