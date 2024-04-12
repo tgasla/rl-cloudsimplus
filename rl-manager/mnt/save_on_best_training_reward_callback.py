@@ -21,7 +21,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 		check_freq: int,
 		log_dir: str,
 		save_replay_buffer: bool = True,
-		save_best_episode_details: bool = True,
+		save_best_episode_rl_details: bool = True,
+		save_best_episode_metrics: bool = True,
 		verbose: int = 1
 	):    
 		super().__init__(verbose)
@@ -30,7 +31,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 		self.save_replay_buffer = save_replay_buffer,
 		self.save_path = os.path.join(log_dir, "best_model")
 		self.best_mean_reward = -np.inf
-		self.save_best_episode_details = save_best_episode_details
+		self.save_best_episode_rl_details = save_best_episode_rl_details
+		self.save_best_episode_metrics = save_best_episode_metrics
 	
 	def get(self, attr):
 		return self.training_env.env_method("get_wrapper_attr", attr)
@@ -71,7 +73,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 		 						f"{replay_buffer_path}"
 							))
 						self.model.save_replay_buffer(replay_buffer_path)
-					if self.save_best_episode_details:
+					if self.save_best_episode_rl_details:
 						episode_details = self.get("episode_details")[0]
 						del episode_details["state"][-1]
 						
@@ -80,5 +82,32 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 							self.log_dir, 
 							"best_model_actions.csv"
 						)
+						if self.verbose >= 1:
+							print((
+								f"Saving episode details to"
+								f"{episode_details_path}"
+							))
 						df.to_csv(episode_details_path)
+					if self.save_best_episode_metrics:
+						host_metrics_path = os.path.join(self.log_dir, "host_metrics.csv")
+						vm_metrics_path = os.path.join(self.log_dir, "vm_metrics.csv")
+						job_metrics_path = os.path.join(self.log_dir, "job_metrics.csv")
+
+						host_metrics = self.get("host_metrics")[0]
+						host_metrics_df = pd.DataFrame(host_metrics)
+						vm_metrics = self.get("vm_metrics")[0]
+						vm_metrics_df = pd.DataFrame(vm_metrics)
+						job_metrics = self.get("job_metrics")[0]
+						job_metrics_df = pd.DataFrame(job_metrics)
+						
+						if self.verbose >= 1:
+							print((
+								f"Saving simulation metrics to"
+								f"{host_metrics_path}, "
+								f"{vm_metrics_path}, "
+								f"{job_metrics_path}"
+							))
+						host_metrics_df.to_csv(host_metrics_path)
+						vm_metrics_df.to_csv(vm_metrics_path)
+						job_metrics_df.to_csv(job_metrics_path)
 		return True

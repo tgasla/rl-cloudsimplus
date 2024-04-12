@@ -64,9 +64,6 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             //selects a VM for the given Cloudlet
             Vm selectedVm = defaultVmMapper(cloudlet);
             if (selectedVm == Vm.NULL) {
-                // all of our cloudlets use 1 PE. if there is no
-                // VMs to support that - there is no more capacity in the
-                // cluster - ergo, we can stop processing the list here
                 break;
             }
 

@@ -76,13 +76,6 @@ public class VmCost {
     }
 
     public double getSizeMultiplier(final Vm vm) {
-        if ("M".equals(vm.getDescription())) {
-            return 2.0;
-        }
-        if ("L".equals(vm.getDescription())) {
-            return 4.0;
-        }
-        return 1.0;
+        return CloudSimProxy.getSizeMultiplier(vm.getDescription());
     }
-
 }

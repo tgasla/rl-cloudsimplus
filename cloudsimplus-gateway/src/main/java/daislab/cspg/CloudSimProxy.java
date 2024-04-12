@@ -55,10 +55,11 @@ public class CloudSimProxy {
     private final Map<Long, Double> originalSubmissionDelay = new HashMap<>();
     private final Random random = new Random(System.currentTimeMillis());
     private final List<Cloudlet> jobs = new ArrayList<>();
-    private final List<Cloudlet> potentiallyWaitingJobs = new ArrayList<>(1024);
+    private final List<Cloudlet> submittedJobs = new ArrayList<>(1024);
     private final List<Cloudlet> alreadyStarted = new ArrayList<>(128);
     private final Set<Long> finishedIds = new HashSet<>();
-    private final CsvWriter csvWriter;
+    private final CsvWriter jobCsvWriter;
+    // private final CsvWriter hostCsvWriter;
     private int nextVmId = 0;
     private int toAddJobId = 0;
     private int previousIntervalJobId = 0;
@@ -71,9 +72,22 @@ public class CloudSimProxy {
         this.settings = settings;
 
         String jobLogDir = settings.getJobLogDir();
-        String[] csvHeader = {"jobId", "vmId", "vmType", "arrivalTime", "execStartTime", "execFinishTime"};
+        String hostLogDir = jobLogDir;
+        
+        String[] jobCsvHeader = {
+            "jobId", 
+            "hostId",
+            "vmId",
+            "vmType",
+            "arrivalTime",
+            "execStartTime",
+            "execFinishTime"
+        };
 
-        csvWriter = new CsvWriter(jobLogDir, "job_log.csv", csvHeader);
+        // String[] hostCsvHeader = {"hostId", "vmsRunningCount", "coresUtilized"};
+
+        jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
+        // hostCsvWriter = new CsvWriter(hostLogDir, "host_log.csv", hostCsvHeader);
         
         cloudSimPlus = new CloudSimPlus(minTimeBetweenEvents);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
@@ -81,7 +95,8 @@ public class CloudSimProxy {
         vmCost = new VmCost(
             settings.getVmRunningHourlyCost(),
             settings.getSimulationSpeedup(),
-            settings.isPayingForTheFullHour());
+            settings.isPayingForTheFullHour()
+        );
 
         final List<? extends Vm> smallVmList = createVmList(initialVmsCount.get(SMALL), SMALL);
         final List<? extends Vm> mediumVmList = createVmList(initialVmsCount.get(MEDIUM), MEDIUM);
@@ -98,6 +113,23 @@ public class CloudSimProxy {
 
         cloudSimPlus.startSync();
         runFor(minTimeBetweenEvents);
+    }
+
+    public static int getSizeMultiplier(final String type) {
+        int sizeMultiplier;
+
+        switch (type) {
+            case MEDIUM:
+                sizeMultiplier = 2; // m5a.xlarge
+                break;
+            case LARGE:
+                sizeMultiplier = 4; // m5a.2xlarge
+                break;
+            case SMALL:
+            default:
+                sizeMultiplier = 1; // m5a.large
+        }
+        return sizeMultiplier;
     }
 
     public boolean allJobsFinished() {
@@ -172,23 +204,6 @@ public class CloudSimProxy {
         return vm;
     }
 
-    public int getSizeMultiplier(final String type) {
-        int sizeMultiplier;
-
-        switch (type) {
-            case MEDIUM:
-                sizeMultiplier = 2; // m5a.xlarge
-                break;
-            case LARGE:
-                sizeMultiplier = 4; // m5a.2xlarge
-                break;
-            case SMALL:
-            default:
-                sizeMultiplier = 1; // m5a.large
-        }
-        return sizeMultiplier;
-    }
-
     private List<Pe> createPeList() {
         List<Pe> peList = new ArrayList<>();
         for (int i = 0; i < settings.getHostPeCnt(); i++) {
@@ -209,23 +224,21 @@ public class CloudSimProxy {
 
         scheduleJobsUntil(target);
 
-        int i = 0;
+        int iter = 0;
         double adjustedInterval = interval;
         while (cloudSimPlus.runFor(adjustedInterval) < target) {
-            adjustedInterval = target - cloudSimPlus.clock();
-            adjustedInterval = adjustedInterval <= 0 
-                ? cloudSimPlus.getMinTimeBetweenEvents() : adjustedInterval;
+            adjustedInterval = Math.max(target - clock(), cloudSimPlus.getMinTimeBetweenEvents());
 
             // Force stop if something runs out of control
-            if (i >= 10000) {
+            if (iter >= 10000) {
                 throw new RuntimeException("Breaking a really long loop in runFor!");
             }
-            i++;
+            iter++;
         }
 
         alreadyStarted.clear();
 
-        final Iterator<Cloudlet> iterator = potentiallyWaitingJobs.iterator();
+        final Iterator<Cloudlet> iterator = submittedJobs.iterator();
         while (iterator.hasNext()) {
             Cloudlet job = iterator.next();
             if (job.getStatus() == Cloudlet.Status.INEXEC 
@@ -254,6 +267,23 @@ public class CloudSimProxy {
             broker.getCloudletCreatedList().clear();
         }
 
+        // List<Host> hostList = datacenter.getHostList();
+        // int[] vmsRunningCount = new int[hostList.size()]; 
+        // int[] pesUtilized = new int[hostList.size()];
+        // int i = 0;
+        // for (Host host : hostList) {
+        //     vmsRunningCount[i] = host.getVmList().size();
+        //     pesUtilized[i] = host.getBusyPesNumber();
+        //     i++;
+        // }
+
+        // Object[] csvRow = {
+        //     vmsRunningCount,
+        //     pesUtilized
+        // };
+
+        // hostCsvWriter.writeRow(csvRow);
+
         long end = System.nanoTime();
         long diff = end - start;
         double diffInSec = ((double) diff) / 1_000_000_000L;
@@ -276,9 +306,12 @@ public class CloudSimProxy {
     }
 
     private void closeCsvAfterEndOfSimulation() {
-        if (!isRunning() && csvWriter != null) {
-            csvWriter.close();
+        if (!isRunning() && jobCsvWriter != null) {
+            jobCsvWriter.close();
         }
+        // if (!isRunning() && hostCsvWriter != null) {
+        //     hostCsvWriter.close();
+        // }
     }
 
     public void printJobStats() {
@@ -367,13 +400,6 @@ public class CloudSimProxy {
 
             // the job should enter the cluster once target is crossed
             cloudlet.setSubmissionDelay(settings.getTimestepInterval());
-            // cloudlet.setDcArrivalTime(cloudletArrivalTime);
-            cloudlet.addOnStartListener(new EventListener<CloudletVmEventInfo>() {
-                @Override
-                public void update(CloudletVmEventInfo info) {                    
-                    cloudlet.setStartTime(cloudSimPlus.clock());
-                }
-            });
             cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
                 @Override
                 public void update(CloudletVmEventInfo info) {
@@ -383,6 +409,7 @@ public class CloudSimProxy {
                     
                     Object[] csvRow = {
                         cloudlet.getId(),
+                        cloudlet.getVm().getHost(),
                         cloudlet.getVm().getId(),
                         cloudlet.getVm().getDescription(),
                         cloudlet.getDcArrivalTime(),
@@ -390,7 +417,7 @@ public class CloudSimProxy {
                         cloudSimPlus.clock()
                     };
 
-                    csvWriter.writeRow(csvRow);
+                    jobCsvWriter.writeRow(csvRow);
                     finishedIds.add(info.getCloudlet().getId());
                 }
             });
@@ -400,7 +427,7 @@ public class CloudSimProxy {
 
         if (jobsToSubmit.size() > 0) {
             submitCloudletsList(jobsToSubmit);
-            potentiallyWaitingJobs.addAll(jobsToSubmit);
+            submittedJobs.addAll(jobsToSubmit);
         }
 
         int pctSubmitted = (int) ((toAddJobId / (double) jobs.size()) * 10000d);
@@ -459,11 +486,11 @@ public class CloudSimProxy {
         return toAddJobId - previousIntervalJobId;
     }
 
-    public int getWaitingJobsCountInterval(final double interval) {
-        double start = clock() - interval;
+    public int getWaitingJobsCountLastInterval() {
+        double start = clock() - settings.getTimestepInterval();
 
         int jobsWaitingSubmittedInTheInterval = 0;
-        for (Cloudlet cloudlet : potentiallyWaitingJobs) {
+        for (Cloudlet cloudlet : submittedJobs) {
             if (!cloudlet.getStatus().equals(Cloudlet.Status.INEXEC)) {
                 double systemEntryTime = originalSubmissionDelay.get(cloudlet.getId());
                 if (systemEntryTime >= start) {
@@ -597,14 +624,6 @@ public class CloudSimProxy {
     private void destroyVm(Vm vm) {
         final String vmSize = vm.getDescription();
 
-        /* TODO: it turned out that when we clean the submitted list, 
-         * we probably "forget" to execute some cloudlets
-         * it seems to me that there is simply some list in the scheduler that we forget about
-         * and we need to take into account
-         * 
-         * I think this is now fixed, have to double-check it though.
-         */
-
         final List<Cloudlet> affectedExecCloudlets = 
             resetCloudlets(vm.getCloudletScheduler().getCloudletExecList());
         final List<Cloudlet> affectedWaitingCloudlets =
@@ -628,25 +647,22 @@ public class CloudSimProxy {
     }
 
     private void rescheduleCloudlets(final List<Cloudlet> affectedCloudlets) {
-        final double currentClock = cloudSimPlus.clock();
+        final double currentClock = clock();
+        final double timestepInterval = settings.getTimestepInterval();
 
         affectedCloudlets.forEach(cloudlet -> {
             Double submissionDelay = originalSubmissionDelay.get(cloudlet.getId());
 
             if (submissionDelay == null) {
                 throw new RuntimeException("Cloudlet with ID: " 
-                        + cloudlet.getId() 
-                        + " not seen previously! Original submission time unknown!");
+                + cloudlet.getId() 
+                + " not seen previously! Original submission time unknown!");
             }
 
-            if (submissionDelay < currentClock) {
-                submissionDelay = settings.getTimestepInterval();
-            } else {
-                // if the Cloudlet still hasn't been started, 
-                // let it start at the scheduled time.
-                submissionDelay -= currentClock;
-            }
-
+            // if the Cloudlet still hasn't been started, 
+            // let it start at the scheduled time,
+            // else, start it (immediately) in the next timestep
+            submissionDelay = Math.max(timestepInterval, submissionDelay - currentClock);
             cloudlet.setSubmissionDelay(submissionDelay);
         });
 
@@ -682,7 +698,13 @@ public class CloudSimProxy {
     }
 
     public int getWaitingJobsCount() {
-        return potentiallyWaitingJobs.size();
+        int jobsWaiting = 0;
+        for (Cloudlet cloudlet : submittedJobs) {
+            if (!cloudlet.getStatus().equals(Cloudlet.Status.INEXEC)) {
+                jobsWaiting++;
+            }
+        }
+        return jobsWaiting;
     }
 
     public double getRunningCost() {
