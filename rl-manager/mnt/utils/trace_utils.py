@@ -4,11 +4,10 @@ from typing import Union, List, Dict
 from .cloudlet_descriptor import as_cloudlet_descriptor_dict
 
 def trace_to_csv(
-    jobs: Union[List[Dict], Dict, pd.DataFrame],
+    jobs: pd.DataFrame,
     filename="data.csv"
 ):
-    if isinstance(jobs, pd.DataFrame):
-        jobs.to_csv(filename)
+    jobs.to_csv(filename)
 
 def csv_to_cloudlet_descriptor(filename="data.csv"):
     jobs = []
