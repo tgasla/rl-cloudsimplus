@@ -27,7 +27,7 @@ services: # uses port 25333
       --pretrain-host-pes=${PRETRAIN_HOST_PES}
       --pretrain-host-pe-mips=${PRETRAIN_HOST_PE_MIPS}
       --pretrain-job-trace-filename=${PRETRAIN_JOB_TRACE_FILENAME}
-      --pretrain-max-pes-per-job=${PRETRAIN_MAX_PES_PER_JOB}
+      --pretrain-max-job_pes=${PRETRAIN_MAX_JOB_PES}
       --pretrain-reward-job-wait-coef=${PRETRAIN_REWARD_JOB_WAIT_COEF}
       --pretrain-reward-util-coef=${PRETRAIN_REWARD_UTIL_COEF}
       --pretrain-reward-invalid-coef=${PRETRAIN_REWARD_INVALID_COEF}
@@ -37,7 +37,7 @@ services: # uses port 25333
       --transfer-host-pes=${TRANSFER_HOST_PES}
       --transfer-host-pe-mips=${TRANSFER_HOST_PE_MIPS} 
       --transfer-job-trace-filename=${TRANSFER_JOB_TRACE_FILENAME}
-      --transfer-max-pes-per-job=${TRANSFER_MAX_PES_PER_JOB}
+      --transfer-max-job-pes=${TRANSFER_MAX_JOB_PES}
       --transfer-reward-job-wait-coef=${TRANSFER_REWARD_JOB_WAIT_COEF}
       --transfer-reward-util-coef=${TRANSFER_REWARD_UTIL_COEF}
       --transfer-reward-invalid-coef=${TRANSFER_REWARD_INVALID_COEF}

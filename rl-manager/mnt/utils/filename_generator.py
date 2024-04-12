@@ -5,7 +5,7 @@ def generate_filename(
     pretrain_host_pes,
     pretrain_host_pe_mips,
     pretrain_job_trace_filename,
-    pretrain_max_pes_per_job,
+    pretrain_max_job_pes,
     pretrain_reward_job_wait_coef,
     pretrain_reward_vm_cost_coef,
     pretrain_reward_invalid_coef,
@@ -13,7 +13,7 @@ def generate_filename(
     transfer_host_pes,
     transfer_host_pe_mips,
     transfer_job_trace_filename,
-    transfer_max_pes_per_job,
+    transfer_max_job_pes,
     transfer_reward_job_wait_coef,
     transfer_reward_vm_cost_coef,
     transfer_reward_invalid_coef,
@@ -28,7 +28,7 @@ def generate_filename(
             f"_P{pretrain_host_pes}"
             f"_M{pretrain_host_pe_mips}"
             f"_{pretrain_job_trace_filename}"
-            f"_MJC{pretrain_max_pes_per_job}"
+            f"_MJC{pretrain_max_job_pes}"
             f"_Q{pretrain_reward_job_wait_coef}"
             f"_U{pretrain_reward_vm_cost_coef}"
             f"_I{pretrain_reward_invalid_coef}"
@@ -42,7 +42,7 @@ def generate_filename(
                 f"_P{transfer_host_pes}"
                 f"_M{transfer_host_pe_mips}"
                 f"_{transfer_job_trace_filename}"
-                f"_MJC{transfer_max_pes_per_job}"
+                f"_MJC{transfer_max_job_pes}"
                 f"_Q{transfer_reward_job_wait_coef}"
                 f"_U{transfer_reward_vm_cost_coef}"
                 f"_I{transfer_reward_invalid_coef}"
@@ -55,7 +55,7 @@ def generate_filename(
             f"_P{transfer_host_pes}"
             f"_M{transfer_host_pe_mips}"
             f"_{transfer_job_trace_filename}"
-            f"_MJC{transfer_max_pes_per_job}"
+            f"_MJC{transfer_max_job_pes}"
             f"_Q{transfer_reward_job_wait_coef}"
             f"_U{transfer_reward_vm_cost_coef}"
             f"_I{transfer_reward_invalid_coef}"

@@ -24,8 +24,8 @@ public class SimulationFactory {
     public static final String SPLIT_LARGE_JOBS = "SPLIT_LARGE_JOBS";
     public static final String SPLIT_LARGE_JOBS_DEFAULT = "true";
 
-    public static final String MAX_PES_PER_JOB = "MAX_PES_PER_JOB";
-    public static final String MAX_PES_PER_JOB_DEFAULT = "1";
+    public static final String MAX_JOB_PES = "MAX_JOB_PES";
+    public static final String MAX_JOB_PES_DEFAULT = "1";
 
     public static final String INITIAL_L_VM_COUNT = "INITIAL_L_VM_COUNT";
     public static final String INITIAL_M_VM_COUNT = "INITIAL_M_VM_COUNT";
@@ -69,17 +69,17 @@ public class SimulationFactory {
             maybeParameters.getOrDefault(SPLIT_LARGE_JOBS, SPLIT_LARGE_JOBS_DEFAULT);
         final boolean splitLargeJobs =
             Boolean.parseBoolean(splitLargeJobsStr.toLowerCase());
-        final String maxPesPerJobStr =
-            maybeParameters.getOrDefault(MAX_PES_PER_JOB, MAX_PES_PER_JOB_DEFAULT);
-        final int maxPesPerJob =
-            Integer.parseInt(maxPesPerJobStr);
+        final String maxJobPesStr =
+            maybeParameters.getOrDefault(MAX_JOB_PES, MAX_JOB_PES_DEFAULT);
+        final int maxJobPes =
+            Integer.parseInt(maxJobPesStr);
 
         LOGGER.info("Simulation parameters: ");
         LOGGER.info("-> initialSVmCount: " + initialSVmCount);
         LOGGER.info("-> initialMVmCount: " + initialMVmCount);
         LOGGER.info("-> initialLVmCount: " + initialLVmCount);
         LOGGER.info("-> splitLargeJobs: " + splitLargeJobs);
-        LOGGER.info("-> maxPesPerJob: " + maxPesPerJob);
+        LOGGER.info("-> maxJobPes: " + maxJobPes);
 
         final SimulationSettings settings = new SimulationSettings(maybeParameters);
         LOGGER.info("Simulation settings dump");
@@ -102,7 +102,7 @@ public class SimulationFactory {
 
         if (splitLargeJobs) {
             LOGGER.info("Splitting large jobs");
-            jobs = splitLargeJobs(jobs, maxPesPerJob, settings);
+            jobs = splitLargeJobs(jobs, maxJobPes, settings);
         }
 
         return new WrappedSimulation(
@@ -118,7 +118,7 @@ public class SimulationFactory {
 
 	private List<CloudletDescriptor> splitLargeJobs(
         final List<CloudletDescriptor> jobs,
-        final int maxPesPerJob,
+        final int maxJobPes,
         final SimulationSettings settings
 	) {
 
@@ -127,7 +127,7 @@ public class SimulationFactory {
 
 		for (CloudletDescriptor cloudletDescriptor : jobs) {
 			int jobPesNumber = cloudletDescriptor.getNumberOfCores();
-			int splitCount = Math.max((jobPesNumber + maxPesPerJob - 1) / maxPesPerJob, 1);
+			int splitCount = Math.max((jobPesNumber + maxJobPes - 1) / maxJobPes, 1);
 			int normalSplitPesNumber = jobPesNumber / splitCount;
 			long totalMi = cloudletDescriptor.getMi();
 			long normalSplitMi = totalMi / splitCount;

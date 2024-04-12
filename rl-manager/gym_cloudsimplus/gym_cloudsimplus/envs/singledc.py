@@ -58,7 +58,7 @@ class SingleDC(gym.Env):
     def __init__(
         self,
         split_large_jobs: str = Literal["true"],
-        max_pes_per_job: str = Literal["1"],
+        max_job_pes: str = Literal["1"],
         host_pe_mips: str = Literal["10"],
         host_pe_cnt: str = Literal["10"],
         datacenter_hosts_cnt: str = Literal["10"],
@@ -100,7 +100,7 @@ class SingleDC(gym.Env):
         # If a parameter is not defined, it gets a default value.
         params = {
             "SPLIT_LARGE_JOBS": split_large_jobs,
-            "MAX_PES_PER_JOB": max_pes_per_job,
+            "MAX_JOB_PES": max_job_pes,
             "HOST_PE_MIPS": host_pe_mips,
             "HOST_PE_CNT": host_pe_cnt,
             "DATACENTER_HOSTS_CNT" :datacenter_hosts_cnt,

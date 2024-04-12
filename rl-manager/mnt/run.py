@@ -72,7 +72,7 @@ if args.pretrain_dir == "":
         reward_util_coef=args.pretrain_reward_util_coef,
         reward_invalid_coef=args.pretrain_reward_invalid_coef,
         jobs_as_json=json.dumps(jobs),
-        max_pes_per_job=args.pretrain_max_pes_per_job,
+        max_job_pes=args.pretrain_max_job_pes,
         simulation_speedup=args.simulation_speedup,
         render_mode="ansi"
     )
@@ -163,7 +163,7 @@ new_env = gym.make(
     reward_util_coef=args.transfer_reward_util_coef,
     reward_invalid_coef=args.transfer_reward_invalid_coef,
     jobs_as_json=json.dumps(jobs),
-    max_pes_per_job=args.transfer_max_pes_per_job,
+    max_job_pes=args.transfer_max_job_pes,
     simulation_speedup=args.simulation_speedup,
     render_mode="ansi"
 )

@@ -9,7 +9,7 @@ class Argumenmts:
     pretrain_host_pes: str
     pretrain_host_pe_mips: str
     pretrain_job_trace_filename: str
-    pretrain_max_pes_per_job: str
+    pretrain_max_job_pes: str
     pretrain_reward_job_wait_coef: str
     pretrain_reward_util_coef: str
     pretrain_reward_invalid_coef: str
@@ -19,7 +19,7 @@ class Argumenmts:
     transfer_host_pes: str
     transfer_host_pe_mips: str
     transfer_job_trace_filename: str
-    transfer_max_pes_per_job: str
+    transfer_max_job_pes: str
     transfer_reward_job_wait_coef: str
     transfer_reward_util_coef: str
     transfer_reward_invalid_coef: str
@@ -63,7 +63,7 @@ def parse_args() -> Argumenmts:
         help="The trace file for the pretraining"
     )
     parser.add_argument(
-        "--pretrain-max-pes-per-job",
+        "--pretrain-max-job-pes",
         type=str,
         help="The maximum amount of pes allowed for job waiting on pretraining"
     )
@@ -113,7 +113,7 @@ def parse_args() -> Argumenmts:
         help="The trace file for the transfer env"
     )
     parser.add_argument(
-        "--transfer-max-pes-per-job",
+        "--transfer-max-job-pes",
         type=str,
         help="The maximum amount of pes allowed for job waiting on transfer env"
     )
@@ -147,7 +147,7 @@ def parse_args() -> Argumenmts:
     pretrain_host_pes = str(args.pretrain_host_pes)
     pretrain_host_pe_mips = str(args.pretrain_host_pe_mips)
     pretrain_job_trace_filename = str(args.pretrain_job_trace_filename)
-    pretrain_max_pes_per_job = str(args.pretrain_max_pes_per_job)
+    pretrain_max_job_pes = str(args.pretrain_max_job_pes)
     pretrain_reward_job_wait_coef=str(args.pretrain_reward_job_wait_coef)
     pretrain_reward_util_coef=str(args.pretrain_reward_util_coef)
     pretrain_reward_invalid_coef=str(args.pretrain_reward_invalid_coef)
@@ -157,7 +157,7 @@ def parse_args() -> Argumenmts:
     transfer_hosts = str(args.transfer_hosts)
     transfer_host_pes = str(args.transfer_host_pes)
     transfer_host_pe_mips = str(args.transfer_host_pe_mips)
-    transfer_max_pes_per_job=str(args.transfer_max_pes_per_job)
+    transfer_max_job_pes=str(args.transfer_max_job_pes)
     transfer_job_trace_filename=str(args.transfer_job_trace_filename)
     transfer_reward_job_wait_coef=str(args.transfer_reward_job_wait_coef)
     transfer_reward_util_coef=str(args.transfer_reward_util_coef)
@@ -173,7 +173,7 @@ def parse_args() -> Argumenmts:
         pretrain_host_pes=pretrain_host_pes,
         pretrain_host_pe_mips=pretrain_host_pe_mips,
         pretrain_job_trace_filename=pretrain_job_trace_filename,
-        pretrain_max_pes_per_job=pretrain_max_pes_per_job,
+        pretrain_max_job_pes=pretrain_max_job_pes,
         pretrain_reward_job_wait_coef=pretrain_reward_job_wait_coef,
         pretrain_reward_util_coef=pretrain_reward_util_coef,
         pretrain_reward_invalid_coef=pretrain_reward_invalid_coef,
@@ -182,7 +182,7 @@ def parse_args() -> Argumenmts:
         transfer_hosts=transfer_hosts,
         transfer_host_pes=transfer_host_pes,
         transfer_host_pe_mips=transfer_host_pe_mips,
-        transfer_max_pes_per_job=transfer_max_pes_per_job,
+        transfer_max_job_pes=transfer_max_job_pes,
         transfer_job_trace_filename=transfer_job_trace_filename,
         transfer_reward_job_wait_coef=transfer_reward_job_wait_coef,
         transfer_reward_util_coef=transfer_reward_util_coef,
