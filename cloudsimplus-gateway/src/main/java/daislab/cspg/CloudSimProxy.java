@@ -58,7 +58,7 @@ public class CloudSimProxy {
     private final List<Cloudlet> submittedJobs = new ArrayList<>(1024);
     private final List<Cloudlet> alreadyStarted = new ArrayList<>(128);
     private final Set<Long> finishedIds = new HashSet<>();
-    private final CsvWriter jobCsvWriter;
+    // private final CsvWriter jobCsvWriter;
     // private final CsvWriter hostCsvWriter;
     private int nextVmId = 0;
     private int toAddJobId = 0;
@@ -86,7 +86,7 @@ public class CloudSimProxy {
 
         // String[] hostCsvHeader = {"hostId", "vmsRunningCount", "coresUtilized"};
 
-        jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
+        // jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
         // hostCsvWriter = new CsvWriter(hostLogDir, "host_log.csv", hostCsvHeader);
         
         cloudSimPlus = new CloudSimPlus(minTimeBetweenEvents);
@@ -305,14 +305,14 @@ public class CloudSimProxy {
         }
     }
 
-    private void closeCsvAfterEndOfSimulation() {
-        if (!isRunning() && jobCsvWriter != null) {
-            jobCsvWriter.close();
-        }
-        // if (!isRunning() && hostCsvWriter != null) {
-        //     hostCsvWriter.close();
-        // }
-    }
+    // private void closeCsvAfterEndOfSimulation() {
+    //     if (!isRunning() && jobCsvWriter != null) {
+    //         jobCsvWriter.close();
+    //     }
+    //     if (!isRunning() && hostCsvWriter != null) {
+    //         hostCsvWriter.close();
+    //     }
+    // }
 
     public void printJobStats() {
         LOGGER.info("All jobs: " + jobs.size());
@@ -407,17 +407,17 @@ public class CloudSimProxy {
                         + " that was running on vm "
                         + cloudlet.getVm().getId() + " finished.");
                     
-                    Object[] csvRow = {
-                        cloudlet.getId(),
-                        cloudlet.getVm().getHost(),
-                        cloudlet.getVm().getId(),
-                        cloudlet.getVm().getDescription(),
-                        cloudlet.getDcArrivalTime(),
-                        cloudlet.getStartTime(),
-                        cloudSimPlus.clock()
-                    };
+                    // Object[] csvRow = {
+                    //     cloudlet.getId(),
+                    //     cloudlet.getVm().getHost(),
+                    //     cloudlet.getVm().getId(),
+                    //     cloudlet.getVm().getDescription(),
+                    //     cloudlet.getDcArrivalTime(),
+                    //     cloudlet.getStartTime(),
+                    //     cloudSimPlus.clock()
+                    // };
 
-                    jobCsvWriter.writeRow(csvRow);
+                    // jobCsvWriter.writeRow(csvRow);
                     finishedIds.add(info.getCloudlet().getId());
                 }
             });
