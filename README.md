@@ -130,7 +130,7 @@ docker compose [--profile cuda] up [--build] [-d]
 
 If, after running the app, you want to start a second manager (to run a second experiment simultaneously), you need to run:
 ```
-docker compose manager run [-d]
+docker compose run [-d] [--build] manager
 ```
 
 ## Stop application
