@@ -1,4 +1,3 @@
-version: '3.1'
 services: # uses port 25333
   gateway:
     image: gateway:1.9.1
@@ -20,7 +19,7 @@ services: # uses port 25333
       - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
     command: >
-      python3 mnt/run.py 
+      python3 mnt/run.py
       --algo=${ALGO}
       --pretrain-timesteps=${PRETRAIN_TIMESTEPS}
       --pretrain-hosts=${PRETRAIN_HOSTS}
@@ -35,7 +34,7 @@ services: # uses port 25333
       --transfer-timesteps=${TRANSFER_TIMESTEPS}
       --transfer-hosts=${TRANSFER_HOSTS}
       --transfer-host-pes=${TRANSFER_HOST_PES}
-      --transfer-host-pe-mips=${TRANSFER_HOST_PE_MIPS} 
+      --transfer-host-pe-mips=${TRANSFER_HOST_PE_MIPS}
       --transfer-job-trace-filename=${TRANSFER_JOB_TRACE_FILENAME}
       --transfer-max-job-pes=${TRANSFER_MAX_JOB_PES}
       --transfer-reward-job-wait-coef=${TRANSFER_REWARD_JOB_WAIT_COEF}
