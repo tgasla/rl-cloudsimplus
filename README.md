@@ -21,9 +21,9 @@ You can install OpenJDK 21 JDK and JRE
 sudo apt-get install openjdk-21-jdk openjdk-21-jre
 ```
 
-### 4. Set the JAVA_HOME environment variable to the right path
+### 4. Set the JAVA_HOME environment variable to the right path (the exact path may vary (different distro, different arch)
 ```
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
 ```
 
 <!--
@@ -41,7 +41,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 https://docs.docker.com/get-docker/
 
  > :warning: **Warning:**
- > If you install Docker Desktop make sure you are giving enough memory in your containers by going to <b> Settings.. > Resources </b> and increasing the Memory Limit
+ > If you install Docker Desktop, make sure you are giving enough memory in your containers by going to <b> Settings.. > Resources </b> and increasing the Memory Limit
 
 ### 2. Install Docker Compose
 https://docs.docker.com/compose/install/
@@ -74,7 +74,7 @@ or you can also try Azul Zulu
 
   `brew info openjdk@21`
 
-  and then add the given path into your shell profile
+  and then add the given path to your shell profile
   
   `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
 
@@ -92,18 +92,18 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 ## Build images
 
 ### 1. Build gateway image
-Use the folloiwng command to build the gateway image:
+Use the following command to build the gateway image:
 ```
 make build-gateway
 ```
 
-To enable debugging and show DEBUG log messages use the following command:
+To enable debugging and show DEBUG log messages, use the following command:
 ```
 make build-gateway-debug
 ```
 
 ### 2. Build manager image
-To build the manager image use the following command:
+To build the manager image, use the following command:
 ```
 make build-manager
 ```
@@ -119,29 +119,18 @@ First start TensorBoard:
 make run-tensorboard
 ```
 
-Use the folloiwng command:
+Use the following command:
 ```
-docker compose up
-```
-
-You can also build the manager image by using the folloiwng command:
-```
-docker compose up --build
+docker compose [--profile cuda] up [--build] [-d]
 ```
 
-If you want to see only the manager output use:
-```
-docker compose manager run
-```
+- The `--build` flag also builds the manager image
+- The `-d` flag runs the app in detached mode (runs in the background)
+- The `--profile cuda` flag enables Nvidia CUDA GPU access for the manager. You need to have [CUDA](https://developer.nvidia.com/cuda-downloads) and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your system.
 
-If you want the manager image to have NVIDIA [CUDA](https://developer.nvidia.com/cuda-downloads) GPU access you need to download the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and then use the following command:
+If, after running the app, you want to start a second manager (to run a second experiment simultaneously), you need to run:
 ```
-docker compose --profile cuda up
-```
-
-If you want to use both the --profile and --build flags, use the following command:
-```
-docker compose --profile cuda up --build
+docker compose manager run [-d]
 ```
 
 ## Stop application
@@ -157,9 +146,9 @@ docker system prune -f
 
 ## Acknowledgements
 
-This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, and easy to use Java 17+ framework for modeling and simulation of cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
+This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, and easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
 
-The code was based on the work done by [pkoperek](https://github.com/pkoperek) in these following projects:
+The code was based on the work done by [pkoperek](https://github.com/pkoperek) in the following projects:
   - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
   - [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
   - [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)
