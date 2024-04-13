@@ -126,7 +126,7 @@ docker compose [--profile cuda] up [--build] [-d]
 
 - The `--build` flag also builds the manager image
 - The `-d` flag runs the app in detached mode (runs in the background)
-- The `--profile cuda` flag enables Nvidia CUDA GPU access for the manager. You need to have [CUDA](https://developer.nvidia.com/cuda-downloads) and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your system.
+- The `--profile cuda` flag enables Nvidia CUDA GPU access for the manager. You need to have [CUDA](https://developer.nvidia.com/cuda-downloads) and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your system. Make sure to restart docker daemon if you just downloaded the cuda-container-toolkit.
 
 If, after running the app, you want to start a second manager (to run a second experiment simultaneously), you need to run:
 ```
