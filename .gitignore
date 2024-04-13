@@ -217,10 +217,6 @@ gradle-app.setting
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
-
-# Docker compose environment variables
-.env
-
 # Log directories
 logs/
 old_logs/
