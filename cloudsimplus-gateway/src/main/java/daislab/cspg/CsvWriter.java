@@ -16,6 +16,7 @@ public class CsvWriter {
     public CsvWriter(final String directory, final String filename, String[] header) {
         final CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setHeader(header).build();
         final String filepath = Paths.get(directory, filename).toString();
+        System.out.println("egrapsa ton gamwheader" + header);
 
         // Create log directory if not exist
         try {

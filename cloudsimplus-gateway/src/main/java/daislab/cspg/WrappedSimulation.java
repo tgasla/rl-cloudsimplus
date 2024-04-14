@@ -46,11 +46,13 @@ public class WrappedSimulation {
     private double jobWaitReward;
     private double utilReward;
     private double invalidReward;
+    private int episodeCount = 0;
     private double epJobWaitRewardMean = 0.0;
     private double epUtilRewardMean = 0.0;
     private int epValidCount = 0;
     private long epWaitingJobsCountMax = 0;
     private long epRunningVmsCountMax = 0;
+    private CsvWriter unutilizedCsv;
 
     public WrappedSimulation(
         final SimulationSettings settings,
@@ -63,6 +65,10 @@ public class WrappedSimulation {
         this.initialVmsCount = initialVmsCount;
         this.initialJobsDescriptors = jobs;
         this.simulationHistory = new SimulationHistory();
+        this.unutilizedCsv = null;
+        
+        String[] unutilizedHeader = {"unutilizedRatio"};
+        unutilizedCsv = new CsvWriter(settings.getJobLogDir(), "unutilized.csv", unutilizedHeader);
 
         info("Creating simulation: " + identifier);
     }
@@ -83,7 +89,11 @@ public class WrappedSimulation {
         info("Reset initiated");
         info("job count: " + initialJobsDescriptors.size());
 
-        stepCount = 0;
+        episodeCount++;
+
+        if (episodeCount != 1 && unutilizedCsv != null) {
+            unutilizedCsv.close();
+        }
 
         // first attempt to store some memory
         metricsStorage.clear();
@@ -95,7 +105,8 @@ public class WrappedSimulation {
         cloudSimProxy = new CloudSimProxy(
             settings, 
             initialVmsCount,
-            cloudlets
+            cloudlets,
+            episodeCount
         );
 
         double[] obs = getObservation();
@@ -229,6 +240,22 @@ public class WrappedSimulation {
             );
         }
 
+        // create unutilization log
+        if (episodeCount == 1) {
+            Long unutilizedCores = vmList
+                .parallelStream()
+                .map(Vm::getFreePesNumber)
+                .reduce(Long::sum)
+                .orElse(0L);
+            Long runningVmCores = vmList
+                .parallelStream()
+                .map(Vm::getPesNumber)
+                .reduce(Long::sum)
+                .orElse(1L);
+            Object[] csvRow = {(double) unutilizedCores / runningVmCores};
+            unutilizedCsv.writeRow(csvRow);
+        }
+
         List<Cloudlet> cloudletList = cloudSimProxy.getBroker()
             .getVmExecList()
             .parallelStream()
@@ -252,7 +279,6 @@ public class WrappedSimulation {
                 }
             );
         }
-
         /*
          * METRIC GATHERING CODE STOP
          */

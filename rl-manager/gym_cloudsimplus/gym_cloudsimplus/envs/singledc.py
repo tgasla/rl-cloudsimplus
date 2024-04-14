@@ -68,7 +68,8 @@ class SingleDC(gym.Env):
         jobs_as_json = None,
         jobs_from_file = None,
         simulation_speedup = "1",
-        render_mode = None
+        render_mode = None,
+        job_log_dir = None
     ):
         
         super().__init__()
@@ -107,7 +108,8 @@ class SingleDC(gym.Env):
             "REWARD_UTILIZATION_COEF": reward_util_coef,
             "REWARD_INVALID_COEF": reward_invalid_coef,
             "MAX_JOB_PES": max_job_pes,
-            "SIMULATION_SPEEDUP": simulation_speedup
+            "SIMULATION_SPEEDUP": simulation_speedup,
+            "JOB_LOG_DIR": job_log_dir
         }
 
         assert render_mode is None \

@@ -39,30 +39,38 @@ args = parse_args()
 
 # if pretrain dir is blank then you should pretrain first,
 # otherwise load agent from pretrain dir
+
+experiment_id = generate_filename(
+    algorithm_str=args.algorithm_str,
+    pretrain_timesteps=args.pretrain_timesteps,
+    pretrain_hosts=args.pretrain_hosts,
+    pretrain_host_pes=args.pretrain_host_pes,
+    pretrain_host_pe_mips=args.pretrain_host_pe_mips,
+    pretrain_reward_job_wait_coef=args.pretrain_reward_job_wait_coef,
+    pretrain_reward_util_coef=args.pretrain_reward_util_coef,
+    pretrain_reward_invalid_coef=args.pretrain_reward_invalid_coef,
+    pretrain_job_trace_filename=args.pretrain_job_trace_filename,
+    pretrain_max_job_pes=args.pretrain_max_job_pes
+)
+
+
+base_log_dir = "./logs/"
+
+# Select the appropriate algorithm
+if hasattr(sb3, args.algorithm_str):
+    algorithm = getattr(sb3, args.algorithm_str)
+    policy = "MlpPolicy"
+else:
+    algorithm = getattr(custom_agents, args.algorithm_str)
+    policy = "RngPolicy"
+
+
 if args.pretrain_dir == "":
-    experiment_id = generate_filename(
-        algorithm_str=args.algorithm_str,
-        pretrain_timesteps=args.pretrain_timesteps,
-        pretrain_hosts=args.pretrain_hosts,
-        pretrain_host_pes=args.pretrain_host_pes,
-        pretrain_host_pe_mips=args.pretrain_host_pe_mips,
-        pretrain_reward_job_wait_coef=args.pretrain_reward_job_wait_coef,
-        pretrain_reward_util_coef=args.pretrain_reward_util_coef,
-        pretrain_reward_invalid_coef=args.pretrain_reward_invalid_coef,
-        pretrain_job_trace_filename=args.pretrain_job_trace_filename,
-        pretrain_max_job_pes=args.pretrain_max_job_pes
-    )
-
     timestamp = datetime_to_str()
-
     filename_id = timestamp + "_" + experiment_id
-
+    log_dir = os.path.join(base_log_dir, f"{filename_id}_1")
     # Read jobs
     jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{args.pretrain_job_trace_filename}.csv")
-
-    base_log_dir = "./logs/"
-
-    log_dir = os.path.join(base_log_dir, f"{filename_id}_1")
     
     # Create folder if needed
     os.makedirs(log_dir, exist_ok=True)
@@ -79,7 +87,8 @@ if args.pretrain_dir == "":
         jobs_as_json=json.dumps(jobs),
         max_job_pes=args.pretrain_max_job_pes,
         simulation_speedup=args.simulation_speedup,
-        render_mode="ansi"
+        render_mode="ansi",
+        job_log_dir=log_dir
     )
 
     # Monitor needs the environment to have a render_mode set
@@ -91,14 +100,6 @@ if args.pretrain_dir == "":
     )
 
     venv = DummyVecEnv([lambda: menv])
-
-    # Select the appropriate algorithm
-    if hasattr(sb3, args.algorithm_str):
-        algorithm = getattr(sb3, args.algorithm_str)
-        policy = "MlpPolicy"
-    else:
-        algorithm = getattr(custom_agents, args.algorithm_str)
-        policy = "RngPolicy"
 
     # Instantiate the agent
     model = algorithm(
@@ -143,6 +144,8 @@ if args.pretrain_dir == "":
 if args.transfer_timesteps == "":
     exit()
 
+jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{args.transfer_job_trace_filename}.csv")
+
 new_experiment_id = generate_filename(
     algorithm_str=args.algorithm_str,
     transfer_timesteps=args.transfer_timesteps,
@@ -154,11 +157,15 @@ new_experiment_id = generate_filename(
     transfer_reward_job_wait_coef=args.transfer_reward_job_wait_coef,
     transfer_reward_util_coef=args.transfer_reward_util_coef,
     transfer_reward_invalid_coef=args.transfer_reward_invalid_coef,
-    pretrain_dir=filename_id
+    pretrain_dir=args.pretrain_dir
 )
 
-new_filename_id = timestamp + "_" + new_experiment_id
+new_timestamp = datetime_to_str()
+new_filename_id = new_timestamp + f"_{new_experiment_id}"
 
+if args.pretrain_dir != "":
+    log_dir = os.path.join(base_log_dir, f"{args.pretrain_dir}")
+    
 new_log_dir = os.path.join(base_log_dir, f"{new_filename_id}_1")
 
 #Create folder if needed
@@ -176,7 +183,8 @@ new_env = gym.make(
     jobs_as_json=json.dumps(jobs),
     max_job_pes=args.transfer_max_job_pes,
     simulation_speedup=args.simulation_speedup,
-    render_mode="ansi"
+    render_mode="ansi",
+    job_log_dir=new_log_dir
 )
 
 # Monitor needs the environment to have a render_mode set
@@ -199,11 +207,11 @@ model = algorithm.load(
 
 # Load the replay buffer if the algorithm has one
 if hasattr(model, "replay_buffer"):
-   best_replay_buffer_path = os.path.join(log_dir, "best_replay_buffer")
+   best_replay_buffer_path = os.path.join(log_dir, "best_model_replay_buffer")
    model.load_replay_buffer(best_replay_buffer_path)
 
 # Set the learning rate to a small initial value
-model.learning_rate = learning_rate_dict.get(args.algorithm_str)
+# model.learning_rate = learning_rate_dict.get(args.algorithm_str)
 
 callback = SaveOnBestTrainingRewardCallback(
     check_freq=10_000,

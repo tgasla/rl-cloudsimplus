@@ -58,34 +58,41 @@ public class CloudSimProxy {
     private final List<Cloudlet> submittedJobs = new ArrayList<>(1024);
     private final List<Cloudlet> alreadyStarted = new ArrayList<>(128);
     private final Set<Long> finishedIds = new HashSet<>();
-    // private final CsvWriter jobCsvWriter;
+    private CsvWriter jobCsvWriter;
     // private final CsvWriter hostCsvWriter;
     private int nextVmId = 0;
     private int toAddJobId = 0;
     private int previousIntervalJobId = 0;
+    private int episodeCount;
 
     public CloudSimProxy(
         final SimulationSettings settings,
         final Map<String, Integer> initialVmsCount,
-        final List<Cloudlet> inputJobs
+        final List<Cloudlet> inputJobs,
+        final int episodeCount
     ) {
         this.settings = settings;
+        this.episodeCount = episodeCount;
+        jobCsvWriter = null;
 
-        // String jobLogDir = settings.getJobLogDir();
+        String jobLogDir = settings.getJobLogDir();
         // String hostLogDir = jobLogDir;
         
         String[] jobCsvHeader = {
-            "jobId", 
-            "hostId",
-            "vmId",
-            "vmType",
-            "arrivalTime",
-            "execStartTime",
-            "execFinishTime"
+            // "jobId", 
+            // "hostId",
+            // "vmId",
+            // "vmType",
+            // "arrivalTime",
+            "getStartWaitTime"
+            // "execFinishTime"
         };
 
-        // String[] hostCsvHeader = {"hostId", "vmsRunningCount", "coresUtilized"};
+        if (episodeCount == 1) {
+            jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
+        }
 
+        // String[] hostCsvHeader = {"hostId", "vmsRunningCount", "coresUtilized"};
         // jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
         // hostCsvWriter = new CsvWriter(hostLogDir, "host_log.csv", hostCsvHeader);
         
@@ -252,7 +259,7 @@ public class CloudSimProxy {
 
         cancelInvalidEvents();
         printJobStatsAfterEndOfSimulation();
-        // closeCsvAfterEndOfSimulation();
+        closeCsvAfterEndOfSimulation();
 
         if (shouldPrintJobStats()) {
             printJobStats();
@@ -305,14 +312,14 @@ public class CloudSimProxy {
         }
     }
 
-    // private void closeCsvAfterEndOfSimulation() {
-    //     if (!isRunning() && jobCsvWriter != null) {
-    //         jobCsvWriter.close();
-    //     }
-    //     if (!isRunning() && hostCsvWriter != null) {
-    //         hostCsvWriter.close();
-    //     }
-    // }
+    private void closeCsvAfterEndOfSimulation() {
+        if (!isRunning() && jobCsvWriter != null) {
+            jobCsvWriter.close();
+        }
+        // if (!isRunning() && hostCsvWriter != null) {
+        //     hostCsvWriter.close();
+        // }
+    }
 
     public void printJobStats() {
         LOGGER.info("All jobs: " + jobs.size());
@@ -407,17 +414,18 @@ public class CloudSimProxy {
                         + " that was running on vm "
                         + cloudlet.getVm().getId() + " finished.");
                     
-                    // Object[] csvRow = {
-                    //     cloudlet.getId(),
-                    //     cloudlet.getVm().getHost(),
-                    //     cloudlet.getVm().getId(),
-                    //     cloudlet.getVm().getDescription(),
-                    //     cloudlet.getDcArrivalTime(),
-                    //     cloudlet.getStartTime(),
-                    //     cloudSimPlus.clock()
-                    // };
-
-                    // jobCsvWriter.writeRow(csvRow);
+                    if (episodeCount == 1) {
+                        Object[] csvRow = {
+                            // cloudlet.getId(),
+                            // cloudlet.getVm().getHost(),
+                            // cloudlet.getVm().getId(),
+                            // cloudlet.getVm().getDescription(),
+                            // cloudlet.getDcArrivalTime(),
+                            cloudlet.getStartWaitTime()
+                            // cloudSimPlus.clock()
+                        };
+                        jobCsvWriter.writeRow(csvRow);
+                    }
                     finishedIds.add(info.getCloudlet().getId());
                 }
             });
@@ -662,7 +670,7 @@ public class CloudSimProxy {
             // if the Cloudlet still hasn't been started, 
             // let it start at the scheduled time,
             // else, start it (immediately) in the next timestep
-            submissionDelay = Math.max(timestepInterval, submissionDelay - currentClock);
+            submissionDelay = Math.max(0, submissionDelay - currentClock);
             cloudlet.setSubmissionDelay(submissionDelay);
         });
 
