@@ -10,7 +10,6 @@
 plugins {
   id 'java'
   id 'application'
-//   id 'com.github.johnrengelman.shadow' version '8.1.1'
   id 'com.bmuschko.docker-java-application' version '9.4.0'
 }
 
@@ -40,10 +39,6 @@ build.dependsOn configureLogging
 
 test {
     useJUnitPlatform()
-    //https://stackoverflow.com/questions/70756414/java-lang-reflect-inaccessibleobjectexception-unable-to-make-field-private-fina
-    //https://stackoverflow.com/questions/70412805/what-does-this-error-mean-java-lang-reflect-inaccessibleobjectexception-unable
-    //https://openjdk.org/jeps/396
-    jvmArgs = jvmArgs + ['--add-opens=java.base/java.util=ALL-UNNAMED']
     // enable/disable system out messages on junit tests
     // TODO: I should pass a parameter to enable/disable it
     testLogging.showStandardStreams = false
