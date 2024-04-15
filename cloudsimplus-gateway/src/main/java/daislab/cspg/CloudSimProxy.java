@@ -581,10 +581,10 @@ public class CloudSimProxy {
         //     return false;
         // }
 
-        if (vmExecList.size() == 1) {
-            LOGGER.warn("Can't kill VM as it is the only one running.");
-            return false;
-        }
+        // if (vmExecList.size() == 1) {
+        //     LOGGER.warn("Can't kill VM as it is the only one running.");
+        //     return false;
+        // }
 
         destroyVm(vmToKill);
         return true;

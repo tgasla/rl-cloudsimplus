@@ -4,7 +4,6 @@ import json
 from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
 import numpy as np
-from typing import Literal
 
 # TODO: the two environments should inherit a BaseEnvironment class
 # so I do not have to repeat the same code in both of them
@@ -109,7 +108,7 @@ class SingleDC(gym.Env):
             "REWARD_INVALID_COEF": reward_invalid_coef,
             "MAX_JOB_PES": max_job_pes,
             "SIMULATION_SPEEDUP": simulation_speedup,
-            "JOB_LOG_DIR": job_log_dir
+            "JOB_LOG_DIR": job_log_dir,
         }
 
         assert render_mode is None \

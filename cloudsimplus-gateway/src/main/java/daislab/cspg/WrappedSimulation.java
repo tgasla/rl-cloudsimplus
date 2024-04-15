@@ -53,6 +53,7 @@ public class WrappedSimulation {
     private long epWaitingJobsCountMax = 0;
     private long epRunningVmsCountMax = 0;
     private CsvWriter unutilizedCsv;
+    private CsvWriter unutilizedAllCsv;
 
     public WrappedSimulation(
         final SimulationSettings settings,
@@ -66,9 +67,13 @@ public class WrappedSimulation {
         this.initialJobsDescriptors = jobs;
         this.simulationHistory = new SimulationHistory();
         this.unutilizedCsv = null;
+        this.unutilizedAllCsv = null;
         
-        String[] unutilizedHeader = {"unutilizedRatio"};
+        String[] unutilizedHeader = {"unutilizedOverActiveRatio"};
         unutilizedCsv = new CsvWriter(settings.getJobLogDir(), "unutilized.csv", unutilizedHeader);
+
+        String[] unutilizedAllHeader = {"unutilizedOverAllRatio"};
+        unutilizedAllCsv = new CsvWriter(settings.getJobLogDir(), "unutilized_all.csv", unutilizedAllHeader);
 
         info("Creating simulation: " + identifier);
     }
@@ -93,6 +98,9 @@ public class WrappedSimulation {
 
         if (episodeCount != 1 && unutilizedCsv != null) {
             unutilizedCsv.close();
+        }
+        if (episodeCount != 1 && unutilizedAllCsv != null) {
+            unutilizedAllCsv.close();
         }
 
         // first attempt to store some memory
@@ -254,6 +262,9 @@ public class WrappedSimulation {
                 .orElse(1L);
             Object[] csvRow = {(double) unutilizedCores / runningVmCores};
             unutilizedCsv.writeRow(csvRow);
+
+            csvRow = new Object[] {(double) unutilizedCores / settings.getAvailableCores()};
+            unutilizedAllCsv.writeRow(csvRow);
         }
 
         List<Cloudlet> cloudletList = cloudSimProxy.getBroker()

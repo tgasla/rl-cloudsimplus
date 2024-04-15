@@ -1,5 +1,4 @@
 import pandas as pd
-
 from .cloudlet_descriptor import as_cloudlet_descriptor_dict
 
 def trace_to_csv(

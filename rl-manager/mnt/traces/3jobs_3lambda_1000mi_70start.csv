@@ -1,0 +1,4 @@
+,job_id,arrival_time,mi,allocated_cores
+0,0,75,20,1
+1,1,81,833,4
+2,2,83,778,6
