@@ -18,8 +18,14 @@ import java.util.Map;
 */
 public class SimulationSettings {
 
-    private final double simulationSpeedup;
     private final double timestepInterval;
+    private final int initialSVmCount;
+    private final int initialMVmCount;
+    private final int initialLVmCount;
+    private final String jobs;
+    private final String sourceOfJobs;
+    private final boolean splitLargeJobs;
+    private final int maxJobPes;
     private final double vmRunningHourlyCost;
     private final long hostPeMips;
     private final long hostBw;
@@ -52,10 +58,20 @@ public class SimulationSettings {
     // TODO: Also, initial_vm_parameters should also be here instead of inside
     // the SimulationFactory class.
     public SimulationSettings(final Map<String, String> parameters) {
-        simulationSpeedup = Double.parseDouble(
-            parameters.getOrDefault("SIMULATION_SPEEDUP", "1.0"));
+        sourceOfJobs = parameters.getOrDefault("SOURCE_OF_JOBS", "PARAMS");
+        jobs = parameters.getOrDefault("JOBS", "[]");
+        initialSVmCount = Integer.parseInt(
+            parameters.getOrDefault("INITIAL_S_VM_COUNT", "0"));
+        initialMVmCount = Integer.parseInt(
+            parameters.getOrDefault("INITIAL_M_VM_COUNT", "0"));
+        initialLVmCount = Integer.parseInt(
+            parameters.getOrDefault("INITIAL_L_VM_COUNT", "0"));
         timestepInterval = Double.parseDouble(
             parameters.getOrDefault("TIMESTEP_INTERVAL", "1.0"));
+        splitLargeJobs = Boolean.parseBoolean(
+            parameters.getOrDefault("SPLIT_LARGE_JOBS", "true").toLowerCase()); 
+        maxJobPes = Integer.parseInt(
+            parameters.getOrDefault("MAX_JOB_PES", "1"));
         vmRunningHourlyCost = Double.parseDouble(
             parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.086"));
         hostPeMips = Long.parseLong(
@@ -90,11 +106,11 @@ public class SimulationSettings {
             parameters.getOrDefault(
             "STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
         rewardJobWaitCoef = Double.parseDouble(
-            parameters.getOrDefault("REWARD_JOB_WAIT_COEF", "1"));
+            parameters.getOrDefault("REWARD_JOB_WAIT_COEF", "0.3"));
         rewardUtilizationCoef = Double.parseDouble(
-            parameters.getOrDefault("REWARD_UTILIZATION_COEF", "1"));
+            parameters.getOrDefault("REWARD_UTILIZATION_COEF", "0.3"));
         rewardInvalidCoef = Double.parseDouble(
-            parameters.getOrDefault("REWARD_INVALID_COEF", "1"));
+            parameters.getOrDefault("REWARD_INVALID_COEF", "0.4"));
         jobLogDir =
             parameters.getOrDefault("JOB_LOG_DIR", "./logs");
     }
@@ -102,9 +118,14 @@ public class SimulationSettings {
     @Override
     public String toString() {
         return "SimulationSettings {" + "\n" +
-            "simulationSpeedup=" + simulationSpeedup + ",\n" +
-            "timestepInterval=" + timestepInterval + ",\n" +
             "vmRunningHourlyCost=" + vmRunningHourlyCost + ",\n" + 
+            "initialSVmCount=" + initialSVmCount + ",\n" + 
+            "initialMVmCount=" + initialMVmCount + ",\n" + 
+            "initialLVmCount=" + initialLVmCount + ",\n" +
+            "sourceOfJobs=" + sourceOfJobs + ",\n" +
+            "splitLargeJobs=" + splitLargeJobs + ",\n" +
+            "maxJobPes=" + maxJobPes + ",\n" +
+            "timestepInterval=" + timestepInterval + ",\n" +
             "hostPeMips=" + hostPeMips + ",\n" +
             "hostBw=" + hostBw + ",\n" +
             "hostRam=" + hostRam + ",\n" +
@@ -127,8 +148,32 @@ public class SimulationSettings {
             "}";
     }
 
-    public double getSimulationSpeedup() {
-        return simulationSpeedup;
+    public int getInitialSVmCount() {
+        return initialSVmCount;
+    }
+
+    public int getInitialMVmCount() {
+        return initialMVmCount;
+    }
+
+    public int getInitialLVmCount() {
+        return initialLVmCount;
+    }
+
+    public String getSourceOfJobs() {
+        return sourceOfJobs;
+    }
+
+    public String getJobsAsJson() {
+        return jobs;
+    }
+
+    public boolean isSplitLargeJobs() {
+        return splitLargeJobs;
+    }
+
+    public int getMaxJobPes() {
+        return maxJobPes;
     }
 
     public double getTimestepInterval() {

@@ -59,7 +59,7 @@ public class IntegrationTest {
 
         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
         Map<String, String> parameters = new HashMap<>();
-        parameters.put(SimulationFactory.JOBS, gson.toJson(jobs));
+        parameters.put("JOBS", gson.toJson(jobs));
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 

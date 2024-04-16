@@ -38,7 +38,6 @@ public class WrappedSimulation {
     private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
     private final Gson gson = new Gson();
     private final String identifier;
-    private final Map<String, Integer> initialVmsCount;
     private final SimulationSettings settings;
     private final SimulationHistory simulationHistory;
     private CloudSimProxy cloudSimProxy;
@@ -56,14 +55,12 @@ public class WrappedSimulation {
     private CsvWriter unutilizedAllCsv;
 
     public WrappedSimulation(
-        final SimulationSettings settings,
         final String identifier,
-        final Map<String, Integer> initialVmsCount,
+        final SimulationSettings settings,
         final List<CloudletDescriptor> jobs
     ) {
         this.settings = settings;
         this.identifier = identifier;
-        this.initialVmsCount = initialVmsCount;
         this.initialJobsDescriptors = jobs;
         this.simulationHistory = new SimulationHistory();
         this.unutilizedCsv = null;
@@ -111,8 +108,7 @@ public class WrappedSimulation {
             .map(CloudletDescriptor::toCloudlet)
             .collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(
-            settings, 
-            initialVmsCount,
+            settings,
             cloudlets,
             episodeCount
         );
@@ -250,6 +246,7 @@ public class WrappedSimulation {
 
         // create unutilization log
         if (episodeCount == 1) {
+            // TODO: instead of putting if else below, consider .orElse(-1L);
             Long unutilizedCores = vmList
                 .parallelStream()
                 .map(Vm::getFreePesNumber)
@@ -259,12 +256,27 @@ public class WrappedSimulation {
                 .parallelStream()
                 .map(Vm::getPesNumber)
                 .reduce(Long::sum)
-                .orElse(1L);
-            Object[] csvRow = {(double) unutilizedCores / runningVmCores};
-            unutilizedCsv.writeRow(csvRow);
+                .orElse(0L);
 
-            csvRow = new Object[] {(double) unutilizedCores / settings.getAvailableCores()};
-            unutilizedAllCsv.writeRow(csvRow);
+            // THIS DOES NOT WORK!!!
+            // double unutilizedActive;
+            // double unutilizedAll;
+            // if (vmList.size() == 0) {
+            //     unutilizedActive = -1.0;
+            //     unutilizedAll = -1.0;
+            // }
+            // else {
+            //     unutilizedActive = (double) (unutilizedCores / runningVmCores);
+            //     unutilizedAll = (double) (unutilizedCores / settings.getAvailableCores());
+            // }
+
+            if (runningVmCores > 0) {
+                Object[] csvRow = {(double) unutilizedCores / runningVmCores};
+                unutilizedCsv.writeRow(csvRow);
+
+                csvRow = new Object[] {(double) unutilizedCores / settings.getAvailableCores()};
+                unutilizedAllCsv.writeRow(csvRow);
+            }
         }
 
         List<Cloudlet> cloudletList = cloudSimProxy.getBroker()
@@ -290,6 +302,12 @@ public class WrappedSimulation {
                 }
             );
         }
+
+        List<Cloudlet> jobsFinishedThisTimestep = cloudSimProxy.getJobsFinishedThisTimestep();
+        List<Double> jobWaitTime = new ArrayList<>();
+        for (Cloudlet cloudlet : jobsFinishedThisTimestep) {
+            jobWaitTime.add(cloudlet.getStartWaitTime());
+        }
         /*
          * METRIC GATHERING CODE STOP
          */
@@ -303,7 +321,10 @@ public class WrappedSimulation {
             getEpValidCount(),
             hostMetrics,
             vmMetrics,
-            jobMetrics
+            jobMetrics,
+            new ArrayList<>(0), //jobWaitTime,
+            0.0, //unutilizedActive,
+            0.0 //unutilizedAll
         );
 
         return new SimulationStepResult(

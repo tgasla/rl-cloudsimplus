@@ -21,6 +21,9 @@ public class SimulationStepInfo {
     private final List<long[]> hostMetrics;
     private final List<long[]> vmMetrics;
     private final List<long[]> jobMetrics;
+    private final List<Double> jobWaitTime;
+    private final double unutilizedActive;
+    private final double unutilizedAll;
 
     public SimulationStepInfo() {
         this.jobWaitReward = 0;
@@ -32,6 +35,9 @@ public class SimulationStepInfo {
         this.hostMetrics = new ArrayList<>();
         this.vmMetrics = new ArrayList<>();
         this.jobMetrics = new ArrayList<>();
+        this.jobWaitTime = new ArrayList<>();
+        this.unutilizedActive = 0;
+        this.unutilizedAll = 0;
     }
 
     public SimulationStepInfo(
@@ -43,7 +49,10 @@ public class SimulationStepInfo {
         final int epValidCount,
         final List<long[]> hostMetrics,
         final List<long[]> vmMetrics,
-        final List<long[]> jobMetrics
+        final List<long[]> jobMetrics,
+        final List<Double> jobWaitTime,
+        final double unutilizedActive,
+        final double unutilizedAll
     ) {
         this.jobWaitReward = jobWaitReward;
         this.utilReward = utilReward;
@@ -54,6 +63,9 @@ public class SimulationStepInfo {
         this.hostMetrics = hostMetrics;
         this.vmMetrics = vmMetrics;
         this.jobMetrics = jobMetrics;
+        this.jobWaitTime = jobWaitTime;
+        this.unutilizedActive = unutilizedActive;
+        this.unutilizedAll = unutilizedAll;
     }
 
     public double getJobWaitReward() {
@@ -104,6 +116,18 @@ public class SimulationStepInfo {
         return gson.toJson(jobMetrics);
     }
 
+    public String getJobWaitTimeAsJson() {
+        return gson.toJson(jobWaitTime);
+    }
+
+    public double getUnutilizedActive() {
+        return unutilizedActive;
+    }
+
+    public double getUnutilizedAll() {
+        return unutilizedAll;
+    }
+ 
     @Override
     public String toString() {
         // TODO: I also have to print the Maps.toString() here

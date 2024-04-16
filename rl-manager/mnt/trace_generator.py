@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import argparse
-from .trace_utils import trace_to_csv
+from utils.trace_utils import trace_to_csv
 
 def main():
     parser = argparse.ArgumentParser()
@@ -89,7 +89,7 @@ def generate_job_trace(args):
 
     # dictionaries of list
     job_trace = {
-        "job_id": list(range(args.id_start_from, args.jobs)),
+        "job_id": list(range(args.id_start_from, args.id_start_from + args.jobs)),
         "arrival_time": arrival_times,
         "mi": mis,
         "allocated_cores": allocated_cores
@@ -100,6 +100,7 @@ def generate_job_trace(args):
     # elif type == "dataframe":
     csv_filename = f"{args.jobs}jobs_{args.lambda_poisson}lambda_{args.mi_multiplier}mi_{args.start_from}start.csv"
     job_trace = pd.DataFrame.from_dict(job_trace, orient='index').transpose()
+    job_trace = job_trace.set_index("job_id")
     if csv_filename:
         trace_to_csv(job_trace, csv_filename)
     return job_trace

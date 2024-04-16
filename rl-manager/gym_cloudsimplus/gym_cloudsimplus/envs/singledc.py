@@ -80,6 +80,9 @@ class SingleDC(gym.Env):
         self.host_metrics = None
         self.vm_metrics = None
         self.job_metrics = None
+        self.job_wait_time = None
+        self.unutilized_active = None
+        self.unutilized_all = None
 
         self.action_space = spaces.Box(
             low=np.array([-1.0, 0.0]), 
@@ -140,6 +143,9 @@ class SingleDC(gym.Env):
         self.host_metrics = []
         self.vm_metrics = []
         self.job_metrics = []
+        self.job_wait_time = []
+        self.unutilized_active = []
+        self.unutilized_all = []
 
         result = self.simulation_environment.reset(self.simulation_id)
         self.simulation_environment.seed(self.simulation_id)
@@ -151,9 +157,12 @@ class SingleDC(gym.Env):
         
         self.episode_details["state"].append(list(raw_obs))
 
-        self.host_metrics.append(list(info["host_metrics"]))
-        self.vm_metrics.append(list(info["vm_metrics"]))
-        self.job_metrics.append(list(info["job_metrics"]))
+        # self.host_metrics.append(list(info["host_metrics"]))
+        # self.vm_metrics.append(list(info["vm_metrics"]))
+        # self.job_metrics.append(list(info["job_metrics"]))
+        # self.job_wait_time.append(list(info["job_wait_time"]))
+        # self.unutilized_active.append(info["unutilized_active"])
+        # self.unutilized_all.append(info["unutilized_all"])
 
         return obs, info
 
@@ -186,6 +195,14 @@ class SingleDC(gym.Env):
         self.host_metrics.append(list(info["host_metrics"]))
         self.vm_metrics.append(list(info["vm_metrics"]))
         self.job_metrics.append(list(info["job_metrics"]))
+
+        # TODO: NEEDS FIX, FOR SOME REASON IT IS ALWAYS 0.0 OR 1.0
+        if len(list(info["job_wait_time"])) > 0:
+            self.job_wait_time.append(list(info["job_wait_time"]))
+        if info["unutilized_active"] != -1.0:
+            self.unutilized_active.append(info["unutilized_active"])
+        if info["unutilized_all"] != -1.0:
+            self.unutilized_all.append(info["unutilized_all"])
 
         if self.render_mode == "human":
             self.render()
@@ -234,10 +251,22 @@ class SingleDC(gym.Env):
             "ep_valid_count": raw_info.getEpValidCount(),
             "host_metrics": json.loads(raw_info.getHostMetricsAsJson()),
             "vm_metrics": json.loads(raw_info.getVmMetricsAsJson()),
-            "job_metrics": json.loads(raw_info.getJobMetricsAsJson())
+            "job_metrics": json.loads(raw_info.getJobMetricsAsJson()),
+            "job_wait_time": json.loads(raw_info.getJobWaitTimeAsJson()),
+            "unutilized_active": raw_info.getUnutilizedActive(),
+            "unutilized_all": raw_info.getUnutilizedAll()
         }
         return info
 
     def _to_nparray(self, raw_obs):
         obs = list(raw_obs)
         return np.array(obs, dtype=np.float32)
+    
+    def _flatten(self, test_list):
+        if isinstance(test_list, list):
+            temp = []
+            for ele in test_list:
+                temp.extend(self._flatten(ele))
+            return temp
+        else:
+            return [test_list]

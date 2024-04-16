@@ -57,6 +57,7 @@ public class CloudSimProxy {
     private final List<Cloudlet> jobs = new ArrayList<>();
     private final List<Cloudlet> submittedJobs = new ArrayList<>(1024);
     private final List<Cloudlet> alreadyStarted = new ArrayList<>(128);
+    private final List<Cloudlet> jobsFinishedThisTimestep = new ArrayList<>(128);
     private final Set<Long> finishedIds = new HashSet<>();
     private CsvWriter jobCsvWriter;
     // private final CsvWriter hostCsvWriter;
@@ -67,7 +68,6 @@ public class CloudSimProxy {
 
     public CloudSimProxy(
         final SimulationSettings settings,
-        final Map<String, Integer> initialVmsCount,
         final List<Cloudlet> inputJobs,
         final int episodeCount
     ) {
@@ -88,26 +88,25 @@ public class CloudSimProxy {
             // "execFinishTime"
         };
 
-        if (episodeCount == 1) {
-            jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
-        }
+        // if (episodeCount == 1) {
+        // jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
+        // }
 
         // String[] hostCsvHeader = {"hostId", "vmsRunningCount", "coresUtilized"};
-        // jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
+        jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
         // hostCsvWriter = new CsvWriter(hostLogDir, "host_log.csv", hostCsvHeader);
         
         cloudSimPlus = new CloudSimPlus(minTimeBetweenEvents);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         datacenter = createDatacenter();
         vmCost = new VmCost(
-            settings.getVmRunningHourlyCost(),
-            settings.getSimulationSpeedup(),
-            settings.isPayingForTheFullHour()
-        );
+            settings.getVmRunningHourlyCost(), 
+            settings.getTimestepInterval(),
+            settings.isPayingForTheFullHour());
 
-        final List<? extends Vm> smallVmList = createVmList(initialVmsCount.get(SMALL), SMALL);
-        final List<? extends Vm> mediumVmList = createVmList(initialVmsCount.get(MEDIUM), MEDIUM);
-        final List<? extends Vm> largeVmList = createVmList(initialVmsCount.get(LARGE), LARGE);
+        final List<? extends Vm> smallVmList = createVmList(settings.getInitialSVmCount(), SMALL);
+        final List<? extends Vm> mediumVmList = createVmList(settings.getInitialMVmCount(), MEDIUM);
+        final List<? extends Vm> largeVmList = createVmList(settings.getInitialLVmCount(), LARGE);
         broker.submitVmList(smallVmList);
         broker.submitVmList(mediumVmList);
         broker.submitVmList(largeVmList);
@@ -397,6 +396,8 @@ public class CloudSimProxy {
         previousIntervalJobId = toAddJobId;
         List<Cloudlet> jobsToSubmit = new ArrayList<>();
 
+        jobsFinishedThisTimestep.clear();
+
         while (toAddJobId < jobs.size() && 
             jobs.get(toAddJobId).getSubmissionDelay() <= target) {
             // LOGGER.debug("job.submissionDelay: " + jobs.get(toAddJobId).getSubmissionDelay()
@@ -410,7 +411,7 @@ public class CloudSimProxy {
             cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
                 @Override
                 public void update(CloudletVmEventInfo info) {
-                    LOGGER.debug("Cloudlet: " + cloudlet.getId() 
+                    LOGGER.debug("Cloudlet: " + cloudlet.getId()
                         + " that was running on vm "
                         + cloudlet.getVm().getId() + " finished.");
                     
@@ -427,6 +428,7 @@ public class CloudSimProxy {
                         jobCsvWriter.writeRow(csvRow);
                     }
                     finishedIds.add(info.getCloudlet().getId());
+                    jobsFinishedThisTimestep.add(info.getCloudlet());
                 }
             });
             jobsToSubmit.add(cloudlet);
@@ -695,6 +697,10 @@ public class CloudSimProxy {
 
     public Datacenter getDatacenter() {
         return datacenter;
+    }
+
+    public List<Cloudlet> getJobsFinishedThisTimestep() {
+        return jobsFinishedThisTimestep;
     }
 
     public double clock() {
