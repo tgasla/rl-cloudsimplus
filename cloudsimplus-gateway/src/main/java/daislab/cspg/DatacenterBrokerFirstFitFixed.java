@@ -39,6 +39,12 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     public void processEvent(final SimEvent evt) {
         super.processEvent(evt);
 
+        // This is important,
+        // CLOUDLET_RETURN is sent whenever a cloudlet finishes executing.
+        // The default behaviour in CloudSim Plus is to destroy a Vm when
+        // it has no more cloudlets to execute.
+        // Here we override the default behaviour and we trigger the creation
+        // of waiting cloudlets so they can be possibly allocated inside a Vm.
         if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
             final Cloudlet cloudlet = (Cloudlet) evt.getData();
             LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/"
@@ -57,58 +63,58 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
          * and this behaviour leads to 0 waitingTime for all cloudlets,
          * which is not realistic.
          */
-//     @Override
-//     protected void requestDatacentersToCreateWaitingCloudlets() {
-//         final List<Cloudlet> scheduled = new LinkedList<>();
-//         final List<Cloudlet> cloudletWaitingList = getCloudletWaitingList();
-//         for (final Iterator<Cloudlet> it = cloudletWaitingList.iterator(); it.hasNext(); ) {
-//             final CloudletSimple cloudlet = (CloudletSimple) it.next();
-//             if (!cloudlet.getLastTriedDatacenter().equals(Datacenter.NULL)) {
-//                 continue;
-//             }
+    // @Override
+    // protected void requestDatacentersToCreateWaitingCloudlets() {
+    //     final List<Cloudlet> scheduled = new LinkedList<>();
+    //     final List<Cloudlet> cloudletWaitingList = getCloudletWaitingList();
+    //     for (final Iterator<Cloudlet> it = cloudletWaitingList.iterator(); it.hasNext(); ) {
+    //         final CloudletSimple cloudlet = (CloudletSimple) it.next();
+    //         if (!cloudlet.getLastTriedDatacenter().equals(Datacenter.NULL)) {
+    //             continue;
+    //         }
 
-//             //selects a VM for the given Cloudlet
-//             Vm selectedVm = defaultVmMapper(cloudlet);
-//             if (selectedVm == Vm.NULL) {
-//                 break;
-//             }
+    //         //selects a VM for the given Cloudlet
+    //         Vm selectedVm = defaultVmMapper(cloudlet);
+    //         if (selectedVm == Vm.NULL) {
+    //             break;
+    //         }
 
-//             ((VmSimple) selectedVm).removeExpectedFreePesNumber(cloudlet.getPesNumber());
+    //         ((VmSimple) selectedVm).removeExpectedFreePesNumber(cloudlet.getPesNumber());
 
-//             cloudlet.setVm(selectedVm);
-//             send(getDatacenter(selectedVm),
-//                     cloudlet.getSubmissionDelay(), CloudSimTag.CLOUDLET_SUBMIT, cloudlet);
-//             cloudlet.setLastTriedDatacenter(getDatacenter(selectedVm));
-//             getCloudletCreatedList().add(cloudlet);
-//             scheduled.add(cloudlet);
-//             it.remove();
-//         }
+    //         cloudlet.setVm(selectedVm);
+    //         send(getDatacenter(selectedVm),
+    //                 cloudlet.getSubmissionDelay(), CloudSimTag.CLOUDLET_SUBMIT, cloudlet);
+    //         cloudlet.setLastTriedDatacenter(getDatacenter(selectedVm));
+    //         getCloudletCreatedList().add(cloudlet);
+    //         scheduled.add(cloudlet);
+    //         it.remove();
+    //     }
 
-//         LOGGER.debug("requestDatacentersToCreateWaitingCloudlets scheduled: "
-//                 + scheduled.size() + "/" + cloudletWaitingList.size());
-//         LOGGER.debug("Events cnt before: " 
-//                 + getSimulation().getNumberOfFutureEvents(simEvent -> true));
-//         for (Cloudlet cloudlet : scheduled) {
-//             final long totalLengthInMips = cloudlet.getTotalLength();
-//             final double peMips = cloudlet.getVm().getProcessor().getMips();
-//             final double lengthInSeconds = totalLengthInMips / peMips;
-//             final Datacenter datacenter = getDatacenter(cloudlet.getVm());
-//             final double eventDelay = lengthInSeconds + 1.0;
+    //     LOGGER.debug("requestDatacentersToCreateWaitingCloudlets scheduled: "
+    //             + scheduled.size() + "/" + cloudletWaitingList.size());
+    //     LOGGER.debug("Events cnt before: " 
+    //             + getSimulation().getNumberOfFutureEvents(simEvent -> true));
+    //     for (Cloudlet cloudlet : scheduled) {
+    //         final long totalLengthInMips = cloudlet.getTotalLength();
+    //         final double peMips = cloudlet.getVm().getProcessor().getMips();
+    //         final double lengthInSeconds = totalLengthInMips / peMips;
+    //         final Datacenter datacenter = getDatacenter(cloudlet.getVm());
+    //         final double eventDelay = lengthInSeconds + 1.0;
             
-//             LOGGER.debug("Cloudlet " + cloudlet.getId() 
-//                 + " scheduled. Updating in: " + eventDelay);
+    //         LOGGER.debug("Cloudlet " + cloudlet.getId() 
+    //             + " scheduled. Updating in: " + eventDelay);
 
-//             getSimulation().send(
-//                 datacenter,
-//                 datacenter,
-//                 eventDelay,
-//                 CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING,
-//                 null
-//             );
-//         }
-//         LOGGER.debug("Events cnt after: "
-//             + getSimulation().getNumberOfFutureEvents(simEvent -> true));
-//     }
+    //         getSimulation().send(
+    //             datacenter,
+    //             datacenter,
+    //             eventDelay,
+    //             CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING,
+    //             null
+    //         );
+    //     }
+    //     LOGGER.debug("Events cnt after: "
+    //         + getSimulation().getNumberOfFutureEvents(simEvent -> true));
+    // }
 
 //     /**
 //      * Selects the first VM with the lowest number of PEs that is able to run a given Cloudlet.

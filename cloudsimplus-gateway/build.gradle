@@ -41,7 +41,7 @@ test {
     useJUnitPlatform()
     // enable/disable system out messages on junit tests
     // TODO: I should pass a parameter to enable/disable it
-    testLogging.showStandardStreams = false
+    testLogging.showStandardStreams = true
 }
 
 // In this section you declare where to find the dependencies of your project

@@ -24,6 +24,8 @@ public class IntegrationTest {
 	private static final long hostPeMips = 10000;
 	private static final int hostPeCnt = 14;
     private static final List<Double> nopAction = new ArrayList<Double>(List.of(0.0, 0.0));
+    private static final List<Double> createSVmAction = new ArrayList<Double>(List.of(0.1, 0.0));
+    private static final List<Double> removeSVmAction = new ArrayList<Double>(List.of(-0.1, 0.0));
     
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();
@@ -129,8 +131,6 @@ public class IntegrationTest {
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
-            List<Double> createSVmAction = new ArrayList<Double>(List.of(0.1, 0.0));
-
             List<Double> action = stepsExecuted == 20 ? createSVmAction : nopAction;
 
             System.out.println("action on this step is " + action.get(0) + ", " + action.get(1));
@@ -213,7 +213,7 @@ public class IntegrationTest {
     public void testNoVmForCloudlet() {
         /*
          * Test to check that if there are not enough resources to host a job at the moment,
-         * the job just does not run, the event is lost, so the simulation finishes.
+         * the job tries to get rescheduled forever.
          */
         List<CloudletDescriptor> jobs = Arrays.asList(new CloudletDescriptor(0, 0, 100, 1));
         Map<String, String> parameters = new HashMap<>();
@@ -232,11 +232,59 @@ public class IntegrationTest {
 
         SimulationStepResult step;
         int stepsExecuted;
-        for (stepsExecuted = 0; stepsExecuted < 10; stepsExecuted++) {
+        for (stepsExecuted = 1; stepsExecuted < 1000; stepsExecuted++) {
             step = multiSimulationEnvironment.step(simulationId, nopAction);
             System.out.println("Executing step: " + stepsExecuted);
         }
-        assertEquals(stepsExecuted, 10);
+        assertEquals(stepsExecuted, 1000);
+    }
+
+    @Test
+    public void testNoVmForRescheduledCloudlet() {
+        /*
+         * Test to check that if there are not enough resources to host a rescheduled job at the moment,
+         * the job just waits until there are resources available and reschedules the cloudlet just then.
+         * Initially, the cloudlet starts running at 3.1.
+         * We remove the VM at step 10.
+         * We create a new S VM at step 20. The cloudlet should be rescheduled immediately at the same step.
+         * The cloudlet should run for 100 MI / 10 MIPS = 10 seconds = 10 timesteps.
+         * The simulation should end at 30.1 where we have made 30 steps.
+         */
+        List<CloudletDescriptor> jobs = Arrays.asList(new CloudletDescriptor(0, 0, 100, 1));
+        Map<String, String> parameters = new HashMap<>();
+
+        parameters.put("INITIAL_S_VM_COUNT", "1");
+        parameters.put("INITIAL_M_VM_COUNT", "0");
+        parameters.put("INITIAL_L_VM_COUNT", "0");
+        parameters.put("DATACENTER_HOSTS_CNT", "1");
+        parameters.put("HOST_PE_CNT", "20");
+        parameters.put("HOST_PE_MIPS", "10");
+        parameters.put("BASIC_VM_PE_CNT", "2");
+        parameters.put("JOBS", gson.toJson(jobs));
+
+        final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+        multiSimulationEnvironment.reset(simulationId);
+
+        SimulationStepResult step;
+        int stepsExecuted;
+        List<Double> action;
+        for (stepsExecuted = 0; stepsExecuted < 1000; stepsExecuted++) {
+            if (stepsExecuted == 10) {
+                action = removeSVmAction;
+            }
+            else if (stepsExecuted == 21) {
+                action = createSVmAction;
+            }
+            else {
+                action = nopAction;
+            }
+            step = multiSimulationEnvironment.step(simulationId, action);
+            System.out.println("Executing step: " + stepsExecuted);
+            if (step.isDone()) {
+                break;
+            }
+        }
+        assertEquals(stepsExecuted, 31);
     }
 
     @Test
@@ -267,8 +315,6 @@ public class IntegrationTest {
 
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
-
-            List<Double> removeSVmAction = new ArrayList<Double>(List.of(-0.1, 0.0));
 
             action = stepsExecuted == 10 ? removeSVmAction : nopAction;
 

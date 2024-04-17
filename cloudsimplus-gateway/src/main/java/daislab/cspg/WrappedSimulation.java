@@ -155,18 +155,18 @@ public class WrappedSimulation {
 
         debug("Executing action: " + action[0] + ", " + action[1]);
 
-        long startAction = System.nanoTime();
+        long startActionTime = TimeMeasurement.startTiming();
         boolean isValid = executeAction(action);
         if (isValid) {
             epValidCount++;
         }
 
-        long stopAction = System.nanoTime();
+        long elapsedActionTimeInNs = TimeMeasurement.calculateElapsedTime(startActionTime);
         cloudSimProxy.runFor(settings.getTimestepInterval());
 
-        long startMetrics = System.nanoTime();
+        long startMetricsTime = TimeMeasurement.startTiming();
         collectMetrics();
-        long stopMetrics = System.nanoTime();
+        long elapsedMetricsTimeInNs = TimeMeasurement.calculateElapsedTime(startMetricsTime);
 
         boolean done = !cloudSimProxy.isRunning();
         double[] observation = getObservation();
@@ -184,12 +184,10 @@ public class WrappedSimulation {
             simulationHistory.reset();
         }
 
-        double metricsTime = (stopMetrics - startMetrics) / 1_000_000_000d;
-        double actionTime = (stopAction - startAction) / 1_000_000_000d;
         debug("Step finished (action: " + action[0] + ", " + action[1] + ") is done: " + done
             + " Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents()
-            + " Metrics (s): " + metricsTime
-            + " Action (s): " + actionTime);
+            + " Metrics (s): " + elapsedMetricsTimeInNs / 1_000_000_000d
+            + " Action (s): " + elapsedActionTimeInNs / 1_000_000_000d);
 
         double jobWaitReward = - settings.getRewardJobWaitCoef() * getWaitingJobsRatioGlobal();
         double utilReward = - settings.getRewardUtilizationCoef() * getVmAllocatedRatio();
