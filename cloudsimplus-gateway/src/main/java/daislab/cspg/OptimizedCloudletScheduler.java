@@ -8,17 +8,13 @@ import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerAbstract;
 import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerSpaceShared;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
 
     @Override
     protected double cloudletSubmitInternal(
-        final CloudletExecution cle, 
+        final CloudletExecution cle,
         final double fileTransferTime
     ) {
         if (!getVm().isCreated()) {
@@ -28,7 +24,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
             // because we don't know yet that this cloudlet should be!
             final Cloudlet cloudlet = cle.getCloudlet();
             final DatacenterBroker broker = cloudlet.getBroker();
-            broker.submitCloudletList(Collections.singletonList(cloudlet.reset()));
+            broker.submitCloudlet((cloudlet.reset()));
 
             return -1.0;
         }
@@ -52,53 +48,30 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         return nextSimulationTime;
     }
 
-    @Override
-    protected Optional<CloudletExecution> findSuitableWaitingCloudlet() {
-        if (getVm().getProcessor().getAvailableResource() > 0) {
-            final List<CloudletExecution> cloudletWaitingList = getCloudletWaitingList();
-            for (CloudletExecution cle : cloudletWaitingList) {
-                if (isThereEnoughFreePesForCloudlet(cle)) {
-                    return Optional.of(cle);
-                }
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    private void setPrivateField(final String fieldName, final Object value) 
-        throws NoSuchFieldException, IllegalAccessException {
-
-        final Field field = CloudletSchedulerAbstract.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(this, value);
-    }
-
-    private Set<?> getPrivateFieldValueAsSet(final String fieldName, final Object source)
+    private List<?> getModifiableCloudletReturnedList()
         throws IllegalAccessException, NoSuchFieldException {
 
-        final Field field = CloudletSchedulerAbstract.class.getDeclaredField(fieldName);
+        final Field field = CloudletSchedulerAbstract.class
+            .getDeclaredField("cloudletReturnedList");
         field.setAccessible(true);
-        Object fieldValue = field.get(source);
+        Object fieldValue = field.get(this);
         
-        if (!(fieldValue instanceof Set)) {
+        if (!(fieldValue instanceof List<?>)) {
             return null;
         }
         
-        return (Set<?>) fieldValue;
+        return (List<?>) fieldValue;
     }
 
+    // Here we modify the private fields cloudletWaitingList, 
+    // cloudletExecList and cloudletReturnedList.
     // It is safe to override this function:
     // it is used only in one place - DatacenterBrokerAbstract:827
     @Override
     public void clear() {
+        super.clear();
         try {
-            setPrivateField("cloudletWaitingList", new ArrayList<>());
-            setPrivateField("cloudletExecList", new ArrayList<>());
-
-            Set<?> cloudletReturnedList = 
-                    getPrivateFieldValueAsSet("cloudletReturnedList", this);
-                    
+            List<?> cloudletReturnedList = getModifiableCloudletReturnedList();       
             if (cloudletReturnedList != null) {
                 cloudletReturnedList.clear();
             }

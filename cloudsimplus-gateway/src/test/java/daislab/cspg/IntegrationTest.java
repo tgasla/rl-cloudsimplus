@@ -23,7 +23,7 @@ public class IntegrationTest {
 	private static final long datacenterHostsCnt = 3000;
 	private static final long hostPeMips = 10000;
 	private static final int hostPeCnt = 14;
-    private static final ArrayList<Double> nopAction = new ArrayList<Double>(List.of(0.0, 0.0));
+    private static final List<Double> nopAction = new ArrayList<Double>(List.of(0.0, 0.0));
     
     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
     final Gson gson = new Gson();
@@ -129,9 +129,9 @@ public class IntegrationTest {
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
-            ArrayList<Double> createSVmAction = new ArrayList<Double>(List.of(0.1, 0.0));
+            List<Double> createSVmAction = new ArrayList<Double>(List.of(0.1, 0.0));
 
-            ArrayList<Double> action = stepsExecuted == 20 ? createSVmAction : nopAction;
+            List<Double> action = stepsExecuted == 20 ? createSVmAction : nopAction;
 
             System.out.println("action on this step is " + action.get(0) + ", " + action.get(1));
 
@@ -185,7 +185,7 @@ public class IntegrationTest {
 
             if (stepsExecuted == 20) {
                 // delete a SMALL VM
-                ArrayList<Double> action = new ArrayList<Double>(List.of(-0.1, 0.0));
+                List<Double> action = new ArrayList<Double>(List.of(-0.1, 0.0));
                 step = multiSimulationEnvironment.step(simulationId, action);
 
                 final long totalVmPes =
@@ -208,13 +208,43 @@ public class IntegrationTest {
         }
         multiSimulationEnvironment.close(simulationId);
     }
+    
+    @Test
+    public void testNoVmForCloudlet() {
+        /*
+         * Test to check that if there are not enough resources to host a job at the moment,
+         * the job just does not run, the event is lost, so the simulation finishes.
+         */
+        List<CloudletDescriptor> jobs = Arrays.asList(new CloudletDescriptor(0, 0, 100, 1));
+        Map<String, String> parameters = new HashMap<>();
+
+        parameters.put("INITIAL_S_VM_COUNT", "0");
+        parameters.put("INITIAL_M_VM_COUNT", "0");
+        parameters.put("INITIAL_L_VM_COUNT", "0");
+        parameters.put("DATACENTER_HOSTS_CNT", "1");
+        parameters.put("HOST_PE_CNT", "20");
+        parameters.put("HOST_PE_MIPS", "10000");
+        parameters.put("BASIC_VM_PE_CNT", "2");
+        parameters.put("JOBS", gson.toJson(jobs));
+
+        final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+        multiSimulationEnvironment.reset(simulationId);
+
+        SimulationStepResult step;
+        int stepsExecuted;
+        for (stepsExecuted = 0; stepsExecuted < 10; stepsExecuted++) {
+            step = multiSimulationEnvironment.step(simulationId, nopAction);
+            System.out.println("Executing step: " + stepsExecuted);
+        }
+        assertEquals(stepsExecuted, 10);
+    }
 
     @Test
     public void testProcessingAllCloudlets() {
         // scenario:
         // 1. we submit jobs at delay 5
         // 2. we have 2S, 1M, 1L VMs
-        // 3. we submit enough to overload the system (we have 2+2+4+8 cores,
+        // 3. we submit enough to overload the system (we have 2+2+4+8=16 cores,
         //    so we submit for 18 cores) for 10 iterations
         //    there should be 2 cloudlets assigned to a VM but not executing
         // 5. we delete the additional S machine at time 10.
@@ -233,13 +263,15 @@ public class IntegrationTest {
         multiSimulationEnvironment.reset(simulationId);
         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
         int stepsExecuted = 1;
+        List<Double> action;
 
         while (!step.isDone()) {
             System.out.println("Executing step: " + stepsExecuted);
 
-            ArrayList<Double> removeSVmAction = new ArrayList<Double>(List.of(-0.1, 0.0));
+            List<Double> removeSVmAction = new ArrayList<Double>(List.of(-0.1, 0.0));
 
-            ArrayList<Double> action = stepsExecuted == 10 ? removeSVmAction : nopAction;
+            action = stepsExecuted == 10 ? removeSVmAction : nopAction;
+
             step = multiSimulationEnvironment.step(simulationId, action);
 
             System.out.println("Observations: " + Arrays.toString(step.getObs()) + " "

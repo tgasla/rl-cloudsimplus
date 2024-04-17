@@ -13,6 +13,7 @@ import org.cloudsimplus.vms.VmSimple;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Collections;
 
 /**
  * Fixed version of the original class - uses list of currently executable VMs
@@ -38,12 +39,12 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     public void processEvent(final SimEvent evt) {
         super.processEvent(evt);
 
-        // if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
-        //     final Cloudlet cloudlet = (Cloudlet) evt.getData();
-        //     LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/"
-        //         + cloudlet.getVm().getId() + " Scheduling more cloudlets...");
-        //     requestDatacentersToCreateWaitingCloudlets();
-        // }
+        if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
+            final Cloudlet cloudlet = (Cloudlet) evt.getData();
+            LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/"
+                + cloudlet.getVm().getId() + " Scheduling more cloudlets...");
+            requestDatacentersToCreateWaitingCloudlets();
+        }
 
         if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
             LOGGER.debug("Cleaning the vmCreatedList");
@@ -51,6 +52,11 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         }
     }
     
+        /*
+         * This function triggers immediately the cloudlet to vm mapping
+         * and this behaviour leads to 0 waitingTime for all cloudlets,
+         * which is not realistic.
+         */
 //     @Override
 //     protected void requestDatacentersToCreateWaitingCloudlets() {
 //         final List<Cloudlet> scheduled = new LinkedList<>();
@@ -112,47 +118,54 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
 //      * @param cloudlet the Cloudlet to find a VM to run it
 //      * @return the VM selected for the Cloudlet or {@link Vm#NULL} if no suitable VM was found
 //      */
-//     @Override
-//     public Vm defaultVmMapper(final Cloudlet cloudlet) {
-//         if (cloudlet.isBoundToVm()) {
-//             return cloudlet.getVm();
-//         }
+    @Override
+    public Vm defaultVmMapper(final Cloudlet cloudlet) {
+        if (cloudlet.isBoundToVm()) {
+            return cloudlet.getVm();
+        }
 
-//         // no VMs available
-//         if (getVmExecList().size() == 0) {
-//             return Vm.NULL;
-//         }
-//         // if we delete a VM when in the previous iteration we had lastVmIndex set
-//         // to size() - 1 then we are going to explode... if we don't have the
-//         // line below :)
-//         lastVmIndex %= getVmExecList().size();
+        // No VMs available
+        if (getVmExecList().isEmpty()) {
+            return Vm.NULL;
+        }
 
-//         /* The for loop just defines the maximum number of Hosts to try.
-//          * When a suitable Host is found, the method returns immediately. */
-//         final int maxTries = getVmExecList().size();
-//         for (int i = 0; i < maxTries; i++) {
-//             final Vm vm = getVmExecList().get(lastVmIndex);
-//             if (vm.getExpectedFreePesNumber() >= cloudlet.getPesNumber()) {
-//                 LOGGER.trace("{}: {}: {} (PEs: {}) mapped to {} (available PEs: {}, tot PEs: {})",
-//                     getSimulation().clockStr(), getName(),
-//                     cloudlet, cloudlet.getPesNumber(), vm,
-//                     vm.getExpectedFreePesNumber(),
-//                     vm.getFreePesNumber());
-//                 return vm;
-//             }
+        /**
+         * If we delete a VM when in the previous iteration we had lastVmIndex set
+         * to size() - 1 then we are going to explode... if we don't have the line below :)
+         * For example, if the lastVmIndex is 9 and then we delete a vm, the lastvmindex will cause
+         * an OutOfBoundsException because now the lastVmIndex is 8.
+         * The line below will do lastVmIndex = 0 (9 mod 9)
+         * The rest of the code remains the same as the official CloudSim Plus implementation.
+         */ 
+        lastVmIndex %= getVmExecList().size();
 
-//             /* If it gets here, the previous Vm doesn't have capacity to place the Cloudlet.
-//              * Then, moves to the next Vm.
-//              * If the end of the Vm list is reached, starts from the beginning,
-//              * until the max number of tries.*/
-//             lastVmIndex = ++lastVmIndex % getVmExecList().size();
-//         }
+        /** The for loop just defines the maximum number of Hosts to try.
+         *  When a suitable Host is found, the method returns immediately. 
+         */
+        final int maxTries = getVmExecList().size();
+        for (int i = 0; i < maxTries; i++) {
+            final Vm vm = getVmExecList().get(lastVmIndex);
+            if (vm.getExpectedFreePesNumber() >= cloudlet.getPesNumber()) {
+                LOGGER.trace("{}: {}: {} (PEs: {}) mapped to {} (available PEs: {}, tot PEs: {})",
+                    getSimulation().clockStr(), getName(),
+                    cloudlet, cloudlet.getPesNumber(), vm,
+                    vm.getExpectedFreePesNumber(),
+                    vm.getFreePesNumber());
+                return vm;
+            }
 
-//         LOGGER.warn("{}: {}: {} (PEs: {}) couldn't be mapped to any suitable VM.",
-//             getSimulation().clockStr(), getName(), cloudlet, cloudlet.getPesNumber());
+            /* If it gets here, the previous Vm doesn't have capacity to place the Cloudlet.
+             * Then, moves to the next Vm.
+             * If the end of the Vm list is reached, starts from the beginning,
+             * until the max number of tries.*/
+            lastVmIndex = ++lastVmIndex % getVmExecList().size();
+        }
 
-//         // if we return NULL, that VM is not created so the cloudlet lands
-//         // on "waiting" list
-//         return Vm.NULL;
-//     }
+        LOGGER.warn("{}: {}: {} (PEs: {}) couldn't be mapped to any suitable VM.",
+            getSimulation().clockStr(), getName(), cloudlet, cloudlet.getPesNumber());
+
+        // if we return NULL, that VM is not created so the cloudlet lands
+        // on "waiting" list
+        return Vm.NULL;
+    }
 }

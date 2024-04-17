@@ -15,7 +15,7 @@ from callbacks.save_on_best_training_reward_callback import SaveOnBestTrainingRe
 
 from utils.filename_generator import generate_filename
 from utils.argparser import parse_args
-from utils.trace_utils import csv_to_cloudlet_descriptor
+from utils.trace_utils import csv_to_cloudlet_descriptor, swf_to_cloudlet_descriptor
 
 def datetime_to_str():
     return datetime.now().strftime("%y%m%d-%H%M%S")

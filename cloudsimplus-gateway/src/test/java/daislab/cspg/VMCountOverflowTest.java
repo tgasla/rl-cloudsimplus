@@ -32,25 +32,23 @@ public class VMCountOverflowTest {
         parameters.put("INITIAL_L_VM_COUNT", "1");
         parameters.put("INITIAL_M_VM_COUNT", "1");
         parameters.put("INITIAL_S_VM_COUNT", "1");
-        parameters.put("QUEUE_WAIT_PENALTY", "0.00001");
         parameters.put("DATACENTER_HOSTS_CNT", "5");
 
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
         multiSimulationEnvironment.reset(simulationId);
 
-        int i = 0;
-        while (i++ < 1000) {
+        for(int i = 0; i < 1000; i++) {
             SimulationStepResult result = multiSimulationEnvironment.step(simulationId, nopAction);
             System.out.println("Result: " + result);
 
             if (result.isDone()) {
+                assertTrue(i < 1000, "There should be much less than 1000 iterations!");
                 break;
             }
         }
 
         multiSimulationEnvironment.close(simulationId);
-        assertTrue(i < 1000, "There should be much less than a 1000 iterations!");
     }
         
     @AfterAll

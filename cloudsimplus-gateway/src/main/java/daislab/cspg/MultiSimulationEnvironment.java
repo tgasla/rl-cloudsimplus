@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,7 +54,7 @@ public class MultiSimulationEnvironment {
         return simulation.render();
     }
 
-    public SimulationStepResult step(final String simulationIdentifier, final ArrayList<Double> action) {
+    public SimulationStepResult step(final String simulationIdentifier, final List<Double> action) {
         final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
         final double[] action_double = action.stream()
             .mapToDouble(Double::doubleValue)
