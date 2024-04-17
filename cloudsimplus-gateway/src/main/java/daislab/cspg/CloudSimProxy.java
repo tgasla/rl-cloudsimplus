@@ -112,7 +112,20 @@ public class CloudSimProxy {
         broker.submitVmList(largeVmList);
 
         jobs.addAll(inputJobs);
-        Collections.sort(jobs, new DelayCloudletComparator());
+        Collections.sort(jobs, new Comparator<Cloudlet>() {
+            @Override
+            public int compare(Cloudlet left, Cloudlet right) {
+                final double diff = left.getSubmissionDelay() - right.getSubmissionDelay();
+                if (diff < 0) {
+                    return -1;
+                }
+    
+                if (diff > 0) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
         jobs.forEach(c -> originalSubmissionDelay.put(c.getId(), c.getSubmissionDelay()));
 
         cloudSimPlus.addOnEventProcessingListener(new EventListener<SimEvent>() {
@@ -537,21 +550,6 @@ public class CloudSimProxy {
         return true;
     }
 
-    // TODO: I should avoid repeating code here.
-    // I should call addNewVm(type, vmId) inside this method
-    // public void addNewVm(String type) {
-    //     Vm newVm = createVm(type);
-    //     // assuming average delay up to 97s as in 10.1109/CLOUD.2012.103
-    //     // from anecdotal exp the startup time can be as fast as 45s
-    //     final double delay = 
-    //             (45 + Math.random() * 52) / settings.getSimulationSpeedup();
-    //     // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
-    //     // newVm.setSubmissionDelay(delay);
-    //     LOGGER.debug("Agent action: Create a " + type + " VM");
-    //     broker.submitVm(newVm);
-    //     LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
-    // }
-
     // if a vm is destroyed, this method returns the type of it.
     public boolean removeVm(final int index) {
         List<Vm> vmExecList = broker.getVmExecList();
@@ -572,32 +570,6 @@ public class CloudSimProxy {
         destroyVm(vmToKill);
         return true;
     }
-
-    // TODO: I should avoid repeating code here.
-    // I should reuse code from removeVm(id)
-    // public boolean removeRandomVm(String type) {
-    //     List<Vm> vmExecList = broker.getVmExecList();
-
-    //     if (vmExecList.size() == 1) {
-    //         LOGGER.warn("Can't kill VM as it is the only one running.");
-    //         return false;
-    //     }
-
-    //     List<Vm> vmsOfType = vmExecList
-    //         .parallelStream()
-    //         .filter(vm -> type.equals((vm.getDescription())))
-    //         .collect(Collectors.toList());
-    //     LOGGER.debug("Agent action: Remove a " + type + " VM");
-
-    //     if (vmsOfType.size() == 0) {
-    //         LOGGER.warn("Can't kill VM of type " + type + " as no vms of this type are running");
-    //         return false;
-    //     }
-
-    //     int vmToKillIdx = random.nextInt(vmsOfType.size());
-    //     destroyVm(vmsOfType.get(vmToKillIdx));
-    //     return true;
-    // }
 
     private Cloudlet resetCloudlet(final Cloudlet cloudlet) {
         cloudlet.setVm(Vm.NULL);
@@ -703,19 +675,18 @@ public class CloudSimProxy {
     }
 
 
+    // class DelayCloudletComparator implements Comparator<Cloudlet> {
+    //     @Override
+    //     public int compare(Cloudlet left, Cloudlet right) {
+    //         final double diff = left.getSubmissionDelay() - right.getSubmissionDelay();
+    //         if (diff < 0) {
+    //             return -1;
+    //         }
 
-    class DelayCloudletComparator implements Comparator<Cloudlet> {
-        @Override
-        public int compare(Cloudlet left, Cloudlet right) {
-            final double diff = left.getSubmissionDelay() - right.getSubmissionDelay();
-            if (diff < 0) {
-                return -1;
-            }
-
-            if (diff > 0) {
-                return 1;
-            }
-            return 0;
-        }
-    }
+    //         if (diff > 0) {
+    //             return 1;
+    //         }
+    //         return 0;
+    //     }
+    // }
 }
