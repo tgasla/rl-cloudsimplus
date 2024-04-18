@@ -552,12 +552,6 @@ public class WrappedSimulation {
         return epWaitingJobsCountMax;
     }
 
-    private void updateEpRunningVmsMax(long runningVms) {
-        if (runningVms > epRunningVmsCountMax) {
-            epRunningVmsCountMax = runningVms;
-        }
-    }
-
     private void updateEpWaitingJobsCountMax(long waitingJobsCount) {
         if (waitingJobsCount > epWaitingJobsCountMax) {
             epWaitingJobsCountMax = waitingJobsCount;

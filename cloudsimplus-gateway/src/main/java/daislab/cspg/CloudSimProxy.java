@@ -627,7 +627,6 @@ public class CloudSimProxy {
 
     private void rescheduleCloudlets(final List<Cloudlet> affectedCloudlets) {
         final double currentClock = clock();
-        final double timestepInterval = settings.getTimestepInterval();
 
         affectedCloudlets.forEach(cloudlet -> {
             Double submissionDelay = originalSubmissionDelay.get(cloudlet.getId());
@@ -635,6 +634,7 @@ public class CloudSimProxy {
             // if the Cloudlet still hasn't been started, 
             // let it start at the scheduled time,
             // else, start it immediately
+            // we can also start it on the next timestepInterval
             submissionDelay = Math.max(0, submissionDelay - currentClock);
             cloudlet.setSubmissionDelay(submissionDelay);
         });

@@ -72,7 +72,7 @@ def main():
 		log_dir = os.path.join(base_log_dir, f"{filename_id}_1")
 		# Read jobs
 		jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{args.pretrain_job_trace_filename}.csv")
-		
+
 		# Create folder if needed
 		os.makedirs(log_dir, exist_ok=True)
 
