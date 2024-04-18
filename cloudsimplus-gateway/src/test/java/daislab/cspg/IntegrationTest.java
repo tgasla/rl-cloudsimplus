@@ -67,7 +67,9 @@ public class IntegrationTest {
 
         multiSimulationEnvironment.reset(simulationId);
         multiSimulationEnvironment.step(simulationId, nopAction);
+        int stepsExecuted = 1;
         multiSimulationEnvironment.close(simulationId);
+        assertEquals(stepsExecuted, 1);
     }
 
     @Test
@@ -217,56 +219,55 @@ public class IntegrationTest {
         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
         multiSimulationEnvironment.reset(simulationId);
 
-        SimulationStepResult step;
         int stepsExecuted;
         for (stepsExecuted = 1; stepsExecuted < 1000; stepsExecuted++) {
-            step = multiSimulationEnvironment.step(simulationId, nopAction);
+            multiSimulationEnvironment.step(simulationId, nopAction);
             System.out.println("Executing step: " + stepsExecuted);
         }
         assertEquals(stepsExecuted, 1000);
     }
 
-    // @Test
-    // public void testNoVmForRescheduledCloudlet() {
-    //     /*
-    //      * Test to check that if there are not enough resources to host a rescheduled job at the moment,
-    //      * the job just waits until there are resources available and reschedules the cloudlet just then.
-    //      * By "rescheduled job" we mean a job that was running on a VM, then the Vm was terminated before
-    //      * the job was finished, and now this job should be rescheduled.
-    //      * We start the simulation with one S VM.
-    //      * Initially, the cloudlet starts running at 3.1.
-    //      * We remove the VM at step 10.
-    //      * We create a new S VM at step 20. The cloudlet should be rescheduled immediately at the same step.
-    //      * The cloudlet should run for 100000 MI / 10000 MIPS = 10 seconds = 10 timesteps.
-    //      * The simulation should end at 30.1 where we have made 30 steps.
-    //      */
-    //     List<CloudletDescriptor> jobs = Arrays.asList(new CloudletDescriptor(0, 0, 100000, 1));
-    //     Map<String, String> parameters = addParameters(1, 0, 0, jobs);
+    @Test
+    public void testNoVmForRescheduledCloudlet() {
+        /*
+         * Test to check that if there are not enough resources to host a rescheduled job at the moment,
+         * the job just waits until there are resources available and reschedules the cloudlet just then.
+         * By "rescheduled job" we mean a job that was running on a VM, then the Vm was terminated before
+         * the job was finished, and now this job should be rescheduled.
+         * We start the simulation with one S VM.
+         * Initially, the cloudlet starts running at 3.1.
+         * We remove the VM at step 10.
+         * We create a new S VM at step 20. The cloudlet should be rescheduled immediately at the same step.
+         * The cloudlet should run for 100000 MI / 10000 MIPS = 10 seconds = 10 timesteps.
+         * The simulation should end at 30.1 where we have made 30 steps.
+         */
+        List<CloudletDescriptor> jobs = Arrays.asList(new CloudletDescriptor(0, 0, 100000, 1));
+        Map<String, String> parameters = addParameters(1, 0, 0, jobs);
 
-    //     final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
-    //     multiSimulationEnvironment.reset(simulationId);
+        final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+        multiSimulationEnvironment.reset(simulationId);
 
-    //     SimulationStepResult step;
-    //     int stepsExecuted;
-    //     List<Double> action;
-    //     for (stepsExecuted = 0; stepsExecuted < 1000; stepsExecuted++) {
-    //         if (stepsExecuted == 10) {
-    //             action = removeSVmAction;
-    //         }
-    //         else if (stepsExecuted == 21) {
-    //             action = createSVmAction;
-    //         }
-    //         else {
-    //             action = nopAction;
-    //         }
-    //         step = multiSimulationEnvironment.step(simulationId, action);
-    //         System.out.println("Executing step: " + stepsExecuted);
-    //         if (step.isDone()) {
-    //             break;
-    //         }
-    //     }
-    //     assertEquals(stepsExecuted, 31);
-    // }
+        SimulationStepResult step;
+        int stepsExecuted;
+        List<Double> action;
+        for (stepsExecuted = 0; stepsExecuted < 1000; stepsExecuted++) {
+            if (stepsExecuted == 10) {
+                action = removeSVmAction;
+            }
+            else if (stepsExecuted == 21) {
+                action = createSVmAction;
+            }
+            else {
+                action = nopAction;
+            }
+            step = multiSimulationEnvironment.step(simulationId, action);
+            System.out.println("Executing step: " + stepsExecuted);
+            if (step.isDone()) {
+                break;
+            }
+        }
+        assertEquals(stepsExecuted, 31);
+    }
 
     @Test
     public void testProcessingAllCloudlets() {

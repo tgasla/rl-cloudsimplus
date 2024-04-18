@@ -42,9 +42,6 @@ public class WrappedSimulation {
     private final SimulationHistory simulationHistory;
     private CloudSimProxy cloudSimProxy;
     private int stepCount;
-    private double jobWaitReward;
-    private double utilReward;
-    private double invalidReward;
     private int episodeCount = 0;
     private double epJobWaitRewardMean = 0.0;
     private double epUtilRewardMean = 0.0;
@@ -92,6 +89,7 @@ public class WrappedSimulation {
         info("job count: " + initialJobsDescriptors.size());
 
         episodeCount++;
+        resetStepCount();
 
         if (episodeCount != 1 && unutilizedCsv != null) {
             unutilizedCsv.close();

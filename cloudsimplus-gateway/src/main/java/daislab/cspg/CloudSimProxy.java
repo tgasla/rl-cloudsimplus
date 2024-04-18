@@ -34,7 +34,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -58,7 +57,6 @@ public class CloudSimProxy {
     private final VmCost vmCost;
     private final Datacenter datacenter;
     private final Map<Long, Double> originalSubmissionDelay = new HashMap<>();
-    private final Random random = new Random(System.currentTimeMillis());
     private final List<Cloudlet> jobs = new ArrayList<>();
     private final List<Cloudlet> submittedJobs = new ArrayList<>(1024);
     private final List<Cloudlet> jobsFinishedThisTimestep = new ArrayList<>(128);
@@ -237,9 +235,10 @@ public class CloudSimProxy {
         }
     }
 
-    private void runForInternal(double interval, final double target) {
-        while (cloudSimPlus.runFor(interval) < target) {
-            interval = Math.max(target - clock(), cloudSimPlus.getMinTimeBetweenEvents());
+    private void runForInternal(final double interval, final double target) {
+        double adjustedInterval = interval;
+        while (cloudSimPlus.runFor(adjustedInterval) < target) {
+            adjustedInterval = Math.max(target - clock(), cloudSimPlus.getMinTimeBetweenEvents());
         }
     }
 
