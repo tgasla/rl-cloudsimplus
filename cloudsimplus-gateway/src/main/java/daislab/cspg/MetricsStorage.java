@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.NoSuchElementException;
 
 public class MetricsStorage {
 
@@ -43,11 +44,10 @@ public class MetricsStorage {
     }
 
     public void updateMetric(final String metricName, final Double value) {
-        final CircularFifoQueue<Double> valuesQueue = data.get(metricName);
-        if (valuesQueue == null) {
-            throw new RuntimeException("Unknown metric: " + metricName);
+        if (!data.containsKey(metricName)) {
+            throw new NoSuchElementException("Unknown metric: " + metricName);
         }
-
+        final CircularFifoQueue<Double> valuesQueue = data.get(metricName);
         valuesQueue.add(value);
     }
 
@@ -63,10 +63,10 @@ public class MetricsStorage {
     }
 
     public double getLastMetricValue(final String metricName) {
-        final CircularFifoQueue<Double> valuesQueue = data.get(metricName);
-        if (valuesQueue == null) {
-            throw new RuntimeException("Unknown metric: " + metricName);
+        if (!data.containsKey(metricName)) {
+            throw new NoSuchElementException("Unknown metric: " + metricName);
         }
+        final CircularFifoQueue<Double> valuesQueue = data.get(metricName);
 
         return valuesQueue.get(valuesQueue.size() - 1);
     }

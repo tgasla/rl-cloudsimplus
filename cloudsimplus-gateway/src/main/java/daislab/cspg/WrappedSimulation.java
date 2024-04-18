@@ -148,7 +148,7 @@ public class WrappedSimulation {
         // debug("action received");
 
         if (cloudSimProxy == null) {
-            throw new RuntimeException("Simulation not reset! Please call the reset() function!");
+            throw new IllegalStateException("Simulation not reset! Please call the reset() function!");
         }
 
         stepCount++;

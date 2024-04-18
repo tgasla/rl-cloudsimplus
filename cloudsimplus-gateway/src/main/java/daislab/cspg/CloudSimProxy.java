@@ -245,7 +245,7 @@ public class CloudSimProxy {
 
     public void runFor(final double interval) {
         if (!isRunning()) {
-            throw new RuntimeException("The simulation is not running - "
+            throw new IllegalStateException("The simulation is not running - "
                 + "please reset or create a new one!");
         }
 
