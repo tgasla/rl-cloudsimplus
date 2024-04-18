@@ -45,6 +45,8 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         // it has no more cloudlets to execute.
         // Here we override the default behaviour and we trigger the creation
         // of waiting cloudlets so they can be possibly allocated inside a Vm.
+        // This is because in our case, we may reschedule some cloudlets so
+        // we want the VMs to trigger the creation of those waiting cloudlets
         if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
             final Cloudlet cloudlet = (Cloudlet) evt.getData();
             LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/"

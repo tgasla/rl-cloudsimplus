@@ -18,6 +18,9 @@ import org.cloudsimplus.vms.VmSimple;
 import org.cloudsimplus.listeners.CloudletVmEventInfo;
 import org.cloudsimplus.listeners.DatacenterBrokerEventInfo;
 import org.cloudsimplus.listeners.EventListener;
+import org.cloudsimplus.resources.Ram;
+import org.cloudsimplus.resources.Bandwidth;
+import org.cloudsimplus.resources.ResourceManageable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,20 +115,8 @@ public class CloudSimProxy {
         broker.submitVmList(largeVmList);
 
         jobs.addAll(inputJobs);
-        Collections.sort(jobs, new Comparator<Cloudlet>() {
-            @Override
-            public int compare(Cloudlet left, Cloudlet right) {
-                final double diff = left.getSubmissionDelay() - right.getSubmissionDelay();
-                if (diff < 0) {
-                    return -1;
-                }
-    
-                if (diff > 0) {
-                    return 1;
-                }
-                return 0;
-            }
-        });
+        Collections.sort(jobs, (c1, c2) -> 
+            Double.compare(c1.getSubmissionDelay(), c2.getSubmissionDelay()));
         jobs.forEach(c -> originalSubmissionDelay.put(c.getId(), c.getSubmissionDelay()));
 
         cloudSimPlus.addOnEventProcessingListener(new EventListener<SimEvent>() {
@@ -136,13 +127,15 @@ public class CloudSimProxy {
                         + "Sending a NONE event to prevent simulation from ending.");
                     // this will prevent the simulation from ending
                     // while some jobs have not yet finished running
-                    sendEmptyEventAt(settings.getTimestepInterval() + 1);
+                    sendEmptyEventAt(settings.getTimestepInterval());
                 }
             }
         });
 
+        
         cloudSimPlus.startSync();
         runFor(minTimeBetweenEvents);
+        // submitCloudletsList(jobs); // this does not work
     }
 
     public static int getSizeMultiplier(final String type) {
@@ -168,7 +161,7 @@ public class CloudSimProxy {
                 datacenter,
                 datacenter,
                 time,
-                CloudSimTag.NONE,
+                CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING,
                 null
             );
     }
@@ -268,9 +261,9 @@ public class CloudSimProxy {
         printJobStatsAfterEndOfSimulation();
         closeCsvAfterEndOfSimulation();
 
-        if (shouldPrintJobStats()) {
+        // if (shouldPrintJobStats()) {
             printJobStats();
-        }
+        // }
 
         // the size of cloudletsCreatedList grows to huge numbers
         // as we re-schedule cloudlets when VMs get killed
@@ -456,7 +449,8 @@ public class CloudSimProxy {
 
         // we immediately clear up that list because it is not really
         // used anywhere but traversing it takes a lot of time
-        broker.getCloudletSubmittedList().clear();
+        // no need because the history of this list is already disabled by default
+        // broker.getCloudletSubmittedList().clear();
     }
 
     public boolean isRunning() {
@@ -535,6 +529,17 @@ public class CloudSimProxy {
 
         if (!host.isSuitableForVm(newVm)) {
             LOGGER.debug("Vm creating ignored, host not suitable");
+            LOGGER.debug("Host MIPS:" + host.getVmScheduler().getTotalAvailableMips());
+            LOGGER.debug("Host Vm List Size:" + host.getVmList().size());
+            LOGGER.debug("busy pes percent:" + host.getBusyPesPercent());
+            LOGGER.debug("cpu percent utilization:" + host.getCpuPercentUtilization());
+            LOGGER.debug("cpu percent requested:" + host.getCpuPercentRequested());
+            LOGGER.debug("cpu mips utilization: " + host.getCpuMipsUtilization());
+            LOGGER.debug("ram utilization: " + host.getRamUtilization());
+            LOGGER.debug("ram available : " + host.getRamProvisioner().getAvailableResource());
+            LOGGER.debug("bw utilization: " + host.getBwUtilization());
+            LOGGER.debug("bw available: " + host.getBwProvisioner().getAvailableResource());
+            LOGGER.debug("Total Vm Exec List Size:" + broker.getVmExecList().size());
             return false;
         }
 
@@ -550,7 +555,7 @@ public class CloudSimProxy {
         return true;
     }
 
-    // if a vm is destroyed, this method returns the type of it.
+    // if a vm is destroyed, this method returns the true, otherwise false
     public boolean removeVm(final int index) {
         List<Vm> vmExecList = broker.getVmExecList();
         LOGGER.debug("vmExecList.size = " + vmExecList);
@@ -559,13 +564,14 @@ public class CloudSimProxy {
             LOGGER.warn("Can't kill VM. No VMs running.");
             return false;
         }
-
-        Vm vmToKill = vmExecList.get(index);
-
+        
         // if (vmExecList.size() == 1) {
         //     LOGGER.warn("Can't kill VM as it is the only one running.");
         //     return false;
         // }
+
+        Vm vmToKill = vmExecList.get(index);
+
 
         destroyVm(vmToKill);
         return true;
@@ -587,23 +593,34 @@ public class CloudSimProxy {
     private void destroyVm(Vm vm) {
         final String vmSize = vm.getDescription();
 
-        final List<Cloudlet> affectedExecCloudlets = 
+        final List<Cloudlet> execCloudlets = 
             resetCloudlets(vm.getCloudletScheduler().getCloudletExecList());
-        final List<Cloudlet> affectedWaitingCloudlets =
+        final List<Cloudlet> waitingCloudlets =
             resetCloudlets(vm.getCloudletScheduler().getCloudletWaitingList());
         final List<Cloudlet> affectedCloudlets =
-            Stream.concat(affectedExecCloudlets.stream(),affectedWaitingCloudlets.stream())
+            Stream.concat(execCloudlets.stream(), waitingCloudlets.stream())
                 .collect(Collectors.toList());
-        ((HostAbstract)vm.getHost()).destroyVm(vm);
+        // ((HostAbstract)vm.getHost()).destroyVm(vm);
+        // long hostRamUtilization = vm.getHost().getRamUtilization();
+        // long hostBwUtilization = vm.getHost().getBwUtilization();
+        long newHostRam = vm.getHost().getRamProvisioner().deallocateResourceForVm(vm);
+        long newHostBw = vm.getHost().getBwProvisioner().deallocateResourceForVm(vm);
+        ResourceManageable ram = new Ram(getSizeMultiplier(vm.getDescription()) * settings.getHostRam());
+        ResourceManageable bw = new Bandwidth(settings.getHostBw());
+        ram.setAllocatedResource(newHostRam);
+        bw.setAllocatedResource(newHostBw);
+        vm.getHost().getRamProvisioner().setResources(ram, v -> ((VmSimple) v).getRam());
+        vm.getHost().getBwProvisioner().setResources(bw, v -> ((VmSimple) v).getBw());
+
+        datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
         
         vm.getCloudletScheduler().clear();
 
-        LOGGER.debug("Killing VM: "
-            + vm.getId()
-            + ", to-reschedule cloudlets count: "
-            + affectedCloudlets.size()
-            + ", type: "
-            + vmSize);
+        // vm.getHost().getResource(vm.getHost().getRam()).deallocateResource(getSizeMultiplier(vm.getDescription()) * settings.getBasicVmRam());
+        // vm.getHost().getResource(vm.getHost().getBw()).deallocateResource(settings.getBasicVmBw());
+
+        LOGGER.debug("Killing VM: " + vm.getId() + ", to-reschedule cloudlets count: "
+            + affectedCloudlets.size() + ", type: " + vmSize);
         if (affectedCloudlets.size() > 0) {
             rescheduleCloudlets(affectedCloudlets);
         }
@@ -615,12 +632,6 @@ public class CloudSimProxy {
 
         affectedCloudlets.forEach(cloudlet -> {
             Double submissionDelay = originalSubmissionDelay.get(cloudlet.getId());
-
-            if (submissionDelay == null) {
-                throw new RuntimeException("Cloudlet with ID: " 
-                + cloudlet.getId() 
-                + " not seen previously! Original submission time unknown!");
-            }
 
             // if the Cloudlet still hasn't been started, 
             // let it start at the scheduled time,
@@ -673,20 +684,4 @@ public class CloudSimProxy {
     public double getRunningCost() {
         return vmCost.getVMCostPerIteration(clock());
     }
-
-
-    // class DelayCloudletComparator implements Comparator<Cloudlet> {
-    //     @Override
-    //     public int compare(Cloudlet left, Cloudlet right) {
-    //         final double diff = left.getSubmissionDelay() - right.getSubmissionDelay();
-    //         if (diff < 0) {
-    //             return -1;
-    //         }
-
-    //         if (diff > 0) {
-    //             return 1;
-    //         }
-    //         return 0;
-    //     }
-    // }
 }

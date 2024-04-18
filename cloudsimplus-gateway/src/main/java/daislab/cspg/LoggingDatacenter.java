@@ -15,15 +15,4 @@ public class LoggingDatacenter extends DatacenterSimple {
         final VmAllocationPolicy vmAllocationPolicy) {
         super(simulation, hostList, vmAllocationPolicy);
     }
-
-    @Override
-    protected double updateCloudletProcessing() {
-        final double retVal = super.updateCloudletProcessing();
-
-        LOGGER.debug("updateCloudletProcessing: "
-            + retVal + " (if equal to Double.MAX_VALUE: "
-            + Double.MAX_VALUE + " no further processing scheduled");
-
-        return retVal;
-    }
 }

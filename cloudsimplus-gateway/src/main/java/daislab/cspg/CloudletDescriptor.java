@@ -3,10 +3,7 @@ package daislab.cspg;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.cloudlets.CloudletSimple;
 import org.cloudsimplus.util.DataCloudTags;
-import org.cloudsimplus.utilizationmodels.UtilizationModel;
 import org.cloudsimplus.utilizationmodels.UtilizationModelFull;
-import org.cloudsimplus.utilizationmodels.UtilizationModelPlanetLab;
-import org.cloudsimplus.utilizationmodels.UtilizationModelStochastic;
 
 import java.util.Objects;
 

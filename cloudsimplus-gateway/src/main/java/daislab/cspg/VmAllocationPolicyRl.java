@@ -35,7 +35,7 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
 
         // set the desctiption to be the vm type
         vm.setDescription(vmDescription.substring(0, index));
-        LOGGER.debug("New vm " + vm.getId() + "allocated to host " + hostId);
+        LOGGER.debug("New vm " + vm.getId() + " allocated to host " + hostId);
         return suitability;
     }
 }
