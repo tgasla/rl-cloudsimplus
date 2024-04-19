@@ -212,7 +212,7 @@ def main():
 		model.load_replay_buffer(best_replay_buffer_path)
 
 	# Set the learning rate to a small initial value
-	# model.learning_rate = learning_rate_dict.get(args.algorithm_str)
+	model.learning_rate = learning_rate_dict.get(args.algorithm_str)
 
 	callback = SaveOnBestTrainingRewardCallback(
 		check_freq=10_000,

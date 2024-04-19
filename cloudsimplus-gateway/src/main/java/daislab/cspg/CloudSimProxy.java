@@ -124,7 +124,7 @@ public class CloudSimProxy {
         this.inputJobs.forEach(c -> addOnStartListener(c));
         this.inputJobs.forEach(c -> addOnFinishListener(c));
 
-        addOnEventProcessingListener(cloudSimPlus);
+        ensureAllJobsCompleteBeforeEnding();
 
         cloudSimPlus.startSync();
         runFor(minTimeBetweenEvents);
@@ -148,7 +148,7 @@ public class CloudSimProxy {
         return sizeMultiplier;
     }
 
-    private void addOnEventProcessingListener(CloudSimPlus cloudsimplus) {
+    private void ensureAllJobsCompleteBeforeEnding() {
         cloudSimPlus.addOnEventProcessingListener(info -> {
             if (getNumberOfFutureEvents() == 1 && hasUnfinishedJobs()) {
                 LOGGER.debug("There are unfinished jobs. "
@@ -533,7 +533,6 @@ public class CloudSimProxy {
     }
 
     public long getWaitingJobsCount() {
-        double start = clock() - settings.getTimestepInterval();
         return inputJobs.parallelStream()
             .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.INEXEC))
             .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
@@ -635,25 +634,35 @@ public class CloudSimProxy {
         final List<Cloudlet> affectedCloudlets =
             Stream.concat(execCloudlets.stream(), waitingCloudlets.stream())
                 .collect(Collectors.toList());
+
         Host host = vm.getHost();
-        // ((HostAbstract)vm.getHost()).destroyVm(vm); // this destroys the vm immidiately
-        datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
-        // long hostRamUtilization = vm.getHost().getRamUtilization();
-        // long hostBwUtilization = vm.getHost().getBwUtilization();
-        // long newHostRam = vm.getHost().getRamProvisioner().deallocateResourceForVm(vm);
-        // long newHostBw = vm.getHost().getBwProvisioner().deallocateResourceForVm(vm);
-        // vm.shutdown(); this schedules the shutdown, but it actually gets removed after 1 timestep
-        // ResourceManageable bw = new Bandwidth(settings.getHostBw());
-        // ram.setAllocatedResource(newHostRam);
-        // bw.setAllocatedResource(newHostBw);
-        host.getResource(Ram.class).deallocateResource(getSizeMultiplier(vm.getDescription()) * settings.getBasicVmRam());
-        // ResourceManageable ram = new Ram(getSizeMultiplier(vm.getDescription()) * settings.getHostRam());
+
+        // // Fix 1: create new Ram object, set capacity as the host RAM cpacity and allocated as currently host utilized - vmRam
+        // long hostRamUtilization = host.getRamUtilization();
+        // ResourceManageable ram = new Ram(settings.getHostRam());
+        // ram.setAllocatedResource(hostRamUtilization - (getSizeMultiplier(vm.getDescription()) * settings.getBasicVmRam()));
+        // datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
         // host.getRamProvisioner().setResources(ram, v -> ((VmSimple) v).getRam());
-        // host.getBwProvisioner().setResources(bw, v -> ((VmSimple) v).getBw());
+        // // End of Fix 1
+
+        //  // Fix 2: Similar to Fix 1, but we get the new utilized using the deallocateResourceForVm()
+        //  ResourceManageable ram = new Ram(settings.getHostRam());
+        //  long newAllocatedHostRam = host.getRamProvisioner().deallocateResourceForVm(vm);  // this does not deallocates resources but returnes the correct new allocated (after VM termination)
+        //  ram.setAllocatedResource(newAllocatedHostRam);
+        //  datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
+        //  host.getRamProvisioner().setResources(ram, v -> ((VmSimple) v).getRam());
+        //  // End of Fix 2
+
+        // destroy vm alternatives - start
+        // ((HostAbstract)vm.getHost()).destroyVm(vm); // this destroys the vm immidiately
+        // vm.shutdown(); this schedules the shutdown, but it actually gets removed after 1 timestep
+        // destroy vm alternatives - end
+        
+        // Fix 3: the simplest one. For some reason, the deallocateResource works
+        datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
+        host.getResource(Ram.class).deallocateResource(getSizeMultiplier(vm.getDescription()) * settings.getBasicVmRam());
         
         // vm.getCloudletScheduler().clear();
-
-        // vm.getHost().getResource(vm.getHost().getBw()).deallocateResource(settings.getBasicVmBw());
 
         LOGGER.debug("Killing VM: " + vm.getId() + ", to-reschedule cloudlets count: "
             + affectedCloudlets.size() + ", type: " + vmSize);

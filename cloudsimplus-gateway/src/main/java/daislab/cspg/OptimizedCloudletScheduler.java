@@ -4,11 +4,10 @@ import org.cloudsimplus.brokers.DatacenterBroker;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.cloudlets.CloudletExecution;
 import org.cloudsimplus.schedulers.MipsShare;
-import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerAbstract;
+// import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerAbstract;
 import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerSpaceShared;
-
-import java.lang.reflect.Field;
-import java.util.List;
+// import java.lang.reflect.Field;
+// import java.util.List;
 
 class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
 
@@ -46,36 +45,36 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         return nextSimulationTime;
     }
 
-    private List<?> getModifiableCloudletReturnedList()
-        throws IllegalAccessException, NoSuchFieldException {
+    // private List<?> getModifiableCloudletReturnedList()
+    //     throws IllegalAccessException, NoSuchFieldException {
 
-        final Field field = CloudletSchedulerAbstract.class
-            .getDeclaredField("cloudletReturnedList");
-        field.setAccessible(true);
-        Object fieldValue = field.get(this);
+    //     final Field field = CloudletSchedulerAbstract.class
+    //         .getDeclaredField("cloudletReturnedList");
+    //     field.setAccessible(true);
+    //     Object fieldValue = field.get(this);
         
-        if (!(fieldValue instanceof List<?>)) {
-            return null;
-        }
+    //     if (!(fieldValue instanceof List<?>)) {
+    //         return null;
+    //     }
         
-        return (List<?>) fieldValue;
-    }
+    //     return (List<?>) fieldValue;
+    // }
 
     // Here we modify the private field cloudletReturnedList.
-    // The lists cloudletWaitingList cloudletExecList are cleaner
+    // The lists cloudletWaitingList cloudletExecList are cleaned
     // inside the parent's class.
     // It is safe to override this function:
     // it is used only in one place - DatacenterBrokerAbstract:827
-    @Override
-    public void clear() {
-        super.clear();
-        try {
-            List<?> cloudletReturnedList = getModifiableCloudletReturnedList();       
-            if (cloudletReturnedList != null) {
-                cloudletReturnedList.clear();
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-    }
+    // @Override
+    // public void clear() {
+    //     super.clear();
+    //     try {
+    //         List<?> cloudletReturnedList = getModifiableCloudletReturnedList();       
+    //         if (cloudletReturnedList != null) {
+    //             cloudletReturnedList.clear();
+    //         }
+    //     } catch (NoSuchFieldException | IllegalAccessException e) {
+    //         e.printStackTrace();
+    //     }
+    // }
 }
