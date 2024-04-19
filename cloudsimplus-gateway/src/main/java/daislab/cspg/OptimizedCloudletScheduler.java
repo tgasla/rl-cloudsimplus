@@ -25,10 +25,8 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
             final Cloudlet cloudlet = cle.getCloudlet();
             final DatacenterBroker broker = cloudlet.getBroker();
             broker.submitCloudlet((cloudlet.reset()));
-
             return -1.0;
         }
-
         return super.cloudletSubmitInternal(cle, fileTransferTime);
     }
 
@@ -63,8 +61,9 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         return (List<?>) fieldValue;
     }
 
-    // Here we modify the private fields cloudletWaitingList, 
-    // cloudletExecList and cloudletReturnedList.
+    // Here we modify the private field cloudletReturnedList.
+    // The lists cloudletWaitingList cloudletExecList are cleaner
+    // inside the parent's class.
     // It is safe to override this function:
     // it is used only in one place - DatacenterBrokerAbstract:827
     @Override

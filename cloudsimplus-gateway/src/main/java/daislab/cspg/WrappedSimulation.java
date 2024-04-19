@@ -299,11 +299,11 @@ public class WrappedSimulation {
             );
         }
 
-        List<Cloudlet> jobsFinishedThisTimestep = cloudSimProxy.getJobsFinishedThisTimestep();
-        List<Double> jobWaitTime = new ArrayList<>();
-        for (Cloudlet cloudlet : jobsFinishedThisTimestep) {
-            jobWaitTime.add(cloudlet.getStartWaitTime());
-        }
+        // List<Cloudlet> jobsFinishedThisTimestep = cloudSimProxy.getJobsFinishedThisTimestep();
+        // List<Double> jobWaitTime = new ArrayList<>();
+        // for (Cloudlet cloudlet : jobsFinishedThisTimestep) {
+        //     jobWaitTime.add(cloudlet.getStartWaitTime());
+        // }
         /*
          * METRIC GATHERING CODE STOP
          */

@@ -38,15 +38,21 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     @Override
     public void processEvent(final SimEvent evt) {
         super.processEvent(evt);
+        /*
+         * This is important!
+         * CLOUDLET_RETURN is sent whenever a cloudlet finishes executing.
+         * The default behaviour in CloudSim Plus is to destroy a Vm when
+         * it has no more cloudlets to execute.
+         * Here we override the default behaviour and we trigger the creation
+         * of waiting cloudlets so they can be possibly allocated inside a Vm.
+         * This is because in our case, we may reschedule some cloudlets so
+         * we want the VMs to trigger the creation of those waiting cloudlets
+         */ 
 
-        // This is important,
-        // CLOUDLET_RETURN is sent whenever a cloudlet finishes executing.
-        // The default behaviour in CloudSim Plus is to destroy a Vm when
-        // it has no more cloudlets to execute.
-        // Here we override the default behaviour and we trigger the creation
-        // of waiting cloudlets so they can be possibly allocated inside a Vm.
-        // This is because in our case, we may reschedule some cloudlets so
-        // we want the VMs to trigger the creation of those waiting cloudlets
+        // if (evt.getTag() == CloudSimTag.CLOUDLET_CREATION) {
+        //     requestDatacentersToCreateWaitingCloudlets();
+        // }
+
         if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
             final Cloudlet cloudlet = (Cloudlet) evt.getData();
             LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/"
@@ -54,10 +60,10 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             requestDatacentersToCreateWaitingCloudlets();
         }
 
-        if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
-            LOGGER.debug("Cleaning the vmCreatedList");
-            getVmCreatedList().clear();
-        }
+        // if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
+        //     LOGGER.debug("Cleaning the vmCreatedList");
+        //     getVmCreatedList().clear();
+        // }
     }
     
         /*
@@ -119,9 +125,10 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     // }
 
 //     /**
-//      * Selects the first VM with the lowest number of PEs that is able to run a given Cloudlet.
-//      * In case the algorithm can't find such a VM, it uses the
-//      * default DatacenterBroker VM mapper as a fallback.
+//      * Here, we override the original function which tries to find a vm from the
+//      * created list to place a cloudlet. Instead, while we may remove a vm,
+//      * this does not make sense for us, so we try finding a vm for a cloudlet
+//      * using the current executing vms instead of the created ones.
 //      *
 //      * @param cloudlet the Cloudlet to find a VM to run it
 //      * @return the VM selected for the Cloudlet or {@link Vm#NULL} if no suitable VM was found

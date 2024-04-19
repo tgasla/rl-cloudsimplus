@@ -99,7 +99,7 @@ public class SimulationSettings {
         vmShutdownDelay = Double.parseDouble(
             parameters.getOrDefault("VM_SHUTDOWN_DELAY", "0"));
         printJobsPeriodically = Boolean.parseBoolean(
-            parameters.getOrDefault("PRINT_JOBS_PERIODICALLY", "false"));
+            parameters.getOrDefault("PRINT_JOBS_PERIODICALLY", "true"));
         payingForTheFullHour = Boolean.parseBoolean(
             parameters.getOrDefault("PAYING_FOR_THE_FULL_HOUR", "false"));
         storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(

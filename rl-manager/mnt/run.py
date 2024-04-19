@@ -166,7 +166,7 @@ def main():
 
 	if args.pretrain_dir != "":
 		log_dir = os.path.join(base_log_dir, f"{args.pretrain_dir}")
-		
+
 	new_log_dir = os.path.join(base_log_dir, f"{new_filename_id}_1")
 
 	#Create folder if needed
