@@ -141,7 +141,7 @@ docker compose down
 
 If you also want to clear docker unused data, use the following command:
 ```
-docker system prune -f
+docker system prune [-f | --force]
 ```
 
 ## Acknowledgements
