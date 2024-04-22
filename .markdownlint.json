@@ -12,7 +12,9 @@
     "allowed_languages": [ "bash", "HTML", "markdown", "text" ],
     "language_only": true
   }
-  "no-inline-html": {
-    "allowed_elements": [ "a", "b", "div", "details", "p" ]
+  {
+    "no-inline-html": {
+      "allowed_elements": [ "a", "b", "div", "details", "p" ]
+    }
   }
 }
