@@ -1,0 +1,21 @@
+{
+  "code-block-style": {
+    "style": "fenced"
+  },
+  "code-fence-style": {
+    "style": "backtick"
+  },
+  "emphasis-style": {
+    "style": "asterisk"
+  },
+  "fenced-code-language": {
+    "allowed_languages": [
+      "bash",
+      "html",
+      "javascript",
+      "json",
+      "markdown",
+      "text"
+    ],
+    "language_only": true
+  }
