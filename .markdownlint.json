@@ -12,8 +12,6 @@
     "allowed_languages": [
       "bash",
       "html",
-      "javascript",
-      "json",
       "markdown",
       "text"
     ],
