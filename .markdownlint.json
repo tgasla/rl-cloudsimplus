@@ -9,14 +9,10 @@
     "style": "asterisk"
   },
   "fenced-code-language": {
-    "allowed_languages": [
-      "bash",
-      "html",
-      "markdown",
-      "text"
-    ],
+    "allowed_languages": [ "bash", "HTML", "markdown", "text" ],
     "language_only": true
-    "MD033": {
-      "allowed_elements": ["a", "b", "div", "details"]
+    {
+    "no-inline-html": {
+      "allowed_elements": [ "a", "b", "div", "details", "p" ]
     }
   }
