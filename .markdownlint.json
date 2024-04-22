@@ -16,4 +16,7 @@
       "text"
     ],
     "language_only": true
+    "MD033": {
+      "allowed_elements": ["a", "b", "div", "details"]
+    }
   }
