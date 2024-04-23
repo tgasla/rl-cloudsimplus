@@ -146,7 +146,7 @@ docker system prune [-f | --force]
 
 ## Acknowledgements
 
-This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, and easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
+This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
 
 The code was based on the work done by [pkoperek](https://github.com/pkoperek) in the following projects:
   - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
