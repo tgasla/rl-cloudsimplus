@@ -121,7 +121,7 @@ make run-tensorboard
 
 Use the following command:
 ```
-docker compose [--profile cuda] up [--build] [-d]
+docker compose [--profile cuda] up [--build] [-d | --detach]
 ```
 
 - The `--profile cuda` flag enables Nvidia CUDA GPU access for the manager. You need to have [CUDA](https://developer.nvidia.com/cuda-downloads) and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your system. Make sure to restart docker daemon if you just downloaded the cuda-container-toolkit.
@@ -130,7 +130,7 @@ docker compose [--profile cuda] up [--build] [-d]
 
 If, after running the app, you want to start a second manager (to run a second experiment simultaneously), you need to run:
 ```
-docker compose run [--build] [-d] manager
+docker compose run [--build] [-d | --detach] manager
 ```
 
 ## Stop application
