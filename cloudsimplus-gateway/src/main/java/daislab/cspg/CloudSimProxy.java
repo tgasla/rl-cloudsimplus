@@ -46,7 +46,7 @@ public class CloudSimProxy {
     public static final String LARGE = "L";
     public static final String[] VM_TYPES = {SMALL, MEDIUM, LARGE};
 
-    private static final Logger LOGGER = 
+    private static final Logger LOGGER =
         LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
     private static final double minTimeBetweenEvents = 0.1;
 
@@ -86,7 +86,7 @@ public class CloudSimProxy {
         // String hostLogDir = jobLogDir;
         
         String[] jobCsvHeader = {
-            // "jobId", 
+            // "jobId",
             // "hostId",
             // "vmId",
             // "vmType",
@@ -102,12 +102,12 @@ public class CloudSimProxy {
         // String[] hostCsvHeader = {"hostId", "vmsRunningCount", "coresUtilized"};
         jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
         // hostCsvWriter = new CsvWriter(hostLogDir, "host_log.csv", hostCsvHeader);
-        
+
         cloudSimPlus = new CloudSimPlus(minTimeBetweenEvents);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         datacenter = createDatacenter();
         vmCost = new VmCost(
-            settings.getVmRunningHourlyCost(), 
+            settings.getVmRunningHourlyCost(),
             settings.getTimestepInterval(),
             settings.isPayingForTheFullHour());
 
@@ -118,7 +118,7 @@ public class CloudSimProxy {
         broker.submitVmList(mediumVmList);
         broker.submitVmList(largeVmList);
 
-        Collections.sort(this.inputJobs, (c1, c2) -> 
+        Collections.sort(this.inputJobs, (c1, c2) ->
             Double.compare(c1.getSubmissionDelay(), c2.getSubmissionDelay()));
         this.inputJobs.forEach(c -> originalSubmissionDelay.put(c.getId(), c.getSubmissionDelay()));
         this.inputJobs.forEach(c -> addOnStartListener(c));
@@ -649,20 +649,35 @@ public class CloudSimProxy {
         //  ResourceManageable ram = new Ram(settings.getHostRam());
         //  long newAllocatedHostRam = host.getRamProvisioner().deallocateResourceForVm(vm);  // this does not deallocates resources but returnes the correct new allocated (after VM termination)
         //  ram.setAllocatedResource(newAllocatedHostRam);
-        //  datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
-        //  host.getRamProvisioner().setResources(ram, v -> ((VmSimple) v).getRam());
+
+        //  ResourceManageable bw = new Bandwidth(settings.getHostBw());
+        //  long newAllocatedHostBw = host.getBwProvisioner().deallocateResourceForVm(vm);  // this does not deallocates resources but returnes the correct new allocated (after VM termination)
+        //  bw.setAllocatedResource(newAllocatedHostBw);
+        double priorRamUtilization = host.getRamUtilization();
+        double priorBwUtilization = host.getBwUtilization();
+
+        datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
+        //  host.getBwProvisioner().setResources(bw, v -> ((VmSimple) v).getBw());
         //  // End of Fix 2
+
+        double newRamUtilization = host.getRamUtilization();
+        double newBwUtilization = host.getBwUtilization();
 
         // destroy vm alternatives - start
         // ((HostAbstract)vm.getHost()).destroyVm(vm); // this destroys the vm immidiately
         // vm.shutdown(); this schedules the shutdown, but it actually gets removed after 1 timestep
         // destroy vm alternatives - end
-        
+
         // Fix 3: the simplest one. For some reason, the deallocateResource works
-        datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
-        host.getResource(Ram.class).deallocateResource(getSizeMultiplier(vm.getDescription()) * settings.getBasicVmRam());
-        
-        // vm.getCloudletScheduler().clear();
+        // datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
+        if (priorRamUtilization == newRamUtilization) {
+            host.getResource(Ram.class).deallocateResource(getSizeMultiplier(vm.getDescription()) * settings.getBasicVmRam());
+        }
+        if (priorBwUtilization == newBwUtilization) {
+            host.getResource(Bandwidth.class).deallocateResource(settings.getBasicVmBw());
+        }
+
+        vm.getCloudletScheduler().clear();
 
         LOGGER.debug("Killing VM: " + vm.getId() + ", to-reschedule cloudlets count: "
             + affectedCloudlets.size() + ", type: " + vmSize);

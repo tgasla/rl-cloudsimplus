@@ -60,10 +60,10 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             requestDatacentersToCreateWaitingCloudlets();
         }
 
-        // if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
-        //     LOGGER.debug("Cleaning the vmCreatedList");
-        //     getVmCreatedList().clear();
-        // }
+        if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
+            LOGGER.debug("Cleaning the vmCreatedList");
+            getVmCreatedList().clear();
+        }
     }
     
         /*

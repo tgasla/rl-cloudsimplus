@@ -45,31 +45,31 @@ test {
 }
 
 // In this section you declare where to find the dependencies of your project
+
 repositories {
-    // You can declare any Maven/Ivy/file repository here.
     mavenCentral()
-    mavenLocal()
 }
+
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
     // The production code uses the SLF4J logging API at compile time
-    implementation 'org.cloudsimplus:cloudsimplus:8.5.1'
-    implementation 'org.slf4j:slf4j-api:2.0.12'
+    implementation 'org.cloudsimplus:cloudsimplus:8.5.2'
+    implementation 'org.slf4j:slf4j-api:2.0.13'
     implementation 'net.sf.py4j:py4j:0.10.9.7'
-    implementation 'ch.qos.logback:logback-classic:1.5.3'
-    implementation 'org.apache.commons:commons-collections4:4.4'
+    implementation 'ch.qos.logback:logback-classic:1.5.6'
+    implementation 'org.apache.commons:commons-collections4:4.5.0-M1'
     implementation 'org.apache.commons:commons-csv:1.10.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'org.postgresql:postgresql:42.7.3'
     
-    testImplementation 'commons-io:commons-io:2.16.0'
+    testImplementation 'commons-io:commons-io:2.16.1'
     testImplementation 'org.hamcrest:hamcrest:2.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.0-M1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.0-M1'
 }
 
-def dockerImageTag = 'gateway:1.9.1'
+def dockerImageTag = 'gateway:2.0.0'
 def os = System.getProperty('os.name').toLowerCase()
 def totalMemorySizeInGigabytes
 
