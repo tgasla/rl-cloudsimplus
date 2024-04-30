@@ -220,7 +220,6 @@ gradle-app.setting
 # Log directories
 logs/
 old_logs/
-globecom_logs/
 
 # VSCode hidden files
 .vscode/
