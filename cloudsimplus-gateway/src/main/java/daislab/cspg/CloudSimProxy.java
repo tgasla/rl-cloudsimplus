@@ -58,7 +58,6 @@ public class CloudSimProxy {
     private final Map<Long, Double> originalSubmissionDelay;
     private final List<Cloudlet> inputJobs;
     private final List<Cloudlet> unsubmittedJobs;
-    // private final List<Cloudlet> jobsToSubmit;
     private CsvWriter jobCsvWriter;
     // private final CsvWriter hostCsvWriter;
     private int nextVmId;
@@ -73,7 +72,6 @@ public class CloudSimProxy {
     ) {
         this.inputJobs = new ArrayList<>(inputJobs);
         this.unsubmittedJobs = new ArrayList<>(inputJobs);
-        // jobsToSubmit = new ArrayList<>();
         originalSubmissionDelay = new HashMap<>();
         this.settings = settings;
         this.episodeCount = episodeCount;
@@ -124,11 +122,10 @@ public class CloudSimProxy {
         this.inputJobs.forEach(c -> addOnStartListener(c));
         this.inputJobs.forEach(c -> addOnFinishListener(c));
 
-        ensureAllJobsCompleteBeforeEnding();
+        ensureAllJobsCompleteBeforeSimulationEnds();
 
         cloudSimPlus.startSync();
         runFor(minTimeBetweenEvents);
-        // submitCloudletsList(jobs); // this does not work
     }
 
     public static int getSizeMultiplier(final String type) {
@@ -148,7 +145,7 @@ public class CloudSimProxy {
         return sizeMultiplier;
     }
 
-    private void ensureAllJobsCompleteBeforeEnding() {
+    private void ensureAllJobsCompleteBeforeSimulationEnds() {
         cloudSimPlus.addOnEventProcessingListener(info -> {
             if (getNumberOfFutureEvents() == 1 && hasUnfinishedJobs()) {
                 LOGGER.debug("There are unfinished jobs. "
@@ -161,7 +158,7 @@ public class CloudSimProxy {
     }
 
     private void sendEmptyEventAt(double time) {
-        // We add empty events to prevent the simulation from ending
+        // We add NONE events to prevent the simulation from ending
             cloudSimPlus.send(
                 datacenter,
                 datacenter,
@@ -229,18 +226,6 @@ public class CloudSimProxy {
 
         return peList;
     }
-
-    // private void removeAlreadyStartedJobsFromList(List<Cloudlet> submittedJobs) {
-    //     final Iterator<Cloudlet> iterator = submittedJobs.iterator();
-    //     while (iterator.hasNext()) {
-    //         Cloudlet job = iterator.next();
-    //         if (job.getStatus() == Cloudlet.Status.INEXEC 
-    //             || job.getStatus() == Cloudlet.Status.SUCCESS
-    //             || job.getStatus() == Cloudlet.Status.CANCELED) {
-    //             iterator.remove();
-    //         }
-    //     }
-    // }
 
     private void runForInternal(final double interval, final double target) {
         double adjustedInterval = interval;
@@ -416,30 +401,6 @@ public class CloudSimProxy {
     // using the submission delay that I have on the dataset. I assume that it will work.
     // It will be practically the same and this code below will be eliminated, providing
     // a more smooth code flow.
-    // private void scheduleJobsUntil(final double target) {
-    //     previousLastSubmittedJobIndex = lastSubmittedJobIndex;
-    //     for (int i = lastSubmittedJobIndex; i < inputJobs.size(); i++) {
-    //         Cloudlet cloudlet = inputJobs.get(i);
-
-    //         if (cloudlet.getSubmissionDelay() > target) {
-    //             continue;
-    //         }
-    //         // Do not schedule cloudlet if there are no suitable vms to run it
-    //         if (!isAnyVmSuitableForCloudlet(cloudlet)) {
-    //             continue;
-    //         }
-    //         // the job should enter the cluster once target is crossed
-    //         // why not getsubmissiondelay - clock?
-    //         cloudlet.setSubmissionDelay(Math.max(cloudlet.getSubmissionDelay() - clock(), 0));
-    //         jobsToSubmit.add(cloudlet);
-    //         lastSubmittedJobIndex++;
-    //     }
-
-    //     if (!jobsToSubmit.isEmpty()) {
-    //         submitCloudletsList(jobsToSubmit);
-    //         jobsToSubmit.clear();
-    //     }
-    // }
 
     private void scheduleJobsUntil(final double target) {
         List<Cloudlet> jobsToSubmit = new ArrayList<>();
@@ -485,10 +446,15 @@ public class CloudSimProxy {
         // if we don't have unfinished jobs, it doesn't make sense to execute
         // any actions
         return cloudSimPlus.isRunning() && hasUnfinishedJobs();
+        // return cloudSimPlus.isRunning() && are90PercentJobsDone();
     }
 
     private boolean hasUnfinishedJobs() {
         return broker.getCloudletFinishedList().size() < inputJobs.size();
+    }
+
+    private boolean are90PercentJobsDone() {
+        return broker.getCloudletFinishedList().size() > 0.95 * inputJobs.size(); 
     }
 
     public int getLastCreatedVmId() {
@@ -636,46 +602,10 @@ public class CloudSimProxy {
                 .collect(Collectors.toList());
 
         Host host = vm.getHost();
-
-        // // Fix 1: create new Ram object, set capacity as the host RAM cpacity and allocated as currently host utilized - vmRam
-        // long hostRamUtilization = host.getRamUtilization();
-        // ResourceManageable ram = new Ram(settings.getHostRam());
-        // ram.setAllocatedResource(hostRamUtilization - (getSizeMultiplier(vm.getDescription()) * settings.getBasicVmRam()));
-        // datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
-        // host.getRamProvisioner().setResources(ram, v -> ((VmSimple) v).getRam());
-        // // End of Fix 1
-
-        //  // Fix 2: Similar to Fix 1, but we get the new utilized using the deallocateResourceForVm()
-        //  ResourceManageable ram = new Ram(settings.getHostRam());
-        //  long newAllocatedHostRam = host.getRamProvisioner().deallocateResourceForVm(vm);  // this does not deallocates resources but returnes the correct new allocated (after VM termination)
-        //  ram.setAllocatedResource(newAllocatedHostRam);
-
-        //  ResourceManageable bw = new Bandwidth(settings.getHostBw());
-        //  long newAllocatedHostBw = host.getBwProvisioner().deallocateResourceForVm(vm);  // this does not deallocates resources but returnes the correct new allocated (after VM termination)
-        //  bw.setAllocatedResource(newAllocatedHostBw);
-        double priorRamUtilization = host.getRamUtilization();
-        double priorBwUtilization = host.getBwUtilization();
-
         datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
-        //  host.getBwProvisioner().setResources(bw, v -> ((VmSimple) v).getBw());
-        //  // End of Fix 2
 
         double newRamUtilization = host.getRamUtilization();
         double newBwUtilization = host.getBwUtilization();
-
-        // destroy vm alternatives - start
-        // ((HostAbstract)vm.getHost()).destroyVm(vm); // this destroys the vm immidiately
-        // vm.shutdown(); this schedules the shutdown, but it actually gets removed after 1 timestep
-        // destroy vm alternatives - end
-
-        // Fix 3: the simplest one. For some reason, the deallocateResource works
-        // datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
-        if (priorRamUtilization == newRamUtilization) {
-            host.getResource(Ram.class).deallocateResource(getSizeMultiplier(vm.getDescription()) * settings.getBasicVmRam());
-        }
-        if (priorBwUtilization == newBwUtilization) {
-            host.getResource(Bandwidth.class).deallocateResource(settings.getBasicVmBw());
-        }
 
         vm.getCloudletScheduler().clear();
 
@@ -701,7 +631,6 @@ public class CloudSimProxy {
             cloudlet.setSubmissionDelay(submissionDelay);
         });
 
-        // jobsToSubmit.addAll(affectedCloudlets);
         unsubmittedJobs.addAll(affectedCloudlets);
 
         // long startTime = TimeMeasurement.startTiming();
@@ -727,10 +656,6 @@ public class CloudSimProxy {
     public Datacenter getDatacenter() {
         return datacenter;
     }
-
-    // public List<Cloudlet> getJobsFinishedThisTimestep() {
-    //     // return jobsFinishedThisTimestep;
-    // }
 
     public double clock() {
         return cloudSimPlus.clock();
