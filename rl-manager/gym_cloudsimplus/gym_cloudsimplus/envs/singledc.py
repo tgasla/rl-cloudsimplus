@@ -68,9 +68,10 @@ class SingleDC(gym.Env):
         jobs_from_file = None,
         simulation_speedup = "1",
         render_mode = None,
-        job_log_dir = None
+        job_log_dir = None,
+        max_steps = "5000"
     ):
-        
+  
         super().__init__()
 
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
@@ -83,9 +84,11 @@ class SingleDC(gym.Env):
         self.job_wait_time = None
         self.unutilized_active = None
         self.unutilized_all = None
+        self.step_counter = None
+        self.max_steps = int(max_steps)
 
         self.action_space = spaces.Box(
-            low=np.array([-1.0, 0.0]), 
+            low=np.array([-1.0, 0.0]),
             high=np.array([1.0, 1.0]),
             shape=(2,),
             dtype=np.float32
@@ -112,6 +115,7 @@ class SingleDC(gym.Env):
             "MAX_JOB_PES": max_job_pes,
             "SIMULATION_SPEEDUP": simulation_speedup,
             "JOB_LOG_DIR": job_log_dir,
+            "MAX_STEPS": max_steps
         }
 
         assert render_mode is None \
@@ -128,7 +132,7 @@ class SingleDC(gym.Env):
         self.simulation_id = self.simulation_environment.createSimulation(params)
 
     def reset(self, seed=None, options=None):
-        super().reset(seed=seed)
+        super().reset()
 
         self.episode_details = {
             "state": [],
@@ -146,6 +150,8 @@ class SingleDC(gym.Env):
         self.job_wait_time = []
         self.unutilized_active = []
         self.unutilized_all = []
+
+        self.step_counter = 0
 
         result = self.simulation_environment.reset(self.simulation_id)
         self.simulation_environment.seed(self.simulation_id)
@@ -173,6 +179,7 @@ class SingleDC(gym.Env):
         # Here, we adopt Fix2
         action = action.tolist()
         result = self.simulation_environment.step(self.simulation_id, action)
+
 
         reward = result.getReward()
         raw_info = result.getInfo()
@@ -206,6 +213,11 @@ class SingleDC(gym.Env):
 
         if self.render_mode == "human":
             self.render()
+
+        self.step_counter += 1
+        # limit the maximum allowed number of timesteps in an episode
+        if self.step_counter >= self.max_steps:
+            truncated = True
 
         return (
             obs,

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class Argumenmts:
     algorithm_str: str
+    max_steps: str
     pretrain_timesteps: str
     pretrain_hosts: str
     pretrain_host_pes: str
@@ -36,6 +37,11 @@ def parse_args() -> Argumenmts:
             "SAC", "TD3"
         ],
         help="The RL algorithm that is used for training"
+    )
+    parser.add_argument(
+        "--max-steps",
+        type=str,
+        help="The maximum number of timesteps allowed before resetting the episode"
     )
     parser.add_argument(
         "--pretrain-timesteps",
@@ -141,6 +147,7 @@ def parse_args() -> Argumenmts:
     args = parser.parse_args()
 
     algorithm_str = str(args.algo).upper()
+    max_steps = str(args.max_steps)
 
     pretrain_timesteps = str(args.pretrain_timesteps)
     pretrain_hosts = str(args.pretrain_hosts)
@@ -165,9 +172,9 @@ def parse_args() -> Argumenmts:
 
     simulation_speedup = str(args.simulation_speedup)
     
-
     return Argumenmts(
         algorithm_str=algorithm_str,
+        max_steps=max_steps,
         pretrain_timesteps=pretrain_timesteps,
         pretrain_hosts=pretrain_hosts,
         pretrain_host_pes=pretrain_host_pes,

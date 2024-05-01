@@ -46,6 +46,7 @@ public class SimulationSettings {
     private final double rewardUtilizationCoef;
     private final double rewardInvalidCoef;
     private final String jobLogDir;
+    private final int maxSteps;
 
     // Get SimulationSettings from parameters
     // passed from the python client endpoint - the Gymnasium environment,
@@ -113,6 +114,7 @@ public class SimulationSettings {
             parameters.getOrDefault("REWARD_INVALID_COEF", "0.4"));
         jobLogDir =
             parameters.getOrDefault("JOB_LOG_DIR", "./logs");
+        maxSteps = Integer.parseInt(parameters.getOrDefault("MAX_STEPS", "5000"));
     }
 
     @Override
@@ -145,6 +147,7 @@ public class SimulationSettings {
             "rewardUtilizationCoef=" + rewardUtilizationCoef + ",\n" +
             "rewardInvalidCoef=" + rewardInvalidCoef + ",\n" +
             "jobLogDir=" + jobLogDir + ",\n" +
+            "maxSteps=" + maxSteps + ",\n" +
             "}";
     }
 
@@ -266,5 +269,9 @@ public class SimulationSettings {
 
     public String getJobLogDir() {
         return jobLogDir;
+    }
+
+    public int getMaxSteps() {
+        return maxSteps;
     }
 }

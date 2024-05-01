@@ -1,6 +1,6 @@
 services: # uses port 25333
   gateway:
-    image: gateway:1.9.1
+    image: gateway:2.0.0
     container_name: gateway
     volumes:
       - ./logs:/app/logs
@@ -21,6 +21,7 @@ services: # uses port 25333
     command: >
       python3 mnt/run.py
       --algo=${ALGO}
+      --max-steps=${MAX_STEPS}
       --pretrain-timesteps=${PRETRAIN_TIMESTEPS}
       --pretrain-hosts=${PRETRAIN_HOSTS}
       --pretrain-host-pes=${PRETRAIN_HOST_PES}

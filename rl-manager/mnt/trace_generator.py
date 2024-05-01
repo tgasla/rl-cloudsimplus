@@ -105,5 +105,6 @@ def generate_job_trace(args):
         trace_to_csv(job_trace, csv_filename)
     return job_trace
 
-if __name__ == "__main__": 
+
+if __name__ == "__main__":
     main()

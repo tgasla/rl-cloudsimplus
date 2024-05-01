@@ -33,7 +33,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 		self.best_mean_reward = -np.inf
 		self.save_best_episode_rl_details = save_best_episode_rl_details
 		self.save_best_episode_metrics = save_best_episode_metrics
-	
+
 	def get(self, attr):
 		return self.training_env.env_method("get_wrapper_attr", attr)[0]
 
@@ -64,7 +64,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 						and self.save_replay_buffer:
 						# If model has a replay buffer, save it
 						replay_buffer_path = os.path.join(
-							self.log_dir, 
+							self.log_dir,
 							"best_model_replay_buffer"
 						)
 						if self.verbose >= 1:

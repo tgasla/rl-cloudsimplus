@@ -58,6 +58,7 @@ public class CloudSimProxy {
     private final Map<Long, Double> originalSubmissionDelay;
     private final List<Cloudlet> inputJobs;
     private final List<Cloudlet> unsubmittedJobs;
+    private int unableToSubmitJobCount;
     private CsvWriter jobCsvWriter;
     // private final CsvWriter hostCsvWriter;
     private int nextVmId;
@@ -79,6 +80,7 @@ public class CloudSimProxy {
         nextVmId = 0;
         lastSubmittedJobIndex = 0;
         previousLastSubmittedJobIndex = 0;
+        unableToSubmitJobCount = 0;
 
         String jobLogDir = settings.getJobLogDir();
         // String hostLogDir = jobLogDir;
@@ -290,7 +292,7 @@ public class CloudSimProxy {
 
     private boolean shouldPrintJobStats() {
         return settings.getPrintJobsPeriodically() 
-            && (int) Math.round(clock()) % 2000 == 0;
+            && (int) Math.round(clock()) % 1000 == 0;
     }
 
     private void printJobStatsAfterEndOfSimulation() {
@@ -416,6 +418,7 @@ public class CloudSimProxy {
             }
             // Do not schedule cloudlet if there are no suitable vms to run it
             if (!isAnyVmSuitableForCloudlet(cloudlet)) {
+                unableToSubmitJobCount++;
                 LOGGER.debug("scheduleJobsUntil: no vm available for " + cloudlet.getId());
                 continue;
             }
@@ -446,15 +449,10 @@ public class CloudSimProxy {
         // if we don't have unfinished jobs, it doesn't make sense to execute
         // any actions
         return cloudSimPlus.isRunning() && hasUnfinishedJobs();
-        // return cloudSimPlus.isRunning() && are90PercentJobsDone();
     }
 
     private boolean hasUnfinishedJobs() {
         return broker.getCloudletFinishedList().size() < inputJobs.size();
-    }
-
-    private boolean are90PercentJobsDone() {
-        return broker.getCloudletFinishedList().size() > 0.95 * inputJobs.size(); 
     }
 
     public int getLastCreatedVmId() {
@@ -604,9 +602,6 @@ public class CloudSimProxy {
         Host host = vm.getHost();
         datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
 
-        double newRamUtilization = host.getRamUtilization();
-        double newBwUtilization = host.getBwUtilization();
-
         vm.getCloudletScheduler().clear();
 
         LOGGER.debug("Killing VM: " + vm.getId() + ", to-reschedule cloudlets count: "
@@ -667,5 +662,9 @@ public class CloudSimProxy {
 
     public double getRunningCost() {
         return vmCost.getVMCostPerIteration(clock());
+    }
+    
+    public int getUnableToSubmitJobCount() {
+        return unableToSubmitJobCount;
     }
 }

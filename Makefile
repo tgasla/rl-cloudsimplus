@@ -2,7 +2,7 @@
 # This would make much more sense.
 
 MANAGER_VERSION=0.10
-GATEWAY_VERSION=1.9.1
+GATEWAY_VERSION=2.0.0
 
 build-all: build-tensorboard build-compose-images
 
@@ -44,6 +44,12 @@ rmi-manager:
 
 clean-gateway:
 	cd cloudsimplus-gateway && ./gradlew clean
+
+clean-up:
+	docker compose down
+	docker stop manager
+	docker system prune -f
+	sudo rm -rf logs/*
 
 prune-all:
 	docker system prune -f

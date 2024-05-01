@@ -519,13 +519,21 @@ public class WrappedSimulation {
         final double utilReward = getVmAllocatedRatio();
         final int invalidReward = isValid ? 0 : 1;
         
+        double totalReward = - jobWaitCoef * jobWaitReward
+            - utilizationCoef * utilReward
+            - invalidCoef * invalidReward;
+
+        // if (stepCount >= settings.getMaxSteps()) {
+        //     totalReward -= cloudSimProxy.getWaitingJobsCount();
+        // }
+
+        totalReward -= cloudSimProxy.getUnableToSubmitJobCount();
+
         if (!isValid) {
             info("Penalty given to the agent because the selected action was not possible");
         }
 
-        return - jobWaitCoef * jobWaitReward
-                - utilizationCoef * utilReward
-                - invalidCoef * invalidReward;
+        return totalReward;
     }
 
     public int getStepCount() {
