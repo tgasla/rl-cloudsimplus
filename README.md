@@ -19,13 +19,13 @@
 
 You can install OpenJDK 21 JDK and JRE
 
-```shell
+```bash
 sudo apt-get install openjdk-21-jdk openjdk-21-jre
 ```
 
 ### 4. Set the JAVA_HOME environment variable to the right path (the exact path may vary (different distro, different arch)
 
-```shell
+```bash
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
 ```
 
@@ -55,7 +55,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 
 You can install OpenJDK Java 21 using [brew](https://brew.sh/)
 
-```shell
+```bash
 brew install openjdk@21
 ```
 
@@ -102,13 +102,13 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 
 Use the following command to build the gateway image:
 
-```shell
+```bash
 make build-gateway
 ```
 
 To enable debugging and show DEBUG log messages, use the following command:
 
-```shell
+```bash
 make build-gateway-debug
 ```
 
@@ -116,13 +116,13 @@ make build-gateway-debug
 
 To build the manager image, use the following command:
 
-```shell
+```bash
 make build-manager
 ```
 
 ### 3. Build TensorBoard image
 
-```shell
+```bash
 make build-tensorboard
 ```
 
@@ -130,13 +130,13 @@ make build-tensorboard
 
 First start TensorBoard:
 
-```shell
+```bash
 make run-tensorboard
 ```
 
 Use the following command:
 
-```shell
+```bash
 docker compose [--profile cuda] up [--build] [-d | --detach]
 ```
 
@@ -146,7 +146,7 @@ docker compose [--profile cuda] up [--build] [-d | --detach]
 
 If, after running the app, you want to start a second manager (to run a second experiment simultaneously), you need to run:
 
-```shell
+```bash
 docker compose run [--build] [-d | --detach] manager
 ```
 
@@ -154,13 +154,13 @@ docker compose run [--build] [-d | --detach] manager
 
 To stop the application, use the following command:
 
-```shell
+```bash
 docker compose down
 ```
 
 If you also want to clear docker unused data, use the following command:
 
-```shell
+```bash
 docker system prune [-f | --force]
 ```
 
