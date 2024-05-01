@@ -8,9 +8,11 @@
 <details><summary><b>Linux Debian 12/11/10</b></summary>
     
 ### 1. Install Docker
+
 https://docs.docker.com/get-docker/
 
 ### 2. Install Docker Compose
+
 https://docs.docker.com/compose/install/
 
 ### 3. Install Java 21
@@ -22,6 +24,7 @@ sudo apt-get install openjdk-21-jdk openjdk-21-jre
 ```
 
 ### 4. Set the JAVA_HOME environment variable to the right path (the exact path may vary (different distro, different arch)
+
 ```
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
 ```
@@ -38,15 +41,18 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 <details><summary><b>MacOS 14/13/12/11</b></summary>
 
 ### 1. Install Docker
+
 https://docs.docker.com/get-docker/
 
  > :warning: **Warning:**
  > If you install Docker Desktop, make sure you are giving enough memory in your containers by going to <b> Settings.. > Resources </b> and increasing the Memory Limit
 
 ### 2. Install Docker Compose
+
 https://docs.docker.com/compose/install/
 
 ### 3. Install Java 21 JDK and JRE
+
 You can install OpenJDK Java 21 using [brew](https://brew.sh/)
 ```
 brew install openjdk@21
@@ -92,6 +98,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 ## Build images
 
 ### 1. Build gateway image
+
 Use the following command to build the gateway image:
 ```
 make build-gateway
@@ -103,17 +110,20 @@ make build-gateway-debug
 ```
 
 ### 2. Build manager image
+
 To build the manager image, use the following command:
 ```
 make build-manager
 ```
 
 ### 3. Build TensorBoard image
+
 ```
 make build-tensorboard
 ```
 
 ## Start application
+
 First start TensorBoard:
 ```
 make run-tensorboard
@@ -134,6 +144,7 @@ docker compose run [--build] [-d | --detach] manager
 ```
 
 ## Stop application
+
 To stop the application, use the following command:
 ```
 docker compose down
@@ -149,6 +160,6 @@ docker system prune [-f | --force]
 This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
 
 The code was based on the work done by [pkoperek](https://github.com/pkoperek) in the following projects:
-  - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
-  - [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
-  - [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)
+- [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
+- [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
+- [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)
