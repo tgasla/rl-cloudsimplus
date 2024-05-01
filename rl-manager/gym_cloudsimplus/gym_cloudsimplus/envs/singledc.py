@@ -118,8 +118,11 @@ class SingleDC(gym.Env):
             "MAX_STEPS": max_steps
         }
 
-        assert render_mode is None \
-            or render_mode in self.metadata["render_modes"]
+        if render_mode is not None and render_mode not in self.metadata["render_modes"]:
+            gym.logger.warn(
+                "Invalid render mode"
+                'Render modes allowed: ["human" | "ansi"]'
+            )
     
         self.render_mode = render_mode
 
