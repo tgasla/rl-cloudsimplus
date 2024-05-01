@@ -42,14 +42,14 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 
 ### 1. Install Docker
 
-https://docs.docker.com/get-docker/
+<https://docs.docker.com/get-docker/>
 
  > :warning: **Warning:**
  > If you install Docker Desktop, make sure you are giving enough memory in your containers by going to <b> Settings.. > Resources </b> and increasing the Memory Limit
 
 ### 2. Install Docker Compose
 
-https://docs.docker.com/compose/install/
+<https://docs.docker.com/compose/install/>
 
 ### 3. Install Java 21 JDK and JRE
 
