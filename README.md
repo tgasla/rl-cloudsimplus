@@ -54,6 +54,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 ### 3. Install Java 21 JDK and JRE
 
 You can install OpenJDK Java 21 using [brew](https://brew.sh/)
+
 ```
 brew install openjdk@21
 ```
