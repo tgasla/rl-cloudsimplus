@@ -9,11 +9,11 @@
     
 ### 1. Install Docker
 
-https://docs.docker.com/get-docker/
+<https://docs.docker.com/get-docker/>
 
 ### 2. Install Docker Compose
 
-https://docs.docker.com/compose/install/
+<https://docs.docker.com/compose/install/>
 
 ### 3. Install Java 21
 
