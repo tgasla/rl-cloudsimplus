@@ -69,7 +69,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         /*
          * This function triggers immediately the cloudlet to vm mapping
          * and this behaviour leads to 0 waitingTime for all cloudlets,
-         * which is not realistic.
+         * which is not realistic, that's why we have commented out this part.
          */
     // @Override
     // protected void requestDatacentersToCreateWaitingCloudlets() {

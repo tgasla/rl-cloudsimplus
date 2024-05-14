@@ -59,8 +59,7 @@ public class CloudSimProxy {
     private final List<Cloudlet> inputJobs;
     private final List<Cloudlet> unsubmittedJobs;
     private int unableToSubmitJobCount;
-    private CsvWriter jobCsvWriter;
-    // private final CsvWriter hostCsvWriter;
+    private List<Double> jobsFinishedWaitTimeLastInterval;
     private int nextVmId;
     private int episodeCount;
     private int lastSubmittedJobIndex;
@@ -76,32 +75,11 @@ public class CloudSimProxy {
         originalSubmissionDelay = new HashMap<>();
         this.settings = settings;
         this.episodeCount = episodeCount;
-        jobCsvWriter = null;
         nextVmId = 0;
         lastSubmittedJobIndex = 0;
         previousLastSubmittedJobIndex = 0;
         unableToSubmitJobCount = 0;
-
-        String jobLogDir = settings.getJobLogDir();
-        // String hostLogDir = jobLogDir;
-        
-        String[] jobCsvHeader = {
-            // "jobId",
-            // "hostId",
-            // "vmId",
-            // "vmType",
-            // "arrivalTime",
-            "getStartWaitTime"
-            // "execFinishTime"
-        };
-
-        // if (episodeCount == 1) {
-        // jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
-        // }
-
-        // String[] hostCsvHeader = {"hostId", "vmsRunningCount", "coresUtilized"};
-        jobCsvWriter = new CsvWriter(jobLogDir, "job_log.csv", jobCsvHeader);
-        // hostCsvWriter = new CsvWriter(hostLogDir, "host_log.csv", hostCsvHeader);
+        jobsFinishedWaitTimeLastInterval = new ArrayList<>();
 
         cloudSimPlus = new CloudSimPlus(minTimeBetweenEvents);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
@@ -246,13 +224,10 @@ public class CloudSimProxy {
 
         final double target = cloudSimPlus.clock() + interval;
 
+        jobsFinishedWaitTimeLastInterval.clear();
+
         scheduleJobsUntil(target);
         runForInternal(interval, target);
-
-        // removeAlreadyStartedJobsFromList(submittedJobs);
-
-        printJobStatsAfterEndOfSimulation();
-        closeCsvAfterEndOfSimulation();
 
         if (shouldPrintJobStats()) {
             printJobStats();
@@ -267,23 +242,6 @@ public class CloudSimProxy {
             broker.getCloudletCreatedList().clear();
         }
 
-        // List<Host> hostList = datacenter.getHostList();
-        // int[] vmsRunningCount = new int[hostList.size()]; 
-        // int[] pesUtilized = new int[hostList.size()];
-        // int i = 0;
-        // for (Host host : hostList) {
-        //     vmsRunningCount[i] = host.getVmList().size();
-        //     pesUtilized[i] = host.getBusyPesNumber();
-        //     i++;
-        // }
-
-        // Object[] csvRow = {
-        //     vmsRunningCount,
-        //     pesUtilized
-        // };
-
-        // hostCsvWriter.writeRow(csvRow);
-
         long elapsedTimeInNs = TimeMeasurement.calculateElapsedTime(startTime);
         String startTimeFormat = String.format("%.1f", clock() - interval);
         LOGGER.debug("runFor [" + startTimeFormat + " - " + clock() + "] took "
@@ -291,25 +249,9 @@ public class CloudSimProxy {
     }
 
     private boolean shouldPrintJobStats() {
-        return settings.getPrintJobsPeriodically() 
-            && (int) Math.round(clock()) % 1000 == 0;
-    }
-
-    private void printJobStatsAfterEndOfSimulation() {
-        if (!isRunning()) {
-            // LOGGER.info("cloudSimPlus.isRunning: " + cloudSimPlus.isRunning());
-            LOGGER.info("End of simulation, some reality check stats:");
-            printJobStats();
-        }
-    }
-
-    private void closeCsvAfterEndOfSimulation() {
-        if (!isRunning() && jobCsvWriter != null) {
-            jobCsvWriter.close();
-        }
-        // if (!isRunning() && hostCsvWriter != null) {
-        //     hostCsvWriter.close();
-        // }
+        return (settings.getPrintJobsPeriodically()
+            && (int) Math.round(clock()) % 1000 == 0)
+            || !isRunning();
     }
 
     public void printJobStats() {
@@ -382,19 +324,7 @@ public class CloudSimProxy {
                 LOGGER.debug("Cloudlet: " + cloudlet.getId()
                     + " that was running on vm "
                     + cloudlet.getVm().getId() + " finished.");
-                
-                if (episodeCount == 1) {
-                    Object[] csvRow = {
-                        // cloudlet.getId(),
-                        // cloudlet.getVm().getHost(),
-                        // cloudlet.getVm().getId(),
-                        // cloudlet.getVm().getDescription(),
-                        // originalSubmissionDelay.get(cloudlet.getId()) // cloudlet.getDcArrivalTime(),
-                        cloudlet.getStartTime() - originalSubmissionDelay.get(cloudlet.getId()) // cloudlet.getStartWaitTime()
-                        // cloudSimPlus.clock()
-                    };
-                    jobCsvWriter.writeRow(csvRow);
-                }
+                jobsFinishedWaitTimeLastInterval.add(cloudlet.getStartTime() - originalSubmissionDelay.get(cloudlet.getId()));
             }
         });
     }
@@ -485,6 +415,10 @@ public class CloudSimProxy {
 
     public int getSubmittedJobsCount() {
         return lastSubmittedJobIndex;
+    }
+
+    public  List<Double> getFinishedJobsWaitTimeLastInterval() {
+        return jobsFinishedWaitTimeLastInterval;
     }
     
     public long getWaitingJobsCountLastInterval() {
@@ -627,17 +561,6 @@ public class CloudSimProxy {
         });
 
         unsubmittedJobs.addAll(affectedCloudlets);
-
-        // long startTime = TimeMeasurement.startTiming();
-        // submitCloudletsList(affectedCloudlets);
-
-        // long elapsedTimeInNs = TimeMeasurement.calculateElapsedTime(startTime);
-
-        // double brokerTime = elapsedTimeInNs / 1_000_000_000d;
-        // LOGGER.debug("Rescheduling "
-            // + affectedCloudlets.size()
-            // + " cloudlets took (s): "
-            // + brokerTime);
     }
 
     public CloudSimPlus getSimulation() {

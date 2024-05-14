@@ -110,7 +110,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 						job_metrics = self.get(job_metrics_str)
 						job_metrics_df = pd.DataFrame(job_metrics)
 						job_wait_time = self.get(job_wait_time_str)
-						job_wait_time_df = pd.DataFrame(job_wait_time)
+						job_wait_time_flattened = [item for sublist in job_wait_time for item in sublist]
+						job_wait_time_df = pd.DataFrame(job_wait_time_flattened)
 						unutilized_active = self.get(unutilized_active_str)
 						unutilized_active_df = pd.DataFrame(unutilized_active)
 						unutilized_all = self.get(unutilized_all_str)
@@ -122,14 +123,14 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 								f"{host_metrics_path}, "
 								f"{vm_metrics_path}, "
 								f"{job_metrics_path},"
-								# f"{job_wait_time_path},"
-								# f"{unutilized_active_path},"
-								# f"{unutilized_all_path}"
+								f"{job_wait_time_path},"
+								f"{unutilized_active_path},"
+								f"{unutilized_all_path}"
 							))
 						host_metrics_df.to_csv(host_metrics_path)
 						vm_metrics_df.to_csv(vm_metrics_path)
 						job_metrics_df.to_csv(job_metrics_path)
-						# job_wait_time_df.to_csv(job_wait_time_path, index=False, header=False, sep=" ", na_rep="")
-						# unutilized_active_df.to_csv(unutilized_active_path, index=False, header=False, sep=" ", na_rep="")
-						# unutilized_all_df.to_csv(unutilized_all_path, index=False, header=False, sep=" ", na_rep="")
+						job_wait_time_df.to_csv(job_wait_time_path, index=False)
+						unutilized_active_df.to_csv(unutilized_active_path, index=False)
+						unutilized_all_df.to_csv(unutilized_all_path, index=False)
 		return True

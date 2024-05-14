@@ -54,7 +54,6 @@ def main():
 		pretrain_max_job_pes=args.pretrain_max_job_pes
 	)
 
-
 	base_log_dir = "./logs/"
 
 	# Select the appropriate algorithm
@@ -65,6 +64,8 @@ def main():
 		algorithm = getattr(custom_agents, args.algorithm_str)
 		policy = "RngPolicy"
 
+	if args.algorithm_str == "PPO":
+		algorithm.ent_coef = 0.01
 
 	if args.pretrain_dir == "":
 		timestamp = datetime_to_str()
@@ -79,6 +80,7 @@ def main():
 		# Create and wrap the environment
 		env = gym.make(
 			"SingleDC-v0",
+			max_steps=args.max_steps,
 			datacenter_hosts_cnt=args.pretrain_hosts,
 			host_pe_mips=args.pretrain_host_pe_mips,
 			host_pes=args.pretrain_host_pes,

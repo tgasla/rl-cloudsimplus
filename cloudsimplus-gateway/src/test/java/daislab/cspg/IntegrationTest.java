@@ -21,6 +21,7 @@ public class IntegrationTest {
 	private static final long datacenterHostsCnt = 3000;
 	private static final long hostPeMips = 10000;
 	private static final int hostPeCnt = 14;
+    private static final int maxJobPes = 1;
     private static final List<Double> nopAction = new ArrayList<Double>(List.of(0.0, 0.0));
     private static final List<Double> createSVmAction = new ArrayList<Double>(List.of(0.1, 0.0));
     private static final List<Double> removeSVmAction = new ArrayList<Double>(List.of(-0.1, 0.0));
@@ -43,6 +44,7 @@ public class IntegrationTest {
         parameters.put("HOST_PE_CNT", String.valueOf(hostPeCnt));
         parameters.put("HOST_PE_MIPS", String.valueOf(hostPeMips));
         parameters.put("BASIC_VM_PE_CNT", String.valueOf(basicVmPeCount));
+        parameters.put("MAX_JOB_PES", String.valueOf(maxJobPes));
         parameters.put("JOBS", gson.toJson(jobs));
         
         return parameters;
@@ -82,10 +84,9 @@ public class IntegrationTest {
         //
         // This means the job needs to be splitted into 3 equal chunks which we want
         // to last for 10 iterations each. A single core has 10000 MIPS, so we want
-        // a the small chunk to have 2*10*10000 MIPS (2 because the smallest virtual machine
-        // has 2 cores, doesn't matter for the bigger ones).
+        // the chunks to have 10*10000 MIPS
         CloudletDescriptor cloudletDescriptor =
-                new CloudletDescriptor(1, 10, 3 * (2 * 10 * 10000), 2 + 2 + 2);
+            new CloudletDescriptor(1, 10, 10 * 10000, 1 + 1 + 1);
 
         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
 
@@ -283,7 +284,7 @@ public class IntegrationTest {
         // available Vm can execute them
 
         List<CloudletDescriptor> jobs = new ArrayList<>();
-        jobs.add(new CloudletDescriptor(1, 5, 100*10000*10, 100));
+        jobs.add(new CloudletDescriptor(1, 5, 10000*10, 100));
 
         Map<String, String> parameters = addParameters(2, 1, 1, jobs);
 

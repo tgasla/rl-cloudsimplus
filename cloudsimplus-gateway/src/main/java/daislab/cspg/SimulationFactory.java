@@ -82,9 +82,12 @@ public class SimulationFactory {
 			// Distribute the MI and PEs for each split part
 			for (int i = 0; i < splitCount; i++) {
 				// Last split might have different MI and PES due to remainder
-				long miForThisSplit = (i < splitCount - 1) 
-					? normalSplitMi 
-					: totalMi - (normalSplitMi * (splitCount - 1));
+				// long miForThisSplit = (i < splitCount - 1) 
+				// 	? normalSplitMi 
+				// 	: totalMi - (normalSplitMi * (splitCount - 1));
+                // uncomment the 4 previous lines if you want the splitting algorithm to split
+                // the MIs of jobs also
+                long miForThisSplit = totalMi;
 				int pesForThisSplit = (i < splitCount - 1) 
 					? normalSplitPesNumber 
 					: jobPesNumber - (normalSplitPesNumber * (splitCount - 1));

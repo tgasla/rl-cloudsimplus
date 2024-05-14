@@ -176,13 +176,12 @@ class SingleDC(gym.Env):
         return obs, info
 
     def step(self, action):
-        # Py4J cannot translate np.arrary(dtype=np.float32) to java double[]
+        # Py4J cannot translate np.array(dtype=np.float32) to java double[]
         # Fix1: make it dtype=np.float64 and for some reason it works :)
         # Fix2: before sending it to java, convert it to python list first
         # Here, we adopt Fix2
         action = action.tolist()
         result = self.simulation_environment.step(self.simulation_id, action)
-
 
         reward = result.getReward()
         raw_info = result.getInfo()
@@ -208,10 +207,11 @@ class SingleDC(gym.Env):
 
         # TODO: NEEDS FIX, FOR SOME REASON IT IS ALWAYS 0.0 OR 1.0
         if len(list(info["job_wait_time"])) > 0:
+            print(f"FINISHED JOB WAIT TIME: {list(info['job_wait_time'])}")
             self.job_wait_time.append(list(info["job_wait_time"]))
-        if info["unutilized_active"] != -1.0:
+        if info["unutilized_active"] >= 0:
             self.unutilized_active.append(info["unutilized_active"])
-        if info["unutilized_all"] != -1.0:
+        if info["unutilized_all"] >= 0:
             self.unutilized_all.append(info["unutilized_all"])
 
         if self.render_mode == "human":

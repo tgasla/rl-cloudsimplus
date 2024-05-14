@@ -48,8 +48,9 @@ public class WrappedSimulation {
     private int epValidCount = 0;
     private long epWaitingJobsCountMax = 0;
     private long epRunningVmsCountMax = 0;
-    private CsvWriter unutilizedCsv;
-    private CsvWriter unutilizedAllCsv;
+    private double unutilizedActive;
+    private double unutilizedAll;
+    private List<Double> jobsFinishedWaitTimeLastInterval;
 
     public WrappedSimulation(
         final String identifier,
@@ -60,15 +61,7 @@ public class WrappedSimulation {
         this.identifier = identifier;
         this.initialJobsDescriptors = jobs;
         this.simulationHistory = new SimulationHistory();
-        this.unutilizedCsv = null;
-        this.unutilizedAllCsv = null;
-        
-        String[] unutilizedHeader = {"unutilizedOverActiveRatio"};
-        unutilizedCsv = new CsvWriter(settings.getJobLogDir(), "unutilized.csv", unutilizedHeader);
-
-        String[] unutilizedAllHeader = {"unutilizedOverAllRatio"};
-        unutilizedAllCsv = new CsvWriter(settings.getJobLogDir(), "unutilized_all.csv", unutilizedAllHeader);
-
+        this.jobsFinishedWaitTimeLastInterval = new ArrayList<>();
         info("Creating simulation: " + identifier);
     }
 
@@ -90,13 +83,6 @@ public class WrappedSimulation {
 
         episodeCount++;
         resetStepCount();
-
-        if (episodeCount != 1 && unutilizedCsv != null) {
-            unutilizedCsv.close();
-        }
-        if (episodeCount != 1 && unutilizedAllCsv != null) {
-            unutilizedAllCsv.close();
-        }
 
         // first attempt to store some memory
         metricsStorage.clear();
@@ -240,40 +226,19 @@ public class WrappedSimulation {
             );
         }
 
-        // create unutilization log
-        if (episodeCount == 1) {
-            // TODO: instead of putting if else below, consider .orElse(-1L);
-            Long unutilizedCores = vmList
-                .parallelStream()
-                .map(Vm::getFreePesNumber)
-                .reduce(Long::sum)
-                .orElse(0L);
-            Long runningVmCores = vmList
-                .parallelStream()
-                .map(Vm::getPesNumber)
-                .reduce(Long::sum)
-                .orElse(0L);
+        Long unutilizedCores = vmList
+            .parallelStream()
+            .map(Vm::getFreePesNumber)
+            .reduce(Long::sum)
+            .orElse(-1L);
+        Long runningVmCores = vmList
+            .parallelStream()
+            .map(Vm::getPesNumber)
+            .reduce(Long::sum)
+            .orElse(1L);
 
-            // THIS DOES NOT WORK!!!
-            // double unutilizedActive;
-            // double unutilizedAll;
-            // if (vmList.size() == 0) {
-            //     unutilizedActive = -1.0;
-            //     unutilizedAll = -1.0;
-            // }
-            // else {
-            //     unutilizedActive = (double) (unutilizedCores / runningVmCores);
-            //     unutilizedAll = (double) (unutilizedCores / settings.getAvailableCores());
-            // }
-
-            if (runningVmCores > 0) {
-                Object[] csvRow = {(double) unutilizedCores / runningVmCores};
-                unutilizedCsv.writeRow(csvRow);
-
-                csvRow = new Object[] {(double) unutilizedCores / settings.getAvailableCores()};
-                unutilizedAllCsv.writeRow(csvRow);
-            }
-        }
+            unutilizedActive = ((double) unutilizedCores / runningVmCores);
+            unutilizedAll = ((double) unutilizedCores / settings.getAvailableCores());
 
         List<Cloudlet> cloudletList = cloudSimProxy.getBroker()
             .getVmExecList()
@@ -299,11 +264,12 @@ public class WrappedSimulation {
             );
         }
 
-        // List<Cloudlet> jobsFinishedThisTimestep = cloudSimProxy.getJobsFinishedThisTimestep();
-        // List<Double> jobWaitTime = new ArrayList<>();
-        // for (Cloudlet cloudlet : jobsFinishedThisTimestep) {
-        //     jobWaitTime.add(cloudlet.getStartWaitTime());
+        jobsFinishedWaitTimeLastInterval.clear();
+        jobsFinishedWaitTimeLastInterval.addAll(cloudSimProxy.getFinishedJobsWaitTimeLastInterval());
+        // if (!jobsFinishedWaitTimeLastInterval.isEmpty()) {
+        //     LOGGER.debug("FINISHED JOBS WAIT TIME: " + jobsFinishedWaitTimeLastInterval);
         // }
+
         /*
          * METRIC GATHERING CODE STOP
          */
@@ -318,9 +284,9 @@ public class WrappedSimulation {
             hostMetrics,
             vmMetrics,
             jobMetrics,
-            new ArrayList<>(0), //jobWaitTime,
-            0.0, //unutilizedActive,
-            0.0 //unutilizedAll
+            jobsFinishedWaitTimeLastInterval, //jobWaitTime,
+            unutilizedActive,
+            unutilizedAll
         );
 
         return new SimulationStepResult(
@@ -507,6 +473,7 @@ public class WrappedSimulation {
     }
 
     private double calculateReward(final boolean isValid) {
+        final int rewardMultiplier = 5000;
         /* reward is the negative cost of running the infrastructure
          * minus any penalties from jobs waiting in the queue
          * minus penalty if action was invalid
@@ -527,7 +494,8 @@ public class WrappedSimulation {
         //     totalReward -= cloudSimProxy.getWaitingJobsCount();
         // }
 
-        totalReward -= cloudSimProxy.getUnableToSubmitJobCount();
+        totalReward *= rewardMultiplier;
+        // totalReward -= cloudSimProxy.getUnableToSubmitJobCount();
 
         if (!isValid) {
             info("Penalty given to the agent because the selected action was not possible");
