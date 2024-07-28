@@ -125,7 +125,7 @@ def main():
 			model.action_noise = action_noise
 
 		callback = SaveOnBestTrainingRewardCallback(
-			check_freq=10_000,
+			check_freq=1,
 			log_dir=log_dir
 		)
 

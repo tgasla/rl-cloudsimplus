@@ -26,13 +26,13 @@ public class WrappedSimulation {
     
     private final List<CloudletDescriptor> initialJobsDescriptors;
     private final List<String> metricsNames = Arrays.asList(
-        "vmAllocatedRatio",
-        "avgCpuUtilization",
-        "p90CpuUtilization",
+        "hostCoresAllocatedToVmsRatio"
+        // "avgCpuUtilization",
+        // "p90CpuUtilization",
         // "avgMemoryUtilization",
         // "p90MemoryUtilization",
-        "waitingJobsRatioGlobal",
-        "waitingJobsRatioTimestep"
+        // "waitingJobsRatioGlobal",
+        // "waitingJobsRatioTimestep"
     );
 
     private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
@@ -50,7 +50,6 @@ public class WrappedSimulation {
     private long epRunningVmsCountMax = 0;
     private double unutilizedActive;
     private double unutilizedAll;
-    private List<Double> jobsFinishedWaitTimeLastInterval;
 
     public WrappedSimulation(
         final String identifier,
@@ -61,7 +60,6 @@ public class WrappedSimulation {
         this.identifier = identifier;
         this.initialJobsDescriptors = jobs;
         this.simulationHistory = new SimulationHistory();
-        this.jobsFinishedWaitTimeLastInterval = new ArrayList<>();
         info("Creating simulation: " + identifier);
     }
 
@@ -91,23 +89,21 @@ public class WrappedSimulation {
             .stream()
             .map(CloudletDescriptor::toCloudlet)
             .collect(Collectors.toList());
-        cloudSimProxy = new CloudSimProxy(
-            settings,
-            cloudlets,
-            episodeCount
-        );
+        cloudSimProxy = new CloudSimProxy(settings, cloudlets, episodeCount);
 
         double[] obs = getObservation();
+        resetEpisodeStats();
+        SimulationStepInfo info = new SimulationStepInfo();
 
+        return new SimulationResetResult(obs, info);
+    }
+
+    public void resetEpisodeStats() {
         resetEpJobWaitRewardMean();
         resetEpUtilRewardMean();
         resetEpValidCount();
         resetEpWaitingJobsCountMax();
         resetEpRunningVmsCountMax();
-
-        SimulationStepInfo info = new SimulationStepInfo();
-
-        return new SimulationResetResult(obs, info);
     }
 
     public void close() {
@@ -128,73 +124,128 @@ public class WrappedSimulation {
         return gson.toJson(renderedEnv);
     }
 
-    public SimulationStepResult step(final double[] action) {
-        // debug("action received");
-
+    public void validateSimulationReset() {
         if (cloudSimProxy == null) {
             throw new IllegalStateException("Simulation not reset! Please call the reset() function!");
         }
+    }
+
+    public SimulationStepResult step(final double[] action) {
+        
+        validateSimulationReset();
 
         stepCount++;
 
-        debug("Executing action: " + action[0] + ", " + action[1]);
-
-        long startActionTime = TimeMeasurement.startTiming();
         boolean isValid = executeAction(action);
-        if (isValid) {
-            epValidCount++;
-        }
-
-        long elapsedActionTimeInNs = TimeMeasurement.calculateElapsedTime(startActionTime);
         cloudSimProxy.runFor(settings.getTimestepInterval());
-
-        long startMetricsTime = TimeMeasurement.startTiming();
         collectMetrics();
-        long elapsedMetricsTimeInNs = TimeMeasurement.calculateElapsedTime(startMetricsTime);
 
         boolean done = !cloudSimProxy.isRunning();
         double[] observation = getObservation();
-        double reward = calculateReward(isValid);
+        double[] rewards = calculateReward(isValid);
 
-        simulationHistory.record("action[0]", action[0]);
-        simulationHistory.record("action[1]", action[1]);
-        simulationHistory.record("reward", reward);
-        simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
-        simulationHistory.record(
-            "vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
-
-        if (!cloudSimProxy.isRunning()) {
-            simulationHistory.logHistory();
-            simulationHistory.reset();
-        }
-
-        debug("Step finished (action: " + action[0] + ", " + action[1] + ") is done: " + done
-            + " Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents()
-            + " Metrics (s): " + elapsedMetricsTimeInNs / 1_000_000_000d
-            + " Action (s): " + elapsedActionTimeInNs / 1_000_000_000d);
-
-        double jobWaitReward = - settings.getRewardJobWaitCoef() * getWaitingJobsRatioGlobal();
-        double utilReward = - settings.getRewardUtilizationCoef() * getVmAllocatedRatio();
-        double invalidReward = - settings.getRewardInvalidCoef() * (isValid ? 0 : 1);
-
-        updateEpWaitingJobsCountMax(cloudSimProxy.getWaitingJobsCount());
-        updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
-
-        updateEpJobWaitRewardMean(-settings.getRewardJobWaitCoef() * jobWaitReward);
-        updateEpUtilRewardMean(-settings.getRewardUtilizationCoef() * utilReward);
-
-        debug(" Mean episode job wait reward: " + getEpJobWaitRewardMean()
-            + " Mean episode utilization reward: " + getEpUtilRewardMean()
-            + " Max episode waiting jobs count: " + getEpWaitingJobsCountMax()
-            + " Max episode running vms count: " + getEpRunningVmsCountMax()
-            + " Job wait reward: " + jobWaitReward
-            + " Utilization reward: " + utilReward
-            + " Invalid reward: " + invalidReward
-        );
+        recordSimulationData(action, rewards[0]);
         
-        /*
-         * METRIC GATHERING CODE START
-         */
+        resetIfSimulationIsNotRunning();
+
+        debug("Step finished (action: " + action[0] + ", " + action[1] + "), is done: " + done
+            + " Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents());
+
+        updateEpisodeStats(rewards[1], rewards[2], isValid);
+        printEpisodeStatsDebug(rewards[1], rewards[2], rewards[3]);
+        
+        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+
+        SimulationStepInfo info = new SimulationStepInfo(
+            rewards,
+            getEpisodeRewardStats(),
+            getTimestepMetrics(vmList),
+            cloudSimProxy.getFinishedJobsWaitTimeLastInterval(), //jobWaitTime,
+            getUnutilizedStats(vmList)
+        );
+
+        return new SimulationStepResult(observation, rewards[0], done, info);
+    }
+
+    private List<List<long[]>> getTimestepMetrics(List<Vm> vmList) {
+        List<List<long[]>> metrics = new ArrayList<>();
+
+        metrics.add(getHostMetrics());
+        metrics.add(getVmMetrics(vmList));
+        metrics.add(getJobMetrics());
+
+        return metrics;
+    }
+
+    private double[] getUnutilizedStats(List<Vm> vmList) {
+        double[] unutilizedStats = new double[2];
+
+        unutilizedStats[0] = getUnutilizedVmCoresOverRunningVms(vmList);
+        unutilizedStats[1] = getUnutilizedVmCoresOverAllHostCores(vmList);
+        return unutilizedStats;
+    }
+
+    private List<long[]> getJobMetrics() {
+        List<Cloudlet> cloudletList = getCloudletList();
+        //   jobId,  jobPes,  vmId,    vmType,  hostId
+        List<long[]> jobMetrics = new ArrayList<>(cloudletList.size());
+        for (Cloudlet cloudlet : cloudletList) {
+            jobMetrics.add(
+                new long[] {
+                    cloudlet.getId(),
+                    cloudlet.getPesNumber(),
+                    cloudlet.getVm().getId(),
+                    cloudlet.getVm().getPesNumber(),
+                    cloudlet.getVm().getHost().getId()
+                }
+            );
+        }
+        return jobMetrics;
+    }
+
+    private List<Cloudlet> getCloudletList() {
+        List<Cloudlet> cloudletList = cloudSimProxy.getBroker()
+            .getVmExecList()
+            .parallelStream()
+            .map(Vm::getCloudletScheduler)
+            .map(CloudletScheduler::getCloudletList)
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
+        return cloudletList;
+    }
+
+    private double getUnutilizedVmCoresOverRunningVms(List<Vm> vmList) {
+        Long unutilizedVmCores = getUnutilizedVmCores(vmList);
+        Long runningVmCores = getRunningVmCores(vmList);
+        double unutilized = ((double) unutilizedVmCores / runningVmCores);
+        return unutilized;
+    }
+
+    private double getUnutilizedVmCoresOverAllHostCores(List<Vm> vmList) {
+        Long unutilizedVmCores = getUnutilizedVmCores(vmList);
+        double unutilized = ((double) unutilizedVmCores / settings.getAvailableCores());
+        return unutilized;
+    }
+
+    private Long getUnutilizedVmCores(List<Vm> vmList) {
+        Long unutilizedVmCores = vmList
+            .parallelStream()
+            .map(Vm::getFreePesNumber)
+            .reduce(Long::sum)
+            .orElse(-1L);
+        return unutilizedVmCores;
+    }
+
+    private Long getRunningVmCores(List<Vm> vmList) {
+        Long runningVmCores = vmList
+            .parallelStream()
+            .map(Vm::getPesNumber)
+            .reduce(Long::sum)
+            .orElse(1L);
+        return runningVmCores;
+    }
+
+    private List<long[]> getHostMetrics() {
         List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();
         // We could also keep a Map<Host, Integer, Integer>
         //  hostId,  vmsRunning, pesUtilized
@@ -210,8 +261,10 @@ public class WrappedSimulation {
                 }
             );
         }
+        return hostMetrics;
+    }
 
-        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+    private List<long[]> getVmMetrics(List<Vm> vmList) {
         // consider adding cores utilized: vm.getPesNumber() - vm.getFreePesNumber()
         //  vmId,    vmPesNumber,  hostId,  jobsRunning 
         List<long[]> vmMetrics = new ArrayList<>(vmList.size());
@@ -225,94 +278,77 @@ public class WrappedSimulation {
                 }
             );
         }
+        return vmMetrics;
+    }
 
-        Long unutilizedCores = vmList
-            .parallelStream()
-            .map(Vm::getFreePesNumber)
-            .reduce(Long::sum)
-            .orElse(-1L);
-        Long runningVmCores = vmList
-            .parallelStream()
-            .map(Vm::getPesNumber)
-            .reduce(Long::sum)
-            .orElse(1L);
-
-            unutilizedActive = ((double) unutilizedCores / runningVmCores);
-            unutilizedAll = ((double) unutilizedCores / settings.getAvailableCores());
-
-        List<Cloudlet> cloudletList = cloudSimProxy.getBroker()
-            .getVmExecList()
-            .parallelStream()
-            .map(Vm::getCloudletScheduler)
-            .map(CloudletScheduler::getCloudletList)
-            .flatMap(List::stream)
-            .collect(Collectors.toList()
-        );
-
-        // consider adding cloudlet.getPesNumber()
-        //   jobId,  jobPes,  vmId,    vmType,  hostId
-        List<long[]> jobMetrics = new ArrayList<>(cloudletList.size());
-        for (Cloudlet cloudlet : cloudletList) {
-            jobMetrics.add(
-                new long[] {
-                    cloudlet.getId(),
-                    cloudlet.getPesNumber(),
-                    cloudlet.getVm().getId(),
-                    cloudlet.getVm().getPesNumber(),
-                    cloudlet.getVm().getHost().getId()
-                }
-            );
+    private void updateValidCount(boolean isValid) {
+        if (isValid) {
+            epValidCount++;
         }
+    }
 
-        jobsFinishedWaitTimeLastInterval.clear();
-        jobsFinishedWaitTimeLastInterval.addAll(cloudSimProxy.getFinishedJobsWaitTimeLastInterval());
-        // if (!jobsFinishedWaitTimeLastInterval.isEmpty()) {
-        //     LOGGER.debug("FINISHED JOBS WAIT TIME: " + jobsFinishedWaitTimeLastInterval);
-        // }
+    private void printEpisodeStatsDebug(
+            double jobWaitReward,
+            double utilReward,
+            double invalidReward) {
+        debug(" Mean episode job wait reward: " + getEpJobWaitRewardMean()
+        + " Mean episode utilization reward: " + getEpUtilRewardMean()
+        + " Max episode waiting jobs count: " + getEpWaitingJobsCountMax()
+        + " Max episode running vms count: " + getEpRunningVmsCountMax()
+        + " Job wait reward: " + jobWaitReward
+        + " Utilization reward: " + utilReward
+        + " Invalid reward: " + invalidReward);
+    }
 
-        /*
-         * METRIC GATHERING CODE STOP
-         */
+    private void updateEpisodeStats(double jobWaitReward, double utilReward, boolean isValid) {
+        updateEpJobWaitRewardMean(-settings.getRewardJobWaitCoef() * jobWaitReward);
+        updateEpUtilRewardMean(-settings.getRewardUtilizationCoef() * utilReward);
+        updateValidCount(isValid);
 
-        SimulationStepInfo info = new SimulationStepInfo(
-            jobWaitReward,
-            utilReward,
-            invalidReward,
-            getEpJobWaitRewardMean(),
-            getEpUtilRewardMean(),
-            getEpValidCount(),
-            hostMetrics,
-            vmMetrics,
-            jobMetrics,
-            jobsFinishedWaitTimeLastInterval, //jobWaitTime,
-            unutilizedActive,
-            unutilizedAll
-        );
+        updateEpWaitingJobsCountMax(cloudSimProxy.getWaitingJobsCount());
+        updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());   
+    }
 
-        return new SimulationStepResult(
-            observation,
-            reward,
-            done,
-            info
-        );
+    private List<Object> getEpisodeRewardStats() {
+        List<Object> stats = new ArrayList<>();
+        stats.add(getEpJobWaitRewardMean());
+        stats.add(getEpUtilRewardMean());
+        stats.add(getEpValidCount());
+        return stats;
     }
 
     private long continuousToDiscrete(
-            final double continuous, 
+            final double continuous,
             final long bucketsNum) {
-            /*
-             * Explanation:
-             * floor(continuous * bucketsNum) will give you the discrete value
-             * but, in case of cont = 1, then the discrete value 
-             * will be equal to bucketsNum.
-             * However, we want to map the continuous value to the
-             * range of [0,bucketsNum-1].
-             * So, Math.min ensures that the maximum allowed
-             * discrete value will be bucketsNum-1.
-             */
-            final long discrete =
-                (long) Math.min(Math.floor(continuous * bucketsNum), bucketsNum - 1);
+    /*
+        * Explanation:
+        * floor(continuous * bucketsNum) will give you the discrete value
+        * but, in case of cont = 1, then the discrete value 
+        * will be equal to bucketsNum.
+        * However, we want to map the continuous value to the
+        * range of [0,bucketsNum-1].
+        * So, Math.min ensures that the maximum allowed
+        * discrete value will be bucketsNum-1.
+    */
+        final long discrete =
+            (long) Math.min(Math.floor(continuous * bucketsNum), bucketsNum - 1);
         return discrete;
+    }
+
+    private void resetIfSimulationIsNotRunning() {
+        if (!cloudSimProxy.isRunning()) {
+            simulationHistory.logHistory();
+            simulationHistory.reset();
+        }
+    }
+
+    private void recordSimulationData(double[] action, double reward) {
+        simulationHistory.record("action[0]", action[0]);
+        simulationHistory.record("action[1]", action[1]);
+        simulationHistory.record("reward", reward);
+        simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
+        simulationHistory.record(
+            "vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
     }
 
     private boolean executeAction(final double[] action) {
@@ -392,36 +428,36 @@ public class WrappedSimulation {
     }
 
     private void collectMetrics() {
-        double[] cpuPercentUsage = cloudSimProxy.getVmCpuUsage();
-        Arrays.sort(cpuPercentUsage);
+        // double[] cpuPercentUsage = cloudSimProxy.getVmCpuUsage();
+        // Arrays.sort(cpuPercentUsage);
 
-        double[] memPercentageUsage = cloudSimProxy.getVmMemoryUsage();
-        Arrays.sort(memPercentageUsage);
+        // double[] memPercentageUsage = cloudSimProxy.getVmMemoryUsage();
+        // Arrays.sort(memPercentageUsage);
 
-        double waitingJobsRatioGlobal = getWaitingJobsRatioGlobal();
-        double waitingJobsRatioTimestep = getWaitingJobsRatioTimestep();
+        // double waitingJobsRatioGlobal = getWaitingJobsRatioGlobal();
+        // double waitingJobsRatioTimestep = getWaitingJobsRatioTimestep();
 
         metricsStorage.updateMetric(
-            "vmAllocatedRatio",
-            getVmAllocatedRatio());
-        metricsStorage.updateMetric(
-            "avgCpuUtilization",
-            safeMean(cpuPercentUsage));
-        metricsStorage.updateMetric(
-            "p90CpuUtilization", 
-            percentileOrZero(cpuPercentUsage, 0.90));
+            "hostCoresAllocatedToVmsRatio",
+            getHostCoresAllocatedToVmsRatio());
+        // metricsStorage.updateMetric(
+        //     "avgCpuUtilization",
+        //     safeMean(cpuPercentUsage));
+        // metricsStorage.updateMetric(
+        //     "p90CpuUtilization", 
+        //     percentileOrZero(cpuPercentUsage, 0.90));
         // metricsStorage.updateMetric(
         //     "avgMemoryUtilization",
         //     safeMean(memPercentageUsage));
         // metricsStorage.updateMetric(
-            // "p90MemoryUtilization", 
-            // percentileOrZero(memPercentageUsage, 0.90));
-        metricsStorage.updateMetric(
-            "waitingJobsRatioGlobal",
-            waitingJobsRatioGlobal);
-        metricsStorage.updateMetric(
-            "waitingJobsRatioTimestep",
-            waitingJobsRatioTimestep);
+        // "p90MemoryUtilization", 
+        // percentileOrZero(memPercentageUsage, 0.90));
+        // metricsStorage.updateMetric(
+        //     "waitingJobsRatioGlobal",
+        //     waitingJobsRatioGlobal);
+        // metricsStorage.updateMetric(
+        //     "waitingJobsRatioTimestep",
+        //     waitingJobsRatioTimestep);
     }
 
     private double getWaitingJobsRatioTimestep() {
@@ -439,69 +475,60 @@ public class WrappedSimulation {
         if (submittedJobsCount == 0) {
             return 0.0;
         }
-
         return cloudSimProxy.getWaitingJobsCount() / (double) submittedJobsCount;
     }
 
-    // TODO: rename to datacenter resource usage
-    private double getVmAllocatedRatio() {
+    private double getHostCoresAllocatedToVmsRatio() {
         return ((double) cloudSimProxy.getNumberOfActiveCores()) / settings.getAvailableCores();
     }
 
     private double[] getObservation() {
         return new double[] {
-            metricsStorage.getLastMetricValue("vmAllocatedRatio"),
-            metricsStorage.getLastMetricValue("avgCpuUtilization"),
-            metricsStorage.getLastMetricValue("p90CpuUtilization"),
+            metricsStorage.getLastMetricValue("hostCoresAllocatedToVmsRatio"),
+            // metricsStorage.getLastMetricValue("avgCpuUtilization"),
+            // metricsStorage.getLastMetricValue("p90CpuUtilization"),
             // metricsStorage.getLastMetricValue("avgMemoryUtilization"),
             // metricsStorage.getLastMetricValue("p90MemoryUtilization"),
-            metricsStorage.getLastMetricValue("waitingJobsRatioGlobal"),
-            metricsStorage.getLastMetricValue("waitingJobsRatioTimestep")
+            // metricsStorage.getLastMetricValue("waitingJobsRatioGlobal"),
+            // metricsStorage.getLastMetricValue("waitingJobsRatioTimestep")
         };
     }
 
-    private double safeMean(final double[] cpuPercentUsage) {
-        if (cpuPercentUsage.length == 0) {
+    private double safeMean(final double[] values) {
+        if (values.length == 0) {
             return 0.0;
         }
-
-        if (cpuPercentUsage.length == 1) {
-            return cpuPercentUsage[0];
-        }
-
-        return StatUtils.mean(cpuPercentUsage);
+        return StatUtils.mean(values);
     }
 
-    private double calculateReward(final boolean isValid) {
+    private double[] calculateReward(final boolean isValid) {
+        double[] rewards = new double[4];
         final int rewardMultiplier = 5000;
         /* reward is the negative cost of running the infrastructure
          * minus any penalties from jobs waiting in the queue
          * minus penalty if action was invalid
-        */ 
+        */
         final double jobWaitCoef = settings.getRewardJobWaitCoef();
         final double utilizationCoef = settings.getRewardUtilizationCoef();
         final double invalidCoef = settings.getRewardInvalidCoef();
         
-        final double jobWaitReward = getWaitingJobsRatioGlobal();
-        final double utilReward = getVmAllocatedRatio();
-        final int invalidReward = isValid ? 0 : 1;
+        final double jobWaitReward = - jobWaitCoef * getWaitingJobsRatioGlobal();
+        final double utilReward = - utilizationCoef * getHostCoresAllocatedToVmsRatio();
+        final double invalidReward = - invalidCoef * (isValid ? 0 : 1);
         
-        double totalReward = - jobWaitCoef * jobWaitReward
-            - utilizationCoef * utilReward
-            - invalidCoef * invalidReward;
-
-        // if (stepCount >= settings.getMaxSteps()) {
-        //     totalReward -= cloudSimProxy.getWaitingJobsCount();
-        // }
+        double totalReward = jobWaitReward + utilReward + invalidReward;
 
         totalReward *= rewardMultiplier;
-        // totalReward -= cloudSimProxy.getUnableToSubmitJobCount();
 
         if (!isValid) {
-            info("Penalty given to the agent because the selected action was not possible");
+            debug("Penalty given to the agent because the selected action was not possible");
         }
 
-        return totalReward;
+        rewards[0] = totalReward;
+        rewards[1] = jobWaitReward;
+        rewards[2] = utilReward;
+        rewards[3] = invalidReward;
+        return rewards;
     }
 
     public int getStepCount() {

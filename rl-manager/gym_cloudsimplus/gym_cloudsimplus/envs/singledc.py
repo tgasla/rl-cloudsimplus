@@ -33,7 +33,7 @@ A vector of 7 continuous values
 
 All values are within range [0,1]
 
-"vmAllocatedRatioHistory",
+"hostCoresAllocatedToVmsRatioHistory",
 "avgCPUUtilizationHistory",
 "p90CPUUtilizationHistory",
 "avgMemoryUtilizationHistory",
@@ -204,10 +204,9 @@ class SingleDC(gym.Env):
         self.host_metrics.append(list(info["host_metrics"]))
         self.vm_metrics.append(list(info["vm_metrics"]))
         self.job_metrics.append(list(info["job_metrics"]))
-
-        # TODO: NEEDS FIX, FOR SOME REASON IT IS ALWAYS 0.0 OR 1.0
+        
         if len(list(info["job_wait_time"])) > 0:
-            print(f"FINISHED JOB WAIT TIME: {list(info['job_wait_time'])}")
+            # print(f"FINISHED JOB WAIT TIME: {list(info['job_wait_time'])}")
             self.job_wait_time.append(list(info["job_wait_time"]))
         if info["unutilized_active"] >= 0:
             self.unutilized_active.append(info["unutilized_active"])

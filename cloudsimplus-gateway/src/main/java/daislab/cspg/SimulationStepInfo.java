@@ -41,31 +41,24 @@ public class SimulationStepInfo {
     }
 
     public SimulationStepInfo(
-        final double jobWaitReward,
-        final double utilReward,
-        final double invalidReward,
-        final double epJobWaitRewardMean,
-        final double epUtilRewardMean,
-        final int epValidCount,
-        final List<long[]> hostMetrics,
-        final List<long[]> vmMetrics,
-        final List<long[]> jobMetrics,
+        final double[] rewards,
+        final List<Object> episodeRewardStats,
+        final List<List<long[]>> timestepMetrics,
         final List<Double> jobWaitTime,
-        final double unutilizedActive,
-        final double unutilizedAll
+        final double[] unutilizedStats
     ) {
-        this.jobWaitReward = jobWaitReward;
-        this.utilReward = utilReward;
-        this.invalidReward = invalidReward;
-        this.epJobWaitRewardMean = epJobWaitRewardMean;
-        this.epUtilRewardMean = epUtilRewardMean;
-        this.epValidCount = epValidCount;
-        this.hostMetrics = hostMetrics;
-        this.vmMetrics = vmMetrics;
-        this.jobMetrics = jobMetrics;
+        this.jobWaitReward = rewards[1];
+        this.utilReward = rewards[2];
+        this.invalidReward = rewards[3];
+        this.epJobWaitRewardMean = (double) episodeRewardStats.get(0);
+        this.epUtilRewardMean = (double) episodeRewardStats.get(1);
+        this.epValidCount = (int) episodeRewardStats.get(2);
+        this.hostMetrics = timestepMetrics.get(0);
+        this.vmMetrics = timestepMetrics.get(1);
+        this.jobMetrics = timestepMetrics.get(2);
         this.jobWaitTime = jobWaitTime;
-        this.unutilizedActive = unutilizedActive;
-        this.unutilizedAll = unutilizedAll;
+        this.unutilizedActive = unutilizedStats[0];
+        this.unutilizedAll = unutilizedStats[1];
     }
 
     public double getJobWaitReward() {

@@ -405,7 +405,7 @@ public class CloudSimProxy {
     
         IntStream.range(0, input.size())
             .forEach(i -> cpuPercentUsage[i] = input.get(i).getCpuPercentUtilization());
-    
+        
         return cpuPercentUsage;
     }
 
@@ -462,16 +462,16 @@ public class CloudSimProxy {
 
         if (!host.isSuitableForVm(newVm)) {
             LOGGER.debug("Vm creating ignored, host not suitable");
-            LOGGER.debug("Host MIPS:" + host.getVmScheduler().getTotalAvailableMips());
+            // LOGGER.debug("Host MIPS:" + host.getVmScheduler().getTotalAvailableMips());
             LOGGER.debug("Host Vm List Size:" + host.getVmList().size());
-            LOGGER.debug("busy pes percent:" + host.getBusyPesPercent());
-            LOGGER.debug("cpu percent utilization:" + host.getCpuPercentUtilization());
-            LOGGER.debug("cpu percent requested:" + host.getCpuPercentRequested());
-            LOGGER.debug("cpu mips utilization: " + host.getCpuMipsUtilization());
-            LOGGER.debug("ram utilization: " + host.getRamUtilization());
-            LOGGER.debug("ram available : " + host.getRamProvisioner().getAvailableResource());
-            LOGGER.debug("bw utilization: " + host.getBwUtilization());
-            LOGGER.debug("bw available: " + host.getBwProvisioner().getAvailableResource());
+            // LOGGER.debug("busy pes percent:" + host.getBusyPesPercent());
+            // LOGGER.debug("cpu percent utilization:" + host.getCpuPercentUtilization());
+            // LOGGER.debug("cpu percent requested:" + host.getCpuPercentRequested());
+            // LOGGER.debug("cpu mips utilization: " + host.getCpuMipsUtilization());
+            // LOGGER.debug("ram utilization: " + host.getRamUtilization());
+            // LOGGER.debug("ram available : " + host.getRamProvisioner().getAvailableResource());
+            // LOGGER.debug("bw utilization: " + host.getBwUtilization());
+            // LOGGER.debug("bw available: " + host.getBwProvisioner().getAvailableResource());
             LOGGER.debug("storage available: " + host.getAvailableStorage());
             LOGGER.debug("Total Vm Exec List Size:" + broker.getVmExecList().size());
             return false;
@@ -533,7 +533,6 @@ public class CloudSimProxy {
             Stream.concat(execCloudlets.stream(), waitingCloudlets.stream())
                 .collect(Collectors.toList());
 
-        Host host = vm.getHost();
         datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the destroyVm
 
         vm.getCloudletScheduler().clear();
