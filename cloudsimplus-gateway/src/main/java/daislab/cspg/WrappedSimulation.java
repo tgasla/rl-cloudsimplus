@@ -109,7 +109,7 @@ public class WrappedSimulation {
     public void close() {
         info("Terminating simulation...");
         if (cloudSimProxy.isRunning()) {
-            cloudSimProxy.getSimulation().terminate();
+            cloudSimProxy.terminate();
         }
     }
 
@@ -608,11 +608,11 @@ public class WrappedSimulation {
         return cloudSimProxy.clock();
     }
 
-    public CloudSimProxy getSimulation() {
-        return cloudSimProxy;
-    }
-
     public SimulationSettings getSimulationSettings() {
         return settings;
+    }
+
+    public void printJobStats() {
+        cloudSimProxy.printJobStats();
     }
 }

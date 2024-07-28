@@ -381,6 +381,10 @@ public class CloudSimProxy {
         return cloudSimPlus.isRunning() && hasUnfinishedJobs();
     }
 
+    public void terminate() {
+        cloudSimPlus.terminate();
+    }
+
     private boolean hasUnfinishedJobs() {
         return broker.getCloudletFinishedList().size() < inputJobs.size();
     }

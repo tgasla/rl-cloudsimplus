@@ -311,10 +311,9 @@ public class IntegrationTest {
             }
         }
 
-        final WrappedSimulation wrappedSimulation =
-                multiSimulationEnvironment.retrieveValidSimulation(simulationId);
-        CloudSimProxy cloudSimProxy = wrappedSimulation.getSimulation();
-        cloudSimProxy.printJobStats();
+        final WrappedSimulation simulation =
+                multiSimulationEnvironment.getValidSimulation(simulationId);
+        simulation.printJobStats();
         multiSimulationEnvironment.close(simulationId);
 
         assertNotEquals(1000, stepsExecuted);

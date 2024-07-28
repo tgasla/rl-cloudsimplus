@@ -29,7 +29,7 @@ public class MultiSimulationEnvironment {
     }
 
     public SimulationResetResult reset(final String simulationIdentifier) {
-        final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
+        final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
         return simulation.reset();
     }
 
@@ -49,13 +49,13 @@ public class MultiSimulationEnvironment {
     }
 
     public String render(final String simulationIdentifier) {
-        final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
+        final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
 
         return simulation.render();
     }
 
     public SimulationStepResult step(final String simulationIdentifier, final List<Double> action) {
-        final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
+        final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
         final double[] action_double = action.stream()
             .mapToDouble(Double::doubleValue)
             .toArray();
@@ -69,13 +69,13 @@ public class MultiSimulationEnvironment {
     }
 
     public void seed(final String simulationIdentifier) {
-        final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
+        final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
 
         simulation.seed();
     }
 
     public double clock(final String simulationIdentifier) {
-        final WrappedSimulation simulation = retrieveValidSimulation(simulationIdentifier);
+        final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
 
         return simulation.clock();
     }
@@ -85,7 +85,7 @@ public class MultiSimulationEnvironment {
         System.exit(0);
     }
 
-    WrappedSimulation retrieveValidSimulation(final String simulationIdentifier) {
+    WrappedSimulation getValidSimulation(final String simulationIdentifier) {
         validateIdentifier(simulationIdentifier);
 
         return simulations.get(simulationIdentifier);
