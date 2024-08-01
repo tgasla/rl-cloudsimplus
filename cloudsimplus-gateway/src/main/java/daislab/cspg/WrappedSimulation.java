@@ -82,7 +82,6 @@ public class WrappedSimulation {
         episodeCount++;
         resetStepCount();
 
-        // first attempt to store some memory
         metricsStorage.clear();
 
         List<Cloudlet> cloudlets = initialJobsDescriptors
@@ -131,7 +130,6 @@ public class WrappedSimulation {
     }
 
     public SimulationStepResult step(final double[] action) {
-        
         validateSimulationReset();
 
         stepCount++;
@@ -159,7 +157,7 @@ public class WrappedSimulation {
         SimulationStepInfo info = new SimulationStepInfo(
             rewards,
             getEpisodeRewardStats(),
-            getTimestepMetrics(vmList),
+            getCurrentTimestepMetrics(vmList),
             cloudSimProxy.getFinishedJobsWaitTimeLastInterval(), //jobWaitTime,
             getUnutilizedStats(vmList)
         );
@@ -167,7 +165,7 @@ public class WrappedSimulation {
         return new SimulationStepResult(observation, rewards[0], done, info);
     }
 
-    private List<List<long[]>> getTimestepMetrics(List<Vm> vmList) {
+    private List<List<long[]>> getCurrentTimestepMetrics(List<Vm> vmList) {
         List<List<long[]>> metrics = new ArrayList<>();
 
         metrics.add(getHostMetrics());
@@ -463,19 +461,17 @@ public class WrappedSimulation {
     private double getWaitingJobsRatioTimestep() {
         final int submittedJobsCountLastInterval =
             cloudSimProxy.getSubmittedJobsCountLastInterval();
-        if (submittedJobsCountLastInterval == 0) {
-            return 0.0;
-        }
-        return cloudSimProxy.getWaitingJobsCountLastInterval() 
-            / (double) submittedJobsCountLastInterval;
+
+        return submittedJobsCountLastInterval > 0
+            ? cloudSimProxy.getWaitingJobsCountLastInterval() 
+            / (double) submittedJobsCountLastInterval : 0.0;
     }
 
     private double getWaitingJobsRatioGlobal() {
         final int submittedJobsCount = cloudSimProxy.getSubmittedJobsCount();
-        if (submittedJobsCount == 0) {
-            return 0.0;
-        }
-        return cloudSimProxy.getWaitingJobsCount() / (double) submittedJobsCount;
+
+        return submittedJobsCount > 0 
+            ? cloudSimProxy.getWaitingJobsCount() / (double) submittedJobsCount : 0.0;
     }
 
     private double getHostCoresAllocatedToVmsRatio() {
@@ -495,10 +491,7 @@ public class WrappedSimulation {
     }
 
     private double safeMean(final double[] values) {
-        if (values.length == 0) {
-            return 0.0;
-        }
-        return StatUtils.mean(values);
+        return values.length > 0 ? StatUtils.mean(values) : 0.0;
     }
 
     private double[] calculateReward(final boolean isValid) {
@@ -572,8 +565,7 @@ public class WrappedSimulation {
     }
 
     private void updateEpUtilRewardMean(double utilReward) {
-        epUtilRewardMean
-                = (epUtilRewardMean * (stepCount - 1) +  utilReward) / stepCount;
+        epUtilRewardMean = (epUtilRewardMean * (stepCount - 1) +  utilReward) / stepCount;
     }
 
     private double getEpJobWaitRewardMean() {

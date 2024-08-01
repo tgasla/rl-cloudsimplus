@@ -11,8 +11,6 @@ import java.util.NoSuchElementException;
 
 public class MetricsStorage {
 
-    private static final Double[] doubles = new Double[0];
-
     private final int historyLength;
     private final List<String> trackedMetrics;
     private Map<String, CircularFifoQueue<Double>> data = new HashMap<>();
@@ -30,13 +28,13 @@ public class MetricsStorage {
     }
 
     private void ensureMetricQueuesExist() {
-        for(String metricName : trackedMetrics) {
+        for (String metricName : trackedMetrics) {
             data.put(metricName, new CircularFifoQueue<>(historyLength));
         }
     }
 
     private void zeroAllMetrics() {
-        for(String metricName : trackedMetrics) {
+        for (String metricName : trackedMetrics) {
             final CircularFifoQueue<Double> metricQueue = data.get(metricName);
             metricQueue.clear();
             fillWithZeros(metricQueue);
@@ -59,7 +57,7 @@ public class MetricsStorage {
 
     public double[] metricValuesAsPrimitives(final String metricName) {
         final CircularFifoQueue<Double> queue = data.get(metricName);
-        return ArrayUtils.toPrimitive(queue.toArray(doubles));
+        return ArrayUtils.toPrimitive(queue.toArray(new Double[0]));
     }
 
     public double getLastMetricValue(final String metricName) {
