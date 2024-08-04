@@ -142,7 +142,7 @@ public class WrappedSimulation {
         double[] observation = getObservation();
         double[] rewards = calculateReward(isValid);
 
-        recordSimulationData(action, rewards[0]);
+        recordSimulationData(action, rewards);
         
         resetIfSimulationIsNotRunning();
 
@@ -343,10 +343,12 @@ public class WrappedSimulation {
     private void recordSimulationData(double[] action, double reward) {
         simulationHistory.record("action[0]", action[0]);
         simulationHistory.record("action[1]", action[1]);
-        simulationHistory.record("reward", reward);
+        simulationHistory.record("totalReward", reward[0]);
+        simulationHistory.record("jobWaitReward", reward[1]);
+        simulationHistory.record("utilReward", reward[2]);
+        simulationHistory.record("invalidReward", reward[3]);
         simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
-        simulationHistory.record(
-            "vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
+        simulationHistory.record("vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
     }
 
     private boolean executeAction(final double[] action) {
@@ -496,7 +498,7 @@ public class WrappedSimulation {
 
     private double[] calculateReward(final boolean isValid) {
         double[] rewards = new double[4];
-        final int rewardMultiplier = 5000;
+        final int rewardMultiplier = 1;
         /* reward is the negative cost of running the infrastructure
          * minus any penalties from jobs waiting in the queue
          * minus penalty if action was invalid
