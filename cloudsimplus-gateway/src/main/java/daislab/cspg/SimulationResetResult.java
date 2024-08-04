@@ -12,7 +12,7 @@ public class SimulationResetResult {
     private final SimulationStepInfo info;
 
     public SimulationResetResult(
-        final double[] obs, 
+        final double[] obs,
         final SimulationStepInfo info
     ) {
         this.obs = obs;

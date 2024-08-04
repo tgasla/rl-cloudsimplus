@@ -183,24 +183,6 @@ public class WrappedSimulation {
         return unutilizedStats;
     }
 
-    private List<long[]> getJobMetrics() {
-        List<Cloudlet> cloudletList = getCloudletList();
-        //   jobId,  jobPes,  vmId,    vmType,  hostId
-        List<long[]> jobMetrics = new ArrayList<>(cloudletList.size());
-        for (Cloudlet cloudlet : cloudletList) {
-            jobMetrics.add(
-                new long[] {
-                    cloudlet.getId(),
-                    cloudlet.getPesNumber(),
-                    cloudlet.getVm().getId(),
-                    cloudlet.getVm().getPesNumber(),
-                    cloudlet.getVm().getHost().getId()
-                }
-            );
-        }
-        return jobMetrics;
-    }
-
     private List<Cloudlet> getCloudletList() {
         List<Cloudlet> cloudletList = cloudSimProxy.getBroker()
             .getVmExecList()
@@ -277,6 +259,24 @@ public class WrappedSimulation {
             );
         }
         return vmMetrics;
+    }
+
+    private List<long[]> getJobMetrics() {
+        List<Cloudlet> cloudletList = getCloudletList();
+        //   jobId,  jobPes,  vmId,    vmType,  hostId
+        List<long[]> jobMetrics = new ArrayList<>(cloudletList.size());
+        for (Cloudlet cloudlet : cloudletList) {
+            jobMetrics.add(
+                new long[] {
+                    cloudlet.getId(),
+                    cloudlet.getPesNumber(),
+                    cloudlet.getVm().getId(),
+                    cloudlet.getVm().getPesNumber(),
+                    cloudlet.getVm().getHost().getId()
+                }
+            );
+        }
+        return jobMetrics;
     }
 
     private void updateValidCount(boolean isValid) {
