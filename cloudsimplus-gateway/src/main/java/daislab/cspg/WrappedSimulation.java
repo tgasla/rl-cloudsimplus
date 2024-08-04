@@ -158,7 +158,7 @@ public class WrappedSimulation {
             rewards,
             getEpisodeRewardStats(),
             getCurrentTimestepMetrics(vmList),
-            cloudSimProxy.getFinishedJobsWaitTimeLastInterval(), //jobWaitTime,
+            cloudSimProxy.getFinishedJobsWaitTimeLastInterval(), //jobWaitTime
             getUnutilizedStats(vmList)
         );
 

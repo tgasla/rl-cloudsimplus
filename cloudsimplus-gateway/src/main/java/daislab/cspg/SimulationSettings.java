@@ -243,7 +243,7 @@ public class SimulationSettings {
         return datacenterHostsCnt * hostPeCnt;
     }
 
-    public boolean getPrintJobsPeriodically() {
+    public boolean isPrintJobsPeriodically() {
         return printJobsPeriodically;
     }
 

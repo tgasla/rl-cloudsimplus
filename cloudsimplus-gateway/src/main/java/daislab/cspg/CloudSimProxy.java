@@ -69,7 +69,7 @@ public class CloudSimProxy {
         final SimulationSettings settings,
         final List<Cloudlet> inputJobs,
         final int episodeCount
-    ) {
+) {
         this.inputJobs = new ArrayList<>(inputJobs);
         this.unsubmittedJobs = new ArrayList<>(inputJobs);
         originalSubmissionDelay = new HashMap<>();
@@ -220,8 +220,7 @@ public class CloudSimProxy {
                 + "please reset or create a new one!");
         }
 
-        long startTime = TimeMeasurement.startTiming();
-
+        final long startTime = TimeMeasurement.startTiming();
         final double target = cloudSimPlus.clock() + interval;
 
         jobsFinishedWaitTimeLastInterval.clear();
@@ -249,8 +248,7 @@ public class CloudSimProxy {
     }
 
     private boolean shouldPrintJobStats() {
-        return (settings.getPrintJobsPeriodically()
-            && (int) Math.round(clock()) % 1000 == 0)
+        return (settings.isPrintJobsPeriodically() && (int) Math.round(clock()) % 1000 == 0)
             || !isRunning();
     }
 
@@ -324,7 +322,8 @@ public class CloudSimProxy {
                 LOGGER.debug("Cloudlet: " + cloudlet.getId()
                     + " that was running on vm "
                     + cloudlet.getVm().getId() + " finished.");
-                jobsFinishedWaitTimeLastInterval.add(cloudlet.getStartTime() - originalSubmissionDelay.get(cloudlet.getId()));
+                jobsFinishedWaitTimeLastInterval.add(
+                    cloudlet.getStartTime() - originalSubmissionDelay.get(cloudlet.getId()));
             }
         });
     }
@@ -339,7 +338,7 @@ public class CloudSimProxy {
         Iterator<Cloudlet> it = unsubmittedJobs.iterator();
         previousLastSubmittedJobIndex = lastSubmittedJobIndex;
 
-        LOGGER.debug("scheduleJobsUntil: " + unsubmittedJobs.size() + " jobs waiting to be submitted");
+        LOGGER.debug(unsubmittedJobs.size() + " jobs waiting to be submitted");
 
         while (it.hasNext()) {
             Cloudlet cloudlet = it.next();
@@ -349,7 +348,7 @@ public class CloudSimProxy {
             // Do not schedule cloudlet if there are no suitable vms to run it
             if (!isAnyVmSuitableForCloudlet(cloudlet)) {
                 unableToSubmitJobCount++;
-                LOGGER.debug("scheduleJobsUntil: no vm available for " + cloudlet.getId());
+                LOGGER.debug("no vm available for " + cloudlet.getId());
                 continue;
             }
             // here we calculate how much time the job needs to be submitted
@@ -372,12 +371,12 @@ public class CloudSimProxy {
         // we immediately clear up that list because it is not really
         // used anywhere but traversing it takes a lot of time
         // No need because the history of this list is already disabled by default
+        // see: https://javadoc.io/doc/org.cloudsimplus/cloudsim-plus/latest/org/cloudsimplus/schedulers/cloudlet/CloudletSchedulerAbstract.html#enableCloudletSubmittedList()
         // broker.getCloudletSubmittedList().clear();
     }
 
     public boolean isRunning() {
-        // if we don't have unfinished jobs, it doesn't make sense to execute
-        // any actions
+        // if we don't have unfinished jobs, it doesn't make sense to execute any actions
         return cloudSimPlus.isRunning() && hasUnfinishedJobs();
     }
 
@@ -468,15 +467,6 @@ public class CloudSimProxy {
             LOGGER.debug("Vm creating ignored, host not suitable");
             // LOGGER.debug("Host MIPS:" + host.getVmScheduler().getTotalAvailableMips());
             LOGGER.debug("Host Vm List Size:" + host.getVmList().size());
-            // LOGGER.debug("busy pes percent:" + host.getBusyPesPercent());
-            // LOGGER.debug("cpu percent utilization:" + host.getCpuPercentUtilization());
-            // LOGGER.debug("cpu percent requested:" + host.getCpuPercentRequested());
-            // LOGGER.debug("cpu mips utilization: " + host.getCpuMipsUtilization());
-            // LOGGER.debug("ram utilization: " + host.getRamUtilization());
-            // LOGGER.debug("ram available : " + host.getRamProvisioner().getAvailableResource());
-            // LOGGER.debug("bw utilization: " + host.getBwUtilization());
-            // LOGGER.debug("bw available: " + host.getBwProvisioner().getAvailableResource());
-            LOGGER.debug("storage available: " + host.getAvailableStorage());
             LOGGER.debug("Total Vm Exec List Size:" + broker.getVmExecList().size());
             return false;
         }
@@ -493,7 +483,7 @@ public class CloudSimProxy {
         return true;
     }
 
-    // if a vm is destroyed, this method returns the true, otherwise false
+    // if a vm is destroyed, this method returns true, otherwise false
     public boolean removeVm(final int index) {
         List<Vm> vmExecList = broker.getVmExecList();
         LOGGER.debug("vmExecList.size = " + vmExecList);
@@ -502,11 +492,6 @@ public class CloudSimProxy {
             LOGGER.warn("Can't kill VM. No VMs running.");
             return false;
         }
-        
-        // if (vmExecList.size() == 1) {
-        //     LOGGER.warn("Can't kill VM as it is the only one running.");
-        //     return false;
-        // }
 
         Vm vmToKill = vmExecList.get(index);
 
