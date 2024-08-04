@@ -340,7 +340,7 @@ public class WrappedSimulation {
         }
     }
 
-    private void recordSimulationData(double[] action, double reward) {
+    private void recordSimulationData(double[] action, double[] reward) {
         simulationHistory.record("action[0]", action[0]);
         simulationHistory.record("action[1]", action[1]);
         simulationHistory.record("totalReward", reward[0]);
