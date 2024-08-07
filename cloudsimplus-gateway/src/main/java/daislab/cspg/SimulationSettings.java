@@ -239,7 +239,7 @@ public class SimulationSettings {
         return basicVmRam;
     }
 
-    public long getAvailableCores() {
+    public long getTotalHostCores() {
         return datacenterHostsCnt * hostPeCnt;
     }
 

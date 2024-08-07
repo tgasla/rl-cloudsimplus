@@ -125,6 +125,10 @@ public class CloudSimProxy {
         return sizeMultiplier;
     }
 
+    public long getVmCoreCountByType(final String type) {
+        return settings.getBasicVmPeCnt() * getSizeMultiplier(type);
+    }
+
     private void ensureAllJobsCompleteBeforeSimulationEnds() {
         cloudSimPlus.addOnEventProcessingListener(info -> {
             if (getNumberOfFutureEvents() == 1 && hasUnfinishedJobs()) {
@@ -392,7 +396,7 @@ public class CloudSimProxy {
         return nextVmId - 1;
     }
 
-    public long getNumberOfActiveCores() {
+    public long getAllocatedCores() {
         final long reduce = broker
             .getVmExecList()
             .parallelStream()

@@ -8,13 +8,13 @@ import java.util.Arrays;
 */
 public class SimulationStepResult {
 
-    private final double[] obs;
+    private final Object[] obs;
     private final double reward;
     private final boolean done;
     private final SimulationStepInfo info;
 
     public SimulationStepResult(
-        final double[] obs, 
+        final Object[] obs, 
         final double reward,
         final boolean done,
         final SimulationStepInfo info
@@ -25,7 +25,7 @@ public class SimulationStepResult {
         this.info = info;
     }
 
-    public double[] getObs() {
+    public Object[] getObs() {
         return obs;
     }
 

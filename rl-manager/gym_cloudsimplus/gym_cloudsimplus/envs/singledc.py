@@ -160,7 +160,11 @@ class SingleDC(gym.Env):
         self.simulation_environment.seed(self.simulation_id)
 
         raw_obs = result.getObs()
+        print("GIA NA DOUME")
+        print(raw_obs)
         obs = self._to_nparray(raw_obs)
+        print("twra kai se nparray")
+        print(obs)
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
         

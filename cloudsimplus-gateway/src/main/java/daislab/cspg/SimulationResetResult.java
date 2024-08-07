@@ -1,6 +1,7 @@
 package daislab.cspg;
 
 import java.util.Arrays;
+import com.google.gson.Gson;
 
 /*
  * Class that represents the object that is returned as a result
@@ -8,19 +9,24 @@ import java.util.Arrays;
 */
 public class SimulationResetResult {
 
-    private final double[] obs;
+    private final Gson gson = new Gson();
+    private final Object[] obs;
     private final SimulationStepInfo info;
 
     public SimulationResetResult(
-        final double[] obs,
+        final Object[] obs,
         final SimulationStepInfo info
     ) {
         this.obs = obs;
         this.info = info;
     }
 
-    public double[] getObs() {
+    public Object[] getObs() {
         return obs;
+    }
+
+    public String getObsAsJson() {
+        return gson.toJson(obs);
     }
 
     public SimulationStepInfo getInfo() {

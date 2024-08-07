@@ -22,20 +22,20 @@ import static org.apache.commons.math3.stat.StatUtils.percentile;
 public class WrappedSimulation {
     private static final Logger LOGGER =
         LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
-    private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
+    // private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
     
     private final List<CloudletDescriptor> initialJobsDescriptors;
-    private final List<String> metricsNames = Arrays.asList(
-        "hostCoresAllocatedToVmsRatio"
+    // private final List<String> metricsNames = Arrays.asList(
+        // "hostCoresAllocatedToVmsRatio"
         // "avgCpuUtilization",
         // "p90CpuUtilization",
         // "avgMemoryUtilization",
         // "p90MemoryUtilization",
         // "waitingJobsRatioGlobal",
         // "waitingJobsRatioTimestep"
-    );
+    // );
 
-    private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
+    // private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
     private final Gson gson = new Gson();
     private final String identifier;
     private final SimulationSettings settings;
@@ -82,7 +82,7 @@ public class WrappedSimulation {
         episodeCount++;
         resetStepCount();
 
-        metricsStorage.clear();
+        // metricsStorage.clear();
 
         List<Cloudlet> cloudlets = initialJobsDescriptors
             .stream()
@@ -90,7 +90,7 @@ public class WrappedSimulation {
             .collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets, episodeCount);
 
-        double[] obs = getObservation();
+        Object[] obs = getObservation();
         resetEpisodeStats();
         SimulationStepInfo info = new SimulationStepInfo();
 
@@ -113,14 +113,15 @@ public class WrappedSimulation {
     }
 
     public String render() {
-        Map<String, double[]> renderedEnv = new HashMap<>();
-        for (int i = 0; i < metricsNames.size(); i++) {
-            renderedEnv.put(
-                metricsNames.get(i),
-                metricsStorage.metricValuesAsPrimitives(metricsNames.get(i))
-            );
-        }
-        return gson.toJson(renderedEnv);
+        // Map<String, double[]> renderedEnv = new HashMap<>();
+        // for (int i = 0; i < metricsNames.size(); i++) {
+        //     renderedEnv.put(
+        //         metricsNames.get(i),
+        //         metricsStorage.metricValuesAsPrimitives(metricsNames.get(i))
+        //     );
+        // }
+        // return gson.toJson(renderedEnv);
+        return new String();
     }
 
     public void validateSimulationReset() {
@@ -136,10 +137,10 @@ public class WrappedSimulation {
 
         boolean isValid = executeAction(action);
         cloudSimProxy.runFor(settings.getTimestepInterval());
-        collectMetrics();
+        // collectMetrics();
 
         boolean done = !cloudSimProxy.isRunning();
-        double[] observation = getObservation();
+        Object[] observation = getObservation();
         double[] rewards = calculateReward(isValid);
 
         recordSimulationData(action, rewards);
@@ -169,7 +170,7 @@ public class WrappedSimulation {
         List<List<long[]>> metrics = new ArrayList<>();
 
         metrics.add(getHostMetrics());
-        metrics.add(getVmMetrics(vmList));
+        metrics.add(getVmMetrics());
         metrics.add(getJobMetrics());
 
         return metrics;
@@ -203,7 +204,7 @@ public class WrappedSimulation {
 
     private double getUnutilizedVmCoresOverAllHostCores(List<Vm> vmList) {
         Long unutilizedVmCores = getUnutilizedVmCores(vmList);
-        double unutilized = ((double) unutilizedVmCores / settings.getAvailableCores());
+        double unutilized = ((double) unutilizedVmCores / settings.getTotalHostCores());
         return unutilized;
     }
 
@@ -225,6 +226,15 @@ public class WrappedSimulation {
         return runningVmCores;
     }
 
+    private long vmCountByType(List<Vm> vmList, String type) {
+        long filteredVmCount = vmList
+        .stream()
+        .filter(vm -> type.equals(vm.getDescription()))
+        .count();
+
+        return filteredVmCount;
+    }
+
     private List<long[]> getHostMetrics() {
         List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();
         // We could also keep a Map<Host, Integer, Integer>
@@ -233,28 +243,43 @@ public class WrappedSimulation {
         // int[] hostVmsRunningCount = new int[hostList.size()];
         // int[] hostPesUtilized = new int[hostList.size()];
         for (Host host : hostList) {
+            List<Vm> vmList = host.getVmList();
+            long smallVmCount = vmCountByType(vmList, "S");
+            long mediumVmCount = vmCountByType(vmList, "M");
+            long largeVmCount = vmCountByType(vmList, "L");
             hostMetrics.add(
                 new long[] {
                     host.getId(),
                     host.getVmList().size(),
-                    host.getBusyPesNumber()
+                    smallVmCount,
+                    settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("S"),
+                    mediumVmCount,
+                    settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("M"),
+                    largeVmCount,
+                    settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("L"),
+                    host.getBusyPesNumber(),
+                    host.getPesNumber()
                 }
             );
         }
         return hostMetrics;
     }
 
-    private List<long[]> getVmMetrics(List<Vm> vmList) {
+    private List<long[]> getVmMetrics() {
         // consider adding cores utilized: vm.getPesNumber() - vm.getFreePesNumber()
-        //  vmId,    vmPesNumber,  hostId,  jobsRunning 
+        //  vmId,    vmPesNumber,  hostId,  jobsRunning
+        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
         List<long[]> vmMetrics = new ArrayList<>(vmList.size());
         for (Vm vm : vmList) {
             vmMetrics.add(
                 new long[] {
                     vm.getId(),
-                    vm.getPesNumber(),
                     vm.getHost().getId(),
-                    vm.getCloudletScheduler().getCloudletList().size()
+                    vm.getCloudletScheduler().getCloudletList().size(),
+                    vm.getCloudletScheduler().getCloudletExecList().size(),
+                    vm.getCloudletScheduler().getCloudletWaitingList().size(),
+                    vm.getPesNumber() - vm.getFreePesNumber(),
+                    vm.getPesNumber()
                 }
             );
         }
@@ -427,7 +452,7 @@ public class WrappedSimulation {
         return percentile(values, percentile);
     }
 
-    private void collectMetrics() {
+    // private void collectMetrics() {
         // double[] cpuPercentUsage = cloudSimProxy.getVmCpuUsage();
         // Arrays.sort(cpuPercentUsage);
 
@@ -437,9 +462,9 @@ public class WrappedSimulation {
         // double waitingJobsRatioGlobal = getWaitingJobsRatioGlobal();
         // double waitingJobsRatioTimestep = getWaitingJobsRatioTimestep();
 
-        metricsStorage.updateMetric(
-            "hostCoresAllocatedToVmsRatio",
-            getHostCoresAllocatedToVmsRatio());
+        // metricsStorage.updateMetric(
+            // "hostCoresAllocatedToVmsRatio",
+            // getHostCoresAllocatedToVmsRatio());
         // metricsStorage.updateMetric(
         //     "avgCpuUtilization",
         //     safeMean(cpuPercentUsage));
@@ -458,7 +483,7 @@ public class WrappedSimulation {
         // metricsStorage.updateMetric(
         //     "waitingJobsRatioTimestep",
         //     waitingJobsRatioTimestep);
-    }
+    // }
 
     private double getWaitingJobsRatioTimestep() {
         final int submittedJobsCountLastInterval =
@@ -477,19 +502,31 @@ public class WrappedSimulation {
     }
 
     private double getHostCoresAllocatedToVmsRatio() {
-        return ((double) cloudSimProxy.getNumberOfActiveCores()) / settings.getAvailableCores();
+        return ((double) cloudSimProxy.getAllocatedCores()) / settings.getTotalHostCores();
     }
 
-    private double[] getObservation() {
-        return new double[] {
-            metricsStorage.getLastMetricValue("hostCoresAllocatedToVmsRatio"),
+    // private double[] getObservation() {
+        // return new double[] {
+            // metricsStorage.getLastMetricValue("hostCoresAllocatedToVmsRatio"),
             // metricsStorage.getLastMetricValue("avgCpuUtilization"),
             // metricsStorage.getLastMetricValue("p90CpuUtilization"),
             // metricsStorage.getLastMetricValue("avgMemoryUtilization"),
             // metricsStorage.getLastMetricValue("p90MemoryUtilization"),
             // metricsStorage.getLastMetricValue("waitingJobsRatioGlobal"),
             // metricsStorage.getLastMetricValue("waitingJobsRatioTimestep")
-        };
+        // };
+    // }
+
+    private Object[] getObservation() {
+        Object[] observation = new Object[6];
+        observation[0] = cloudSimProxy.getAllocatedCores();
+        observation[1] = settings.getTotalHostCores();
+        observation[2] = getHostCoresAllocatedToVmsRatio();
+        observation[3] = getHostMetrics();
+        observation[4] = getVmMetrics();
+        observation[5] = getJobMetrics();
+        
+        return observation;
     }
 
     private double safeMean(final double[] values) {
