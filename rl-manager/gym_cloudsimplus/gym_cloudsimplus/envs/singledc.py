@@ -60,6 +60,7 @@ class SingleDC(gym.Env):
         max_job_pes = "1",
         host_pe_mips = "10",
         host_pes = "10",
+        basic_vm_pes = "2",
         datacenter_hosts_cnt = "10",
         reward_job_wait_coef = "0.3",
         reward_util_coef = "0.3",
@@ -85,7 +86,12 @@ class SingleDC(gym.Env):
         self.unutilized_active = None
         self.unutilized_all = None
         self.step_counter = None
+        self.min_job_pes = 1 #have to define it in .env and pass it preperly in arg
         self.max_steps = int(max_steps)
+        self.max_vms_count = int(datacenter_hosts_cnt) * int(host_pes) // int(basic_vm_pes)
+        self.max_jobs_count = self.max_vms_count * int(basic_vm_pes) // self.min_job_pes
+        self.observation_rows = 1 + int(datacenter_hosts_cnt) + self.max_vms_count + self.max_jobs_count
+        self.observation_cols = 10
 
         self.action_space = spaces.Box(
             low=np.array([-1.0, 0.0]),
@@ -97,7 +103,7 @@ class SingleDC(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=1,
-            shape=(5,),
+            shape=(self.observation_rows,self.observation_cols),
             dtype=np.float32
         )
 
@@ -108,6 +114,7 @@ class SingleDC(gym.Env):
             "SPLIT_LARGE_JOBS": split_large_jobs,
             "HOST_PE_CNT": host_pes,
             "HOST_PE_MIPS": host_pe_mips,
+            "BASIC_VM_PE_CNT": basic_vm_pes,
             "DATACENTER_HOSTS_CNT" :datacenter_hosts_cnt,
             "REWARD_JOB_WAIT_COEF": reward_job_wait_coef,
             "REWARD_UTILIZATION_COEF": reward_util_coef,
@@ -160,10 +167,7 @@ class SingleDC(gym.Env):
         self.simulation_environment.seed(self.simulation_id)
 
         raw_obs = result.getObs()
-        print("GIA NA DOUME")
-        print(raw_obs)
         obs = self._to_nparray(raw_obs)
-        print("twra kai se nparray")
         print(obs)
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)

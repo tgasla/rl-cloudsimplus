@@ -10,18 +10,18 @@ import com.google.gson.Gson;
 public class SimulationResetResult {
 
     private final Gson gson = new Gson();
-    private final Object[] obs;
+    private final double[][] obs;
     private final SimulationStepInfo info;
 
     public SimulationResetResult(
-        final Object[] obs,
+        final double[][] obs,
         final SimulationStepInfo info
     ) {
         this.obs = obs;
         this.info = info;
     }
 
-    public Object[] getObs() {
+    public double[][] getObs() {
         return obs;
     }
 

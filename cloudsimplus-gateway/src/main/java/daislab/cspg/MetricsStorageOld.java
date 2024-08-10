@@ -9,13 +9,13 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.NoSuchElementException;
 
-public class MetricsStorage {
+public class MetricsStorageOld {
 
     private final int historyLength;
     private final List<String> trackedMetrics;
     private Map<String, CircularFifoQueue<Double>> data = new HashMap<>();
 
-    public MetricsStorage(final int historyLength, final List<String> trackedMetrics) {
+    public MetricsStorageOld(final int historyLength, final List<String> trackedMetrics) {
         this.historyLength = historyLength;
         this.trackedMetrics = trackedMetrics;
 

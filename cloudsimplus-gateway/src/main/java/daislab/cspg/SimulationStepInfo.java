@@ -18,9 +18,9 @@ public class SimulationStepInfo {
     private final int epValidCount;
 
     // Metrics for all entities
-    private final List<long[]> hostMetrics;
-    private final List<long[]> vmMetrics;
-    private final List<long[]> jobMetrics;
+    private final double[][] hostMetrics;
+    private final double[][] vmMetrics;
+    private final double[][] jobMetrics;
     private final List<Double> jobWaitTime;
     private final double unutilizedActive;
     private final double unutilizedAll;
@@ -32,9 +32,9 @@ public class SimulationStepInfo {
         this.epJobWaitRewardMean = 0;
         this.epUtilRewardMean = 0;
         this.epValidCount = 0;
-        this.hostMetrics = new ArrayList<>();
-        this.vmMetrics = new ArrayList<>();
-        this.jobMetrics = new ArrayList<>();
+        this.hostMetrics = new double[1][1];
+        this.vmMetrics = new double[1][1];
+        this.jobMetrics = new double[1][1];
         this.jobWaitTime = new ArrayList<>();
         this.unutilizedActive = 0;
         this.unutilizedAll = 0;
@@ -43,7 +43,7 @@ public class SimulationStepInfo {
     public SimulationStepInfo(
         final double[] rewards,
         final List<Object> episodeRewardStats,
-        final List<List<long[]>> timestepMetrics,
+        final List<double[][]> timestepMetrics,
         final List<Double> jobWaitTime,
         final double[] unutilizedStats
     ) {
@@ -85,15 +85,15 @@ public class SimulationStepInfo {
         return epValidCount;
     }
 
-    public List<long[]> getHostMetrics() {
+    public double[][] getHostMetrics() {
         return hostMetrics;
     }
 
-    public List<long[]> getVmMetrics() {
+    public double[][] getVmMetrics() {
         return vmMetrics;
     }
 
-    public List<long[]> getJobMetrics() {
+    public double[][] getJobMetrics() {
         return jobMetrics;
     }
 

@@ -31,10 +31,10 @@ public class SimulationSettings {
     private final long hostBw;
     private final long hostRam;
     private final long hostSize;
-    private final long hostPeCnt;
-    private final long datacenterHostsCnt;
+    private final int hostPeCnt;
+    private final int datacenterHostsCnt;
     private final long basicVmRam;
-    private final long basicVmPeCount;
+    private final int basicVmPeCount;
     private final long basicVmSize;
     private final long basicVmBw;
     private final double vmStartupDelay;
@@ -83,13 +83,13 @@ public class SimulationSettings {
             parameters.getOrDefault("HOST_RAM", "65536"));
         hostSize = Long.parseLong(
             parameters.getOrDefault("HOST_SIZE", "100000"));
-        hostPeCnt = Long.parseLong(
+        hostPeCnt = Integer.parseInt(
             parameters.getOrDefault("HOST_PE_CNT", "14"));
-        datacenterHostsCnt = Long.parseLong(
+        datacenterHostsCnt = Integer.parseInt(
             parameters.getOrDefault("DATACENTER_HOSTS_CNT", "3000"));
         basicVmRam = Long.parseLong(
             parameters.getOrDefault("BASIC_VM_RAM", "8192"));
-        basicVmPeCount = Long.parseLong(
+        basicVmPeCount = Integer.parseInt(
             parameters.getOrDefault("BASIC_VM_PE_CNT", "2"));
         basicVmSize = Long.parseLong(
             parameters.getOrDefault("BASIC_VM_SIZE", "4000"));
@@ -203,11 +203,11 @@ public class SimulationSettings {
         return hostSize;
     }
 
-    public long getHostPeCnt() {
+    public int getHostPeCnt() {
         return hostPeCnt;
     }
 
-    public long getDatacenterHostsCnt() {
+    public int getDatacenterHostsCnt() {
         return datacenterHostsCnt;
     }
 
@@ -215,7 +215,7 @@ public class SimulationSettings {
         return datacenterHostsCnt * hostPeCnt;
     }
 
-    public long getBasicVmPeCnt() {
+    public int getBasicVmPeCnt() {
         return basicVmPeCount;
     }
 

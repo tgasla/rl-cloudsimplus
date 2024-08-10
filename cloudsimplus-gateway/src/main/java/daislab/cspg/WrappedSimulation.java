@@ -35,11 +35,22 @@ public class WrappedSimulation {
         // "waitingJobsRatioTimestep"
     // );
 
+    private static final int minJobPes = 1;
+    private static final int datacenterMetricsCount = 6;
+    private static final int hostMetricsCount = 10;
+    private static final int vmMetricsCount = 7;
+    private static final int jobMetricsCount = 5;
+
     // private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
     private final Gson gson = new Gson();
     private final String identifier;
     private final SimulationSettings settings;
     private final SimulationHistory simulationHistory;
+    private final int hostsCount;
+    private final int maxVmsCount;
+    private final int maxJobsCount;
+    private final int observationArrayRows;
+    private final int observationArrayColumns;
     private CloudSimProxy cloudSimProxy;
     private int stepCount;
     private int episodeCount = 0;
@@ -60,6 +71,11 @@ public class WrappedSimulation {
         this.identifier = identifier;
         this.initialJobsDescriptors = jobs;
         this.simulationHistory = new SimulationHistory();
+        this.hostsCount = settings.getDatacenterHostsCnt();
+        this.maxVmsCount = settings.getDatacenterHostsCnt() * settings.getHostPeCnt() / settings.getBasicVmPeCnt();
+        this.maxJobsCount = maxVmsCount * settings.getBasicVmPeCnt() / this.minJobPes;
+        this.observationArrayRows = 1 + hostsCount + maxVmsCount + maxJobsCount;
+        this.observationArrayColumns = Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
         info("Creating simulation: " + identifier);
     }
 
@@ -90,7 +106,7 @@ public class WrappedSimulation {
             .collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets, episodeCount);
 
-        Object[] obs = getObservation();
+        double[][] obs = getObservation();
         resetEpisodeStats();
         SimulationStepInfo info = new SimulationStepInfo();
 
@@ -140,7 +156,7 @@ public class WrappedSimulation {
         // collectMetrics();
 
         boolean done = !cloudSimProxy.isRunning();
-        Object[] observation = getObservation();
+        double[][] observation = getObservation();
         double[] rewards = calculateReward(isValid);
 
         recordSimulationData(action, rewards);
@@ -166,9 +182,9 @@ public class WrappedSimulation {
         return new SimulationStepResult(observation, rewards[0], done, info);
     }
 
-    private List<List<long[]>> getCurrentTimestepMetrics(List<Vm> vmList) {
-        List<List<long[]>> metrics = new ArrayList<>();
-
+    private List<double[][]> getCurrentTimestepMetrics(List<Vm> vmList) {
+        List<double[][]> metrics = new ArrayList<>();
+        
         metrics.add(getHostMetrics());
         metrics.add(getVmMetrics());
         metrics.add(getJobMetrics());
@@ -212,17 +228,31 @@ public class WrappedSimulation {
         Long unutilizedVmCores = vmList
             .parallelStream()
             .map(Vm::getFreePesNumber)
-            .reduce(Long::sum)
-            .orElse(-1L);
+            .reduce(-1L, Long::sum);
         return unutilizedVmCores;
+    }
+
+    private Long getRunningVmsCount() {
+        return cloudSimProxy.getBroker().getVmExecList().stream().count();
+    }
+
+    private Long getRunningCloudletsCount() {
+        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+
+        Long runningCloudletCount = vmList
+            .parallelStream()
+            .map(Vm::getCloudletScheduler)
+            .map(CloudletScheduler::getCloudletExecList)
+            .mapToLong(List::size)
+            .sum();
+        return runningCloudletCount;
     }
 
     private Long getRunningVmCores(List<Vm> vmList) {
         Long runningVmCores = vmList
             .parallelStream()
             .map(Vm::getPesNumber)
-            .reduce(Long::sum)
-            .orElse(1L);
+            .reduce(1L, Long::sum);
         return runningVmCores;
     }
 
@@ -235,74 +265,102 @@ public class WrappedSimulation {
         return filteredVmCount;
     }
 
-    private List<long[]> getHostMetrics() {
+    private double[] getDatacenterMetrics() {
+        double[] datacenterMetrics = new double[] {
+            (double) cloudSimProxy.getAllocatedCores(),
+            (double) settings.getTotalHostCores(),
+            getHostCoresAllocatedToVmsRatio(),
+            (double) settings.getDatacenterHostsCnt(),
+            (double) getRunningVmsCount(),
+            (double) getRunningCloudletsCount()
+        };
+
+        return datacenterMetrics;
+    }
+
+    private double[][] getHostMetrics() {
         List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();
         // We could also keep a Map<Host, Integer, Integer>
         //  hostId,  vmsRunning, pesUtilized
-        List<long[]> hostMetrics = new ArrayList<>(hostList.size());
+        double[][] hostMetrics = new double[hostList.size()][10];
         // int[] hostVmsRunningCount = new int[hostList.size()];
         // int[] hostPesUtilized = new int[hostList.size()];
-        for (Host host : hostList) {
-            List<Vm> vmList = host.getVmList();
+        for (int i = 0; i < hostList.size(); i++) {
+            Host host = hostList.get(i);
+            List<Vm> vmList = hostList.get(i).getVmList();
             long smallVmCount = vmCountByType(vmList, "S");
             long mediumVmCount = vmCountByType(vmList, "M");
             long largeVmCount = vmCountByType(vmList, "L");
-            hostMetrics.add(
-                new long[] {
-                    host.getId(),
-                    host.getVmList().size(),
-                    smallVmCount,
-                    settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("S"),
-                    mediumVmCount,
-                    settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("M"),
-                    largeVmCount,
-                    settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("L"),
-                    host.getBusyPesNumber(),
-                    host.getPesNumber()
-                }
-            );
+
+            hostMetrics[i] = new double[] {
+                host.getId(),
+                host.getVmList().size(),
+                smallVmCount,
+                settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("S"),
+                mediumVmCount,
+                settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("M"),
+                largeVmCount,
+                settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("L"),
+                host.getBusyPesNumber(),
+                host.getPesNumber()
+            };
         }
         return hostMetrics;
     }
 
-    private List<long[]> getVmMetrics() {
+    private double[][] getVmMetrics() {
         // consider adding cores utilized: vm.getPesNumber() - vm.getFreePesNumber()
         //  vmId,    vmPesNumber,  hostId,  jobsRunning
         List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
-        List<long[]> vmMetrics = new ArrayList<>(vmList.size());
-        for (Vm vm : vmList) {
-            vmMetrics.add(
-                new long[] {
-                    vm.getId(),
-                    vm.getHost().getId(),
-                    vm.getCloudletScheduler().getCloudletList().size(),
-                    vm.getCloudletScheduler().getCloudletExecList().size(),
-                    vm.getCloudletScheduler().getCloudletWaitingList().size(),
-                    vm.getPesNumber() - vm.getFreePesNumber(),
-                    vm.getPesNumber()
-                }
-            );
+        double[][] vmMetrics = new double[vmList.size()][7];
+        for (int i = 0; i < vmList.size(); i++) {
+            Vm vm = vmList.get(i);
+            vmMetrics[i] = new double[] {
+                vm.getId(),
+                vm.getHost().getId(),
+                vm.getCloudletScheduler().getCloudletList().size(),
+                vm.getCloudletScheduler().getCloudletExecList().size(),
+                vm.getCloudletScheduler().getCloudletWaitingList().size(),
+                vm.getPesNumber() - vm.getFreePesNumber(),
+                vm.getPesNumber()
+            };
         }
         return vmMetrics;
     }
 
-    private List<long[]> getJobMetrics() {
+    private double[][] getJobMetrics() {
         List<Cloudlet> cloudletList = getCloudletList();
         //   jobId,  jobPes,  vmId,    vmType,  hostId
-        List<long[]> jobMetrics = new ArrayList<>(cloudletList.size());
-        for (Cloudlet cloudlet : cloudletList) {
-            jobMetrics.add(
-                new long[] {
-                    cloudlet.getId(),
-                    cloudlet.getPesNumber(),
-                    cloudlet.getVm().getId(),
-                    cloudlet.getVm().getPesNumber(),
-                    cloudlet.getVm().getHost().getId()
-                }
-            );
+        double[][] jobMetrics = new double[cloudletList.size()][5];
+        for (int i = 0; i < cloudletList.size(); i++) {
+            Cloudlet cloudlet = cloudletList.get(i);
+            jobMetrics[i] = new double[] {
+                cloudlet.getId(),
+                cloudlet.getPesNumber(),
+                cloudlet.getVm().getId(),
+                cloudlet.getVm().getPesNumber(),
+                cloudlet.getVm().getHost().getId()
+            };
         }
         return jobMetrics;
     }
+
+    // private double[] listOfArraysToArray(List<double[]> listOfArrays) {
+    //     final int listSize = listOfArrays.size();
+    //     final int arraySize = listOfArrays.get(0).length;
+    //     // we know that each array in the list ahs the same size
+    //     // so we calculate the final array size just by the size of the list
+    //     // and the first array length
+    //     double[] resultArray = new double[listSize * arraySize];
+
+    //     int currentIndex = 0;
+    //     for (double[] array : listOfArrays) {
+    //         System.arraycopy(array, 0, resultArray, currentIndex, array.length);
+    //         currentIndex += array.length;
+    //     }
+        
+    //     return resultArray;
+    // }
 
     private void updateValidCount(boolean isValid) {
         if (isValid) {
@@ -314,6 +372,7 @@ public class WrappedSimulation {
             double jobWaitReward,
             double utilReward,
             double invalidReward) {
+
         debug(" Mean episode job wait reward: " + getEpJobWaitRewardMean()
         + " Mean episode utilization reward: " + getEpUtilRewardMean()
         + " Max episode waiting jobs count: " + getEpWaitingJobsCountMax()
@@ -334,15 +393,15 @@ public class WrappedSimulation {
 
     private List<Object> getEpisodeRewardStats() {
         List<Object> stats = new ArrayList<>();
+
         stats.add(getEpJobWaitRewardMean());
         stats.add(getEpUtilRewardMean());
         stats.add(getEpValidCount());
+
         return stats;
     }
 
-    private long continuousToDiscrete(
-            final double continuous,
-            final long bucketsNum) {
+    private long continuousToDiscrete(final double continuous, final long bucketsNum) {
     /*
         * Explanation:
         * floor(continuous * bucketsNum) will give you the discrete value
@@ -353,8 +412,7 @@ public class WrappedSimulation {
         * So, Math.min ensures that the maximum allowed
         * discrete value will be bucketsNum-1.
     */
-        final long discrete =
-            (long) Math.min(Math.floor(continuous * bucketsNum), bucketsNum - 1);
+        final long discrete = (long) Math.min(Math.floor(continuous * bucketsNum), bucketsNum - 1);
         return discrete;
     }
 
@@ -441,15 +499,8 @@ public class WrappedSimulation {
         return true;
     }
 
-    private double percentileOrZero(
-            final double[] values, 
-            final double percentile) {
-
-        if (values.length == 0) {
-            return 0;
-        }
-
-        return percentile(values, percentile);
+    private double percentileOrZero(final double[] values, final double percentile) {
+        return values.length > 0 ? percentile(values, percentile) : 0;
     }
 
     // private void collectMetrics() {
@@ -517,14 +568,53 @@ public class WrappedSimulation {
         // };
     // }
 
-    private Object[] getObservation() {
-        Object[] observation = new Object[6];
-        observation[0] = cloudSimProxy.getAllocatedCores();
-        observation[1] = settings.getTotalHostCores();
-        observation[2] = getHostCoresAllocatedToVmsRatio();
-        observation[3] = getHostMetrics();
-        observation[4] = getVmMetrics();
-        observation[5] = getJobMetrics();
+    private void print2dArray(double[][] array) {
+        for (int i = 0; i < array.length; i++) {
+            for (int j = 0; j < array[0].length; j++) {
+                System.out.print(array[i][j] + " ");
+            }
+            System.out.print("\n");
+        }
+    }
+
+    private double[][] getObservation() {
+        final double[] datacenterMetrics = getDatacenterMetrics();
+        final double[][] hostMetrics = getHostMetrics();
+        final double[][] vmMetrics = getVmMetrics();
+        final double[][] jobMetrics = getJobMetrics();
+
+        double[][] observation = new double[observationArrayRows][observationArrayColumns];
+        int currentRow = 0;
+
+        for (int j = 0; j < datacenterMetrics.length; j++) {
+            observation[currentRow][j] = datacenterMetrics[j];
+        }
+        currentRow++;
+
+        for (int i = 0; i < hostMetrics.length; i++) {
+            for (int j = 0; j < hostMetrics[0].length; j++) {
+                observation[currentRow][j] = hostMetrics[i][j];
+            }
+            currentRow++;
+        }
+
+        for (int i = 0; i < vmMetrics.length; i++) {
+            for (int j = 0; j < vmMetrics[0].length; j++) {
+                observation[currentRow][j] = vmMetrics[i][j];
+            }
+            currentRow++;
+        }
+
+        currentRow = 1 + this.hostsCount + this.maxVmsCount;
+
+        for (int i = 0; i < jobMetrics.length; i++) {
+            for (int j = 0; j < jobMetrics[0].length; j++) {
+                observation[currentRow][j] = jobMetrics[i][j];
+            }
+            currentRow++;
+        }
+
+        // print2dArray(observation);
         
         return observation;
     }
