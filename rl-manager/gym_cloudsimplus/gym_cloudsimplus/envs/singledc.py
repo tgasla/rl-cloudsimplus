@@ -93,18 +93,31 @@ class SingleDC(gym.Env):
         self.observation_rows = 1 + int(datacenter_hosts_cnt) + self.max_vms_count + self.max_jobs_count
         self.observation_cols = 10
 
-        self.action_space = spaces.Box(
-            low=np.array([-1.0, 0.0]),
-            high=np.array([1.0, 1.0]),
-            shape=(2,),
-            dtype=np.float32
+        # Old for continuous action space
+        # self.action_space = spaces.Box(
+        #     low=np.array([-1.0, 0.0]),
+        #     high=np.array([1.0, 1.0]),
+        #     shape=(2,),
+        #     dtype=np.float32
+        # )
+
+
+        # New for discrete action space
+        # [action, id, type^]
+        # action = {0: do nothing, 1: create vm, 2: destroy vm}
+        # type = {0: small, 1: medium, 2: large}
+        # ^ needed only when action = 1 
+        self.action_space = spaces.MultiDiscrete(
+            np.array([2, int(datacenter_hosts_cnt), 2]),
+            seed=42
         )
 
         self.observation_space = spaces.Box(
             low=0,
             high=1,
             shape=(self.observation_rows,self.observation_cols),
-            dtype=np.float32
+            dtype=np.float32,
+            seed=42
         )
 
         # These parameters are passed when calling gym.make in learn.py
@@ -184,7 +197,7 @@ class SingleDC(gym.Env):
         return obs, info
 
     def step(self, action):
-        # Py4J cannot translate np.array(dtype=np.float32) to java double[]
+        # Py4J cannot translate np.array(dtype=np.float32) to java List<double>
         # Fix1: make it dtype=np.float64 and for some reason it works :)
         # Fix2: before sending it to java, convert it to python list first
         # Here, we adopt Fix2

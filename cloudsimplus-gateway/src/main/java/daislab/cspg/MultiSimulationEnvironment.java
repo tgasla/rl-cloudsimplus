@@ -54,12 +54,12 @@ public class MultiSimulationEnvironment {
         return simulation.render();
     }
 
-    public SimulationStepResult step(final String simulationIdentifier, final List<Double> action) {
+    public SimulationStepResult step(final String simulationIdentifier, final List<Integer> action) {
         final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
-        final double[] action_double = action.stream()
-            .mapToDouble(Double::doubleValue)
+        final int[] actionPrimitive = action.stream()
+            .mapToInt(Integer::intValue)
             .toArray();
-        return simulation.step(action_double);
+        return simulation.step(actionPrimitive);
     }
 
     public long ping() {

@@ -146,7 +146,7 @@ public class WrappedSimulation {
         }
     }
 
-    public SimulationStepResult step(final double[] action) {
+    public SimulationStepResult step(final int[] action) {
         validateSimulationReset();
 
         stepCount++;
@@ -185,9 +185,9 @@ public class WrappedSimulation {
     private List<double[][]> getCurrentTimestepMetrics(List<Vm> vmList) {
         List<double[][]> metrics = new ArrayList<>();
         
-        metrics.add(getHostMetrics());
-        metrics.add(getVmMetrics());
-        metrics.add(getJobMetrics());
+        metrics.add(collectHostMetrics());
+        metrics.add(collectVmMetrics());
+        metrics.add(collectJobMetrics());
 
         return metrics;
     }
@@ -265,24 +265,25 @@ public class WrappedSimulation {
         return filteredVmCount;
     }
 
-    private double[] getDatacenterMetrics() {
+    private double[] collectDatacenterMetrics() {
         double[] datacenterMetrics = new double[] {
-            (double) cloudSimProxy.getAllocatedCores(),
-            (double) settings.getTotalHostCores(),
+            // (double) cloudSimProxy.getAllocatedCores(),
+            // (double) settings.getTotalHostCores(),
             getHostCoresAllocatedToVmsRatio(),
-            (double) settings.getDatacenterHostsCnt(),
-            (double) getRunningVmsCount(),
-            (double) getRunningCloudletsCount()
+            // (double) settings.getDatacenterHostsCnt(),
+            // (double) getRunningVmsCount(),
+            // (double) getRunningCloudletsCount()
         };
 
         return datacenterMetrics;
     }
 
-    private double[][] getHostMetrics() {
+    private double[][] collectHostMetrics() {
         List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();
         // We could also keep a Map<Host, Integer, Integer>
         //  hostId,  vmsRunning, pesUtilized
-        double[][] hostMetrics = new double[hostList.size()][10];
+        double[][] hostMetrics = new double[hostList.size()][4];
+
         // int[] hostVmsRunningCount = new int[hostList.size()];
         // int[] hostPesUtilized = new int[hostList.size()];
         for (int i = 0; i < hostList.size(); i++) {
@@ -293,53 +294,52 @@ public class WrappedSimulation {
             long largeVmCount = vmCountByType(vmList, "L");
 
             hostMetrics[i] = new double[] {
-                host.getId(),
-                host.getVmList().size(),
-                smallVmCount,
-                settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("S"),
-                mediumVmCount,
-                settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("M"),
-                largeVmCount,
-                settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("L"),
-                host.getBusyPesNumber(),
-                host.getPesNumber()
+                // host.getId(),
+                // host.getVmList().size(),
+                // smallVmCount,
+                smallVmCount / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("S")),
+                // mediumVmCount,
+                mediumVmCount / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("M")),
+                // largeVmCount,
+                largeVmCount / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("L")),
+                host.getBusyPesNumber() / host.getPesNumber()
             };
         }
         return hostMetrics;
     }
 
-    private double[][] getVmMetrics() {
+    private double[][] collectVmMetrics() {
         // consider adding cores utilized: vm.getPesNumber() - vm.getFreePesNumber()
         //  vmId,    vmPesNumber,  hostId,  jobsRunning
         List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
-        double[][] vmMetrics = new double[vmList.size()][7];
+        double[][] vmMetrics = new double[vmList.size()][1];
         for (int i = 0; i < vmList.size(); i++) {
             Vm vm = vmList.get(i);
             vmMetrics[i] = new double[] {
-                vm.getId(),
-                vm.getHost().getId(),
-                vm.getCloudletScheduler().getCloudletList().size(),
-                vm.getCloudletScheduler().getCloudletExecList().size(),
-                vm.getCloudletScheduler().getCloudletWaitingList().size(),
-                vm.getPesNumber() - vm.getFreePesNumber(),
-                vm.getPesNumber()
+                // vm.getId(),
+                // vm.getHost().getId(),
+                // vm.getCloudletScheduler().getCloudletList().size(),
+                // vm.getCloudletScheduler().getCloudletExecList().size(),
+                // vm.getCloudletScheduler().getCloudletWaitingList().size(),
+                (vm.getPesNumber() - vm.getFreePesNumber()) / vm.getPesNumber()
             };
         }
         return vmMetrics;
     }
 
-    private double[][] getJobMetrics() {
+    private double[][] collectJobMetrics() {
         List<Cloudlet> cloudletList = getCloudletList();
         //   jobId,  jobPes,  vmId,    vmType,  hostId
-        double[][] jobMetrics = new double[cloudletList.size()][5];
+        double[][] jobMetrics = new double[cloudletList.size()][1];
         for (int i = 0; i < cloudletList.size(); i++) {
             Cloudlet cloudlet = cloudletList.get(i);
             jobMetrics[i] = new double[] {
-                cloudlet.getId(),
-                cloudlet.getPesNumber(),
-                cloudlet.getVm().getId(),
-                cloudlet.getVm().getPesNumber(),
-                cloudlet.getVm().getHost().getId()
+                // cloudlet.getId(),
+                // cloudlet.getPesNumber(),
+                // cloudlet.getVm().getId(),
+                // cloudlet.getVm().getPesNumber(),
+                // cloudlet.getVm().getHost().getId()
+                cloudlet.getPesNumber() / cloudlet.getVm().getPesNumber()
             };
         }
         return jobMetrics;
@@ -423,9 +423,10 @@ public class WrappedSimulation {
         }
     }
 
-    private void recordSimulationData(double[] action, double[] reward) {
+    private void recordSimulationData(int[] action, double[] reward) {
         simulationHistory.record("action[0]", action[0]);
         simulationHistory.record("action[1]", action[1]);
+        simulationHistory.record("action[2]", action[2]);
         simulationHistory.record("totalReward", reward[0]);
         simulationHistory.record("jobWaitReward", reward[1]);
         simulationHistory.record("utilReward", reward[2]);
@@ -434,53 +435,76 @@ public class WrappedSimulation {
         simulationHistory.record("vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
     }
 
-    private boolean executeAction(final double[] action) {
-
-        debug("action is " + action[0] + ", " + action[1]);
+    private boolean executeAction(final int[] action) {
 
         final boolean isValid;
-        final long id;
-        final int index;
-        final int vmTypeIndex;
 
-        // action < 0 destroys the VM with VM.index = index
-        if (action[0] < 0) {
-            index = (int) continuousToDiscrete(
-                Math.abs(action[0]),
-                cloudSimProxy.getBroker().getVmExecList().size());
+        debug("action is " + action[0] + ", " + action[1] + ", " + action[2]);
 
-            if (index < 0) {
-                debug("No active Vms. Ignoring action...");
-                return false;
-            }
-            debug("translated action[0] = " + index);
-            debug("will try to destroy vm with index = " + index);
-            isValid = removeVm(index);
+        // [action, id, type^]
+        // action = {0: do nothing, 1: create vm, 2: destroy vm}
+        // type = {0: small, 1: medium, 2: large}
+        // ^ needed only when action = 1
+
+        if (action[0] == 1) {
+            final int hostId = action[1];
+            final int vmTypeIndex = action[2];
+            isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], hostId);
             return isValid;
         }
 
-        // action > 0 creates a VM in host host.id = id
-        // and Vm.type = action[1]
-        else if (action[0] > 0) {
-            id = continuousToDiscrete(
-                action[0],
-                settings.getDatacenterHostsCnt());
-
-            vmTypeIndex = (int) continuousToDiscrete(
-                action[1],
-                CloudSimProxy.VM_TYPES.length);
-
-            debug("Translated action[0] = " + id);
-            debug("Will try to create a new vm at host with id = " 
-                    + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
-            isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);
+        else if (action[0] == 2) {
+            final int vmIndex = action[1];
+            isValid = removeVm(vmIndex);
             return isValid;
         }
+
         else {
-            // action[0] = 0 does nothing
             return true;
         }
     }
+
+        // final long id;
+        // final int index;
+        // final int vmTypeIndex;
+
+        // // action < 0 destroys the VM with VM.index = index
+        // if (action[0] < 0) {
+        //     index = (int) continuousToDiscrete(
+        //         Math.abs(action[0]),
+        //         cloudSimProxy.getBroker().getVmExecList().size());
+
+        //     if (index < 0) {
+        //         debug("No active Vms. Ignoring action...");
+        //         return false;
+        //     }
+        //     debug("translated action[0] = " + index);
+        //     debug("will try to destroy vm with index = " + index);
+        //     isValid = removeVm(index);
+        //     return isValid;
+        // }
+
+        // // action > 0 creates a VM in host host.id = id
+        // // and Vm.type = action[1]
+        // else if (action[0] > 0) {
+        //     id = continuousToDiscrete(
+        //         action[0],
+        //         settings.getDatacenterHostsCnt());
+
+        //     vmTypeIndex = (int) continuousToDiscrete(
+        //         action[1],
+        //         CloudSimProxy.VM_TYPES.length);
+
+        //     debug("Translated action[0] = " + id);
+        //     debug("Will try to create a new vm at host with id = " 
+        //             + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
+        //     isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);
+        //     return isValid;
+        // }
+        // else {
+        //     // action[0] = 0 does nothing
+        //     return true;
+        // }
 
     private boolean removeVm(final int index) {
         if (!cloudSimProxy.removeVm(index)) {
@@ -578,10 +602,10 @@ public class WrappedSimulation {
     }
 
     private double[][] getObservation() {
-        final double[] datacenterMetrics = getDatacenterMetrics();
-        final double[][] hostMetrics = getHostMetrics();
-        final double[][] vmMetrics = getVmMetrics();
-        final double[][] jobMetrics = getJobMetrics();
+        final double[] datacenterMetrics = collectDatacenterMetrics();
+        final double[][] hostMetrics = collectHostMetrics();
+        final double[][] vmMetrics = collectVmMetrics();
+        final double[][] jobMetrics = collectJobMetrics();
 
         double[][] observation = new double[observationArrayRows][observationArrayColumns];
         int currentRow = 0;
