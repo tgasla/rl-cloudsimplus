@@ -43,10 +43,10 @@ public class SimulationFactory {
 
         switch (settings.getSourceOfJobs()) {
             case SOURCE_OF_JOBS_DATABASE:
-                jobs = loadJobsFromDatabase(maybeParameters);
+                jobs = loadJobsFromDatabase();
                 break;
             case SOURCE_OF_JOBS_FILE:
-                jobs = loadJobsFromFile(maybeParameters);
+                jobs = loadJobsFromFile();
                 break;
             case SOURCE_OF_JOBS_DEFAULT:
                 // fall-through
@@ -77,7 +77,7 @@ public class SimulationFactory {
 			int splitCount = Math.max(1, (jobPesNumber + maxJobPes - 1) / maxJobPes);
 			int normalSplitPesNumber = jobPesNumber / splitCount;
 			long totalMi = cloudletDescriptor.getMi();
-			long normalSplitMi = totalMi / splitCount;
+			// long normalSplitMi = totalMi / splitCount;
 
 			// Distribute the MI and PEs for each split part
 			for (int i = 0; i < splitCount; i++) {
@@ -138,13 +138,11 @@ public class SimulationFactory {
         return new CloudletDescriptor(cloudletDescriptor.getJobId(), cloudletDelay, mi, pesNumber);
     }
 
-    private List<CloudletDescriptor> loadJobsFromDatabase(
-        final Map<String, String> maybeParameters) {
+    private List<CloudletDescriptor> loadJobsFromDatabase() {
         throw new NotImplementedException("Feature not implemented yet!");
     }
 
-    private List<CloudletDescriptor> loadJobsFromFile(
-		final Map<String, String> maybeParameters) {
+    private List<CloudletDescriptor> loadJobsFromFile() {
         throw new NotImplementedException("Feature not implemented yet!");
     }
 

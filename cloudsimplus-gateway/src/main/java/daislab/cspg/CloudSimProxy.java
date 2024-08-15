@@ -61,20 +61,14 @@ public class CloudSimProxy {
     private int unableToSubmitJobCount;
     private List<Double> jobsFinishedWaitTimeLastInterval;
     private int nextVmId;
-    private int episodeCount;
     private int lastSubmittedJobIndex;
     private int previousLastSubmittedJobIndex;
 
-    public CloudSimProxy(
-        final SimulationSettings settings,
-        final List<Cloudlet> inputJobs,
-        final int episodeCount
-) {
+    public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
         this.inputJobs = new ArrayList<>(inputJobs);
         this.unsubmittedJobs = new ArrayList<>(inputJobs);
         originalSubmissionDelay = new HashMap<>();
         this.settings = settings;
-        this.episodeCount = episodeCount;
         nextVmId = 0;
         lastSubmittedJobIndex = 0;
         previousLastSubmittedJobIndex = 0;
