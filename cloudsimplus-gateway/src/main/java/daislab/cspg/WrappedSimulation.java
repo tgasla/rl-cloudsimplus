@@ -649,7 +649,7 @@ public class WrappedSimulation {
 
     private double[] calculateReward(final boolean isValid) {
         double[] rewards = new double[4];
-        final int rewardMultiplier = 1;
+        // final int rewardMultiplier = 1;
         /* reward is the negative cost of running the infrastructure
          * minus any penalties from jobs waiting in the queue
          * minus penalty if action was invalid
@@ -664,7 +664,7 @@ public class WrappedSimulation {
         
         double totalReward = jobWaitReward + utilReward + invalidReward;
 
-        totalReward *= rewardMultiplier;
+        // totalReward *= rewardMultiplier;
 
         if (!isValid) {
             debug("Penalty given to the agent because the selected action was not possible");

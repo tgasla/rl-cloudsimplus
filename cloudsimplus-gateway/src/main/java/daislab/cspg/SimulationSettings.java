@@ -114,7 +114,7 @@ public class SimulationSettings {
             parameters.getOrDefault("REWARD_INVALID_COEF", "0.4"));
         jobLogDir =
             parameters.getOrDefault("JOB_LOG_DIR", "./logs");
-        maxSteps = Integer.parseInt(parameters.getOrDefault("MAX_STEPS", "5000"));
+        maxSteps = Integer.parseInt(parameters.getOrDefault("MAX_TIMESTEPS_PER_EPISODE", "5000"));
     }
 
     @Override

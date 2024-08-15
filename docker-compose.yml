@@ -21,7 +21,7 @@ services: # uses port 25333
     command: >
       python3 mnt/run.py
       --algo=${ALGO}
-      --max-steps=${MAX_STEPS}
+      --max-timesteps-per-episode=${MAX_TIMESTEPS-PER-EPISODE}
       --pretrain-timesteps=${PRETRAIN_TIMESTEPS}
       --pretrain-hosts=${PRETRAIN_HOSTS}
       --pretrain-host-pes=${PRETRAIN_HOST_PES}

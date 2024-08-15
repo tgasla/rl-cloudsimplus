@@ -80,7 +80,7 @@ def main():
 		# Create and wrap the environment
 		env = gym.make(
 			"SingleDC-v0",
-			max_steps=args.max_steps,
+			max_timesteps_per_episode=args.max_timesteps_per_episode,
 			datacenter_hosts_cnt=args.pretrain_hosts,
 			host_pe_mips=args.pretrain_host_pe_mips,
 			host_pes=args.pretrain_host_pes,
@@ -177,7 +177,7 @@ def main():
 	# Create and wrap the environment
 	new_env = gym.make(
 		"SingleDC-v0",
-		max_steps=args.max_steps,
+		max_timesteps_per_episode=args.max_timesteps_per_episode,
 		datacenter_hosts_cnt=args.transfer_hosts,
 		host_pe_mips=args.transfer_host_pe_mips,
 		host_pes=args.transfer_host_pes,

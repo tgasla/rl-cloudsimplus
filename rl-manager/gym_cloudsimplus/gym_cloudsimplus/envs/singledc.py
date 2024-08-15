@@ -70,7 +70,7 @@ class SingleDC(gym.Env):
         simulation_speedup = "1",
         render_mode = None,
         job_log_dir = None,
-        max_steps = "5000"
+        max_timesteps_per_episode = "5000"
     ):
   
         super().__init__()
@@ -87,7 +87,7 @@ class SingleDC(gym.Env):
         self.unutilized_all = None
         self.step_counter = None
         self.min_job_pes = 1 #have to define it in .env and pass it preperly in arg
-        self.max_steps = int(max_steps)
+        self.max_timesteps_per_episode = int(max_timesteps_per_episode)
         self.max_vms_count = int(datacenter_hosts_cnt) * int(host_pes) // int(basic_vm_pes)
         self.max_jobs_count = self.max_vms_count * int(basic_vm_pes) // self.min_job_pes
         self.observation_rows = 1 + int(datacenter_hosts_cnt) + self.max_vms_count + self.max_jobs_count
@@ -135,7 +135,7 @@ class SingleDC(gym.Env):
             "MAX_JOB_PES": max_job_pes,
             "SIMULATION_SPEEDUP": simulation_speedup,
             "JOB_LOG_DIR": job_log_dir,
-            "MAX_STEPS": max_steps
+            "MAX_TIMESTEPS_PER_EPISODE": max_timesteps_per_episode
         }
 
         if render_mode is not None and render_mode not in self.metadata["render_modes"]:
@@ -239,7 +239,7 @@ class SingleDC(gym.Env):
 
         self.step_counter += 1
         # limit the maximum allowed number of timesteps in an episode
-        if self.step_counter >= self.max_steps:
+        if self.step_counter >= self.max_timesteps_per_episode:
             truncated = True
 
         return (
