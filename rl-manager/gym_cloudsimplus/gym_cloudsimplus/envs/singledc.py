@@ -181,7 +181,7 @@ class SingleDC(gym.Env):
 
         raw_obs = result.getObs()
         obs = self._to_nparray(raw_obs)
-        print(obs)
+        # print(obs)
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
         

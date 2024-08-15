@@ -125,8 +125,7 @@ def main():
 			model.action_noise = action_noise
 
 		callback = SaveOnBestTrainingRewardCallback(
-			check_freq=1,
-			log_dir=log_dir
+			check_freq=30,
 		)
 
 		# Train the agent

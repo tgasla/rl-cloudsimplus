@@ -83,7 +83,7 @@ public class SimulationFactory {
 			for (int i = 0; i < splitCount; i++) {
 				// Last split might have different MI and PES due to remainder
 				// long miForThisSplit = (i < splitCount - 1) 
-				// 	? normalSplitMi 
+				// 	? normalSplitMi
 				// 	: totalMi - (normalSplitMi * (splitCount - 1));
                 // uncomment the 4 previous lines if you want the splitting algorithm to split
                 // the MIs of jobs also
@@ -135,12 +135,7 @@ public class SimulationFactory {
         final long cloudletDelay = Math.max(0, cloudletDescriptor.getSubmissionDelay());
         final int pesNumber = Math.max(1, cloudletDescriptor.getNumberOfCores());
 
-        return new CloudletDescriptor(
-			cloudletDescriptor.getJobId(),
-			cloudletDelay,
-			mi,
-			pesNumber
-        );
+        return new CloudletDescriptor(cloudletDescriptor.getJobId(), cloudletDelay, mi, pesNumber);
     }
 
     private List<CloudletDescriptor> loadJobsFromDatabase(

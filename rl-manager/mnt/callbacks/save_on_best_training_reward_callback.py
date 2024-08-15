@@ -43,19 +43,19 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 			# Retrieve training reward
 			x, y = ts2xy(load_results(self.log_dir), "timesteps")
 			if len(x) > 0:
-				# Mean training reward over the last 100 episodes
-				last_reward = np.mean(y[-1:])
+				# Training reward for this episode
+				reward = y[-1]
 				# print(last_reward)
 				if self.verbose >= 1:
 					print(f"Num timesteps: {self.num_timesteps}")
 					print((
 						f"Best reward: {self.best_reward:.2f} "
-						f"- Last reward: {last_reward:.2f}"
+						f"- Last reward: {reward:.2f}"
 					))
 
 				# New best model, you could save the agent here
-				if last_reward > self.best_reward:
-					self.best_reward = last_reward
+				if reward > self.best_reward:
+					self.best_reward = reward
 					# Example for saving best model
 					if self.verbose >= 1:
 						print(f"Saving new best model to {self.save_path}")
