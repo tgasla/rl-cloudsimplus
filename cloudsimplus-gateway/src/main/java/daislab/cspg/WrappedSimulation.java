@@ -48,7 +48,6 @@ public class WrappedSimulation {
     private final SimulationHistory simulationHistory;
     private final int hostsCount;
     private final int maxVmsCount;
-    private final int maxJobsCount;
     private final int observationArrayRows;
     private final int observationArrayColumns;
     private CloudSimProxy cloudSimProxy;
@@ -72,7 +71,7 @@ public class WrappedSimulation {
         this.simulationHistory = new SimulationHistory();
         this.hostsCount = settings.getDatacenterHostsCnt();
         this.maxVmsCount = settings.getDatacenterHostsCnt() * settings.getHostPeCnt() / settings.getBasicVmPeCnt();
-        this.maxJobsCount = maxVmsCount * settings.getBasicVmPeCnt() / this.minJobPes;
+        final int maxJobsCount = maxVmsCount * settings.getBasicVmPeCnt() / this.minJobPes;
         this.observationArrayRows = 1 + hostsCount + maxVmsCount + maxJobsCount;
         this.observationArrayColumns = Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
         info("Creating simulation: " + identifier);
@@ -135,7 +134,7 @@ public class WrappedSimulation {
         //     );
         // }
         // return gson.toJson(renderedEnv);
-        return new String();
+        return "";
     }
 
     public void validateSimulationReset() {

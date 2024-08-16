@@ -17,7 +17,6 @@ import java.util.List;
 */
 public class VmCost {
 
-    private final double secondsInIteration;
     private final double perIterationBasicVMCost;
     
     private List<Vm> createdVms = new ArrayList<>();
@@ -27,11 +26,12 @@ public class VmCost {
     public VmCost(final double perHourVMCost, final double timestepInterval, final boolean payForFullHour) {
         this.payForFullHour = payForFullHour;
         
-        secondsInIteration = timestepInterval;
-        iterationsInHour = 3600 / secondsInIteration;
+        // timestepInterval are the seconds we are "staying" at each iteration
+
+        iterationsInHour = 3600 / timestepInterval;
 
         final double perSecondVMCost = perHourVMCost * 0.00028; // 1/3600
-        perIterationBasicVMCost = perSecondVMCost * secondsInIteration;
+        perIterationBasicVMCost = perSecondVMCost * timestepInterval;
     }
 
     public void addNewVmToList(final Vm vm) {
