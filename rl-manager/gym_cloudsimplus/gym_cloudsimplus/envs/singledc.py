@@ -223,7 +223,7 @@ class SingleDC(gym.Env):
         self.host_metrics.append(list(info["host_metrics"]))
         self.vm_metrics.append(list(info["vm_metrics"]))
         self.job_metrics.append(list(info["job_metrics"]))
-        
+
         if len(list(info["job_wait_time"])) > 0:
             # print(f"FINISHED JOB WAIT TIME: {list(info['job_wait_time'])}")
             self.job_wait_time.append(list(info["job_wait_time"]))
@@ -269,11 +269,11 @@ class SingleDC(gym.Env):
             return str(obs_data)
         else:
             return super().render()
-    
+
     def close(self):
         # close the resources
         self.gateway.close()
-    
+
     def _raw_info_to_dict(self, raw_info):
         info = {
             "job_wait_reward": raw_info.getJobWaitReward(),
@@ -294,7 +294,7 @@ class SingleDC(gym.Env):
     def _to_nparray(self, raw_obs):
         obs = list(raw_obs)
         return np.array(obs, dtype=np.float32)
-    
+
     def _flatten(self, test_list):
         if isinstance(test_list, list):
             temp = []
