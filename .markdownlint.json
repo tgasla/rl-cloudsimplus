@@ -12,12 +12,16 @@
     "allowed_languages": [ "bash", "HTML", "markdown", "text" ],
     "language_only": true
   },
-  "no-inline-html": {
+  "html": {
     "allowed_elements": [ "a", "b", "div", "details", "p" ]
   },
   "line-length": {
-    "code": false,
+    "line_length": 250,
+    "code_blocks": false,
     "headings": false,
     "tables": false
+  },
+  "bullet": {
+    "indent": 4
   }
 }
