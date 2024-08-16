@@ -25,17 +25,17 @@ Linux Debian 12/11/10 or MacOS 14/13/12/11
 You can install OpenJDK 21 JDK and JRE
 
 - For Linux
-  
+
 ```bash
 sudo apt-get install openjdk-21-jdk openjdk-21-jre
 ```
 
 - For MacOS using [brew](https://brew.sh/)
-  
+
 ```bash
 brew install openjdk@21
 ```
-    
+
 <!--
 or you can also try Azul Zulu
 
@@ -46,16 +46,16 @@ or you can also try Azul Zulu
 ### 4. Set the JAVA_HOME environment variable to the right path.
 
 > [!IMPORTANT]  
-> Exact path may vary (different distro and different arch).
+> The exact path may vary (different distro and different arch).
 
 - For linux
-  
+
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
 ```
 
 - For MacOS
-  
+
 ```bash
 export JAVA_HOME=/usr/libexec/java_home
 ```
