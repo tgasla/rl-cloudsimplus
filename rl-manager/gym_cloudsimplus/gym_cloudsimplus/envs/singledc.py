@@ -10,39 +10,39 @@ import numpy as np
 # TODO: the two environments should support both continuous and
 # discrete action spaces
 
-'''
-Action space
-
-A vector of 2 continuous numbers
-
-The first number is in range [-1,1]
-Positive value - create a VM
-The range shows the id of host that the VM will be placed
-
-Negative value - destroy a VM
-The range shows the id of the VM that will be destroyed
-
-The second number is in range [0,1]
-It shows the size of the VM that will be created/destroyed
-
-
-Observation space
-
-A vector of 7 continuous values 
-
-All values are within range [0,1]
-
-"hostCoresAllocatedToVmsRatioHistory",
-"avgCPUUtilizationHistory",
-"p90CPUUtilizationHistory",
-"avgMemoryUtilizationHistory",
-"p90MemoryUtilizationHistory",
-"waitingJobsRatioGlobalHistory",
-"waitingJobsRatioRecentHistory"
-'''
-
 # Based on https://gymnasium.farama.org/api/env/
 class SingleDC(gym.Env):
+    """
+    Action space
+
+    A vector of 2 continuous numbers
+
+    The first number is in range [-1,1]
+    Positive value - create a VM
+    The range shows the id of host that the VM will be placed
+
+    Negative value - destroy a VM
+    The range shows the id of the VM that will be destroyed
+
+    The second number is in range [0,1]
+    It shows the size of the VM that will be created/destroyed
+
+
+    Observation space
+
+    A vector of 7 continuous values 
+
+    All values are within range [0,1]
+
+    "hostCoresAllocatedToVmsRatioHistory",
+    "avgCPUUtilizationHistory",
+    "p90CPUUtilizationHistory",
+    "avgMemoryUtilizationHistory",
+    "p90MemoryUtilizationHistory",
+    "waitingJobsRatioGlobalHistory",
+    "waitingJobsRatioRecentHistory"
+    """
+
     metadata = {"render_modes": ["human", "ansi"]}
     address = os.getenv("CLOUDSIM_GATEWAY_HOST", "gateway")
     port = os.getenv("CLOUDSIM_GATEWAY_PORT", "25333")

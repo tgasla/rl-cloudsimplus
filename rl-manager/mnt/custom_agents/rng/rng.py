@@ -127,7 +127,7 @@ class RNG(BaseAlgorithm):
         :return: the model's action and the next state
             (used in recurrent policies)
         """
-    
+
         if is_vectorized_observation(observation, self.observation_space):
             if isinstance(observation, dict):
                 n_batch = observation[next(iter(observation.keys()))].shape[0]
@@ -136,9 +136,9 @@ class RNG(BaseAlgorithm):
             action = np.array([self.action_space.sample() for _ in range(n_batch)])
         else:
             action = np.array(self.action_space.sample())
-        
+
         return action, state
-    
+
     def _convert_train_freq(self) -> None:
         """
         Convert `train_freq` parameter (int or tuple)
