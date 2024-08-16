@@ -10,7 +10,8 @@ import numpy as np
 # TODO: the two environments should support both continuous and
 # discrete action spaces
 
-'''
+''' Description of action and state spaces
+
 Action space
 
 A vector of 2 continuous numbers
@@ -24,7 +25,6 @@ The range shows the id of the VM that will be destroyed
 
 The second number is in range [0,1]
 It shows the size of the VM that will be created/destroyed
-
 
 
 Observation space
@@ -142,7 +142,7 @@ class SingleDC(gym.Env):
                 "Invalid render mode"
                 'Render modes allowed: ["human" | "ansi"]'
             )
-    
+
         self.render_mode = render_mode
 
         if jobs_as_json is not None:

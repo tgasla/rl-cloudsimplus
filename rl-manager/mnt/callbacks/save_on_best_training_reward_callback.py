@@ -117,7 +117,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 						unutilized_active_df = pd.DataFrame(unutilized_active)
 						unutilized_all = self.get(unutilized_all_str)
 						unutilized_all_df = pd.DataFrame(unutilized_all)
-						
+
 						if self.verbose >= 1:
 							print((
 								f"Saving simulation metrics to"

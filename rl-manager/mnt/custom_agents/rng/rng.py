@@ -55,7 +55,7 @@ class RNG(BaseAlgorithm):
         self.policy = policy
         if _init_setup_model:
             self._setup_model()
-    
+
     def _setup_model(self) -> None:
         self.set_random_seed(self.seed)
 
