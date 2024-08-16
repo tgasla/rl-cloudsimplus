@@ -30,16 +30,16 @@ sudo apt-get install openjdk-21-jdk openjdk-21-jre
 ```
 
 - For MacOS using [brew](https://brew.sh/)
-    ```bash
-    brew install openjdk@21
-    ```
+```bash
+brew install openjdk@21
+```
     
-    <!--
-    or you can also try Azul Zulu
-  
-    `https://www.azul.com/downloads/?version=java-17-lts#zulu`
-  
-    -->
+<!--
+or you can also try Azul Zulu
+
+`https://www.azul.com/downloads/?version=java-17-lts#zulu`
+
+-->
 
 ### 4. Set the JAVA_HOME environment variable to the right path.
 
