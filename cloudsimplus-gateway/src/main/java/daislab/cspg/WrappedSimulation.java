@@ -229,9 +229,9 @@ public class WrappedSimulation {
         return unutilizedVmCores;
     }
 
-    private Long getRunningVmsCount() {
-        return cloudSimProxy.getBroker().getVmExecList().stream().count();
-    }
+    // private Long getRunningVmsCount() {
+    //     return cloudSimProxy.getBroker().getVmExecList().stream().count();
+    // }
 
     // private Long getRunningCloudletsCount() {
     //     List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();

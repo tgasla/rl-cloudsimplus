@@ -10,8 +10,7 @@ import numpy as np
 # TODO: the two environments should support both continuous and
 # discrete action spaces
 
-''' Description of action and state spaces
-
+'''
 Action space
 
 A vector of 2 continuous numbers
@@ -183,7 +182,7 @@ class SingleDC(gym.Env):
         # print(obs)
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
-        
+
         self.episode_details["state"].append(list(raw_obs))
 
         # self.host_metrics.append(list(info["host_metrics"]))
