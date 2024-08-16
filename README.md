@@ -42,7 +42,10 @@ sudo apt-get install openjdk-21-jdk openjdk-21-jre
   
     -->
 
-### 4. Set the JAVA_HOME environment variable to the right path. The exact path may vary (different distro, different arch).
+### 4. Set the JAVA_HOME environment variable to the right path.
+
+> [!IMPORTANT]  
+> Exact path may vary (different distro and different arch).
 
 - For linux
 ```bash
