@@ -7,28 +7,51 @@
 
 ## Requirements
 
-<details><summary><b>Linux Debian 12/11/10</b></summary>
+Linux Debian 12/11/10 or MacOS 14/13/12/11
     
 ### 1. Install Docker
 
 <https://docs.docker.com/get-docker/>
 
+ > :warning: **Warning:**
+ > If you install Docker Desktop for MacOS, make sure you are giving enough memory in your containers by going to <b> Settings.. > Resources </b> and increasing the Memory Limit
+
 ### 2. Install Docker Compose
 
 <https://docs.docker.com/compose/install/>
 
-### 3. Install Java 21
+### 3. Install Java 21 JDK and JRE
 
 You can install OpenJDK 21 JDK and JRE
 
+- For Linux
 ```bash
 sudo apt-get install openjdk-21-jdk openjdk-21-jre
 ```
 
-### 4. Set the JAVA_HOME environment variable to the right path (the exact path may vary (different distro, different arch)
+- For MacOS
+    -  You can install OpenJDK Java 21 using [brew](https://brew.sh/)
+    ```bash
+    brew install openjdk@21
+    ```
+    
+    <!--
+    or you can also try Azul Zulu
+  
+    `https://www.azul.com/downloads/?version=java-17-lts#zulu`
+  
+    -->
 
+### 4. Set the JAVA_HOME environment variable to the right path. The exact path may vary (different distro, different arch).
+
+- For linux
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
+```
+
+- For MacOS
+```bash
+export JAVA_HOME=/usr/libexec/java_home
 ```
 
 <!--
@@ -38,39 +61,6 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 -->
-</details>
-
-<details><summary><b>MacOS 14/13/12/11</b></summary>
-
-### 1. Install Docker
-
-<https://docs.docker.com/get-docker/>
-
- > :warning: **Warning:**
- > If you install Docker Desktop, make sure you are giving enough memory in your containers by going to <b> Settings.. > Resources </b> and increasing the Memory Limit
-
-### 2. Install Docker Compose
-
-<https://docs.docker.com/compose/install/>
-
-### 3. Install Java 21 JDK and JRE
-
-You can install OpenJDK Java 21 using [brew](https://brew.sh/)
-
-```bash
-brew install openjdk@21
-```
-
-<!--
-or you can also try Azul Zulu
-
-`https://www.azul.com/downloads/?version=java-17-lts#zulu`
-
--->
-
-### 4. Make sure that the environment variable JAVA_HOME is set to the right path
-
-`export JAVA_HOME=/usr/libexec/java_home`
 
 <!--
 - For Zulu
@@ -86,9 +76,8 @@ or you can also try Azul Zulu
   and then add the given path to your shell profile
   
   `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
+-->
 
-  -->
-  
 <!--
 ### 1.5 Select the correct Gradle version
 
@@ -96,7 +85,6 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
 -->
-</details>
 
 ## Build images
 
