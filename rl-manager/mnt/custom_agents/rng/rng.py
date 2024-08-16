@@ -88,8 +88,13 @@ class RNG(BaseAlgorithm):
 
         callback.on_training_start(locals(), globals())
 
-        assert self.env is not None, "You must set the environment before calling learn()"
-        assert isinstance(self.train_freq, TrainFreq)  # check done in _setup_learn()
+        if self.env is None:
+            raise ValueError("You must set the environment before calling learn()")
+        if not isinstance(self.train_freq, TrainFreq):
+            raise TypeError(
+                f"Expected self.train_freq to be an instance of TrainFreq, "
+                f"got {type(self.train_freq).__name__}"
+            )
 
         while self.num_timesteps < total_timesteps:
             rollout = self.collect_rollouts(
@@ -179,7 +184,8 @@ class RNG(BaseAlgorithm):
        
         # Note: when using continuous actions,
         # we assume that the policy uses tanh to scale the action
-        assert self._last_obs is not None, "self._last_obs was not set"
+        if self._last_obs is None:
+            raise ValueError("self._last_obs was not set")
         unscaled_action, _ = self.predict(self._last_obs)
 
         if isinstance(self.action_space, spaces.Box):
@@ -198,8 +204,10 @@ class RNG(BaseAlgorithm):
         """
         Write log.
         """
-        assert self.ep_info_buffer is not None
-        assert self.ep_success_buffer is not None
+        if self.ep_info_buffer is None:
+            ValueError("self.ep_info_buffer was not set")
+        if self.ep_success_buffer is None:
+            ValueError("self.ep_success_buffer was not set")
 
         time_elapsed = max((time.time_ns() - self.start_time) / 1e9, sys.float_info.epsilon)
         fps = int((self.num_timesteps - self._num_timesteps_at_start) / time_elapsed)
@@ -246,11 +254,14 @@ class RNG(BaseAlgorithm):
         
         num_collected_steps, num_collected_episodes = 0, 0
 
-        assert isinstance(env, VecEnv), "You must pass a VecEnv"
-        assert train_freq.frequency > 0, "Should at least collect one step or episode."
+        if not isinstance(env, VecEnv):
+            raise TypeError("You must pass a VecEnv")
+        if train_freq.frequency <= 0:
+            raise ValueError("Should at least collect one step or episode.")
 
         if env.num_envs > 1:
-            assert train_freq.unit == TrainFrequencyUnit.STEP, "You must use only one env when doing episodic training."
+            if train_freq.unit != TrainFrequencyUnit.STEP:
+                raise ValueError("You must use only one env when doing episodic training.")
 
         callback.on_rollout_start()
         continue_training = True
@@ -275,7 +286,7 @@ class RNG(BaseAlgorithm):
 
             self._update_current_progress_remaining(self.num_timesteps, self._total_timesteps)
 
-            for idx, done in enumerate(dones):
+            for _, done in enumerate(dones):
                 if done:
                     # Update stats
                     num_collected_episodes += 1

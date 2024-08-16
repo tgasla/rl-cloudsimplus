@@ -10,7 +10,7 @@ import numpy as np
 # TODO: the two environments should support both continuous and
 # discrete action spaces
 
-"""
+'''
 Action space
 
 A vector of 2 continuous numbers
@@ -40,8 +40,7 @@ All values are within range [0,1]
 "p90MemoryUtilizationHistory",
 "waitingJobsRatioGlobalHistory",
 "waitingJobsRatioRecentHistory"
-"""
-
+'''
 
 # Based on https://gymnasium.farama.org/api/env/
 class SingleDC(gym.Env):
@@ -72,7 +71,7 @@ class SingleDC(gym.Env):
         job_log_dir = None,
         max_timesteps_per_episode = "5000"
     ):
-  
+
         super().__init__()
 
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
@@ -106,7 +105,7 @@ class SingleDC(gym.Env):
         # [action, id, type^]
         # action = {0: do nothing, 1: create vm, 2: destroy vm}
         # type = {0: small, 1: medium, 2: large}
-        # ^ needed only when action = 1 
+        # ^ needed only when action = 1
         self.action_space = spaces.MultiDiscrete(
             np.array([2, int(datacenter_hosts_cnt), 2]),
             seed=42
@@ -149,7 +148,7 @@ class SingleDC(gym.Env):
         if jobs_as_json is not None:
             params["SOURCE_OF_JOBS"] = "PARAMS"
             params["JOBS"] = jobs_as_json
-        elif "jobs_from_file" is not None:
+        elif jobs_from_file is not None:
             params["JOBS_FILE"] = jobs_from_file
 
         self.simulation_id = self.simulation_environment.createSimulation(params)

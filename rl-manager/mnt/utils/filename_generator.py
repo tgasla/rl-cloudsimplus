@@ -64,7 +64,7 @@ def generate_filename(
 def _millify(num):
     if isinstance(num, str):
         num = int(num)
-        
+
     num = float(f"{num:.3f}")
     magnitude = 0
     suffix = ['', 'K', 'M', 'B', 'T']

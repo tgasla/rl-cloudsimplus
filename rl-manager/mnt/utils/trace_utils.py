@@ -61,7 +61,7 @@ def swf_to_cloudlet_descriptor(filename, jobs_to_read=None, relative_submission_
                     original_submit_time = submit_time
                     submit_time -= previous_submit_time
                     previous_submit_time = original_submit_time
-                
+
             cloudlet = as_cloudlet_descriptor_dict(
                 job_id,
                 submit_time,

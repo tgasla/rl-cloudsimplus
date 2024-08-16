@@ -126,6 +126,7 @@ def main():
 
 		callback = SaveOnBestTrainingRewardCallback(
 			check_freq=30,
+			log_dir=log_dir
 		)
 
 		# Train the agent

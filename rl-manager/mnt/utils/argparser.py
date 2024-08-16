@@ -171,7 +171,7 @@ def parse_args() -> Argumenmts:
     transfer_reward_invalid_coef=str(args.transfer_reward_invalid_coef)
 
     simulation_speedup = str(args.simulation_speedup)
-    
+
     return Argumenmts(
         algorithm_str=algorithm_str,
         max_timesteps_per_episode=max_timesteps_per_episode,

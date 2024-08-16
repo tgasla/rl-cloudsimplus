@@ -77,10 +77,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 					if self.save_best_episode_rl_details:
 						episode_details = self.get("episode_details")
 						del episode_details["state"][-1]
-						
+
 						df = pd.DataFrame(episode_details)
 						episode_details_path = os.path.join(
-							self.log_dir, 
+							self.log_dir,
 							"best_model_actions.csv"
 						)
 						if self.verbose >= 1:
