@@ -25,11 +25,13 @@ Linux Debian 12/11/10 or MacOS 14/13/12/11
 You can install OpenJDK 21 JDK and JRE
 
 - For Linux
+  
 ```bash
 sudo apt-get install openjdk-21-jdk openjdk-21-jre
 ```
 
 - For MacOS using [brew](https://brew.sh/)
+  
 ```bash
 brew install openjdk@21
 ```
@@ -47,11 +49,13 @@ or you can also try Azul Zulu
 > Exact path may vary (different distro and different arch).
 
 - For linux
+  
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
 ```
 
 - For MacOS
+  
 ```bash
 export JAVA_HOME=/usr/libexec/java_home
 ```
@@ -163,6 +167,7 @@ docker system prune [-f | --force]
 This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
 
 The code was based on the work done by [pkoperek](https://github.com/pkoperek) in the following projects:
+
 - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
 - [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
 - [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)
