@@ -14,5 +14,10 @@
   },
   "no-inline-html": {
     "allowed_elements": [ "a", "b", "div", "details", "p" ]
+  },
+  "line-length": {
+    "code": false,
+    "headings": false,
+    "tables": false
   }
 }

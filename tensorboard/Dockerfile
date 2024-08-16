@@ -1,7 +1,7 @@
 FROM python:3.12
 
-RUN pip3 install --upgrade pip
-RUN pip3 install tensorboard
+RUN pip3 install --upgrade pip==24.2
+RUN pip3 install tensorboard==2.17.1
 
 RUN apt-get update \
     && apt-get purge --auto-remove -yqq \
