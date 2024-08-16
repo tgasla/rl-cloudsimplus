@@ -183,8 +183,9 @@ class SingleDC(gym.Env):
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
 
-        self.episode_details["state"].append(list(raw_obs))
-
+        self.episode_details["state"].append(obs)
+        print(f"Printing episode_details['state']: {self.episode_details}")
+ 
         # self.host_metrics.append(list(info["host_metrics"]))
         # self.vm_metrics.append(list(info["vm_metrics"]))
         # self.job_metrics.append(list(info["job_metrics"]))
@@ -199,7 +200,7 @@ class SingleDC(gym.Env):
         # Fix1: make it dtype=np.float64 and for some reason it works :)
         # Fix2: before sending it to java, convert it to python list first
         # Here, we adopt Fix2
-        action = action.tolist()
+        action = list(action)
         result = self.simulation_environment.step(self.simulation_id, action)
 
         reward = result.getReward()

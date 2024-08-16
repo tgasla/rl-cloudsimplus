@@ -42,6 +42,7 @@ public class WrappedSimulation {
     private static final int jobMetricsCount = 5;
 
     // private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
+    private final MetricsStorage metricsStorage = new MetricsStorage();
     // private final Gson gson = new Gson();
     private final String identifier;
     private final SimulationSettings settings;
@@ -103,6 +104,7 @@ public class WrappedSimulation {
             .collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
+        // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
         double[][] obs = getObservation();
         resetEpisodeStats();
         SimulationStepInfo info = new SimulationStepInfo();
@@ -150,9 +152,13 @@ public class WrappedSimulation {
 
         boolean isValid = executeAction(action);
         cloudSimProxy.runFor(settings.getTimestepInterval());
-        // collectMetrics();
+        
+        // gets telemetry data and saves it into metricsStorage
+        collectMetrics();
 
         boolean done = !cloudSimProxy.isRunning();
+
+        // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
         double[][] observation = getObservation();
         double[] rewards = calculateReward(isValid);
 
@@ -182,9 +188,9 @@ public class WrappedSimulation {
     private List<double[][]> getCurrentTimestepMetrics() {
         List<double[][]> metrics = new ArrayList<>();
         
-        metrics.add(collectHostMetrics());
-        metrics.add(collectVmMetrics());
-        metrics.add(collectJobMetrics());
+        metrics.add(metricsStorage.getHostMetrics());
+        metrics.add(metricsStorage.getVmMetrics());
+        metrics.add(metricsStorage.getJobMetrics());
 
         return metrics;
     }
@@ -524,6 +530,13 @@ public class WrappedSimulation {
     //     return values.length > 0 ? percentile(values, percentile) : 0;
     // }
 
+    private void collectMetrics() {
+        metricsStorage.setDatacenterMetrics(collectDatacenterMetrics());
+        metricsStorage.setHostMetrics(collectHostMetrics());
+        metricsStorage.setVmMetrics(collectVmMetrics());
+        metricsStorage.setJobMetrics(collectJobMetrics());
+    }
+
     // private void collectMetrics() {
         // double[] cpuPercentUsage = cloudSimProxy.getVmCpuUsage();
         // Arrays.sort(cpuPercentUsage);
@@ -599,10 +612,10 @@ public class WrappedSimulation {
     // }
 
     private double[][] getObservation() {
-        final double[] datacenterMetrics = collectDatacenterMetrics();
-        final double[][] hostMetrics = collectHostMetrics();
-        final double[][] vmMetrics = collectVmMetrics();
-        final double[][] jobMetrics = collectJobMetrics();
+        final double[] datacenterMetrics = metricsStorage.getDatacenterMetrics();
+        final double[][] hostMetrics = metricsStorage.getHostMetrics();
+        final double[][] vmMetrics = metricsStorage.getVmMetrics();
+        final double[][] jobMetrics = metricsStorage.getJobMetrics();
 
         double[][] observation = new double[observationArrayRows][observationArrayColumns];
         int currentRow = 0;
