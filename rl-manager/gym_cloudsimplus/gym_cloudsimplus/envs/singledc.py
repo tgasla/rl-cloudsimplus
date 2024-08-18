@@ -184,14 +184,14 @@ class SingleDC(gym.Env):
         info = self._raw_info_to_dict(raw_info)
 
         self.episode_details["state"].append(obs)
-        print(f"Printing episode_details['state']: {self.episode_details}")
+        # print(f"Printing episode_details['state']: {self.episode_details['state']}")
  
-        # self.host_metrics.append(list(info["host_metrics"]))
-        # self.vm_metrics.append(list(info["vm_metrics"]))
-        # self.job_metrics.append(list(info["job_metrics"]))
-        # self.job_wait_time.append(list(info["job_wait_time"]))
-        # self.unutilized_active.append(info["unutilized_active"])
-        # self.unutilized_all.append(info["unutilized_all"])
+        self.host_metrics.append(list(info["host_metrics"]))
+        self.vm_metrics.append(list(info["vm_metrics"]))
+        self.job_metrics.append(list(info["job_metrics"]))
+        self.job_wait_time.append(list(info["job_wait_time"]))
+        self.unutilized_active.append(info["unutilized_active"])
+        self.unutilized_all.append(info["unutilized_all"])
 
         return obs, info
 
@@ -200,7 +200,7 @@ class SingleDC(gym.Env):
         # Fix1: make it dtype=np.float64 and for some reason it works :)
         # Fix2: before sending it to java, convert it to python list first
         # Here, we adopt Fix2
-        action = list(action)
+        action = action.tolist()
         result = self.simulation_environment.step(self.simulation_id, action)
 
         reward = result.getReward()
@@ -217,9 +217,11 @@ class SingleDC(gym.Env):
         self.episode_details["job_wait_reward"].append(info["job_wait_reward"])
         self.episode_details["util_reward"].append(info["util_reward"])
         self.episode_details["invalid_reward"].append(info["invalid_reward"])
-        self.episode_details["next_state"].append(list(raw_obs))
+        self.episode_details["next_state"].append(obs)
 
-        self.episode_details["state"].append(list(raw_obs))
+        # the next state of this timestep is the same as the old state of the next timestep
+        # so we also add the state for the next tuple of (S,A,R,S')
+        self.episode_details["state"].append(obs)
 
         self.host_metrics.append(list(info["host_metrics"]))
         self.vm_metrics.append(list(info["vm_metrics"]))

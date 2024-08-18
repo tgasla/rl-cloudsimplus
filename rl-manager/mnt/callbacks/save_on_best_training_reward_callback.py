@@ -45,7 +45,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 			if len(x) > 0:
 				# Training reward for this episode
 				reward = y[-1]
-				# print(last_reward)
 				if self.verbose >= 1:
 					print(f"Num timesteps: {self.num_timesteps}")
 					print((

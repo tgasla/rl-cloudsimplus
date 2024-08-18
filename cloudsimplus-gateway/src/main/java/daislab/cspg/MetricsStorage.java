@@ -6,7 +6,20 @@ public class MetricsStorage {
     private double[][] vmMetrics;
     private double[][] jobMetrics;
 
-    public MetricsStorage() {}
+    public MetricsStorage(
+        final int datacenterMetricsCount,
+        final int hostMetricsCount,
+        final int vmMetricsCount,
+        final int jobMetricsCount,
+        final int hostsCount,
+        final int maxVmsCount,
+        final int maxJobsCount
+    ) {
+        this.datacenterMetrics = new double[datacenterMetricsCount];
+        this.hostMetrics = new double[hostsCount][hostMetricsCount];
+        this.vmMetrics = new double[maxVmsCount][vmMetricsCount];
+        this.jobMetrics = new double[maxJobsCount][jobMetricsCount];
+    }
 
     public void setDatacenterMetrics(double[] datacenterMetrics) {
         this.datacenterMetrics = datacenterMetrics;

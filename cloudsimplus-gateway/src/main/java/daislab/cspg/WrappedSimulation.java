@@ -36,14 +36,14 @@ public class WrappedSimulation {
     // );
 
     private static final int minJobPes = 1;
-    // private static final int datacenterMetricsCount = 6;
+    private static final int datacenterMetricsCount = 1;
     private static final int hostMetricsCount = 10;
     private static final int vmMetricsCount = 7;
     private static final int jobMetricsCount = 5;
 
     // private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
-    private final MetricsStorage metricsStorage = new MetricsStorage();
     // private final Gson gson = new Gson();
+    private final MetricsStorage metricsStorage;
     private final String identifier;
     private final SimulationSettings settings;
     private final SimulationHistory simulationHistory;
@@ -58,8 +58,6 @@ public class WrappedSimulation {
     private int epValidCount = 0;
     private long epWaitingJobsCountMax = 0;
     private long epRunningVmsCountMax = 0;
-    private double unutilizedActive;
-    private double unutilizedAll;
 
     public WrappedSimulation(
         final String identifier,
@@ -75,6 +73,17 @@ public class WrappedSimulation {
         final int maxJobsCount = maxVmsCount * settings.getBasicVmPeCnt() / this.minJobPes;
         this.observationArrayRows = 1 + hostsCount + maxVmsCount + maxJobsCount;
         this.observationArrayColumns = Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
+
+        this.metricsStorage = new MetricsStorage(
+            datacenterMetricsCount,
+            hostMetricsCount,
+            vmMetricsCount,
+            jobMetricsCount,
+            this.hostsCount,
+            this.maxVmsCount,
+            maxJobsCount
+        );
+
         info("Creating simulation: " + identifier);
     }
 
@@ -171,15 +180,13 @@ public class WrappedSimulation {
 
         updateEpisodeStats(rewards[1], rewards[2], isValid);
         printEpisodeStatsDebug(rewards[1], rewards[2], rewards[3]);
-        
-        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
 
         SimulationStepInfo info = new SimulationStepInfo(
             rewards,
             getEpisodeRewardStats(),
             getCurrentTimestepMetrics(),
             cloudSimProxy.getFinishedJobsWaitTimeLastInterval(), //jobWaitTime
-            getUnutilizedStats(vmList)
+            getUnutilizedStats()
         );
 
         return new SimulationStepResult(observation, rewards[0], done, info);
@@ -195,7 +202,8 @@ public class WrappedSimulation {
         return metrics;
     }
 
-    private double[] getUnutilizedStats(List<Vm> vmList) {
+    private double[] getUnutilizedStats() {
+        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
         double[] unutilizedStats = new double[2];
 
         unutilizedStats[0] = getUnutilizedVmCoresOverRunningVms(vmList);
