@@ -386,16 +386,17 @@ public class WrappedSimulation {
             double utilReward,
             double invalidReward) {
 
-        debug("===== Episode stats so far ====="
+        debug("\n===== Episode stats so far ====="
         + "\nEpisode Statistics:"
         + "\nAverage job wait reward in the episode: " + getEpJobWaitRewardMean()
         + "\nAverage utilization reward in the episode: " + getEpUtilRewardMean()
         + "\nMax waiting jobs count in the episode: " + getEpWaitingJobsCountMax()
         + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
-        + "\n\n In this timestep:"
+        + "\nIn this timestep:"
         + "\nJob wait reward in this ti: " + jobWaitReward
         + "\nUtilization reward: " + utilReward
-        + "\nInvalid reward: " + invalidReward);
+        + "\nInvalid reward: " + invalidReward
+        + "\n================================");
     }
 
     private void updateEpisodeStats(double jobWaitReward, double utilReward, boolean isValid) {
