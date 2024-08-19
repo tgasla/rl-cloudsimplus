@@ -154,8 +154,10 @@ public class WrappedSimulation {
         }
     }
 
-    public SimulationStepResult step(final int[] action) {
+    public SimulationStepResult step(int[] action) {
         validateSimulationReset();
+
+        action = new int[]{1,0,0};
 
         stepCount++;
 
@@ -384,13 +386,16 @@ public class WrappedSimulation {
             double utilReward,
             double invalidReward) {
 
-        debug(" Mean episode job wait reward: " + getEpJobWaitRewardMean()
-        + " Mean episode utilization reward: " + getEpUtilRewardMean()
-        + " Max episode waiting jobs count: " + getEpWaitingJobsCountMax()
-        + " Max episode running vms count: " + getEpRunningVmsCountMax()
-        + " Job wait reward: " + jobWaitReward
-        + " Utilization reward: " + utilReward
-        + " Invalid reward: " + invalidReward);
+        debug("===== Episode stats so far ====="
+        + "\nEpisode Statistics:"
+        + "\nAverage job wait reward in the episode: " + getEpJobWaitRewardMean()
+        + "\nAverage utilization reward in the episode: " + getEpUtilRewardMean()
+        + "\nMax waiting jobs count in the episode: " + getEpWaitingJobsCountMax()
+        + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
+        + "\n\n In this timestep:"
+        + "\nJob wait reward in this ti: " + jobWaitReward
+        + "\nUtilization reward: " + utilReward
+        + "\nInvalid reward: " + invalidReward);
     }
 
     private void updateEpisodeStats(double jobWaitReward, double utilReward, boolean isValid) {
@@ -463,7 +468,7 @@ public class WrappedSimulation {
             isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], hostId);
             return isValid;
         }
-
+ 
         else if (action[0] == 2) {
             final int vmIndex = action[1];
             isValid = removeVm(vmIndex);
@@ -588,10 +593,10 @@ public class WrappedSimulation {
     // }
 
     private double getWaitingJobsRatioGlobal() {
-        final int submittedJobsCount = cloudSimProxy.getSubmittedJobsCount();
+        final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
 
-        return submittedJobsCount > 0 
-            ? cloudSimProxy.getWaitingJobsCount() / (double) submittedJobsCount : 0.0;
+        return arrivedJobsCount > 0 
+            ? cloudSimProxy.getWaitingJobsCount() / (double) arrivedJobsCount : 0.0;         
     }
 
     private double getHostCoresAllocatedToVmsRatio() {
@@ -679,6 +684,12 @@ public class WrappedSimulation {
         final double jobWaitReward = - jobWaitCoef * getWaitingJobsRatioGlobal();
         final double utilReward = - utilizationCoef * getHostCoresAllocatedToVmsRatio();
         final double invalidReward = - invalidCoef * (isValid ? 0 : 1);
+
+        // LOGGER.debug("jobs arrived:" + cloudSimProxy.getArrivedJobsCount());
+        // LOGGER.debug("jobs waiting: " + cloudSimProxy.getWaitingJobsCount());
+        // LOGGER.debug("jobWaitReward:" + jobWaitReward);
+        // LOGGER.debug("utilReward:" + utilReward);
+        // LOGGER.debug("invalidReward:" + invalidReward);
         
         double totalReward = jobWaitReward + utilReward + invalidReward;
 
