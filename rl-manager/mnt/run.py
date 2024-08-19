@@ -64,7 +64,7 @@ def main():
 		algorithm = getattr(custom_agents, args.algorithm_str)
 		policy = "RngPolicy"
 
-	if args.algorithm_str == "PPO":
+	if args.algorithm_str == "PPO" or args.algorithm_str == "A2C":
 		algorithm.ent_coef = 0.01
 
 	if args.pretrain_dir == "":
