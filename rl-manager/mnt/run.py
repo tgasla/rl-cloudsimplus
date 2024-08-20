@@ -64,8 +64,10 @@ def main():
 		algorithm = getattr(custom_agents, args.algorithm_str)
 		policy = "RngPolicy"
 
-	if args.algorithm_str == "PPO" or args.algorithm_str == "A2C":
+	if args.algorithm_str == "PPO":
 		algorithm.ent_coef = 0.01
+	elif args.algorithm_str == "A2C":
+		algorithm.ent_coef = 0.1
 
 	if args.pretrain_dir == "":
 		timestamp = datetime_to_str()
