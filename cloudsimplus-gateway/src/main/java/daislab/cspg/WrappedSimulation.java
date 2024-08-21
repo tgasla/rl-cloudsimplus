@@ -393,7 +393,7 @@ public class WrappedSimulation {
         + "\nMax waiting jobs count in the episode: " + getEpWaitingJobsCountMax()
         + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
         + "\nIn this timestep:"
-        + "\nJob wait reward in this ti: " + jobWaitReward
+        + "\nJob wait reward: " + jobWaitReward
         + "\nUtilization reward: " + utilReward
         + "\nInvalid reward: " + invalidReward
         + "\n================================");

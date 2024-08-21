@@ -1,5 +1,6 @@
 import gymnasium as gym
 import os
+import sys
 import json
 from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
@@ -107,7 +108,8 @@ class SingleDC(gym.Env):
         # ^ needed only when action = 1
         self.action_space = spaces.MultiDiscrete(
             np.array([2, int(datacenter_hosts_cnt), 2]),
-            seed=42
+            # seed=np.random.randint(sys.maxsize)
+            seed=0
         )
 
         self.observation_space = spaces.Box(
@@ -115,7 +117,8 @@ class SingleDC(gym.Env):
             high=1,
             shape=(self.observation_rows,self.observation_cols),
             dtype=np.float32,
-            seed=42
+            # seed=np.random.randint(sys.maxsize)
+            seed=0
         )
 
         # These parameters are passed when calling gym.make in learn.py

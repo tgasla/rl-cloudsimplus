@@ -9,7 +9,7 @@ import torch
 import stable_baselines3 as sb3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 import custom_agents
 from callbacks.save_on_best_training_reward_callback import SaveOnBestTrainingRewardCallback
 
@@ -64,10 +64,12 @@ def main():
 		algorithm = getattr(custom_agents, args.algorithm_str)
 		policy = "RngPolicy"
 
-	if args.algorithm_str == "PPO":
-		algorithm.ent_coef = 0.01
-	elif args.algorithm_str == "A2C":
+	if hasattr(algorithm, "ent_coef"):
 		algorithm.ent_coef = 0.1
+	# if args.algorithm_str == "PPO":
+	# 	algorithm.ent_coef = 0.01
+	# elif args.algorithm_str == "A2C":
+	# 	algorithm.ent_coef = 0.1
 
 	if args.pretrain_dir == "":
 		timestamp = datetime_to_str()
@@ -104,7 +106,12 @@ def main():
 			info_keywords=monitor_info_keywords
 		)
 
-		venv = DummyVecEnv([lambda: menv])
+		# see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
+		if args.algorithm_str == "AC2":
+			device = "cpu"
+			venv = SubprocVecEnv([lambda: menv])
+		else:
+			venv = DummyVecEnv([lambda: menv])
 
 		# Instantiate the agent
 		model = algorithm(
@@ -127,7 +134,7 @@ def main():
 			model.action_noise = action_noise
 
 		callback = SaveOnBestTrainingRewardCallback(
-			check_freq=30,
+			check_freq=25,
 			log_dir=log_dir
 		)
 
