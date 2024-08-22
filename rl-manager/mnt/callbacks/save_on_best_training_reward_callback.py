@@ -55,10 +55,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 				# New best model, you could save the agent here
 				if reward > self.best_reward:
 					self.best_reward = reward
-					# Example for saving best model
 					if self.verbose >= 1:
 						print(f"Saving new best model to {self.save_path}")
-						self.model.save(self.save_path)
+					self.model.save(self.save_path)
 					if hasattr(self.model, "replay_buffer") \
 						and self.model.replay_buffer is not None \
 						and self.save_replay_buffer:
@@ -130,7 +129,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 						host_metrics_df.to_csv(host_metrics_path)
 						vm_metrics_df.to_csv(vm_metrics_path)
 						job_metrics_df.to_csv(job_metrics_path)
-						job_wait_time_df.to_csv(job_wait_time_path, index=False)
-						unutilized_active_df.to_csv(unutilized_active_path, index=False)
-						unutilized_all_df.to_csv(unutilized_all_path, index=False)
+						job_wait_time_df.to_csv(job_wait_time_path, header=False)
+						unutilized_active_df.to_csv(unutilized_active_path, header=False)
+						unutilized_all_df.to_csv(unutilized_all_path, header=False)
 		return True

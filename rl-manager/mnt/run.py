@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime
 import json
 import numpy as np
@@ -9,6 +10,7 @@ import torch
 import stable_baselines3 as sb3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.logger import configure
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 import custom_agents
 from callbacks.save_on_best_training_reward_callback import SaveOnBestTrainingRewardCallback
@@ -64,17 +66,10 @@ def main():
 		algorithm = getattr(custom_agents, args.algorithm_str)
 		policy = "RngPolicy"
 
-	if hasattr(algorithm, "ent_coef"):
-		algorithm.ent_coef = 0.1
-	# if args.algorithm_str == "PPO":
-	# 	algorithm.ent_coef = 0.01
-	# elif args.algorithm_str == "A2C":
-	# 	algorithm.ent_coef = 0.1
-
 	if args.pretrain_dir == "":
 		timestamp = datetime_to_str()
 		filename_id = timestamp + "_" + experiment_id
-		log_dir = os.path.join(base_log_dir, f"{filename_id}_1")
+		log_dir = os.path.join(base_log_dir, f"{filename_id}")
 		# Read jobs
 		jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{args.pretrain_job_trace_filename}.csv")
 
@@ -107,20 +102,30 @@ def main():
 		)
 
 		# see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
-		if args.algorithm_str == "AC2":
+		if args.algorithm_str == "A2C":
 			device = "cpu"
-			venv = SubprocVecEnv([lambda: menv])
+			venv = SubprocVecEnv([lambda: menv], start_method='fork')
 		else:
 			venv = DummyVecEnv([lambda: menv])
+
+		# if hasattr(algorithm, "ent_coef"):
+			# algorithm.ent_coef = 0.01
+		# algorithm.learning_rate=0.1,
+		# algorithm.clip_range=0.7,
+		# algorithm.n_steps=1024
 
 		# Instantiate the agent
 		model = algorithm(
 			policy=policy,
 			env=venv,
 			verbose=1,
-			tensorboard_log=base_log_dir,
-			device=device
+			# tensorboard_log=base_log_dir,
+			device=device,
+			seed=np.random.randint(sys.maxsize)
 		)
+
+		logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
+		model.set_logger(logger)
 
 		# TODO: A2C and PPO take a n_steps parameter also :) check it out
 
@@ -141,7 +146,7 @@ def main():
 		# Train the agent
 		model.learn(
 			total_timesteps=int(args.pretrain_timesteps),
-			tb_log_name=filename_id,
+			# tb_log_name=filename_id,
 			log_interval=1,
 			callback=callback
 		)
@@ -178,7 +183,7 @@ def main():
 	if args.pretrain_dir != "":
 		log_dir = os.path.join(base_log_dir, f"{args.pretrain_dir}")
 
-	new_log_dir = os.path.join(base_log_dir, f"{new_filename_id}_1")
+	new_log_dir = os.path.join(base_log_dir, f"{new_filename_id}")
 
 	#Create folder if needed
 	os.makedirs(new_log_dir, exist_ok=True)
@@ -214,9 +219,13 @@ def main():
 	model = algorithm.load(
 		best_model_path,
 		device=device,
-		tensorboard_log=base_log_dir,
-		env=new_env
+		# tensorboard_log=base_log_dir,
+		env=new_env,
+		seed=np.random.randint(sys.maxsize)
 	)
+
+	logger = configure(new_log_dir, ["stdout", "csv", "tensorboard"])
+	model.set_logger(logger)
 
 	# Load the replay buffer if the algorithm has one
 	if hasattr(model, "replay_buffer"):
@@ -239,7 +248,7 @@ def main():
 		# The only problem is that tensorboard recognizes
 		# it as a new model, but that's not a critical issue for now
 		reset_num_timesteps=True,
-		tb_log_name=new_filename_id,
+		# tb_log_name=new_filename_id,
 		log_interval=1,
 		callback=callback
 	)

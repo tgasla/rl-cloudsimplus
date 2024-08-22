@@ -58,9 +58,10 @@ public class CloudSimProxy {
     private final Map<Long, Double> originalSubmissionDelay;
     private final List<Cloudlet> inputJobs;
     private final List<Cloudlet> unsubmittedJobs;
-    private int unableToSubmitJobCount;
+    private int triedToSubmitJobCount;
     private List<Double> jobsFinishedWaitTimeLastInterval;
     private int nextVmId;
+    private int unableToSubmitJobCount;
     // private int lastSubmittedJobIndex;
     // private int previousLastSubmittedJobIndex;
 
@@ -71,9 +72,10 @@ public class CloudSimProxy {
         jobsFinishedWaitTimeLastInterval = new ArrayList<>();
         this.settings = settings;
         nextVmId = 0;
+        triedToSubmitJobCount = 0;
+        unableToSubmitJobCount = 0;
         // lastSubmittedJobIndex = 0;
         // previousLastSubmittedJobIndex = 0;
-        unableToSubmitJobCount = 0;
 
         cloudSimPlus = new CloudSimPlus(minTimeBetweenEvents);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
@@ -336,17 +338,21 @@ public class CloudSimProxy {
     private void scheduleJobsUntil(final double target) {
         List<Cloudlet> jobsToSubmit = new ArrayList<>();
         Iterator<Cloudlet> it = unsubmittedJobs.iterator();
+        this.triedToSubmitJobCount = 0;
+        this.unableToSubmitJobCount = 0;
         // previousLastSubmittedJobIndex = lastSubmittedJobIndex;
-        int previousUnableToSubmitJobCount = unableToSubmitJobCount;
 
         while (it.hasNext()) {
             Cloudlet cloudlet = it.next();
             if (cloudlet.getSubmissionDelay() > target) {
                 continue;
             }
+
+            triedToSubmitJobCount++;
             // Do not schedule cloudlet if there are no suitable vms to run it
             if (!isAnyVmSuitableForCloudlet(cloudlet)) {
                 unableToSubmitJobCount++;
+                // LOGGER.debug("unable to submit cloudlet. Status remains " + cloudlet.getStatus());
                 continue;
             }
             // here we calculate how much time the job needs to be submitted
@@ -358,10 +364,9 @@ public class CloudSimProxy {
 
         if (!jobsToSubmit.isEmpty()) {
             submitCloudletsList(jobsToSubmit);
-            // jobsToSubmit.clear();
         }
 
-        LOGGER.debug("Unable to submit " + (unableToSubmitJobCount - previousUnableToSubmitJobCount) + " jobs because there was no vm available");
+        LOGGER.debug("Unable to submit " + this.unableToSubmitJobCount + " jobs because there was no vm available");
     }
 
     private void submitCloudletsList(final List<Cloudlet> jobsToSubmit) {
@@ -426,17 +431,48 @@ public class CloudSimProxy {
             .count();
     }
 
+    public long getArrivedJobsCountLastInterval() {
+        double start = clock() - settings.getTimestepInterval();
+        return inputJobs.parallelStream()
+            .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
+            .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) > start)
+            .count();
+    }
+
     public  List<Double> getFinishedJobsWaitTimeLastInterval() {
         return jobsFinishedWaitTimeLastInterval;
+    }
+
+    public int getUnableToSubmitJobCount() {
+        return this.unableToSubmitJobCount;
+    }
+
+    public int getTriedToSubmitJobCount() {
+        return this.triedToSubmitJobCount;
     }
     
     public long getWaitingJobsCountLastInterval() {
         double start = clock() - settings.getTimestepInterval();
         return inputJobs.parallelStream()
             .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
-            .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) >= start)
+            .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) > start)
             .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.INEXEC))
+            // .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.QUEUED))
             .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS))
+            .count();
+    }
+
+    public long getScheduledJobsCountLastInterval() {
+        double start = clock() - settings.getTimestepInterval();
+        return inputJobs.parallelStream()
+            .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
+            .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) > start)
+            .filter(cloudlet -> (
+                cloudlet.getStatus().equals(Cloudlet.Status.READY)
+                || cloudlet.getStatus().equals(Cloudlet.Status.QUEUED)
+                || cloudlet.getStatus().equals(Cloudlet.Status.INEXEC))
+                || cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)
+            )
             .count();
     }
 
@@ -444,6 +480,7 @@ public class CloudSimProxy {
         return inputJobs.parallelStream()
             .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
             .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.INEXEC))
+            // .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.QUEUED))
             .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS))
             .count();
     }
@@ -581,9 +618,5 @@ public class CloudSimProxy {
 
     public double getRunningCost() {
         return vmCost.getVMCostPerIteration(clock());
-    }
-    
-    public int getUnableToSubmitJobCount() {
-        return unableToSubmitJobCount;
     }
 }

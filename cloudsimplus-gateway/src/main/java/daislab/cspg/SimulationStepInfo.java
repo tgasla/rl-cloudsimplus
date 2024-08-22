@@ -10,11 +10,11 @@ import com.google.gson.Gson;
 public class SimulationStepInfo {
 
     private final Gson gson = new Gson();
-    private final double jobWaitReward;
-    private final double utilReward;
+    private final double jobWaitReward; //scheduledJobsReward
+    private final double utilReward; //unutilizationPenalty
     private final double invalidReward;
-    private final double epJobWaitRewardMean;
-    private final double epUtilRewardMean;
+    private final double epJobWaitRewardMean; //epScheduledJobsRewardMean
+    private final double epUtilRewardMean; //epUnutilizationPenaltyMean
     private final int epValidCount;
 
     // Metrics for all entities
