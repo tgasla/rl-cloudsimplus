@@ -35,6 +35,7 @@ class SingleDC(gym.Env):
 
     All values are within range [0,1]
 
+    [DEPRECATED]
     "hostCoresAllocatedToVmsRatioHistory",
     "avgCPUUtilizationHistory",
     "p90CPUUtilizationHistory",
@@ -72,19 +73,12 @@ class SingleDC(gym.Env):
         max_timesteps_per_episode = "5000"
     ):
 
-        super().__init__()
+        super(SingleDC, self).__init__()
 
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
         self.simulation_environment = self.gateway.entry_point
 
-        self.episode_details = None
-        self.host_metrics = None
-        self.vm_metrics = None
-        self.job_metrics = None
-        self.job_wait_time = None
-        self.unutilized_active = None
-        self.unutilized_all = None
-        self.step_counter = None
+        self.episode_num = 0
         self.min_job_pes = 1 #have to define it in .env and pass it preperly in arg
         self.max_timesteps_per_episode = int(max_timesteps_per_episode)
         self.max_vms_count = int(datacenter_hosts_cnt) * int(host_pes) // int(basic_vm_pes)
@@ -107,17 +101,14 @@ class SingleDC(gym.Env):
         # type = {0: small, 1: medium, 2: large}
         # ^ needed only when action = 1
         self.action_space = spaces.MultiDiscrete(
-            np.array([2, int(datacenter_hosts_cnt), 2]),
-            seed=np.random.randint(sys.maxsize)
+            np.array([2, int(datacenter_hosts_cnt), 2])
         )
 
         self.observation_space = spaces.Box(
             low=0,
             high=1,
             shape=(self.observation_rows,self.observation_cols),
-            dtype=np.float32,
-            seed=np.random.randint(sys.maxsize)
-            # seed=42
+            dtype=np.float32
         )
 
         # These parameters are passed when calling gym.make in learn.py
@@ -155,26 +146,9 @@ class SingleDC(gym.Env):
         self.simulation_id = self.simulation_environment.createSimulation(params)
 
     def reset(self, seed=None, options=None):
-        super().reset()
+        super(SingleDC, self).reset()
 
-        self.episode_details = {
-            "state": [],
-            "action": [],
-            "reward": [],
-            "job_wait_reward": [],
-            "util_reward": [],
-            "invalid_reward": [],
-            "next_state": []
-        }
-
-        self.host_metrics = []
-        self.vm_metrics = []
-        self.job_metrics = []
-        self.job_wait_time = []
-        self.unutilized_active = []
-        self.unutilized_all = []
-
-        self.step_counter = 0
+        self.episode_num += 1
 
         result = self.simulation_environment.reset(self.simulation_id)
         self.simulation_environment.seed(self.simulation_id)
@@ -185,16 +159,6 @@ class SingleDC(gym.Env):
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
 
-        self.episode_details["state"].append(obs)
-        # print(f"Printing episode_details['state']: {self.episode_details['state']}")
- 
-        self.host_metrics.append(list(info["host_metrics"]))
-        self.vm_metrics.append(list(info["vm_metrics"]))
-        self.job_metrics.append(list(info["job_metrics"]))
-        self.job_wait_time.append(list(info["job_wait_time"]))
-        self.unutilized_active.append(info["unutilized_active"])
-        self.unutilized_all.append(info["unutilized_all"])
-
         return obs, info
 
     def step(self, action):
@@ -202,48 +166,21 @@ class SingleDC(gym.Env):
         # Fix1: make it dtype=np.float64 and for some reason it works :)
         # Fix2: before sending it to java, convert it to python list first
         # Here, we adopt Fix2
+
         action = action.tolist()
         result = self.simulation_environment.step(self.simulation_id, action)
 
         reward = result.getReward()
         raw_info = result.getInfo()
-        terminated = result.isDone()
-        truncated = False
+        terminated = result.isTerminated()
+        truncated = result.isTruncated()
         raw_obs = result.getObs()
         obs = self._to_nparray(raw_obs)
 
         info = self._raw_info_to_dict(raw_info)
 
-        self.episode_details["action"].append(action)
-        self.episode_details["reward"].append(reward)
-        self.episode_details["job_wait_reward"].append(info["job_wait_reward"])
-        self.episode_details["util_reward"].append(info["util_reward"])
-        self.episode_details["invalid_reward"].append(info["invalid_reward"])
-        self.episode_details["next_state"].append(obs)
-
-        # the next state of this timestep is the same as the old state of the next timestep
-        # so we also add the state for the next tuple of (S,A,R,S')
-        self.episode_details["state"].append(obs)
-
-        self.host_metrics.append(list(info["host_metrics"]))
-        self.vm_metrics.append(list(info["vm_metrics"]))
-        self.job_metrics.append(list(info["job_metrics"]))
-
-        if len(list(info["job_wait_time"])) > 0:
-            # print(f"FINISHED JOB WAIT TIME: {list(info['job_wait_time'])}")
-            self.job_wait_time.append(list(info["job_wait_time"]))
-        if info["unutilized_active"] >= 0:
-            self.unutilized_active.append(info["unutilized_active"])
-        if info["unutilized_all"] >= 0:
-            self.unutilized_all.append(info["unutilized_all"])
-
         if self.render_mode == "human":
             self.render()
-
-        self.step_counter += 1
-        # limit the maximum allowed number of timesteps in an episode
-        if self.step_counter >= self.max_timesteps_per_episode:
-            truncated = True
 
         return (
             obs,
@@ -273,7 +210,7 @@ class SingleDC(gym.Env):
         elif self.render_mode == "ansi":
             return str(obs_data)
         else:
-            return super().render()
+            return super(SingleDC, self).render()
 
     def close(self):
         # close the resources
@@ -300,11 +237,11 @@ class SingleDC(gym.Env):
         obs = list(raw_obs)
         return np.array(obs, dtype=np.float32)
 
-    def _flatten(self, test_list):
-        if isinstance(test_list, list):
-            temp = []
-            for ele in test_list:
-                temp.extend(self._flatten(ele))
-            return temp
-        else:
-            return [test_list]
+    # def _flatten(self, test_list):
+    #     if isinstance(test_list, list):
+    #         temp = []
+    #         for ele in test_list:
+    #             temp.extend(self._flatten(ele))
+    #         return temp
+    #     else:
+    #         return [test_list]

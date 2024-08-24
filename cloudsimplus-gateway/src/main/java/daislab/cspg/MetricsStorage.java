@@ -1,5 +1,7 @@
 package daislab.cspg;
 
+import java.util.Arrays;
+
 public class MetricsStorage {
     private double[] datacenterMetrics;
     private double[][] hostMetrics;
@@ -51,5 +53,12 @@ public class MetricsStorage {
 
     public double[][] getJobMetrics() {
         return this.jobMetrics;
+    }
+
+    public void clear() {
+        Arrays.fill(this.datacenterMetrics, 0.0);
+        Arrays.stream(this.hostMetrics).forEach(array -> Arrays.fill(array, 0.0));
+        Arrays.stream(this.vmMetrics).forEach(array -> Arrays.fill(array, 0.0));
+        Arrays.stream(this.jobMetrics).forEach(array -> Arrays.fill(array, 0.0));
     }
 }

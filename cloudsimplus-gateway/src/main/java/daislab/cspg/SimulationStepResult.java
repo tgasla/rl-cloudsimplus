@@ -10,18 +10,21 @@ public class SimulationStepResult {
 
     private final double[][] obs;
     private final double reward;
-    private final boolean done;
+    private final boolean terminated;
+    private final boolean truncated;
     private final SimulationStepInfo info;
 
     public SimulationStepResult(
         final double[][] obs, 
         final double reward,
-        final boolean done,
+        final boolean terminated,
+        final boolean truncated,
         final SimulationStepInfo info
     ) {
         this.obs = obs;
         this.reward = reward;
-        this.done = done;
+        this.terminated = terminated;
+        this.truncated = truncated;
         this.info = info;
     }
 
@@ -33,8 +36,12 @@ public class SimulationStepResult {
         return reward;
     }
 
-    public boolean isDone() {
-        return done;
+    public boolean isTerminated() {
+        return terminated;
+    }
+
+    public boolean isTruncated() {
+        return truncated;
     }
 
     public SimulationStepInfo getInfo() {
@@ -46,7 +53,8 @@ public class SimulationStepResult {
         return "SimulationStepResult{"
             + ", obs=" + Arrays.toString(obs)
             + ", reward=" + reward
-            + ", done=" + done
+            + ", terminated=" + terminated
+            + ", truncated=" + truncated
             + ", info=" + info.toString()
             + '}';
     }

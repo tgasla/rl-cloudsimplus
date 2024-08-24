@@ -52,7 +52,7 @@ public class WrappedSimulation {
     private final int observationArrayColumns;
     private final int minJobPes = 1;
     private CloudSimProxy cloudSimProxy;
-    private int stepCount;
+    private int currentStep;
     private double epJobWaitRewardMean = 0.0;
     private double epUtilRewardMean = 0.0;
     private int epValidCount = 0;
@@ -103,9 +103,9 @@ public class WrappedSimulation {
         info("Reset initiated");
         info("job count: " + initialJobsDescriptors.size());
 
-        resetStepCount();
+        resetCurrentStep();
 
-        // metricsStorage.clear();
+        metricsStorage.clear();
 
         List<Cloudlet> cloudlets = initialJobsDescriptors
             .stream()
@@ -150,17 +150,14 @@ public class WrappedSimulation {
 
     public void validateSimulationReset() {
         if (cloudSimProxy == null) {
-            throw new IllegalStateException("Simulation not reset! Please call the reset() function!");
+            throw new IllegalStateException("Simulation not reset! Please call the reset() function before calling step!");
         }
     }
 
     public SimulationStepResult step(final int[] action) {
         validateSimulationReset();
 
-        // for debugging
-        // action = new int[]{1,0,0};
-
-        stepCount++;
+        this.currentStep++;
 
         boolean isValid = executeAction(action);
         cloudSimProxy.runFor(settings.getTimestepInterval());
@@ -168,19 +165,21 @@ public class WrappedSimulation {
         // gets telemetry data and saves it into metricsStorage
         collectMetrics();
 
-        boolean done = !cloudSimProxy.isRunning();
+        boolean terminated = !cloudSimProxy.isRunning();
+        boolean truncated = !terminated && (this.currentStep >= this.settings.getMaxSteps());
 
         // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
         double[][] observation = getObservation();
         double[] rewards = calculateReward(isValid);
 
         recordSimulationData(action, rewards);
-        
-        resetIfSimulationIsNotRunning();
 
-        debug("Step finished (action: " + action[0] + ", " + action[1] + ", " + action[2]
-            + "), is done: " + done
-            + " Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents());
+        debug("Step " + this.currentStep + " finished ");
+        debug("Terminated: " + terminated + ", Truncated: " + truncated);
+        debug("Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents());
+        if(terminated || truncated) {
+            printAndResetSimulationHistory();
+        }
 
         updateEpisodeStats(rewards[1], rewards[2], isValid);
         printEpisodeStatsDebug(rewards[1], rewards[2], rewards[3]);
@@ -193,7 +192,7 @@ public class WrappedSimulation {
             getUnutilizedStats()
         );
 
-        return new SimulationStepResult(observation, rewards[0], done, info);
+        return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
     }
 
     private List<double[][]> getCurrentTimestepMetrics() {
@@ -212,6 +211,7 @@ public class WrappedSimulation {
 
         unutilizedStats[0] = getUnutilizedVmCoreRatioOnRunningVmCores(vmList);
         unutilizedStats[1] = getUnutilizedVmCoreRatioOnAllHostCores(vmList);
+
         return unutilizedStats;
     }
 
@@ -223,13 +223,14 @@ public class WrappedSimulation {
             .map(CloudletScheduler::getCloudletList)
             .flatMap(List::stream)
             .collect(Collectors.toList());
+
         return cloudletList;
     }
 
     private double getUnutilizedVmCoreRatioOnRunningVmCores(List<Vm> vmList) {
         Long unutilizedVmCores = getUnutilizedVmCores(vmList);
         Long runningVmCores = getRunningVmCores(vmList);
-        double unutilized = ((double) unutilizedVmCores / runningVmCores);
+
         return runningVmCores > 0
             ? ((double) unutilizedVmCores / runningVmCores)
             : 0.0;
@@ -238,6 +239,7 @@ public class WrappedSimulation {
     private double getUnutilizedVmCoreRatioOnAllHostCores(List<Vm> vmList) {
         Long unutilizedVmCores = getUnutilizedVmCores(vmList);
         double unutilized = ((double) unutilizedVmCores / settings.getTotalHostCores());
+
         return unutilized;
     }
 
@@ -246,7 +248,22 @@ public class WrappedSimulation {
             .parallelStream()
             .map(Vm::getExpectedFreePesNumber)
             .reduce(0L, Long::sum);
+
         return unutilizedVmCores;
+    }
+
+    private Long getRunningVmCores(List<Vm> vmList) {
+        Long runningVmCores = vmList
+            .parallelStream()
+            .map(Vm::getPesNumber)
+            .reduce(0L, Long::sum);
+
+        return runningVmCores;
+    }
+
+    private void printAndResetSimulationHistory() {
+        simulationHistory.logHistory();
+        simulationHistory.reset();
     }
 
     // private Long getRunningVmsCount() {
@@ -264,14 +281,6 @@ public class WrappedSimulation {
     //         .sum();
     //     return runningCloudletCount;
     // }
-
-    private Long getRunningVmCores(List<Vm> vmList) {
-        Long runningVmCores = vmList
-            .parallelStream()
-            .map(Vm::getPesNumber)
-            .reduce(0L, Long::sum);
-        return runningVmCores;
-    }
 
     private long vmCountByType(List<Vm> vmList, String type) {
         long filteredVmCount = vmList
@@ -390,17 +399,18 @@ public class WrappedSimulation {
             double utilReward,
             double invalidReward) {
 
-        debug("\n===== Episode stats so far ====="
+        debug("\n=============== Episode stats so far ==============="
         + "\nEpisode Statistics:"
         + "\nAverage job wait reward in the episode: " + getEpJobWaitRewardMean()
         + "\nAverage utilization reward in the episode: " + getEpUtilRewardMean()
         + "\nMax waiting jobs count in the episode: " + getEpWaitingJobsCountMax()
         + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
+        + "\n===================================================="
         + "\nIn this timestep:"
         + "\nJob wait reward: " + jobWaitReward
         + "\nUtilization reward: " + utilReward
         + "\nInvalid reward: " + invalidReward
-        + "\n================================");
+        + "\n====================================================");
     }
 
     private void updateEpisodeStats(double jobWaitReward, double utilReward, boolean isValid) {
@@ -437,23 +447,16 @@ public class WrappedSimulation {
     //     return discrete;
     // }
 
-    private void resetIfSimulationIsNotRunning() {
-        if (!cloudSimProxy.isRunning()) {
-            simulationHistory.logHistory();
-            simulationHistory.reset();
-        }
-    }
-
     private void recordSimulationData(int[] action, double[] reward) {
         simulationHistory.record("action[0]", action[0]);
         simulationHistory.record("action[1]", action[1]);
         simulationHistory.record("action[2]", action[2]);
         simulationHistory.record("totalReward", reward[0]);
-        simulationHistory.record("submittedJobsReward", reward[1]);
+        simulationHistory.record("unableToSubmitPenalty", reward[1]);
         simulationHistory.record("unutilizationPenalty", reward[2]);
         simulationHistory.record("invalidReward", reward[3]);
-        simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
         simulationHistory.record("vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
+        // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
     }
 
     private boolean executeAction(final int[] action) {
@@ -719,9 +722,9 @@ public class WrappedSimulation {
         // }
 
         final double unableToSubmitJobsRatioPenalty = 
-        cloudSimProxy.getTriedToSubmitJobCount() > 0
-        ? cloudSimProxy.getUnableToSubmitJobCount() / cloudSimProxy.getTriedToSubmitJobCount()
-        : 0;
+            cloudSimProxy.getTriedToSubmitJobCount() > 0
+            ? cloudSimProxy.getUnableToSubmitJobCount() / cloudSimProxy.getTriedToSubmitJobCount()
+            : 0;
         final double unutilizationRatioPenalty = getUnutilizedStats()[0];
         final double invalidPenalty = 0;
         final double totalReward = 
@@ -736,12 +739,12 @@ public class WrappedSimulation {
         return rewards;
     }
 
-    public int getStepCount() {
-        return stepCount;
+    public int getCurrentStep() {
+        return currentStep;
     }
 
-    private void resetStepCount() {
-        stepCount = 0;
+    private void resetCurrentStep() {
+        currentStep = 0;
     }
 
     private void resetEpRunningVmsCountMax() {
@@ -773,11 +776,11 @@ public class WrappedSimulation {
     }
     
     private void updateEpJobWaitRewardMean(double jobWaitReward) {
-        epJobWaitRewardMean = (epJobWaitRewardMean * (stepCount - 1) + jobWaitReward) / stepCount;
+        epJobWaitRewardMean = (epJobWaitRewardMean * (currentStep - 1) + jobWaitReward) / currentStep;
     }
 
     private void updateEpUtilRewardMean(double utilReward) {
-        epUtilRewardMean = (epUtilRewardMean * (stepCount - 1) +  utilReward) / stepCount;
+        epUtilRewardMean = (epUtilRewardMean * (currentStep - 1) +  utilReward) / currentStep;
     }
 
     private double getEpJobWaitRewardMean() {

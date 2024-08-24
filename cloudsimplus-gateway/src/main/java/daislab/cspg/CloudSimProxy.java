@@ -255,6 +255,12 @@ public class CloudSimProxy {
     }
 
     public void printJobStats() {
+        if (!isRunning()) {
+            LOGGER.info("Simulation terminated.");
+            LOGGER.info("Jobs finished: "
+                + getBroker().getCloudletFinishedList().size() + "/"
+                + inputJobs.size());
+        }
         LOGGER.info("All jobs: " + inputJobs.size());
         Map<Cloudlet.Status, Integer> countByStatus = new HashMap<>();
         for (Cloudlet c : inputJobs) {
@@ -366,7 +372,9 @@ public class CloudSimProxy {
             submitCloudletsList(jobsToSubmit);
         }
 
-        LOGGER.debug("Unable to submit " + this.unableToSubmitJobCount + " jobs because there was no vm available");
+        if (this.unableToSubmitJobCount > 0) {
+            LOGGER.debug("Unable to submit " + this.unableToSubmitJobCount + " jobs because there was no vm available");
+        }
     }
 
     private void submitCloudletsList(final List<Cloudlet> jobsToSubmit) {
@@ -582,15 +590,16 @@ public class CloudSimProxy {
         final double currentClock = clock();
 
         affectedCloudlets.forEach(cloudlet -> {
-            Double submissionDelay = originalSubmissionDelay.get(cloudlet.getId());
+            cloudlet.setSubmissionDelay(0);
             // if the Cloudlet still hasn't been started, 
             // let it start at the scheduled time,
             // else, start it immediately
             // we can also start it on the next timestepInterval
             // THIS IS NOT NEEDED ACTUALLY. There is no way the cloudlet
             // is not already submitted because it was in the vm's queue.
-            submissionDelay = Math.max(0, submissionDelay - currentClock);
-            cloudlet.setSubmissionDelay(submissionDelay);
+            // Double submissionDelay = originalSubmissionDelay.get(cloudlet.getId());
+            // submissionDelay = Math.max(0, submissionDelay - currentClock);
+            // cloudlet.setSubmissionDelay(submissionDelay);
         });
 
         unsubmittedJobs.addAll(affectedCloudlets);

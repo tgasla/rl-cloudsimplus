@@ -121,7 +121,7 @@ def main():
 			verbose=1,
 			# tensorboard_log=base_log_dir,
 			device=device,
-			seed=np.random.randint(sys.maxsize)
+			seed=np.random.randint(0, 2**32 - 1)
 		)
 
 		logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
@@ -139,7 +139,6 @@ def main():
 			model.action_noise = action_noise
 
 		callback = SaveOnBestTrainingRewardCallback(
-			check_freq=25,
 			log_dir=log_dir
 		)
 
@@ -221,7 +220,7 @@ def main():
 		device=device,
 		# tensorboard_log=base_log_dir,
 		env=new_env,
-		seed=np.random.randint(sys.maxsize)
+		seed=np.random.randint(0, 2**32 - 1)
 	)
 
 	logger = configure(new_log_dir, ["stdout", "csv", "tensorboard"])
@@ -236,7 +235,6 @@ def main():
 	model.learning_rate = learning_rate_dict.get(args.algorithm_str)
 
 	callback = SaveOnBestTrainingRewardCallback(
-		check_freq=10_000,
 		log_dir=new_log_dir,
 	)
 
