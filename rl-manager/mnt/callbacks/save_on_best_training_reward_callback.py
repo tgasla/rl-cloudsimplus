@@ -53,7 +53,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 		# allow to return the done and info information for all environments.
 		# We know that we have a VecEnv but only 1 environment, so we just take
 		# the first element of the tuple.
-		self.observations.append(self.locals['obs_tensor'][0])
+		self.observations.append(self.locals['obs_tensor'][0].cpu())
 		self.actions.append(self.locals['actions'][0])
 		self.rewards.append(self.locals['rewards'][0])
 		self.new_observations.append(self.locals['new_obs'][0])
@@ -66,6 +66,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 		self.invalid_reward.append(self.locals['infos'][0]['invalid_reward'])
 		self.unutilized_active.append(self.locals['infos'][0]['unutilized_active'])
 		self.unutilized_all.append(self.locals['infos'][0]['unutilized_all'])
+
+		print(self.locals)
 
 		if self.locals['dones'][0] == True:
 			print(f"The env terminated")
@@ -128,6 +130,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 							"reward": self.rewards,
 							"next_obs": self.new_observations
 						}
+
 
 						df = pd.DataFrame(episode_details)
 						episode_details_path = os.path.join(self.log_dir,"best_model_actions.csv")

@@ -188,7 +188,7 @@ public class WrappedSimulation {
             rewards,
             getEpisodeRewardStats(),
             getCurrentTimestepMetrics(),
-            cloudSimProxy.getFinishedJobsWaitTimeLastInterval(), //jobWaitTime
+            cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), //jobWaitTime
             getUnutilizedStats()
         );
 
@@ -565,8 +565,8 @@ public class WrappedSimulation {
         // double[] memPercentageUsage = cloudSimProxy.getVmMemoryUsage();
         // Arrays.sort(memPercentageUsage);
 
-        // double waitingJobsRatioGlobal = getWaitingJobsRatioGlobal();
-        // double waitingJobsRatioTimestep = getWaitingJobsRatioTimestep();
+        // double waitingJobsRatioGlobal = getWaitingJobsRatio();
+        // double waitingJobsRatioLastTimestep = getWaitingJobsRatioLastTimestep();
 
         // metricsStorage.updateMetric(
             // "hostCoresAllocatedToVmsRatio",
@@ -591,27 +591,27 @@ public class WrappedSimulation {
         //     waitingJobsRatioTimestep);
     // }
 
-    // private double getWaitingJobsRatioTimestep() {
-    //     final int submittedJobsCountLastInterval =
-    //         cloudSimProxy.getSubmittedJobsCountLastInterval();
+    // private double getWaitingJobsRatioLastTimestep() {
+    //     final int submittedJobsCountLastTimestep =
+    //         cloudSimProxy.getSubmittedJobsCountLastTimestep();
 
-    //     return submittedJobsCountLastInterval > 0
-    //         ? cloudSimProxy.getWaitingJobsCountLastInterval() 
-    //         / (double) submittedJobsCountLastInterval : 0.0;
+    //     return submittedJobsCountLastTimestep > 0
+    //         ? cloudSimProxy.getWaitingJobsCountLastTimestep() 
+    //         / (double) submittedJobsCountLastTimestep : 0.0;
     // }
 
-    // private double getWaitingJobsRatioGlobal() {
-    //     final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
+    private double getWaitingJobsRatio() {
+        final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
+
+        return arrivedJobsCount > 0 
+            ? cloudSimProxy.getWaitingJobsCount() / (double) arrivedJobsCount : 0.0;         
+    }
+
+    // private double getScheduledJobsRatioLastTimestep() {
+    //     final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCountLastTimestep();
 
     //     return arrivedJobsCount > 0 
-    //         ? cloudSimProxy.getWaitingJobsCount() / (double) arrivedJobsCount : 0.0;         
-    // }
-
-    // private double getScheduledJobsRatioLastInterval() {
-    //     final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCountLastInterval();
-
-    //     return arrivedJobsCount > 0 
-    //         ? cloudSimProxy.getScheduledJobsCountLastInterval() / (double) arrivedJobsCount : 0.0;    
+    //         ? cloudSimProxy.getScheduledJobsCountLastTimestep() / (double) arrivedJobsCount : 0.0;    
     // }
 
     // private double getScheduledJobsRatio() {
@@ -699,43 +699,48 @@ public class WrappedSimulation {
          * minus any penalties from jobs waiting in the queue
          * minus penalty if action was invalid
         */
-        // final double jobWaitCoef = settings.getRewardJobWaitCoef();
-        // final double utilizationCoef = settings.getRewardUtilizationCoef();
-        // final double invalidCoef = settings.getRewardInvalidCoef();
+        final double jobWaitCoef = settings.getRewardJobWaitCoef();
+        final double utilizationCoef = settings.getRewardUtilizationCoef();
+        final double invalidCoef = settings.getRewardInvalidCoef();
         
-        // final double jobWaitReward = - jobWaitCoef * getWaitingJobsRatioGlobal();
-        // final double utilReward = - utilizationCoef * getHostCoresAllocatedToVmsRatio();
-        // final double invalidReward = - invalidCoef * (isValid ? 0 : 1);
+        final double jobWaitReward = - jobWaitCoef * getWaitingJobsRatio();
+        final double utilReward = - utilizationCoef * getHostCoresAllocatedToVmsRatio();
+        final double invalidReward = - invalidCoef * (isValid ? 0 : 1);
 
-        // LOGGER.debug("jobs arrived:" + cloudSimProxy.getArrivedJobsCount());
-        // LOGGER.debug("jobs waiting: " + cloudSimProxy.getWaitingJobsCount());
-        // LOGGER.debug("jobWaitReward:" + jobWaitReward);
-        // LOGGER.debug("utilReward:" + utilReward);
-        // LOGGER.debug("invalidReward:" + invalidReward);
+        LOGGER.debug("jobs arrived:" + cloudSimProxy.getArrivedJobsCount());
+        LOGGER.debug("jobs waiting: " + cloudSimProxy.getWaitingJobsCount());
+        LOGGER.debug("jobWaitReward:" + jobWaitReward);
+        LOGGER.debug("utilReward:" + utilReward);
+        LOGGER.debug("invalidReward:" + invalidReward);
         
-        // double totalReward = jobWaitReward + utilReward + invalidReward;
+        final double totalReward = jobWaitReward + utilReward + invalidReward;
 
         // totalReward *= rewardMultiplier;
 
-        // if (!isValid) {
-        //     debug("Penalty given to the agent because the selected action was not possible");
-        // }
-
-        final double unableToSubmitJobsRatioPenalty = 
-            cloudSimProxy.getTriedToSubmitJobCount() > 0
-            ? cloudSimProxy.getUnableToSubmitJobCount() / cloudSimProxy.getTriedToSubmitJobCount()
-            : 0;
-        final double unutilizationRatioPenalty = getUnutilizedStats()[0];
-        final double invalidPenalty = 0;
-        final double totalReward = 
-            - unableToSubmitJobsRatioPenalty 
-            - unutilizationRatioPenalty 
-            - invalidPenalty;
-
         rewards[0] = totalReward;
-        rewards[1] = unableToSubmitJobsRatioPenalty;
-        rewards[2] = unutilizationRatioPenalty;
-        rewards[3] = invalidPenalty;
+        rewards[1] = jobWaitReward;
+        rewards[2] = utilReward;
+        rewards[3] = invalidReward;
+
+        if (!isValid) {
+            debug("Penalty given to the agent because the selected action was not possible");
+        }
+
+        // final double unableToSubmitJobsRatioPenalty = 
+        //     cloudSimProxy.getTriedToSubmitJobCount() > 0
+        //     ? cloudSimProxy.getUnableToSubmitJobCount() / cloudSimProxy.getTriedToSubmitJobCount()
+        //     : 0;
+        // final double unutilizationRatioPenalty = getUnutilizedStats()[0];
+        // final double invalidPenalty = 0;
+        // final double totalReward = 
+        //     - unableToSubmitJobsRatioPenalty 
+        //     - unutilizationRatioPenalty 
+        //     - invalidPenalty;
+
+        // rewards[0] = totalReward;
+        // rewards[1] = unableToSubmitJobsRatioPenalty;
+        // rewards[2] = unutilizationRatioPenalty;
+        // rewards[3] = invalidPenalty;
         return rewards;
     }
 

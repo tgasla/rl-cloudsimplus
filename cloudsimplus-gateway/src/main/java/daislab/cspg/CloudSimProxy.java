@@ -59,7 +59,7 @@ public class CloudSimProxy {
     private final List<Cloudlet> inputJobs;
     private final List<Cloudlet> unsubmittedJobs;
     private int triedToSubmitJobCount;
-    private List<Double> jobsFinishedWaitTimeLastInterval;
+    private List<Double> jobsFinishedWaitTimeLastTimestep;
     private int nextVmId;
     private int unableToSubmitJobCount;
     // private int lastSubmittedJobIndex;
@@ -69,7 +69,7 @@ public class CloudSimProxy {
         this.inputJobs = new ArrayList<>(inputJobs);
         this.unsubmittedJobs = new ArrayList<>(inputJobs);
         originalSubmissionDelay = new HashMap<>();
-        jobsFinishedWaitTimeLastInterval = new ArrayList<>();
+        jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
         this.settings = settings;
         nextVmId = 0;
         triedToSubmitJobCount = 0;
@@ -224,7 +224,7 @@ public class CloudSimProxy {
         final long startTime = TimeMeasurement.startTiming();
         final double target = cloudSimPlus.clock() + interval;
 
-        jobsFinishedWaitTimeLastInterval.clear();
+        jobsFinishedWaitTimeLastTimestep.clear();
 
         scheduleJobsUntil(target);
         LOGGER.debug("Jobs waiting: " + getWaitingJobsCount());
@@ -330,7 +330,7 @@ public class CloudSimProxy {
                 LOGGER.debug("Cloudlet: " + cloudlet.getId()
                     + " that was running on vm "
                     + cloudlet.getVm().getId() + " finished.");
-                jobsFinishedWaitTimeLastInterval.add(
+                jobsFinishedWaitTimeLastTimestep.add(
                     cloudlet.getStartTime() - originalSubmissionDelay.get(cloudlet.getId()));
             }
         });
@@ -425,7 +425,7 @@ public class CloudSimProxy {
         return cpuPercentUsage;
     }
 
-    // public int getSubmittedJobsCountLastInterval() {
+    // public int getSubmittedJobsCountLastTimestep() {
     //     return lastSubmittedJobIndex - previousLastSubmittedJobIndex;
     // }
 
@@ -439,7 +439,7 @@ public class CloudSimProxy {
             .count();
     }
 
-    public long getArrivedJobsCountLastInterval() {
+    public long getArrivedJobsCountLastTimestep() {
         double start = clock() - settings.getTimestepInterval();
         return inputJobs.parallelStream()
             .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
@@ -447,8 +447,8 @@ public class CloudSimProxy {
             .count();
     }
 
-    public  List<Double> getFinishedJobsWaitTimeLastInterval() {
-        return jobsFinishedWaitTimeLastInterval;
+    public  List<Double> getFinishedJobsWaitTimeLastTimestep() {
+        return jobsFinishedWaitTimeLastTimestep;
     }
 
     public int getUnableToSubmitJobCount() {
@@ -459,7 +459,7 @@ public class CloudSimProxy {
         return this.triedToSubmitJobCount;
     }
     
-    public long getWaitingJobsCountLastInterval() {
+    public long getWaitingJobsCountLastTimestep() {
         double start = clock() - settings.getTimestepInterval();
         return inputJobs.parallelStream()
             .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
@@ -470,7 +470,7 @@ public class CloudSimProxy {
             .count();
     }
 
-    public long getScheduledJobsCountLastInterval() {
+    public long getScheduledJobsCountLastTimestep() {
         double start = clock() - settings.getTimestepInterval();
         return inputJobs.parallelStream()
             .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
@@ -478,8 +478,8 @@ public class CloudSimProxy {
             .filter(cloudlet -> (
                 cloudlet.getStatus().equals(Cloudlet.Status.READY)
                 || cloudlet.getStatus().equals(Cloudlet.Status.QUEUED)
-                || cloudlet.getStatus().equals(Cloudlet.Status.INEXEC))
-                || cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)
+                || cloudlet.getStatus().equals(Cloudlet.Status.INEXEC)
+                || cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS))
             )
             .count();
     }
