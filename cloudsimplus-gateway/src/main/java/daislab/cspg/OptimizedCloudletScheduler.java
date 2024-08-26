@@ -12,10 +12,8 @@ import java.util.List;
 class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
 
     @Override
-    protected double cloudletSubmitInternal(
-        final CloudletExecution cle,
-        final double fileTransferTime
-    ) {
+    protected double cloudletSubmitInternal(final CloudletExecution cle,
+            final double fileTransferTime) {
         if (!getVm().isCreated()) {
             // It is possible, that we schedule a cloudlet, an event with processing
             // update is issued (tag: 16), but the VM gets killed before the event
@@ -35,7 +33,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         final double nextSimulationTime = super.updateProcessing(currentTime, mipsShare);
         final int sizeAfter = getCloudletWaitingList().size();
 
-        // if we have a new cloudlet being processed, 
+        // if we have a new cloudlet being processed,
         // schedule another recalculation, which should trigger a proper
         // estimation of end time
         if (sizeAfter != sizeBefore && Double.MAX_VALUE == nextSimulationTime) {
@@ -46,17 +44,17 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
     }
 
     private List<?> getModifiableCloudletReturnedList()
-        throws IllegalAccessException, NoSuchFieldException {
+            throws IllegalAccessException, NoSuchFieldException {
 
-        final Field field = CloudletSchedulerAbstract.class
-            .getDeclaredField("cloudletReturnedList");
+        final Field field =
+                CloudletSchedulerAbstract.class.getDeclaredField("cloudletReturnedList");
         field.setAccessible(true);
         Object fieldValue = field.get(this);
-        
+
         if (!(fieldValue instanceof List<?>)) {
             return null;
         }
-        
+
         return (List<?>) fieldValue;
     }
 
@@ -69,7 +67,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
     public void clear() {
         super.clear();
         try {
-            List<?> cloudletReturnedList = getModifiableCloudletReturnedList();       
+            List<?> cloudletReturnedList = getModifiableCloudletReturnedList();
             if (cloudletReturnedList != null) {
                 cloudletReturnedList.clear();
             }

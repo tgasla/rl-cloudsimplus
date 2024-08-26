@@ -6,26 +6,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 /*
- * Class to calculate the infrastructure cost.
- * We need it to calculate the agent's reward.
- * TODO: I should also extend this to HostCost
- * in order to measure the cost of having many hosts running.
- * So that I can experiment with logics that try to
- * fit as many vms as a host can fit, so that the
- * infrastructure cost does not rise because of
- * many hosts running.
-*/
+ * Class to calculate the infrastructure cost. We need it to calculate the agent's reward. TODO: I
+ * should also extend this to HostCost in order to measure the cost of having many hosts running. So
+ * that I can experiment with logics that try to fit as many vms as a host can fit, so that the
+ * infrastructure cost does not rise because of many hosts running.
+ */
 public class VmCost {
 
     private final double perIterationBasicVMCost;
-    
+
     private List<Vm> createdVms = new ArrayList<>();
     private boolean payForFullHour;
     private double iterationsInHour;
 
-    public VmCost(final double perHourVMCost, final double timestepInterval, final boolean payForFullHour) {
+    public VmCost(final double perHourVMCost, final double timestepInterval,
+            final boolean payForFullHour) {
         this.payForFullHour = payForFullHour;
-        
+
         // timestepInterval are the seconds we are "staying" at each iteration
 
         iterationsInHour = 3600 / timestepInterval;
@@ -42,14 +39,14 @@ public class VmCost {
         createdVms.clear();
     }
 
-    // Why calculate this list at each iteration and 
+    // Why calculate this list at each iteration and
     // do not have simply a counter for each type?
     // Maybe because if payForFullHour is true, we want to keep counting a vm
     // which has been created but stopped.
     public double getVMCostPerIteration(final double clock) {
         double totalCost = 0.0;
         List<Vm> toRemove = new ArrayList<>();
-        for(Vm vm : createdVms) {
+        for (Vm vm : createdVms) {
             // check if the vm is started
             double m = getSizeMultiplier(vm);
             final double perIterationVMCost = perIterationBasicVMCost * m;

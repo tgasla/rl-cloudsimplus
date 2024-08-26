@@ -17,27 +17,17 @@ public class HostWithoutCreatedList extends HostSimple {
     }
 
     public HostWithoutCreatedList(final ResourceProvisioner ramProvisioner,
-        final ResourceProvisioner bwProvisioner, 
-        final long storage, 
-        final List<Pe> peList
-    ) {
+            final ResourceProvisioner bwProvisioner, final long storage, final List<Pe> peList) {
         super(ramProvisioner, bwProvisioner, storage, peList);
     }
 
-    public HostWithoutCreatedList(final long ram, 
-        final long bw, 
-        final long storage, 
-        final List<Pe> peList
-    ) {
+    public HostWithoutCreatedList(final long ram, final long bw, final long storage,
+            final List<Pe> peList) {
         super(ram, bw, storage, peList);
     }
 
-    public HostWithoutCreatedList(final long ram, 
-        final long bw, 
-        final long storage, 
-        final List<Pe> peList, 
-        final boolean activate
-    ) {
+    public HostWithoutCreatedList(final long ram, final long bw, final long storage,
+            final List<Pe> peList, final boolean activate) {
         super(ram, bw, storage, peList, activate);
     }
 

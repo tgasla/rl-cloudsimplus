@@ -11,6 +11,7 @@ import numpy as np
 # TODO: the two environments should support both continuous and
 # discrete action spaces
 
+
 # Based on https://gymnasium.farama.org/api/env/
 class SingleDC(gym.Env):
     """
@@ -31,7 +32,7 @@ class SingleDC(gym.Env):
 
     Observation space
 
-    A vector of 7 continuous values 
+    A vector of 7 continuous values
 
     All values are within range [0,1]
 
@@ -48,29 +49,25 @@ class SingleDC(gym.Env):
     metadata = {"render_modes": ["human", "ansi"]}
     address = os.getenv("CLOUDSIM_GATEWAY_HOST", "gateway")
     port = os.getenv("CLOUDSIM_GATEWAY_PORT", "25333")
-    parameters = GatewayParameters(
-        address=address,
-        port=int(port),
-        auto_convert=True
-    )
+    parameters = GatewayParameters(address=address, port=int(port), auto_convert=True)
 
     def __init__(
         self,
-        split_large_jobs = "true",
-        max_job_pes = "1",
-        host_pe_mips = "10",
-        host_pes = "10",
-        basic_vm_pes = "2",
-        datacenter_hosts_cnt = "10",
-        reward_job_wait_coef = "0.3",
-        reward_util_coef = "0.3",
-        reward_invalid_coef = "0.4",
-        jobs_as_json = None,
-        jobs_from_file = None,
-        simulation_speedup = "1",
-        render_mode = None,
-        job_log_dir = None,
-        max_timesteps_per_episode = "5000"
+        split_large_jobs="true",
+        max_job_pes="1",
+        host_pe_mips="10",
+        host_pes="10",
+        basic_vm_pes="2",
+        datacenter_hosts_cnt="10",
+        reward_job_wait_coef="0.3",
+        reward_util_coef="0.3",
+        reward_invalid_coef="0.4",
+        jobs_as_json=None,
+        jobs_from_file=None,
+        simulation_speedup="1",
+        render_mode=None,
+        job_log_dir=None,
+        max_timesteps_per_episode="5000",
     ):
 
         super(SingleDC, self).__init__()
@@ -79,9 +76,11 @@ class SingleDC(gym.Env):
         self.simulation_environment = self.gateway.entry_point
 
         self.episode_num = 0
-        self.min_job_pes = 1 #have to define it in .env and pass it preperly in arg
+        self.min_job_pes = 1  # have to define it in .env and pass it preperly in arg
         self.max_timesteps_per_episode = int(max_timesteps_per_episode)
-        self.max_vms_count = int(datacenter_hosts_cnt) * int(host_pes) // int(basic_vm_pes)
+        self.max_vms_count = (
+            int(datacenter_hosts_cnt) * int(host_pes) // int(basic_vm_pes)
+        )
         self.max_jobs_count = self.max_vms_count * int(basic_vm_pes) // self.min_job_pes
         self.observation_rows = 1 + int(datacenter_hosts_cnt) + self.max_vms_count + self.max_jobs_count
         self.observation_cols = 10
@@ -107,8 +106,8 @@ class SingleDC(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=1,
-            shape=(self.observation_rows,self.observation_cols),
-            dtype=np.float32
+            shape=(self.observation_rows, self.observation_cols),
+            dtype=np.float32,
         )
 
         # These parameters are passed when calling gym.make in learn.py
@@ -119,20 +118,19 @@ class SingleDC(gym.Env):
             "HOST_PE_CNT": host_pes,
             "HOST_PE_MIPS": host_pe_mips,
             "BASIC_VM_PE_CNT": basic_vm_pes,
-            "DATACENTER_HOSTS_CNT" :datacenter_hosts_cnt,
+            "DATACENTER_HOSTS_CNT": datacenter_hosts_cnt,
             "REWARD_JOB_WAIT_COEF": reward_job_wait_coef,
             "REWARD_UTILIZATION_COEF": reward_util_coef,
             "REWARD_INVALID_COEF": reward_invalid_coef,
             "MAX_JOB_PES": max_job_pes,
             "SIMULATION_SPEEDUP": simulation_speedup,
             "JOB_LOG_DIR": job_log_dir,
-            "MAX_TIMESTEPS_PER_EPISODE": max_timesteps_per_episode
+            "MAX_TIMESTEPS_PER_EPISODE": max_timesteps_per_episode,
         }
 
         if render_mode is not None and render_mode not in self.metadata["render_modes"]:
             gym.logger.warn(
-                "Invalid render mode"
-                'Render modes allowed: ["human" | "ansi"]'
+                "Invalid render mode" 'Render modes allowed: ["human" | "ansi"]'
             )
 
         self.render_mode = render_mode
@@ -182,13 +180,7 @@ class SingleDC(gym.Env):
         if self.render_mode == "human":
             self.render()
 
-        return (
-            obs,
-            reward,
-            terminated,
-            truncated,
-            info
-        )
+        return (obs, reward, terminated, truncated, info)
 
     def render(self):
         if self.render_mode is None:
@@ -229,7 +221,7 @@ class SingleDC(gym.Env):
             "job_metrics": json.loads(raw_info.getJobMetricsAsJson()),
             "job_wait_time": json.loads(raw_info.getJobWaitTimeAsJson()),
             "unutilized_active": raw_info.getUnutilizedActive(),
-            "unutilized_all": raw_info.getUnutilizedAll()
+            "unutilized_all": raw_info.getUnutilizedAll(),
         }
         return info
 

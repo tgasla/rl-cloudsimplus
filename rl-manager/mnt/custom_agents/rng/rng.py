@@ -8,8 +8,18 @@ from gymnasium import spaces
 
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.policies import BasePolicy
-from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, RolloutReturn, TrainFreq, TrainFrequencyUnit
-from stable_baselines3.common.utils import is_vectorized_observation, safe_mean, should_collect_more_steps
+from stable_baselines3.common.type_aliases import (
+    GymEnv,
+    MaybeCallback,
+    RolloutReturn,
+    TrainFreq,
+    TrainFrequencyUnit,
+)
+from stable_baselines3.common.utils import (
+    is_vectorized_observation,
+    safe_mean,
+    should_collect_more_steps,
+)
 from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.vec_env import VecEnv
@@ -18,10 +28,9 @@ from custom_agents.common.policies import RngPolicy
 
 SelfRNG = TypeVar("SelfRNG", bound="RNG")
 
+
 class RNG(BaseAlgorithm):
-    policy_aliases: ClassVar[Dict[str, Type[BasePolicy]]] = {
-        "RngPolicy": RngPolicy
-    }
+    policy_aliases: ClassVar[Dict[str, Type[BasePolicy]]] = {"RngPolicy": RngPolicy}
 
     def __init__(
         self,
@@ -50,7 +59,7 @@ class RNG(BaseAlgorithm):
                 spaces.MultiBinary,
             ),
         )
-        self.train_freq=train_freq
+        self.train_freq = train_freq
         self.start_time = 0
         self.policy = policy
         if _init_setup_model:
@@ -159,7 +168,9 @@ class RNG(BaseAlgorithm):
                 ) from e
 
             if not isinstance(train_freq[0], int):
-                raise ValueError(f"The frequency of `train_freq` must be an integer and not {train_freq[0]}")
+                raise ValueError(
+                    f"The frequency of `train_freq` must be an integer and not {train_freq[0]}"
+                )
 
             self.train_freq = TrainFreq(*train_freq)  # type: ignore[assignment,arg-type]
 
@@ -181,7 +192,7 @@ class RNG(BaseAlgorithm):
             The two differs when the action space is not normalized (bounds are not [-1, 1]).
         """
         # Select action randomly or according to policy
-       
+
         # Note: when using continuous actions,
         # we assume that the policy uses tanh to scale the action
         if self._last_obs is None:
@@ -209,18 +220,32 @@ class RNG(BaseAlgorithm):
         if self.ep_success_buffer is None:
             ValueError("self.ep_success_buffer was not set")
 
-        time_elapsed = max((time.time_ns() - self.start_time) / 1e9, sys.float_info.epsilon)
+        time_elapsed = max(
+            (time.time_ns() - self.start_time) / 1e9, sys.float_info.epsilon
+        )
         fps = int((self.num_timesteps - self._num_timesteps_at_start) / time_elapsed)
         self.logger.record("time/episodes", self._episode_num, exclude="tensorboard")
         if len(self.ep_info_buffer) > 0 and len(self.ep_info_buffer[0]) > 0:
-            self.logger.record("rollout/ep_rew_mean", safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer]))
-            self.logger.record("rollout/ep_len_mean", safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer]))
+            self.logger.record(
+                "rollout/ep_rew_mean",
+                safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer]),
+            )
+            self.logger.record(
+                "rollout/ep_len_mean",
+                safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer]),
+            )
         self.logger.record("time/fps", fps)
-        self.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
-        self.logger.record("time/total_timesteps", self.num_timesteps, exclude="tensorboard")
+        self.logger.record(
+            "time/time_elapsed", int(time_elapsed), exclude="tensorboard"
+        )
+        self.logger.record(
+            "time/total_timesteps", self.num_timesteps, exclude="tensorboard"
+        )
 
         if len(self.ep_success_buffer) > 0:
-            self.logger.record("rollout/success_rate", safe_mean(self.ep_success_buffer))
+            self.logger.record(
+                "rollout/success_rate", safe_mean(self.ep_success_buffer)
+            )
         # Pass the number of timesteps for tensorboard
         self.logger.dump(step=self.num_timesteps)
 
@@ -251,7 +276,7 @@ class RNG(BaseAlgorithm):
 
         # Switch to eval mode (this affects batch norm / dropout)
         self.policy.set_training_mode(False)
-        
+
         num_collected_steps, num_collected_episodes = 0, 0
 
         if not isinstance(env, VecEnv):
@@ -261,11 +286,15 @@ class RNG(BaseAlgorithm):
 
         if env.num_envs > 1:
             if train_freq.unit != TrainFrequencyUnit.STEP:
-                raise ValueError("You must use only one env when doing episodic training.")
+                raise ValueError(
+                    "You must use only one env when doing episodic training."
+                )
 
         callback.on_rollout_start()
         continue_training = True
-        while should_collect_more_steps(train_freq, num_collected_steps, num_collected_episodes):
+        while should_collect_more_steps(
+            train_freq, num_collected_steps, num_collected_episodes
+        ):
             # Select action randomly or according to policy
             actions, buffer_actions = self._sample_action(learning_starts, env.num_envs)
 
@@ -279,12 +308,18 @@ class RNG(BaseAlgorithm):
             callback.update_locals(locals())
             # Only stop training if return value is False, not when it is None.
             if not callback.on_step():
-                return RolloutReturn(num_collected_steps * env.num_envs, num_collected_episodes, continue_training=False)
+                return RolloutReturn(
+                    num_collected_steps * env.num_envs,
+                    num_collected_episodes,
+                    continue_training=False,
+                )
 
             # Retrieve reward and episode length if using Monitor wrapper
             self._update_info_buffer(infos, dones)
 
-            self._update_current_progress_remaining(self.num_timesteps, self._total_timesteps)
+            self._update_current_progress_remaining(
+                self.num_timesteps, self._total_timesteps
+            )
 
             for _, done in enumerate(dones):
                 if done:
@@ -293,8 +328,15 @@ class RNG(BaseAlgorithm):
                     self._episode_num += 1
 
                     # Log training infos
-                    if log_interval is not None and self._episode_num % log_interval == 0:
+                    if (
+                        log_interval is not None
+                        and self._episode_num % log_interval == 0
+                    ):
                         self._dump_logs()
         callback.on_rollout_end()
 
-        return RolloutReturn(num_collected_steps * env.num_envs, num_collected_episodes, continue_training)
+        return RolloutReturn(
+            num_collected_steps * env.num_envs,
+            num_collected_episodes,
+            continue_training,
+        )

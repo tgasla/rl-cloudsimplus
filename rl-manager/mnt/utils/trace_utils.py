@@ -1,11 +1,10 @@
 import pandas as pd
 from .cloudlet_descriptor import as_cloudlet_descriptor_dict
 
-def trace_to_csv(
-    jobs: pd.DataFrame,
-    filename="data.csv"
-):
+
+def trace_to_csv(jobs: pd.DataFrame, filename="data.csv"):
     jobs.to_csv(filename)
+
 
 def csv_to_cloudlet_descriptor(filename="data.csv"):
     jobs = []
@@ -15,15 +14,18 @@ def csv_to_cloudlet_descriptor(filename="data.csv"):
             int(df.job_id[i]),
             int(df.arrival_time[i]),
             int(df.mi[i]),
-            int(df.allocated_cores[i])
+            int(df.allocated_cores[i]),
         )
         jobs.append(cloudlet)
     return jobs
 
-def swf_to_cloudlet_descriptor(filename, jobs_to_read=None, relative_submission_delay=True):
+
+def swf_to_cloudlet_descriptor(
+    filename, jobs_to_read=None, relative_submission_delay=True
+):
     """
-        Format as specified in
-        http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
+    Format as specified in
+    http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
     """
     jobs = []
     # mips = 1250
@@ -63,10 +65,7 @@ def swf_to_cloudlet_descriptor(filename, jobs_to_read=None, relative_submission_
                     previous_submit_time = original_submit_time
 
             cloudlet = as_cloudlet_descriptor_dict(
-                job_id,
-                submit_time,
-                mi,
-                allocated_cores
+                job_id, submit_time, mi, allocated_cores
             )
             jobs.append(cloudlet)
             jobs_read += 1

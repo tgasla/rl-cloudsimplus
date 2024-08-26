@@ -40,7 +40,8 @@ build.dependsOn configureLogging
 test {
     useJUnitPlatform()
     // enable/disable system out messages on junit tests
-    // TODO: I should pass a parameter to enable/disable it
+    // enable testLogging if log.level == 'DEBUG'
+    // testLogging.showStandardStreams = System.getProperty('log.level', 'INFO') == 'DEBUG'
     testLogging.showStandardStreams = false
 }
 
@@ -50,14 +51,13 @@ repositories {
     mavenCentral()
 }
 
-
 // In this section you declare the dependencies for your production and test code
 dependencies {
     // The production code uses the SLF4J logging API at compile time
     implementation 'org.cloudsimplus:cloudsimplus:8.5.2'
     implementation 'org.slf4j:slf4j-api:2.0.16'
     implementation 'net.sf.py4j:py4j:0.10.9.7'
-    implementation 'ch.qos.logback:logback-classic:1.5.7'
+    implementation 'ch.qos.logback:logback-classic:1.5.6'
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
     implementation 'org.apache.commons:commons-csv:1.10.0'
     implementation 'com.google.code.gson:gson:2.11.0'

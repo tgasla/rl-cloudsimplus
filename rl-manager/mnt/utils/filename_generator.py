@@ -18,7 +18,7 @@ def generate_filename(
     transfer_reward_util_coef=None,
     transfer_reward_invalid_coef=None,
     transfer_timesteps=None,
-    pretrain_dir=None
+    pretrain_dir=None,
 ):
     if pretrain_dir is None:
         filename_id = (
@@ -61,13 +61,14 @@ def generate_filename(
         )
     return filename_id
 
+
 def _millify(num):
     if isinstance(num, str):
         num = int(num)
 
     num = float(f"{num:.3f}")
     magnitude = 0
-    suffix = ['', 'K', 'M', 'B', 'T']
+    suffix = ["", "K", "M", "B", "T"]
     while abs(num) >= 1000:
         magnitude += 1
         num /= 1000

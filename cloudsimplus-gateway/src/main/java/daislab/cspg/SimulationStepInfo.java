@@ -1,20 +1,21 @@
 package daislab.cspg;
+
 import java.util.List;
 import java.util.ArrayList;
 import com.google.gson.Gson;
 
 /*
- * Class that represents the info object that is returned as part of the
- * result of each step method call.
-*/
+ * Class that represents the info object that is returned as part of the result of each step method
+ * call.
+ */
 public class SimulationStepInfo {
 
     private final Gson gson = new Gson();
-    private final double jobWaitReward; //scheduledJobsReward
-    private final double utilReward; //unutilizationPenalty
+    private final double jobWaitReward; // scheduledJobsReward
+    private final double utilReward; // unutilizationPenalty
     private final double invalidReward;
-    private final double epJobWaitRewardMean; //epScheduledJobsRewardMean
-    private final double epUtilRewardMean; //epUnutilizationPenaltyMean
+    private final double epJobWaitRewardMean; // epScheduledJobsRewardMean
+    private final double epUtilRewardMean; // epUnutilizationPenaltyMean
     private final int epValidCount;
 
     // Metrics for all entities
@@ -40,13 +41,9 @@ public class SimulationStepInfo {
         this.unutilizedAll = 0;
     }
 
-    public SimulationStepInfo(
-        final double[] rewards,
-        final List<Object> episodeRewardStats,
-        final List<double[][]> timestepMetrics,
-        final List<Double> jobWaitTime,
-        final double[] unutilizedStats
-    ) {
+    public SimulationStepInfo(final double[] rewards, final List<Object> episodeRewardStats,
+            final List<double[][]> timestepMetrics, final List<Double> jobWaitTime,
+            final double[] unutilizedStats) {
         this.jobWaitReward = rewards[1];
         this.utilReward = rewards[2];
         this.invalidReward = rewards[3];
@@ -120,17 +117,13 @@ public class SimulationStepInfo {
     public double getUnutilizedAll() {
         return unutilizedAll;
     }
- 
+
     @Override
     public String toString() {
         // TODO: I also have to print the Maps.toString() here
-        return "SimulationStepInfo{"
-            + "jobWaitReward" + jobWaitReward
-            + ", utilReward=" + utilReward
-            + ", invalidReward=" + invalidReward
-            + ", epJobWaitRewardMean" + epJobWaitRewardMean
-            + ", epUtilRewardMean=" + epUtilRewardMean
-            + ", epValidCount=" + epValidCount
-            + '}';
+        return "SimulationStepInfo{" + "jobWaitReward" + jobWaitReward + ", utilReward="
+                + utilReward + ", invalidReward=" + invalidReward + ", epJobWaitRewardMean"
+                + epJobWaitRewardMean + ", epUtilRewardMean=" + epUtilRewardMean + ", epValidCount="
+                + epValidCount + '}';
     }
 }

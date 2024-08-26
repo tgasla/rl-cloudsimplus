@@ -6,7 +6,7 @@
     <file>cspg.current.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <!-- daily rollover -->
-      <fileNamePattern>cspg.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <fileNamePattern>cspg.%d{yyyy-MM-dd}.log.gz</fileNamePattern> <!-- Compression enabled -->
 
       <!-- keep 30 days' worth of history -->
       <maxHistory>30</maxHistory>
@@ -22,7 +22,7 @@
   </appender>
 
   <logger name="DatacenterBroker" level="ERROR" />
-<!--  <logger name="daislab.cspg.WrappedSimulation" level="INFO" />-->
+  <!-- <logger name="daislab.cspg.WrappedSimulation" level="ERROR" /> -->
   <logger name="CloudletSchedulerAbstract" level="ERROR" />
 
   <root level="DEBUG">

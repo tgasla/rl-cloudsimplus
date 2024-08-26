@@ -42,6 +42,8 @@ services: # uses port 25333
       --transfer-reward-util-coef=${TRANSFER_REWARD_UTIL_COEF}
       --transfer-reward-invalid-coef=${TRANSFER_REWARD_INVALID_COEF}
       --simulation-speedup=${SIMULATION_SPEEDUP}
+    # command:
+    #   python3 mnt/test.py
 
 
   manager-cuda:

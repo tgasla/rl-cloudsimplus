@@ -9,9 +9,11 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
 
     @Override
     public HostSuitability allocateHostForVm(final Vm vm) {
-        // The vm description except the vm type contains also the hostId that is supposed to be allocated
+        // The vm description except the vm type contains also the hostId that is supposed to be
+        // allocated
         // vm desctiption example: "S-13"
-        // We parse the description getting the number after the '-' symbol and after the allocation is done
+        // We parse the description getting the number after the '-' symbol and after the allocation
+        // is done
         // we set the description back to the vm type only (i.e. "S")
         final String vmDescription = vm.getDescription();
         final int index = vmDescription.indexOf('-');
@@ -21,7 +23,7 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
 
         if (index == -1) {
             LOGGER.debug("Description does not contain the hostId to place the vm."
-                + " This is for the initial vms. Placing them using simple policy.");
+                    + " This is for the initial vms. Placing them using simple policy.");
             suitability = super.allocateHostForVm(vm);
             return suitability;
         }
@@ -32,8 +34,8 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
         suitability = allocateHostForVm(vm, host);
         if (!suitability.fully()) {
             LOGGER.debug("This should never be printed as it is already checked.\n"
-                + "Action failed because host is not suitable.\n"
-                + "Reason: " + suitability.toString());
+                    + "Action failed because host is not suitable.\n" + "Reason: "
+                    + suitability.toString());
             return suitability;
         }
 

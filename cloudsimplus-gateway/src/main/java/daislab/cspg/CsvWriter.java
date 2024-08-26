@@ -9,7 +9,7 @@ import java.nio.file.Files;
 
 /*
  * Class that creates and writes a CSV file
-*/
+ */
 public class CsvWriter {
     private CSVPrinter csvPrinter;
 

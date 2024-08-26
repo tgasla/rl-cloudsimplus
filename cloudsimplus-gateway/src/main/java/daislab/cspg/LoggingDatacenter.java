@@ -9,10 +9,8 @@ import java.util.List;
 
 public class LoggingDatacenter extends DatacenterSimple {
 
-    public LoggingDatacenter(
-        final Simulation simulation,
-        final List<? extends Host> hostList,
-        final VmAllocationPolicy vmAllocationPolicy) {
+    public LoggingDatacenter(final Simulation simulation, final List<? extends Host> hostList,
+            final VmAllocationPolicy vmAllocationPolicy) {
         super(simulation, hostList, vmAllocationPolicy);
     }
 }

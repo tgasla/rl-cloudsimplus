@@ -3,9 +3,8 @@ package daislab.cspg;
 import java.util.Arrays;
 
 /*
- * Class that represents the object that is returned as a result
- * of each step method call.
-*/
+ * Class that represents the object that is returned as a result of each step method call.
+ */
 public class SimulationStepResult {
 
     private final double[][] obs;
@@ -14,13 +13,8 @@ public class SimulationStepResult {
     private final boolean truncated;
     private final SimulationStepInfo info;
 
-    public SimulationStepResult(
-        final double[][] obs, 
-        final double reward,
-        final boolean terminated,
-        final boolean truncated,
-        final SimulationStepInfo info
-    ) {
+    public SimulationStepResult(final double[][] obs, final double reward, final boolean terminated,
+            final boolean truncated, final SimulationStepInfo info) {
         this.obs = obs;
         this.reward = reward;
         this.terminated = terminated;
@@ -50,12 +44,8 @@ public class SimulationStepResult {
 
     @Override
     public String toString() {
-        return "SimulationStepResult{"
-            + ", obs=" + Arrays.toString(obs)
-            + ", reward=" + reward
-            + ", terminated=" + terminated
-            + ", truncated=" + truncated
-            + ", info=" + info.toString()
-            + '}';
+        return "SimulationStepResult{" + ", obs=" + Arrays.toString(obs) + ", reward=" + reward
+                + ", terminated=" + terminated + ", truncated=" + truncated + ", info="
+                + info.toString() + '}';
     }
 }

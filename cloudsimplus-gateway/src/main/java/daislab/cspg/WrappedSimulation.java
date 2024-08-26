@@ -21,18 +21,18 @@ import static org.apache.commons.math3.stat.StatUtils.percentile;
 
 public class WrappedSimulation {
     private static final Logger LOGGER =
-        LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
+            LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
     // private static final int HISTORY_LENGTH = 30 * 60; // 30 * 60s = 1800s (30 minutes)
-    
+
     private final List<CloudletDescriptor> initialJobsDescriptors;
     // private final List<String> metricsNames = Arrays.asList(
-        // "hostCoresAllocatedToVmsRatio"
-        // "avgCpuUtilization",
-        // "p90CpuUtilization",
-        // "avgMemoryUtilization",
-        // "p90MemoryUtilization",
-        // "waitingJobsRatioGlobal",
-        // "waitingJobsRatioTimestep"
+    // "hostCoresAllocatedToVmsRatio"
+    // "avgCpuUtilization",
+    // "p90CpuUtilization",
+    // "avgMemoryUtilization",
+    // "p90MemoryUtilization",
+    // "waitingJobsRatioGlobal",
+    // "waitingJobsRatioTimestep"
     // );
 
     private static final int datacenterMetricsCount = 1;
@@ -40,7 +40,8 @@ public class WrappedSimulation {
     private static final int vmMetricsCount = 7;
     private static final int jobMetricsCount = 5;
 
-    // private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH, metricsNames);
+    // private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH,
+    // metricsNames);
     // private final Gson gson = new Gson();
     private final MetricsStorage metricsStorage;
     private final String identifier;
@@ -59,30 +60,22 @@ public class WrappedSimulation {
     private long epWaitingJobsCountMax = 0;
     private long epRunningVmsCountMax = 0;
 
-    public WrappedSimulation(
-        final String identifier,
-        final SimulationSettings settings,
-        final List<CloudletDescriptor> jobs
-    ) {
+    public WrappedSimulation(final String identifier, final SimulationSettings settings,
+            final List<CloudletDescriptor> jobs) {
         this.settings = settings;
         this.identifier = identifier;
         this.initialJobsDescriptors = jobs;
         this.simulationHistory = new SimulationHistory();
         this.hostsCount = settings.getDatacenterHostsCnt();
-        this.maxVmsCount = settings.getDatacenterHostsCnt() * settings.getHostPeCnt() / settings.getBasicVmPeCnt();
+        this.maxVmsCount = settings.getDatacenterHostsCnt() * settings.getHostPeCnt()
+                / settings.getBasicVmPeCnt();
         final int maxJobsCount = maxVmsCount * settings.getBasicVmPeCnt() / this.minJobPes;
         this.observationArrayRows = 1 + hostsCount + maxVmsCount + maxJobsCount;
-        this.observationArrayColumns = Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
+        this.observationArrayColumns =
+                Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
 
-        this.metricsStorage = new MetricsStorage(
-            datacenterMetricsCount,
-            hostMetricsCount,
-            vmMetricsCount,
-            jobMetricsCount,
-            this.hostsCount,
-            this.maxVmsCount,
-            maxJobsCount
-        );
+        this.metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
+                vmMetricsCount, jobMetricsCount, this.hostsCount, this.maxVmsCount, maxJobsCount);
 
         info("Creating simulation: " + identifier);
     }
@@ -107,10 +100,8 @@ public class WrappedSimulation {
 
         metricsStorage.clear();
 
-        List<Cloudlet> cloudlets = initialJobsDescriptors
-            .stream()
-            .map(CloudletDescriptor::toCloudlet)
-            .collect(Collectors.toList());
+        List<Cloudlet> cloudlets = initialJobsDescriptors.stream()
+                .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
         // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
@@ -139,10 +130,10 @@ public class WrappedSimulation {
     public String render() {
         // Map<String, double[]> renderedEnv = new HashMap<>();
         // for (int i = 0; i < metricsNames.size(); i++) {
-        //     renderedEnv.put(
-        //         metricsNames.get(i),
-        //         metricsStorage.metricValuesAsPrimitives(metricsNames.get(i))
-        //     );
+        // renderedEnv.put(
+        // metricsNames.get(i),
+        // metricsStorage.metricValuesAsPrimitives(metricsNames.get(i))
+        // );
         // }
         // return gson.toJson(renderedEnv);
         return "";
@@ -150,7 +141,8 @@ public class WrappedSimulation {
 
     public void validateSimulationReset() {
         if (cloudSimProxy == null) {
-            throw new IllegalStateException("Simulation not reset! Please call the reset() function before calling step!");
+            throw new IllegalStateException(
+                    "Simulation not reset! Please call the reset() function before calling step!");
         }
     }
 
@@ -161,7 +153,7 @@ public class WrappedSimulation {
 
         boolean isValid = executeAction(action);
         cloudSimProxy.runFor(settings.getTimestepInterval());
-        
+
         // gets telemetry data and saves it into metricsStorage
         collectMetrics();
 
@@ -177,27 +169,23 @@ public class WrappedSimulation {
         debug("Step " + this.currentStep + " finished ");
         debug("Terminated: " + terminated + ", Truncated: " + truncated);
         debug("Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents());
-        if(terminated || truncated) {
+        if (terminated || truncated) {
             printAndResetSimulationHistory();
         }
 
         updateEpisodeStats(rewards[1], rewards[2], isValid);
         printEpisodeStatsDebug(rewards[1], rewards[2], rewards[3]);
 
-        SimulationStepInfo info = new SimulationStepInfo(
-            rewards,
-            getEpisodeRewardStats(),
-            getCurrentTimestepMetrics(),
-            cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), //jobWaitTime
-            getUnutilizedStats()
-        );
+        SimulationStepInfo info = new SimulationStepInfo(rewards, getEpisodeRewardStats(),
+                getCurrentTimestepMetrics(), cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), // jobWaitTime
+                getUnutilizedStats());
 
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
     }
 
     private List<double[][]> getCurrentTimestepMetrics() {
         List<double[][]> metrics = new ArrayList<>();
-        
+
         metrics.add(metricsStorage.getHostMetrics());
         metrics.add(metricsStorage.getVmMetrics());
         metrics.add(metricsStorage.getJobMetrics());
@@ -216,13 +204,9 @@ public class WrappedSimulation {
     }
 
     private List<Cloudlet> getCloudletList() {
-        List<Cloudlet> cloudletList = cloudSimProxy.getBroker()
-            .getVmExecList()
-            .parallelStream()
-            .map(Vm::getCloudletScheduler)
-            .map(CloudletScheduler::getCloudletList)
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
+        List<Cloudlet> cloudletList = cloudSimProxy.getBroker().getVmExecList().parallelStream()
+                .map(Vm::getCloudletScheduler).map(CloudletScheduler::getCloudletList)
+                .flatMap(List::stream).collect(Collectors.toList());
 
         return cloudletList;
     }
@@ -231,9 +215,7 @@ public class WrappedSimulation {
         Long unutilizedVmCores = getUnutilizedVmCores(vmList);
         Long runningVmCores = getRunningVmCores(vmList);
 
-        return runningVmCores > 0
-            ? ((double) unutilizedVmCores / runningVmCores)
-            : 0.0;
+        return runningVmCores > 0 ? ((double) unutilizedVmCores / runningVmCores) : 0.0;
     }
 
     private double getUnutilizedVmCoreRatioOnAllHostCores(List<Vm> vmList) {
@@ -244,19 +226,14 @@ public class WrappedSimulation {
     }
 
     private Long getUnutilizedVmCores(List<Vm> vmList) {
-        Long unutilizedVmCores = vmList
-            .parallelStream()
-            .map(Vm::getExpectedFreePesNumber)
-            .reduce(0L, Long::sum);
+        Long unutilizedVmCores =
+                vmList.parallelStream().map(Vm::getExpectedFreePesNumber).reduce(0L, Long::sum);
 
         return unutilizedVmCores;
     }
 
     private Long getRunningVmCores(List<Vm> vmList) {
-        Long runningVmCores = vmList
-            .parallelStream()
-            .map(Vm::getPesNumber)
-            .reduce(0L, Long::sum);
+        Long runningVmCores = vmList.parallelStream().map(Vm::getPesNumber).reduce(0L, Long::sum);
 
         return runningVmCores;
     }
@@ -267,38 +244,36 @@ public class WrappedSimulation {
     }
 
     // private Long getRunningVmsCount() {
-    //     return cloudSimProxy.getBroker().getVmExecList().stream().count();
+    // return cloudSimProxy.getBroker().getVmExecList().stream().count();
     // }
 
     // private Long getRunningCloudletsCount() {
-    //     List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+    // List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
 
-    //     Long runningCloudletCount = vmList
-    //         .parallelStream()
-    //         .map(Vm::getCloudletScheduler)
-    //         .map(CloudletScheduler::getCloudletExecList)
-    //         .mapToLong(List::size)
-    //         .sum();
-    //     return runningCloudletCount;
+    // Long runningCloudletCount = vmList
+    // .parallelStream()
+    // .map(Vm::getCloudletScheduler)
+    // .map(CloudletScheduler::getCloudletExecList)
+    // .mapToLong(List::size)
+    // .sum();
+    // return runningCloudletCount;
     // }
 
     private long vmCountByType(List<Vm> vmList, String type) {
-        long filteredVmCount = vmList
-        .stream()
-        .filter(vm -> type.equals(vm.getDescription()))
-        .count();
+        long filteredVmCount =
+                vmList.stream().filter(vm -> type.equals(vm.getDescription())).count();
 
         return filteredVmCount;
     }
 
     private double[] collectDatacenterMetrics() {
         double[] datacenterMetrics = new double[] {
-            // (double) cloudSimProxy.getAllocatedCores(),
-            // (double) settings.getTotalHostCores(),
-            getHostCoresAllocatedToVmsRatio(),
-            // (double) settings.getDatacenterHostsCnt(),
-            // (double) getRunningVmsCount(),
-            // (double) getRunningCloudletsCount()
+                // (double) cloudSimProxy.getAllocatedCores(),
+                // (double) settings.getTotalHostCores(),
+                getHostCoresAllocatedToVmsRatio(),
+                // (double) settings.getDatacenterHostsCnt(),
+                // (double) getRunningVmsCount(),
+                // (double) getRunningCloudletsCount()
         };
 
         return datacenterMetrics;
@@ -307,7 +282,7 @@ public class WrappedSimulation {
     private double[][] collectHostMetrics() {
         List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();
         // We could also keep a Map<Host, Integer, Integer>
-        //  hostId,  vmsRunning, pesUtilized
+        // hostId, vmsRunning, pesUtilized
         double[][] hostMetrics = new double[hostList.size()][4];
 
         // int[] hostVmsRunningCount = new int[hostList.size()];
@@ -320,72 +295,72 @@ public class WrappedSimulation {
             long largeVmCount = vmCountByType(vmList, "L");
 
             hostMetrics[i] = new double[] {
-                // host.getId(),
-                // host.getVmList().size(),
-                // smallVmCount,
-                smallVmCount / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("S")),
-                // mediumVmCount,
-                mediumVmCount / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("M")),
-                // largeVmCount,
-                largeVmCount / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("L")),
-                host.getBusyPesNumber() / host.getPesNumber()
-            };
+                    // host.getId(),
+                    // host.getVmList().size(),
+                    // smallVmCount,
+                    smallVmCount
+                            / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("S")),
+                    // mediumVmCount,
+                    mediumVmCount
+                            / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("M")),
+                    // largeVmCount,
+                    largeVmCount
+                            / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("L")),
+                    host.getBusyPesNumber() / host.getPesNumber()};
         }
         return hostMetrics;
     }
 
     private double[][] collectVmMetrics() {
         // consider adding cores utilized: vm.getPesNumber() - vm.getFreePesNumber()
-        //  vmId,    vmPesNumber,  hostId,  jobsRunning
+        // vmId, vmPesNumber, hostId, jobsRunning
         List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
         double[][] vmMetrics = new double[vmList.size()][1];
         for (int i = 0; i < vmList.size(); i++) {
             Vm vm = vmList.get(i);
             vmMetrics[i] = new double[] {
-                // vm.getId(),
-                // vm.getHost().getId(),
-                // vm.getCloudletScheduler().getCloudletList().size(),
-                // vm.getCloudletScheduler().getCloudletExecList().size(),
-                // vm.getCloudletScheduler().getCloudletWaitingList().size(),
-                (vm.getPesNumber() - vm.getFreePesNumber()) / vm.getPesNumber()
-            };
+                    // vm.getId(),
+                    // vm.getHost().getId(),
+                    // vm.getCloudletScheduler().getCloudletList().size(),
+                    // vm.getCloudletScheduler().getCloudletExecList().size(),
+                    // vm.getCloudletScheduler().getCloudletWaitingList().size(),
+                    (vm.getPesNumber() - vm.getFreePesNumber()) / vm.getPesNumber()};
         }
         return vmMetrics;
     }
 
     private double[][] collectJobMetrics() {
         List<Cloudlet> cloudletList = getCloudletList();
-        //   jobId,  jobPes,  vmId,    vmType,  hostId
+        // jobId, jobPes, vmId, vmType, hostId
         double[][] jobMetrics = new double[cloudletList.size()][1];
         for (int i = 0; i < cloudletList.size(); i++) {
             Cloudlet cloudlet = cloudletList.get(i);
             jobMetrics[i] = new double[] {
-                // cloudlet.getId(),
-                // cloudlet.getPesNumber(),
-                // cloudlet.getVm().getId(),
-                // cloudlet.getVm().getPesNumber(),
-                // cloudlet.getVm().getHost().getId()
-                cloudlet.getPesNumber() / cloudlet.getVm().getPesNumber()
-            };
+                    // cloudlet.getId(),
+                    // cloudlet.getPesNumber(),
+                    // cloudlet.getVm().getId(),
+                    // cloudlet.getVm().getPesNumber(),
+                    // cloudlet.getVm().getHost().getId()
+                    cloudlet.getPesNumber() / cloudlet.getVm().getPesNumber()};
         }
         return jobMetrics;
     }
 
     // private double[] listOfArraysToArray(List<double[]> listOfArrays) {
-    //     final int listSize = listOfArrays.size();
-    //     final int arraySize = listOfArrays.get(0).length;
-    //     // we know that each array in the list ahs the same size
-    //     // so we calculate the final array size just by the size of the list
-    //     // and the first array length
-    //     double[] resultArray = new double[listSize * arraySize];
+    // final int listSize = listOfArrays.size();
+    // final int arraySize = listOfArrays.get(0).length;
+    // // we know that each array in the list ahs the same size
+    // // so we calculate the final array size just by the size of the list
+    // // and the first array length
+    // double[] resultArray = new double[listSize * arraySize];
 
-    //     int currentIndex = 0;
-    //     for (double[] array : listOfArrays) {
-    //         System.arraycopy(array, 0, resultArray, currentIndex, array.length);
-    //         currentIndex += array.length;
-    //     }
-        
-    //     return resultArray;
+    // int currentIndex = 0;
+    // for (double[] array : listOfArrays) {
+    // System.arraycopy(array, 0, resultArray, currentIndex, array.length);
+    // currentIndex += array.length;
+    // }
+
+    // return resultArray;
     // }
 
     private void updateValidCount(boolean isValid) {
@@ -394,23 +369,18 @@ public class WrappedSimulation {
         }
     }
 
-    private void printEpisodeStatsDebug(
-            double jobWaitReward,
-            double utilReward,
+    private void printEpisodeStatsDebug(double jobWaitReward, double utilReward,
             double invalidReward) {
 
-        debug("\n=============== Episode stats so far ==============="
-        + "\nEpisode Statistics:"
-        + "\nAverage job wait reward in the episode: " + getEpJobWaitRewardMean()
-        + "\nAverage utilization reward in the episode: " + getEpUtilRewardMean()
-        + "\nMax waiting jobs count in the episode: " + getEpWaitingJobsCountMax()
-        + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
-        + "\n===================================================="
-        + "\nIn this timestep:"
-        + "\nJob wait reward: " + jobWaitReward
-        + "\nUtilization reward: " + utilReward
-        + "\nInvalid reward: " + invalidReward
-        + "\n====================================================");
+        debug("\n=============== Episode stats so far ===============" + "\nEpisode Statistics:"
+                + "\nAverage job wait reward in the episode: " + getEpJobWaitRewardMean()
+                + "\nAverage utilization reward in the episode: " + getEpUtilRewardMean()
+                + "\nMax waiting jobs count in the episode: " + getEpWaitingJobsCountMax()
+                + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
+                + "\n====================================================" + "\nIn this timestep:"
+                + "\nJob wait reward: " + jobWaitReward + "\nUtilization reward: " + utilReward
+                + "\nInvalid reward: " + invalidReward
+                + "\n====================================================");
     }
 
     private void updateEpisodeStats(double jobWaitReward, double utilReward, boolean isValid) {
@@ -419,7 +389,7 @@ public class WrappedSimulation {
         updateValidCount(isValid);
 
         updateEpWaitingJobsCountMax(cloudSimProxy.getWaitingJobsCount());
-        updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());   
+        updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
     }
 
     private List<Object> getEpisodeRewardStats() {
@@ -434,17 +404,17 @@ public class WrappedSimulation {
 
     // private long continuousToDiscrete(final double continuous, final long bucketsNum) {
     // /*
-    //     * Explanation:
-    //     * floor(continuous * bucketsNum) will give you the discrete value
-    //     * but, in case of cont = 1, then the discrete value 
-    //     * will be equal to bucketsNum.
-    //     * However, we want to map the continuous value to the
-    //     * range of [0,bucketsNum-1].
-    //     * So, Math.min ensures that the maximum allowed
-    //     * discrete value will be bucketsNum-1.
+    // * Explanation:
+    // * floor(continuous * bucketsNum) will give you the discrete value
+    // * but, in case of cont = 1, then the discrete value
+    // * will be equal to bucketsNum.
+    // * However, we want to map the continuous value to the
+    // * range of [0,bucketsNum-1].
+    // * So, Math.min ensures that the maximum allowed
+    // * discrete value will be bucketsNum-1.
     // */
-    //     final long discrete = (long) Math.min(Math.floor(continuous * bucketsNum), bucketsNum - 1);
-    //     return discrete;
+    // final long discrete = (long) Math.min(Math.floor(continuous * bucketsNum), bucketsNum - 1);
+    // return discrete;
     // }
 
     private void recordSimulationData(int[] action, double[] reward) {
@@ -476,7 +446,7 @@ public class WrappedSimulation {
             isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], hostId);
             return isValid;
         }
- 
+
         else if (action[0] == 2) {
             final int vmIndex = action[1];
             isValid = removeVm(vmIndex);
@@ -488,47 +458,47 @@ public class WrappedSimulation {
         }
     }
 
-        // final long id;
-        // final int index;
-        // final int vmTypeIndex;
+    // final long id;
+    // final int index;
+    // final int vmTypeIndex;
 
-        // // action < 0 destroys the VM with VM.index = index
-        // if (action[0] < 0) {
-        //     index = (int) continuousToDiscrete(
-        //         Math.abs(action[0]),
-        //         cloudSimProxy.getBroker().getVmExecList().size());
+    // // action < 0 destroys the VM with VM.index = index
+    // if (action[0] < 0) {
+    // index = (int) continuousToDiscrete(
+    // Math.abs(action[0]),
+    // cloudSimProxy.getBroker().getVmExecList().size());
 
-        //     if (index < 0) {
-        //         debug("No active Vms. Ignoring action...");
-        //         return false;
-        //     }
-        //     debug("translated action[0] = " + index);
-        //     debug("will try to destroy vm with index = " + index);
-        //     isValid = removeVm(index);
-        //     return isValid;
-        // }
+    // if (index < 0) {
+    // debug("No active Vms. Ignoring action...");
+    // return false;
+    // }
+    // debug("translated action[0] = " + index);
+    // debug("will try to destroy vm with index = " + index);
+    // isValid = removeVm(index);
+    // return isValid;
+    // }
 
-        // // action > 0 creates a VM in host host.id = id
-        // // and Vm.type = action[1]
-        // else if (action[0] > 0) {
-        //     id = continuousToDiscrete(
-        //         action[0],
-        //         settings.getDatacenterHostsCnt());
+    // // action > 0 creates a VM in host host.id = id
+    // // and Vm.type = action[1]
+    // else if (action[0] > 0) {
+    // id = continuousToDiscrete(
+    // action[0],
+    // settings.getDatacenterHostsCnt());
 
-        //     vmTypeIndex = (int) continuousToDiscrete(
-        //         action[1],
-        //         CloudSimProxy.VM_TYPES.length);
+    // vmTypeIndex = (int) continuousToDiscrete(
+    // action[1],
+    // CloudSimProxy.VM_TYPES.length);
 
-        //     debug("Translated action[0] = " + id);
-        //     debug("Will try to create a new vm at host with id = " 
-        //             + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
-        //     isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);
-        //     return isValid;
-        // }
-        // else {
-        //     // action[0] = 0 does nothing
-        //     return true;
-        // }
+    // debug("Translated action[0] = " + id);
+    // debug("Will try to create a new vm at host with id = "
+    // + id + " of type " + CloudSimProxy.VM_TYPES[vmTypeIndex]);
+    // isValid = addNewVm(CloudSimProxy.VM_TYPES[vmTypeIndex], id);
+    // return isValid;
+    // }
+    // else {
+    // // action[0] = 0 does nothing
+    // return true;
+    // }
 
     private boolean removeVm(final int index) {
         if (!cloudSimProxy.removeVm(index)) {
@@ -548,7 +518,7 @@ public class WrappedSimulation {
     }
 
     // private double percentileOrZero(final double[] values, final double percentile) {
-    //     return values.length > 0 ? percentile(values, percentile) : 0;
+    // return values.length > 0 ? percentile(values, percentile) : 0;
     // }
 
     private void collectMetrics() {
@@ -559,66 +529,67 @@ public class WrappedSimulation {
     }
 
     // private void collectMetrics() {
-        // double[] cpuPercentUsage = cloudSimProxy.getVmCpuUsage();
-        // Arrays.sort(cpuPercentUsage);
+    // double[] cpuPercentUsage = cloudSimProxy.getVmCpuUsage();
+    // Arrays.sort(cpuPercentUsage);
 
-        // double[] memPercentageUsage = cloudSimProxy.getVmMemoryUsage();
-        // Arrays.sort(memPercentageUsage);
+    // double[] memPercentageUsage = cloudSimProxy.getVmMemoryUsage();
+    // Arrays.sort(memPercentageUsage);
 
-        // double waitingJobsRatioGlobal = getWaitingJobsRatio();
-        // double waitingJobsRatioLastTimestep = getWaitingJobsRatioLastTimestep();
+    // double waitingJobsRatioGlobal = getWaitingJobsRatio();
+    // double waitingJobsRatioLastTimestep = getWaitingJobsRatioLastTimestep();
 
-        // metricsStorage.updateMetric(
-            // "hostCoresAllocatedToVmsRatio",
-            // getHostCoresAllocatedToVmsRatio());
-        // metricsStorage.updateMetric(
-        //     "avgCpuUtilization",
-        //     safeMean(cpuPercentUsage));
-        // metricsStorage.updateMetric(
-        //     "p90CpuUtilization", 
-        //     percentileOrZero(cpuPercentUsage, 0.90));
-        // metricsStorage.updateMetric(
-        //     "avgMemoryUtilization",
-        //     safeMean(memPercentageUsage));
-        // metricsStorage.updateMetric(
-        // "p90MemoryUtilization", 
-        // percentileOrZero(memPercentageUsage, 0.90));
-        // metricsStorage.updateMetric(
-        //     "waitingJobsRatioGlobal",
-        //     waitingJobsRatioGlobal);
-        // metricsStorage.updateMetric(
-        //     "waitingJobsRatioTimestep",
-        //     waitingJobsRatioTimestep);
+    // metricsStorage.updateMetric(
+    // "hostCoresAllocatedToVmsRatio",
+    // getHostCoresAllocatedToVmsRatio());
+    // metricsStorage.updateMetric(
+    // "avgCpuUtilization",
+    // safeMean(cpuPercentUsage));
+    // metricsStorage.updateMetric(
+    // "p90CpuUtilization",
+    // percentileOrZero(cpuPercentUsage, 0.90));
+    // metricsStorage.updateMetric(
+    // "avgMemoryUtilization",
+    // safeMean(memPercentageUsage));
+    // metricsStorage.updateMetric(
+    // "p90MemoryUtilization",
+    // percentileOrZero(memPercentageUsage, 0.90));
+    // metricsStorage.updateMetric(
+    // "waitingJobsRatioGlobal",
+    // waitingJobsRatioGlobal);
+    // metricsStorage.updateMetric(
+    // "waitingJobsRatioTimestep",
+    // waitingJobsRatioTimestep);
     // }
 
     // private double getWaitingJobsRatioLastTimestep() {
-    //     final int submittedJobsCountLastTimestep =
-    //         cloudSimProxy.getSubmittedJobsCountLastTimestep();
+    // final int submittedJobsCountLastTimestep =
+    // cloudSimProxy.getSubmittedJobsCountLastTimestep();
 
-    //     return submittedJobsCountLastTimestep > 0
-    //         ? cloudSimProxy.getWaitingJobsCountLastTimestep() 
-    //         / (double) submittedJobsCountLastTimestep : 0.0;
+    // return submittedJobsCountLastTimestep > 0
+    // ? cloudSimProxy.getWaitingJobsCountLastTimestep()
+    // / (double) submittedJobsCountLastTimestep : 0.0;
     // }
 
     private double getWaitingJobsRatio() {
         final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
 
-        return arrivedJobsCount > 0 
-            ? cloudSimProxy.getWaitingJobsCount() / (double) arrivedJobsCount : 0.0;         
+        return arrivedJobsCount > 0
+                ? cloudSimProxy.getWaitingJobsCount() / (double) arrivedJobsCount
+                : 0.0;
     }
 
     // private double getScheduledJobsRatioLastTimestep() {
-    //     final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCountLastTimestep();
+    // final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCountLastTimestep();
 
-    //     return arrivedJobsCount > 0 
-    //         ? cloudSimProxy.getScheduledJobsCountLastTimestep() / (double) arrivedJobsCount : 0.0;    
+    // return arrivedJobsCount > 0
+    // ? cloudSimProxy.getScheduledJobsCountLastTimestep() / (double) arrivedJobsCount : 0.0;
     // }
 
     // private double getScheduledJobsRatio() {
-    //     final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
+    // final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
 
-    //     return arrivedJobsCount > 0 
-    //         ? cloudSimProxy.getScheduledJobsCount() / (double) arrivedJobsCount : 0.0;    
+    // return arrivedJobsCount > 0
+    // ? cloudSimProxy.getScheduledJobsCount() / (double) arrivedJobsCount : 0.0;
     // }
 
     private double getHostCoresAllocatedToVmsRatio() {
@@ -626,24 +597,24 @@ public class WrappedSimulation {
     }
 
     // private double[] getObservation() {
-        // return new double[] {
-            // metricsStorage.getLastMetricValue("hostCoresAllocatedToVmsRatio"),
-            // metricsStorage.getLastMetricValue("avgCpuUtilization"),
-            // metricsStorage.getLastMetricValue("p90CpuUtilization"),
-            // metricsStorage.getLastMetricValue("avgMemoryUtilization"),
-            // metricsStorage.getLastMetricValue("p90MemoryUtilization"),
-            // metricsStorage.getLastMetricValue("waitingJobsRatioGlobal"),
-            // metricsStorage.getLastMetricValue("waitingJobsRatioTimestep")
-        // };
+    // return new double[] {
+    // metricsStorage.getLastMetricValue("hostCoresAllocatedToVmsRatio"),
+    // metricsStorage.getLastMetricValue("avgCpuUtilization"),
+    // metricsStorage.getLastMetricValue("p90CpuUtilization"),
+    // metricsStorage.getLastMetricValue("avgMemoryUtilization"),
+    // metricsStorage.getLastMetricValue("p90MemoryUtilization"),
+    // metricsStorage.getLastMetricValue("waitingJobsRatioGlobal"),
+    // metricsStorage.getLastMetricValue("waitingJobsRatioTimestep")
+    // };
     // }
 
     // private void print2dArray(double[][] array) {
-    //     for (int i = 0; i < array.length; i++) {
-    //         for (int j = 0; j < array[0].length; j++) {
-    //             System.out.print(array[i][j] + " ");
-    //         }
-    //         System.out.print("\n");
-    //     }
+    // for (int i = 0; i < array.length; i++) {
+    // for (int j = 0; j < array[0].length; j++) {
+    // System.out.print(array[i][j] + " ");
+    // }
+    // System.out.print("\n");
+    // }
     // }
 
     private double[][] getObservation() {
@@ -684,35 +655,39 @@ public class WrappedSimulation {
         }
 
         // print2dArray(observation);
-        
+
         return observation;
     }
 
     // private double safeMean(final double[] values) {
-    //     return values.length > 0 ? StatUtils.mean(values) : 0.0;
+    // return values.length > 0 ? StatUtils.mean(values) : 0.0;
     // }
 
     private double[] calculateReward(final boolean isValid) {
         double[] rewards = new double[4];
         // final int rewardMultiplier = 1;
-        /* reward is the negative cost of running the infrastructure
-         * minus any penalties from jobs waiting in the queue
-         * minus penalty if action was invalid
-        */
+        /*
+         * reward is the negative cost of running the infrastructure minus any penalties from jobs
+         * waiting in the queue minus penalty if action was invalid
+         */
         final double jobWaitCoef = settings.getRewardJobWaitCoef();
         final double utilizationCoef = settings.getRewardUtilizationCoef();
         final double invalidCoef = settings.getRewardInvalidCoef();
-        
-        final double jobWaitReward = - jobWaitCoef * getWaitingJobsRatio();
-        final double utilReward = - utilizationCoef * getHostCoresAllocatedToVmsRatio();
-        final double invalidReward = - invalidCoef * (isValid ? 0 : 1);
 
+        final double jobWaitReward = -jobWaitCoef * getWaitingJobsRatio();
+        final double utilReward = -utilizationCoef * getHostCoresAllocatedToVmsRatio();
+        final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
+
+        // TODO: this can be eliminated and just make cloudSimProxy method printJobStats public and
+        // call it from here
         LOGGER.debug("jobs arrived:" + cloudSimProxy.getArrivedJobsCount());
         LOGGER.debug("jobs waiting: " + cloudSimProxy.getWaitingJobsCount());
+        LOGGER.debug("jobs running: " + cloudSimProxy.getRunningJobsCount());
+        LOGGER.debug("jobs finished: " + cloudSimProxy.getFinishedJobsCount());
         LOGGER.debug("jobWaitReward:" + jobWaitReward);
         LOGGER.debug("utilReward:" + utilReward);
         LOGGER.debug("invalidReward:" + invalidReward);
-        
+
         final double totalReward = jobWaitReward + utilReward + invalidReward;
 
         // totalReward *= rewardMultiplier;
@@ -726,16 +701,16 @@ public class WrappedSimulation {
             debug("Penalty given to the agent because the selected action was not possible");
         }
 
-        // final double unableToSubmitJobsRatioPenalty = 
-        //     cloudSimProxy.getTriedToSubmitJobCount() > 0
-        //     ? cloudSimProxy.getUnableToSubmitJobCount() / cloudSimProxy.getTriedToSubmitJobCount()
-        //     : 0;
+        // final double unableToSubmitJobsRatioPenalty =
+        // cloudSimProxy.getTriedToSubmitJobCount() > 0
+        // ? cloudSimProxy.getUnableToSubmitJobCount() / cloudSimProxy.getTriedToSubmitJobCount()
+        // : 0;
         // final double unutilizationRatioPenalty = getUnutilizedStats()[0];
         // final double invalidPenalty = 0;
-        // final double totalReward = 
-        //     - unableToSubmitJobsRatioPenalty 
-        //     - unutilizationRatioPenalty 
-        //     - invalidPenalty;
+        // final double totalReward =
+        // - unableToSubmitJobsRatioPenalty
+        // - unutilizationRatioPenalty
+        // - invalidPenalty;
 
         // rewards[0] = totalReward;
         // rewards[1] = unableToSubmitJobsRatioPenalty;
@@ -779,13 +754,14 @@ public class WrappedSimulation {
             epRunningVmsCountMax = runningVms;
         }
     }
-    
+
     private void updateEpJobWaitRewardMean(double jobWaitReward) {
-        epJobWaitRewardMean = (epJobWaitRewardMean * (currentStep - 1) + jobWaitReward) / currentStep;
+        epJobWaitRewardMean =
+                (epJobWaitRewardMean * (currentStep - 1) + jobWaitReward) / currentStep;
     }
 
     private void updateEpUtilRewardMean(double utilReward) {
-        epUtilRewardMean = (epUtilRewardMean * (currentStep - 1) +  utilReward) / currentStep;
+        epUtilRewardMean = (epUtilRewardMean * (currentStep - 1) + utilReward) / currentStep;
     }
 
     private double getEpJobWaitRewardMean() {
@@ -803,7 +779,7 @@ public class WrappedSimulation {
     private void resetEpJobWaitRewardMean() {
         epJobWaitRewardMean = 0.0;
     }
-    
+
     private void resetEpUtilRewardMean() {
         epUtilRewardMean = 0.0;
     }

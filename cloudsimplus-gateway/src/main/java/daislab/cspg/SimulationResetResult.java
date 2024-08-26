@@ -16,7 +16,7 @@ public class SimulationResetResult {
     public SimulationResetResult(
         final double[][] obs,
         final SimulationStepInfo info
-    ) {
+) {
         this.obs = obs;
         this.info = info;
     }

@@ -12,8 +12,8 @@ import java.util.HashMap;
 public class SimulationHistory {
 
     private static final Logger LOGGER =
-        LoggerFactory.getLogger(SimulationHistory.class.getSimpleName());
-            
+            LoggerFactory.getLogger(SimulationHistory.class.getSimpleName());
+
     private Map<String, List<Object>> history;
 
     public SimulationHistory() {

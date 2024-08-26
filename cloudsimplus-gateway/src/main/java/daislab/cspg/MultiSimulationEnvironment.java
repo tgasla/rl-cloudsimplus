@@ -11,13 +11,13 @@ import java.util.Map;
 
 public class MultiSimulationEnvironment {
 
-    private Map<String, WrappedSimulation> simulations = 
-        Collections.synchronizedMap(new HashMap<>());
+    private Map<String, WrappedSimulation> simulations =
+            Collections.synchronizedMap(new HashMap<>());
 
     private SimulationFactory simulationFactory = new SimulationFactory();
 
     private static final Logger LOGGER =
-        LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
+            LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
 
     public String createSimulation(final Map<String, String> maybeParameters) {
         WrappedSimulation simulation = simulationFactory.create(maybeParameters);
@@ -36,7 +36,7 @@ public class MultiSimulationEnvironment {
     private void validateIdentifier(final String simulationIdentifier) {
         if (!simulations.containsKey(simulationIdentifier)) {
             throw new IllegalArgumentException(
-                "Simulation with identifier: " + simulationIdentifier + " not found!");
+                    "Simulation with identifier: " + simulationIdentifier + " not found!");
         }
     }
 
@@ -54,11 +54,10 @@ public class MultiSimulationEnvironment {
         return simulation.render();
     }
 
-    public SimulationStepResult step(final String simulationIdentifier, final List<Integer> action) {
+    public SimulationStepResult step(final String simulationIdentifier,
+            final List<Integer> action) {
         final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
-        final int[] actionPrimitive = action.stream()
-            .mapToInt(Integer::intValue)
-            .toArray();
+        final int[] actionPrimitive = action.stream().mapToInt(Integer::intValue).toArray();
         return simulation.step(actionPrimitive);
     }
 
