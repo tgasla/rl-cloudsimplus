@@ -272,18 +272,18 @@ public class CloudSimProxy {
         // }
     }
 
-    private void printCloudlet(final Cloudlet cloudlet) {
-        LOGGER.info("Cloudlet: " + cloudlet.getId());
-        LOGGER.info("Number of PEs: " + cloudlet.getPesNumber());
-        LOGGER.info("Total length in MIs: " + cloudlet.getTotalLength());
-        LOGGER.info("Submission delay: " + originalSubmissionDelay.get(cloudlet.getId()));
-        LOGGER.info("Started: " + cloudlet.getStartTime());
-        final Vm vm = cloudlet.getVm();
-        LOGGER.info("VM: " + vm.getId() + "(" + vm.getDescription() + ")" + " CPU: "
-                + vm.getPesNumber() + "/" + vm.getMips() + " @ " + vm.getCpuPercentUtilization()
-                + " RAM: " + vm.getRam().getAllocatedResource() + " Start time: "
-                + vm.getStartTime() + " Stop time: " + vm.getFinishTime());
-    }
+    // private void printCloudlet(final Cloudlet cloudlet) {
+    // LOGGER.info("Cloudlet: " + cloudlet.getId());
+    // LOGGER.info("Number of PEs: " + cloudlet.getPesNumber());
+    // LOGGER.info("Total length in MIs: " + cloudlet.getTotalLength());
+    // LOGGER.info("Submission delay: " + originalSubmissionDelay.get(cloudlet.getId()));
+    // LOGGER.info("Started: " + cloudlet.getStartTime());
+    // final Vm vm = cloudlet.getVm();
+    // LOGGER.info("VM: " + vm.getId() + "(" + vm.getDescription() + ")" + " CPU: "
+    // + vm.getPesNumber() + "/" + vm.getMips() + " @ " + vm.getCpuPercentUtilization()
+    // + " RAM: " + vm.getRam().getAllocatedResource() + " Start time: "
+    // + vm.getStartTime() + " Stop time: " + vm.getFinishTime());
+    // }
 
     private boolean isAnyVmSuitableForCloudlet(Cloudlet cloudlet) {
         List<Vm> vmExecList = getBroker().getVmExecList();

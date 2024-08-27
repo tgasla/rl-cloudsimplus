@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class MultiSimulationEnvironment {
 
     private Map<String, WrappedSimulation> simulations =

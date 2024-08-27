@@ -1,6 +1,5 @@
 import gymnasium as gym
 import os
-import sys
 import json
 from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
@@ -69,7 +68,6 @@ class SingleDC(gym.Env):
         job_log_dir=None,
         max_timesteps_per_episode="5000",
     ):
-
         super(SingleDC, self).__init__()
 
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
@@ -82,7 +80,9 @@ class SingleDC(gym.Env):
             int(datacenter_hosts_cnt) * int(host_pes) // int(basic_vm_pes)
         )
         self.max_jobs_count = self.max_vms_count * int(basic_vm_pes) // self.min_job_pes
-        self.observation_rows = 1 + int(datacenter_hosts_cnt) + self.max_vms_count + self.max_jobs_count
+        self.observation_rows = (
+            1 + int(datacenter_hosts_cnt) + self.max_vms_count + self.max_jobs_count
+        )
         self.observation_cols = 10
 
         # Old for continuous action space
@@ -92,7 +92,6 @@ class SingleDC(gym.Env):
         #     shape=(2,),
         #     dtype=np.float32
         # )
-
 
         # New for discrete action space
         # [action, id, type^]

@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import pandas as pd
-from time import sleep
 
 # from stable_baselines3.common import results_plotter
 # from stable_baselines3.common.results_plotter import plot_results
@@ -72,8 +71,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
         print(self.locals)
 
-        if self.locals["dones"][0] == True:
-            print(f"The env terminated")
+        if self.locals["dones"][0]:
+            print("The env terminated")
             print("Printing stat lengths")
             print(f"host metrics {len(self.host_metrics)}")
             print(f"vm metrics {len(self.vm_metrics)}")

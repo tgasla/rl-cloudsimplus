@@ -1,5 +1,4 @@
 import os
-import sys
 from datetime import datetime
 import json
 import numpy as np
@@ -8,17 +7,6 @@ import gym_cloudsimplus
 import torch
 
 import stable_baselines3 as sb3
-from stable_baselines3.common.noise import NormalActionNoise
-from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.logger import configure
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
-import custom_agents
-from callbacks.save_on_best_training_reward_callback import (
-    SaveOnBestTrainingRewardCallback,
-)
-
-from utils.filename_generator import generate_filename
-from utils.argparser import parse_args
 from utils.trace_utils import csv_to_cloudlet_descriptor
 
 
@@ -32,7 +20,7 @@ def main():
     # if pretrain dir is blank then you should pretrain first,
     # otherwise load agent from pretrain dir
 
-    jobs = csv_to_cloudlet_descriptor(f"mnt/traces/100jobs_fast.csv")
+    jobs = csv_to_cloudlet_descriptor("mnt/traces/100jobs_fast.csv")
 
     # Create and wrap the environment
     env = gym.make(
