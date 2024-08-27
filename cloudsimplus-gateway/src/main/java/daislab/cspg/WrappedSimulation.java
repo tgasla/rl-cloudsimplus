@@ -680,6 +680,7 @@ public class WrappedSimulation {
 
         // TODO: this can be eliminated and just make cloudSimProxy method printJobStats public and
         // call it from here
+        // TODO: CHECK how cloudsimplus formats the logger messages with {}
         LOGGER.debug("jobs arrived:" + cloudSimProxy.getArrivedJobsCount());
         LOGGER.debug("jobs waiting: " + cloudSimProxy.getWaitingJobsCount());
         LOGGER.debug("jobs running: " + cloudSimProxy.getRunningJobsCount());
