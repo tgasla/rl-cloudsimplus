@@ -48,7 +48,7 @@ public class VmCostTest {
     private Vm createVmM() {
         return new VmSimple(mipsCapacity, 4).setDescription("M");
     }
-        
+
     @AfterAll
     public static void deleteJobLogDirectory() {
         // Recursively delete the tempDirectory and its contents

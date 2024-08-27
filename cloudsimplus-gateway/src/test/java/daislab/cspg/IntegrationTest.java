@@ -16,316 +16,316 @@
 // import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 // public class IntegrationTest {
-        
-// 	private static final long basicVmPeCount = 2;
-// 	private static final long datacenterHostsCnt = 3000;
-// 	private static final long hostPeMips = 10000;
-// 	private static final int hostPeCnt = 14;
-//     private static final int maxJobPes = 1;
-//     private static final List<Double> nopAction = new ArrayList<Double>(List.of(0.0, 0.0));
-//     private static final List<Double> createSVmAction = new ArrayList<Double>(List.of(0.1, 0.0));
-//     private static final List<Double> removeSVmAction = new ArrayList<Double>(List.of(-0.1, 0.0));
-    
-//     final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
-//     final Gson gson = new Gson();
 
-//     private Map<String, String> addParameters(
-//                         final int initialSVmCount,
-//                         final int initialMVmCount,
-//                         final int initialLVmCount,
-//                         final List<CloudletDescriptor> jobs) {
+// private static final long basicVmPeCount = 2;
+// private static final long datacenterHostsCnt = 3000;
+// private static final long hostPeMips = 10000;
+// private static final int hostPeCnt = 14;
+// private static final int maxJobPes = 1;
+// private static final List<Double> nopAction = new ArrayList<Double>(List.of(0.0, 0.0));
+// private static final List<Double> createSVmAction = new ArrayList<Double>(List.of(0.1, 0.0));
+// private static final List<Double> removeSVmAction = new ArrayList<Double>(List.of(-0.1, 0.0));
 
-//         final Map<String, String> parameters = new HashMap<>();
+// final MultiSimulationEnvironment multiSimulationEnvironment = new MultiSimulationEnvironment();
+// final Gson gson = new Gson();
 
-//         parameters.put("INITIAL_S_VM_COUNT", String.valueOf(initialSVmCount));
-//         parameters.put("INITIAL_M_VM_COUNT", String.valueOf(initialMVmCount));
-//         parameters.put("INITIAL_L_VM_COUNT", String.valueOf(initialLVmCount));
-//         parameters.put("DATACENTER_HOSTS_CNT", String.valueOf(datacenterHostsCnt));
-//         parameters.put("HOST_PE_CNT", String.valueOf(hostPeCnt));
-//         parameters.put("HOST_PE_MIPS", String.valueOf(hostPeMips));
-//         parameters.put("BASIC_VM_PE_CNT", String.valueOf(basicVmPeCount));
-//         parameters.put("MAX_JOB_PES", String.valueOf(maxJobPes));
-//         parameters.put("JOBS", gson.toJson(jobs));
-        
-//         return parameters;
-//     }
+// private Map<String, String> addParameters(
+// final int initialSVmCount,
+// final int initialMVmCount,
+// final int initialLVmCount,
+// final List<CloudletDescriptor> jobs) {
 
-//     @Test
-//     public void testPing() {
-//         final long ping = multiSimulationEnvironment.ping();
+// final Map<String, String> parameters = new HashMap<>();
 
-//         assertEquals(31415L, ping);
-//     }
+// parameters.put("INITIAL_S_VM_COUNT", String.valueOf(initialSVmCount));
+// parameters.put("INITIAL_M_VM_COUNT", String.valueOf(initialMVmCount));
+// parameters.put("INITIAL_L_VM_COUNT", String.valueOf(initialLVmCount));
+// parameters.put("DATACENTER_HOSTS_CNT", String.valueOf(datacenterHostsCnt));
+// parameters.put("HOST_PE_CNT", String.valueOf(hostPeCnt));
+// parameters.put("HOST_PE_MIPS", String.valueOf(hostPeMips));
+// parameters.put("BASIC_VM_PE_CNT", String.valueOf(basicVmPeCount));
+// parameters.put("MAX_JOB_PES", String.valueOf(maxJobPes));
+// parameters.put("JOBS", gson.toJson(jobs));
 
-//     @Test
-//     public void testSimulationSingleStep() {
-//         CloudletDescriptor cloudletDescriptor = new CloudletDescriptor(1, 10, 10000, 4);
+// return parameters;
+// }
 
-//         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
-//         Map<String, String> parameters = new HashMap<>();
-//         parameters.put("JOBS", gson.toJson(jobs));
+// @Test
+// public void testPing() {
+// final long ping = multiSimulationEnvironment.ping();
 
-//         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+// assertEquals(31415L, ping);
+// }
 
-//         multiSimulationEnvironment.reset(simulationId);
-//         multiSimulationEnvironment.step(simulationId, nopAction);
-//         int stepsExecuted = 1;
-//         multiSimulationEnvironment.close(simulationId);
-//         assertEquals(stepsExecuted, 1);
-//     }
+// @Test
+// public void testSimulationSingleStep() {
+// CloudletDescriptor cloudletDescriptor = new CloudletDescriptor(1, 10, 10000, 4);
 
-//     @Test
-//     public void testSimulationWithSingleJob() {
-//         // Job should start after 10 iterations and last for next 10
-//         // The job below is "large" - it will be split into chunks of 2 cores each
-//         //
-//         // In our env we have 3 VMs: 1L, 1M, 1S which are assigned cloudlets
-//         // in round robin fashion. We want to give each machine a chunk of work
-//         //
-//         // This means the job needs to be splitted into 3 equal chunks which we want
-//         // to last for 10 iterations each. A single core has 10000 MIPS, so we want
-//         // the chunks to have 10*10000 MIPS
-//         CloudletDescriptor cloudletDescriptor =
-//             new CloudletDescriptor(1, 10, 10 * 10000, 1 + 1 + 1);
+// List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
+// Map<String, String> parameters = new HashMap<>();
+// parameters.put("JOBS", gson.toJson(jobs));
 
-//         List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
+// final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
-//         Map<String, String> parameters = addParameters(1, 1, 1, jobs);
+// multiSimulationEnvironment.reset(simulationId);
+// multiSimulationEnvironment.step(simulationId, nopAction);
+// int stepsExecuted = 1;
+// multiSimulationEnvironment.close(simulationId);
+// assertEquals(stepsExecuted, 1);
+// }
 
-//         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+// @Test
+// public void testSimulationWithSingleJob() {
+// // Job should start after 10 iterations and last for next 10
+// // The job below is "large" - it will be split into chunks of 2 cores each
+// //
+// // In our env we have 3 VMs: 1L, 1M, 1S which are assigned cloudlets
+// // in round robin fashion. We want to give each machine a chunk of work
+// //
+// // This means the job needs to be splitted into 3 equal chunks which we want
+// // to last for 10 iterations each. A single core has 10000 MIPS, so we want
+// // the chunks to have 10*10000 MIPS
+// CloudletDescriptor cloudletDescriptor =
+// new CloudletDescriptor(1, 10, 10 * 10000, 1 + 1 + 1);
 
-//         multiSimulationEnvironment.reset(simulationId);
-//         int stepsExecuted = 1;
-//         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
-//         while (!step.isDone()) {
-//             System.out.println("Executing step: " + stepsExecuted);
-//             step = multiSimulationEnvironment.step(simulationId, nopAction);
-//             stepsExecuted++;
-//         }
-        
-//         assertEquals(20, stepsExecuted);
-//         multiSimulationEnvironment.close(simulationId);
-//     }
+// List<CloudletDescriptor> jobs = Arrays.asList(cloudletDescriptor);
 
-//     @Test
-//     public void testWithCreatingNewVirtualMachines() {
-//         // every cloudlet executes for 40 simulation iterations
-//         // and starts with a delay of 20*i iterations
-//         List<CloudletDescriptor> jobs = new ArrayList<>();
-//         for (int i = 0; i < 10; i++) {
-//             jobs.add(new CloudletDescriptor(i, 20 * i, 400000, 4));
-//         }
+// Map<String, String> parameters = addParameters(1, 1, 1, jobs);
 
-//         Map<String, String> parameters = addParameters(1, 1, 1, jobs);
+// final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
-//         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+// multiSimulationEnvironment.reset(simulationId);
+// int stepsExecuted = 1;
+// SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
+// while (!step.isDone()) {
+// System.out.println("Executing step: " + stepsExecuted);
+// step = multiSimulationEnvironment.step(simulationId, nopAction);
+// stepsExecuted++;
+// }
 
-//         multiSimulationEnvironment.reset(simulationId);
-//         int stepsExecuted = 1;
-//         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
+// assertEquals(20, stepsExecuted);
+// multiSimulationEnvironment.close(simulationId);
+// }
 
-//         double maxCoreRatio = 0.0;
-//         while (!step.isDone()) {
-//             System.out.println("Executing step: " + stepsExecuted);
+// @Test
+// public void testWithCreatingNewVirtualMachines() {
+// // every cloudlet executes for 40 simulation iterations
+// // and starts with a delay of 20*i iterations
+// List<CloudletDescriptor> jobs = new ArrayList<>();
+// for (int i = 0; i < 10; i++) {
+// jobs.add(new CloudletDescriptor(i, 20 * i, 400000, 4));
+// }
 
-//             List<Double> action = stepsExecuted == 20 ? createSVmAction : nopAction;
+// Map<String, String> parameters = addParameters(1, 1, 1, jobs);
 
-//             System.out.println("action on this step is " + action.get(0) + ", " + action.get(1));
+// final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
-//             step = multiSimulationEnvironment.step(simulationId, action);
-//             if (step.getObs()[0] > maxCoreRatio) {
-//                 maxCoreRatio = step.getObs()[0];
-//             }
+// multiSimulationEnvironment.reset(simulationId);
+// int stepsExecuted = 1;
+// SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
 
-//             System.out.println("Observations: " + Arrays.toString(step.getObs())
-//                     + " clock: " + multiSimulationEnvironment.clock(simulationId));
-//             stepsExecuted++;
-//         }
+// double maxCoreRatio = 0.0;
+// while (!step.isDone()) {
+// System.out.println("Executing step: " + stepsExecuted);
 
-//         final long totalVmPes = 
-//                 2 * basicVmPeCount
-//                 + basicVmPeCount * 2
-//                 + basicVmPeCount * 4;
+// List<Double> action = stepsExecuted == 20 ? createSVmAction : nopAction;
 
-//         final long datacenterCores = datacenterHostsCnt * hostPeCnt;
+// System.out.println("action on this step is " + action.get(0) + ", " + action.get(1));
 
-//         System.out.println("totalVmPes = " + totalVmPes 
-//                 + " datacenterCores = " + datacenterCores
-//                 + " totalVmPes/datacenterCores = " + (double)totalVmPes/datacenterCores
-//                 + " maxCoreRatio = " + maxCoreRatio);
-        
-//         assertEquals((double) totalVmPes/datacenterCores, maxCoreRatio, 0.000001);
+// step = multiSimulationEnvironment.step(simulationId, action);
+// if (step.getObs()[0] > maxCoreRatio) {
+// maxCoreRatio = step.getObs()[0];
+// }
 
-//         multiSimulationEnvironment.close(simulationId);
-//     }
+// System.out.println("Observations: " + Arrays.toString(step.getObs())
+// + " clock: " + multiSimulationEnvironment.clock(simulationId));
+// stepsExecuted++;
+// }
 
-//     @Test
-//     public void testWithDestroyingVMs() {
-//         List<CloudletDescriptor> jobs = new ArrayList<>();
-//         for (int i = 0; i < 5; i++) {
-//             jobs.add(new CloudletDescriptor(i, 10 * i, 200000, 4));
-//         }
+// final long totalVmPes =
+// 2 * basicVmPeCount
+// + basicVmPeCount * 2
+// + basicVmPeCount * 4;
 
-//         Map<String, String> parameters = addParameters(10, 1, 1, jobs);
+// final long datacenterCores = datacenterHostsCnt * hostPeCnt;
 
-//         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+// System.out.println("totalVmPes = " + totalVmPes
+// + " datacenterCores = " + datacenterCores
+// + " totalVmPes/datacenterCores = " + (double)totalVmPes/datacenterCores
+// + " maxCoreRatio = " + maxCoreRatio);
 
-//         multiSimulationEnvironment.reset(simulationId);
+// assertEquals((double) totalVmPes/datacenterCores, maxCoreRatio, 0.000001);
 
-//         int stepsExecuted = 1;
-//         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
+// multiSimulationEnvironment.close(simulationId);
+// }
 
-//         while (!step.isDone()) {
-//             System.out.println("Executing step: " + stepsExecuted);
+// @Test
+// public void testWithDestroyingVMs() {
+// List<CloudletDescriptor> jobs = new ArrayList<>();
+// for (int i = 0; i < 5; i++) {
+// jobs.add(new CloudletDescriptor(i, 10 * i, 200000, 4));
+// }
 
-//             if (stepsExecuted == 20) {
-//                 // delete a SMALL VM
-//                 List<Double> action = new ArrayList<Double>(List.of(-0.1, 0.0));
-//                 step = multiSimulationEnvironment.step(simulationId, action);
+// Map<String, String> parameters = addParameters(10, 1, 1, jobs);
 
-//                 final long totalVmPes =
-//                         (10 - 1) * basicVmPeCount
-//                         + basicVmPeCount * 2
-//                         + basicVmPeCount * 4;
+// final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
-// 				final long datacenterCores = datacenterHostsCnt * hostPeCnt;
+// multiSimulationEnvironment.reset(simulationId);
 
-//                 assertEquals((double) totalVmPes / datacenterCores,
-//                         step.getObs()[0], 0.000001);
-//             }
+// int stepsExecuted = 1;
+// SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
 
-//             step = multiSimulationEnvironment.step(simulationId, nopAction);
+// while (!step.isDone()) {
+// System.out.println("Executing step: " + stepsExecuted);
 
-//             System.out.println("Observations: "
-//                     + Arrays.toString(step.getObs()) + " "
-//                     + multiSimulationEnvironment.clock(simulationId));
-//             stepsExecuted++;
-//         }
-//         multiSimulationEnvironment.close(simulationId);
-//     }
-    
-//     @Test
-//     public void testNoVmForCloudlet() {
-//         /*
-//          * Test to check that if there are not enough resources to host a job at the moment,
-//          * the job tries to get rescheduled forever.
-//          * If we do not send a future event every time we time we see that we have unfinished
-//          * cloudlets, then the simulation ends immidiately.
-//          */
-//         List<CloudletDescriptor> jobs = Arrays.asList(new CloudletDescriptor(0, 0, 10, 1));
-//         Map<String, String> parameters = addParameters(0, 0, 0, jobs);
+// if (stepsExecuted == 20) {
+// // delete a SMALL VM
+// List<Double> action = new ArrayList<Double>(List.of(-0.1, 0.0));
+// step = multiSimulationEnvironment.step(simulationId, action);
 
-//         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
-//         multiSimulationEnvironment.reset(simulationId);
+// final long totalVmPes =
+// (10 - 1) * basicVmPeCount
+// + basicVmPeCount * 2
+// + basicVmPeCount * 4;
 
-//         int stepsExecuted;
-//         for (stepsExecuted = 1; stepsExecuted < 1000; stepsExecuted++) {
-//             multiSimulationEnvironment.step(simulationId, nopAction);
-//             System.out.println("Executing step: " + stepsExecuted);
-//         }
-//         assertEquals(stepsExecuted, 1000);
-//     }
+// final long datacenterCores = datacenterHostsCnt * hostPeCnt;
 
-//     @Test
-//     public void testNoVmForRescheduledCloudlet() {
-//         /*
-//          * Test to check that if there are not enough resources to host a rescheduled job at the moment,
-//          * the job just waits until there are resources available and reschedules the cloudlet just then.
-//          * By "rescheduled job" we mean a job that was running on a VM, then the Vm was terminated before
-//          * the job was finished, and now this job should be rescheduled.
-//          * We start the simulation with one S VM.
-//          * Initially, the cloudlet starts running at 2.1.
-//          * We remove the VM at step 10.
-//          * We create a new S VM at step 20. The cloudlet should be rescheduled at 21.
-//          * The cloudlet should run for 100000 MI / 10000 MIPS = 10 seconds = 10 timesteps.
-//          * The simulation should end at 31.1 where we have made 31 steps.
-//          */
-//         List<CloudletDescriptor> jobs = Arrays.asList(new CloudletDescriptor(0, 0, 100000, 1));
-//         Map<String, String> parameters = addParameters(1, 0, 0, jobs);
+// assertEquals((double) totalVmPes / datacenterCores,
+// step.getObs()[0], 0.000001);
+// }
 
-//         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
-//         multiSimulationEnvironment.reset(simulationId);
+// step = multiSimulationEnvironment.step(simulationId, nopAction);
 
-//         SimulationStepResult step;
-//         int stepsExecuted;
-//         List<Double> action;
-//         for (stepsExecuted = 1; stepsExecuted < 1000; stepsExecuted++) {
-//             System.out.println("Will execute step: " + stepsExecuted);
+// System.out.println("Observations: "
+// + Arrays.toString(step.getObs()) + " "
+// + multiSimulationEnvironment.clock(simulationId));
+// stepsExecuted++;
+// }
+// multiSimulationEnvironment.close(simulationId);
+// }
 
-//             if (stepsExecuted == 10) {
-//                 action = removeSVmAction;
-//             }
-//             else if (stepsExecuted == 20) {
-//                 action = createSVmAction;
-//             }
-//             else {
-//                 action = nopAction;
-//             }
-//             step = multiSimulationEnvironment.step(simulationId, action);
-//             if (step.isDone()) {
-//                 break;
-//             }
-//         }
-//         assertEquals(stepsExecuted, 31);
-//     }
+// @Test
+// public void testNoVmForCloudlet() {
+// /*
+// * Test to check that if there are not enough resources to host a job at the moment,
+// * the job tries to get rescheduled forever.
+// * If we do not send a future event every time we time we see that we have unfinished
+// * cloudlets, then the simulation ends immidiately.
+// */
+// List<CloudletDescriptor> jobs = Arrays.asList(new CloudletDescriptor(0, 0, 10, 1));
+// Map<String, String> parameters = addParameters(0, 0, 0, jobs);
 
-//     @Test
-//     public void testProcessingAllCloudlets() {
-//         // scenario:
-//         // 1. we submit jobs at delay 5
-//         // 2. we have 2S, 1M, 1L VMs
-//         // 3. we submit enough to overload the system (we have 2+2+4+8=16 cores,
-//         //    so we submit for 18 cores) for 10 iterations
-//         //    there should be 2 cloudlets assigned to a VM but not executing
-//         // 5. we delete the additional S machine at time 10.
-//         //    (at 50% of processing of the accepted jobs)
-//         // 6. we see what happens to the jobs
-//         // The correct behaviour is for the cloudlets to get rescheduled so any
-//         // available Vm can execute them
+// final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+// multiSimulationEnvironment.reset(simulationId);
 
-//         List<CloudletDescriptor> jobs = new ArrayList<>();
-//         jobs.add(new CloudletDescriptor(1, 5, 10000*10, 100));
+// int stepsExecuted;
+// for (stepsExecuted = 1; stepsExecuted < 1000; stepsExecuted++) {
+// multiSimulationEnvironment.step(simulationId, nopAction);
+// System.out.println("Executing step: " + stepsExecuted);
+// }
+// assertEquals(stepsExecuted, 1000);
+// }
 
-//         Map<String, String> parameters = addParameters(2, 1, 1, jobs);
+// @Test
+// public void testNoVmForRescheduledCloudlet() {
+// /*
+// * Test to check that if there are not enough resources to host a rescheduled job at the moment,
+// * the job just waits until there are resources available and reschedules the cloudlet just then.
+// * By "rescheduled job" we mean a job that was running on a VM, then the Vm was terminated before
+// * the job was finished, and now this job should be rescheduled.
+// * We start the simulation with one S VM.
+// * Initially, the cloudlet starts running at 2.1.
+// * We remove the VM at step 10.
+// * We create a new S VM at step 20. The cloudlet should be rescheduled at 21.
+// * The cloudlet should run for 100000 MI / 10000 MIPS = 10 seconds = 10 timesteps.
+// * The simulation should end at 31.1 where we have made 31 steps.
+// */
+// List<CloudletDescriptor> jobs = Arrays.asList(new CloudletDescriptor(0, 0, 100000, 1));
+// Map<String, String> parameters = addParameters(1, 0, 0, jobs);
 
-//         final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+// final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
+// multiSimulationEnvironment.reset(simulationId);
 
-//         multiSimulationEnvironment.reset(simulationId);
-//         SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
-//         int stepsExecuted = 1;
-//         List<Double> action;
+// SimulationStepResult step;
+// int stepsExecuted;
+// List<Double> action;
+// for (stepsExecuted = 1; stepsExecuted < 1000; stepsExecuted++) {
+// System.out.println("Will execute step: " + stepsExecuted);
 
-//         while (!step.isDone()) {
-//             System.out.println("Executing step: " + stepsExecuted);
+// if (stepsExecuted == 10) {
+// action = removeSVmAction;
+// }
+// else if (stepsExecuted == 20) {
+// action = createSVmAction;
+// }
+// else {
+// action = nopAction;
+// }
+// step = multiSimulationEnvironment.step(simulationId, action);
+// if (step.isDone()) {
+// break;
+// }
+// }
+// assertEquals(stepsExecuted, 31);
+// }
 
-//             action = stepsExecuted == 10 ? removeSVmAction : nopAction;
+// @Test
+// public void testProcessingAllCloudlets() {
+// // scenario:
+// // 1. we submit jobs at delay 5
+// // 2. we have 2S, 1M, 1L VMs
+// // 3. we submit enough to overload the system (we have 2+2+4+8=16 cores,
+// // so we submit for 18 cores) for 10 iterations
+// // there should be 2 cloudlets assigned to a VM but not executing
+// // 5. we delete the additional S machine at time 10.
+// // (at 50% of processing of the accepted jobs)
+// // 6. we see what happens to the jobs
+// // The correct behaviour is for the cloudlets to get rescheduled so any
+// // available Vm can execute them
 
-//             step = multiSimulationEnvironment.step(simulationId, action);
+// List<CloudletDescriptor> jobs = new ArrayList<>();
+// jobs.add(new CloudletDescriptor(1, 5, 10000*10, 100));
 
-//             System.out.println("Observations: " + Arrays.toString(step.getObs()) + " "
-//                     + multiSimulationEnvironment.clock(simulationId));
-//             stepsExecuted++;
+// Map<String, String> parameters = addParameters(2, 1, 1, jobs);
 
-//             if (stepsExecuted == 1000) {
-//                 break;
-//             }
-//         }
+// final String simulationId = multiSimulationEnvironment.createSimulation(parameters);
 
-//         final WrappedSimulation simulation =
-//                 multiSimulationEnvironment.getValidSimulation(simulationId);
-//         simulation.printJobStats();
-//         multiSimulationEnvironment.close(simulationId);
+// multiSimulationEnvironment.reset(simulationId);
+// SimulationStepResult step = multiSimulationEnvironment.step(simulationId, nopAction);
+// int stepsExecuted = 1;
+// List<Double> action;
 
-//         assertNotEquals(1000, stepsExecuted);
-//     }
-   
-//     @AfterAll
-//     public static void deleteJobLogDirectory() {
-//         // Recursively delete the tempDirectory and its contents
-//         try {
-//             FileUtils.deleteDirectory(new File("./logs"));
-//         } catch (Exception e) {
-//             e.printStackTrace();
-//         }
-//     }
+// while (!step.isDone()) {
+// System.out.println("Executing step: " + stepsExecuted);
+
+// action = stepsExecuted == 10 ? removeSVmAction : nopAction;
+
+// step = multiSimulationEnvironment.step(simulationId, action);
+
+// System.out.println("Observations: " + Arrays.toString(step.getObs()) + " "
+// + multiSimulationEnvironment.clock(simulationId));
+// stepsExecuted++;
+
+// if (stepsExecuted == 1000) {
+// break;
+// }
+// }
+
+// final WrappedSimulation simulation =
+// multiSimulationEnvironment.getValidSimulation(simulationId);
+// simulation.printJobStats();
+// multiSimulationEnvironment.close(simulationId);
+
+// assertNotEquals(1000, stepsExecuted);
+// }
+
+// @AfterAll
+// public static void deleteJobLogDirectory() {
+// // Recursively delete the tempDirectory and its contents
+// try {
+// FileUtils.deleteDirectory(new File("./logs"));
+// } catch (Exception e) {
+// e.printStackTrace();
+// }
+// }
 // }

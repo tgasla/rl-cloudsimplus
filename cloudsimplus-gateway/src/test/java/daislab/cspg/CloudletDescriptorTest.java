@@ -37,7 +37,7 @@ public class CloudletDescriptorTest {
 
         final String serialized = gson.toJson(cloudletDescriptors);
 
-        Type listType = new TypeToken<List<CloudletDescriptor>>(){}.getType();
+        Type listType = new TypeToken<List<CloudletDescriptor>>() {}.getType();
 
         final List<CloudletDescriptor> deserialized = gson.fromJson(serialized, listType);
 
@@ -45,7 +45,7 @@ public class CloudletDescriptorTest {
 
         assertEquals(2, deserialized.size());
     }
-    
+
     @AfterAll
     public static void deleteJobLogDirectory() {
         // Recursively delete the tempDirectory and its contents
