@@ -32,6 +32,13 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.best_reward = -np.inf
         self.save_best_episode_rl_details = save_best_episode_rl_details
         self.save_best_episode_metrics = save_best_episode_metrics
+
+        self._reset_log_info()
+
+    def get(self, attr):
+        return self.training_env.env_method("get_wrapper_attr", attr)[0]
+
+    def _reset_log_info(self):
         self.observations = []
         self.actions = []
         self.rewards = []
@@ -45,9 +52,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.invalid_reward = []
         self.unutilized_active = []
         self.unutilized_all = []
-
-    def get(self, attr):
-        return self.training_env.env_method("get_wrapper_attr", attr)[0]
 
     def _on_step(self) -> bool:
         # because the environment is a VecEnv environment, the variables are dones
@@ -200,17 +204,5 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                         )
                         unutilized_all_df.to_csv(unutilized_all_path, header=False)
 
-            self.observations = []
-            self.actions = []
-            self.rewards = []
-            self.new_observations = []
-            self.host_metrics = []
-            self.vm_metrics = []
-            self.job_metrics = []
-            self.job_wait_time = []
-            self.unutilized_active = []
-            self.unutilized_all = []
-            self.job_wait_reward = []
-            self.util_reward = []
-            self.invalid_reward = []
+            self._reset_log_info()
         return True
