@@ -196,8 +196,13 @@ public class CloudSimProxy {
     // This function proceeds simulation clock time
     private void runForInternal(final double interval, final double target) {
         double adjustedInterval = interval;
+        // Run the simulation until the target time is reached
         while (cloudSimPlus.runFor(adjustedInterval) < target) {
-            adjustedInterval = Math.max(target - clock(), cloudSimPlus.getMinTimeBetweenEvents());
+            // Calculate the remaining time to the target
+            adjustedInterval = target - clock();
+            // Use the minimum time between events if the remaining time is non-positive
+            adjustedInterval = adjustedInterval <= 0 ? cloudSimPlus.getMinTimeBetweenEvents()
+                    : adjustedInterval;
         }
     }
 
@@ -300,7 +305,7 @@ public class CloudSimProxy {
             @Override
             public void update(CloudletVmEventInfo info) {
                 LOGGER.debug("Cloudlet:" + cloudlet.getId() + " started running on vm "
-                        + cloudlet.getVm().getId() + "at " + clock());
+                        + cloudlet.getVm().getId() + " at " + clock());
             }
         });
     }
@@ -310,7 +315,12 @@ public class CloudSimProxy {
             @Override
             public void update(CloudletVmEventInfo info) {
                 LOGGER.debug("Cloudlet: " + cloudlet.getId() + " that was running on vm "
-                        + cloudlet.getVm().getId() + " finished at" + clock() + ". ");
+                        + cloudlet.getVm().getId() + " (runs "
+                        + cloudlet.getVm().getCloudletScheduler().getCloudletExecList().size()
+                        + " cloudlets) on host " + cloudlet.getVm().getHost() + " (runs "
+                        + cloudlet.getVm().getHost().getVmList().size() + " vms) finished at "
+                        + clock() + " with total execution time "
+                        + cloudlet.getTotalExecutionTime());
                 final double waitTime =
                         cloudlet.getStartTime() - originalSubmissionDelay.get(cloudlet.getId());
                 jobsFinishedWaitTimeLastTimestep.add(waitTime);

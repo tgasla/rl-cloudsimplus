@@ -71,13 +71,13 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     // protected void requestDatacentersToCreateWaitingCloudlets() {
     // final List<Cloudlet> scheduled = new LinkedList<>();
     // final List<Cloudlet> cloudletWaitingList = getCloudletWaitingList();
-    // for (final Iterator<Cloudlet> it = cloudletWaitingList.iterator(); it.hasNext(); ) {
+    // for (final Iterator<Cloudlet> it = cloudletWaitingList.iterator(); it.hasNext();) {
     // final CloudletSimple cloudlet = (CloudletSimple) it.next();
     // if (!cloudlet.getLastTriedDatacenter().equals(Datacenter.NULL)) {
     // continue;
     // }
 
-    // //selects a VM for the given Cloudlet
+    // // selects a VM for the given Cloudlet
     // Vm selectedVm = defaultVmMapper(cloudlet);
     // if (selectedVm == Vm.NULL) {
     // break;
@@ -86,18 +86,18 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     // ((VmSimple) selectedVm).removeExpectedFreePesNumber(cloudlet.getPesNumber());
 
     // cloudlet.setVm(selectedVm);
-    // send(getDatacenter(selectedVm),
-    // cloudlet.getSubmissionDelay(), CloudSimTag.CLOUDLET_SUBMIT, cloudlet);
+    // send(getDatacenter(selectedVm), cloudlet.getSubmissionDelay(),
+    // CloudSimTag.CLOUDLET_SUBMIT, cloudlet);
     // cloudlet.setLastTriedDatacenter(getDatacenter(selectedVm));
     // getCloudletCreatedList().add(cloudlet);
     // scheduled.add(cloudlet);
     // it.remove();
     // }
 
-    // LOGGER.debug("requestDatacentersToCreateWaitingCloudlets scheduled: "
-    // + scheduled.size() + "/" + cloudletWaitingList.size());
-    // LOGGER.debug("Events cnt before: "
-    // + getSimulation().getNumberOfFutureEvents(simEvent -> true));
+    // LOGGER.debug("requestDatacentersToCreateWaitingCloudlets scheduled: " + scheduled.size()
+    // + "/" + cloudletWaitingList.size());
+    // LOGGER.debug(
+    // "Events cnt before: " + getSimulation().getNumberOfFutureEvents(simEvent -> true));
     // for (Cloudlet cloudlet : scheduled) {
     // final long totalLengthInMips = cloudlet.getTotalLength();
     // final double peMips = cloudlet.getVm().getProcessor().getMips();
@@ -105,30 +105,24 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
     // final Datacenter datacenter = getDatacenter(cloudlet.getVm());
     // final double eventDelay = lengthInSeconds + 1.0;
 
-    // LOGGER.debug("Cloudlet " + cloudlet.getId()
-    // + " scheduled. Updating in: " + eventDelay);
+    // LOGGER.debug("Cloudlet " + cloudlet.getId() + " scheduled. Updating in: " + eventDelay);
 
-    // getSimulation().send(
-    // datacenter,
-    // datacenter,
-    // eventDelay,
-    // CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING,
-    // null
-    // );
+    // getSimulation().send(datacenter, datacenter, eventDelay,
+    // CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING, null);
     // }
-    // LOGGER.debug("Events cnt after: "
-    // + getSimulation().getNumberOfFutureEvents(simEvent -> true));
+    // LOGGER.debug(
+    // "Events cnt after: " + getSimulation().getNumberOfFutureEvents(simEvent -> true));
     // }
 
-    // /**
-    // * Here, we override the original function which tries to find a vm from the
-    // * created list to place a cloudlet. Instead, because we may also remove a vm,
-    // * the default logic does not make sense for us, so we try to find a vm for a cloudlet
-    // * using the current executing vms instead of the created ones.
-    // *
-    // * @param cloudlet the Cloudlet to find a VM to run it
-    // * @return the VM selected for the Cloudlet or {@link Vm#NULL} if no suitable VM was found
-    // */
+    /**
+     * Here, we override the original function which tries to find a vm from the created list to
+     * place a cloudlet. Instead, because we may also remove a vm, the default logic does not make
+     * sense for us, so we try to find a vm for a cloudlet using the current executing vms instead
+     * of the created ones.
+     *
+     * @param cloudlet the Cloudlet to find a VM to run it
+     * @return the VM selected for the Cloudlet or {@link Vm#NULL} if no suitable VM was found
+     */
     @Override
     public Vm defaultVmMapper(final Cloudlet cloudlet) {
         /*
