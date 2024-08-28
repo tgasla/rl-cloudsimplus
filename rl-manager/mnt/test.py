@@ -20,7 +20,7 @@ def main():
     # if pretrain dir is blank then you should pretrain first,
     # otherwise load agent from pretrain dir
 
-    jobs = csv_to_cloudlet_descriptor("mnt/traces/100jobs_fast.csv")
+    jobs = csv_to_cloudlet_descriptor("mnt/traces/50_50jobs_2bursts.csv")
 
     # Create and wrap the environment
     env = gym.make(

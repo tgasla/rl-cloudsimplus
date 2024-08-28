@@ -35,7 +35,7 @@ class SingleDC(gym.Env):
 
     All values are within range [0,1]
 
-    [DEPRECATED]
+    [OLD]
     "hostCoresAllocatedToVmsRatioHistory",
     "avgCPUUtilizationHistory",
     "p90CPUUtilizationHistory",
@@ -99,7 +99,7 @@ class SingleDC(gym.Env):
         # type = {0: small, 1: medium, 2: large}
         # ^ needed only when action = 1
         self.action_space = spaces.MultiDiscrete(
-            np.array([2, int(datacenter_hosts_cnt), 2])
+            np.array([3, int(datacenter_hosts_cnt), 3])
         )
 
         self.observation_space = spaces.Box(
