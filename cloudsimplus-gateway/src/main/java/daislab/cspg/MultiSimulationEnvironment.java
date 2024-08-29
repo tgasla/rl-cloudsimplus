@@ -60,12 +60,6 @@ public class MultiSimulationEnvironment {
         return simulation.step(actionPrimitive);
     }
 
-    public long ping() {
-        LOGGER.info("pong");
-
-        return 31415L;
-    }
-
     public void seed(final String simulationIdentifier) {
         final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
 

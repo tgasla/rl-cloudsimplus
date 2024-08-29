@@ -25,7 +25,6 @@ class Argumenmts:
     transfer_reward_job_wait_coef: str
     transfer_reward_util_coef: str
     transfer_reward_invalid_coef: str
-    simulation_speedup: str
 
 
 def parse_args() -> Argumenmts:
@@ -126,9 +125,6 @@ def parse_args() -> Argumenmts:
         type=str,
         help="The reward coefficient for invalid actions on transfer",
     )
-    parser.add_argument(
-        "--simulation-speedup", type=str, help="This affects the job arrival time"
-    )
 
     args = parser.parse_args()
 
@@ -156,8 +152,6 @@ def parse_args() -> Argumenmts:
     transfer_reward_util_coef = str(args.transfer_reward_util_coef)
     transfer_reward_invalid_coef = str(args.transfer_reward_invalid_coef)
 
-    simulation_speedup = str(args.simulation_speedup)
-
     return Argumenmts(
         algorithm_str=algorithm_str,
         max_timesteps_per_episode=max_timesteps_per_episode,
@@ -180,5 +174,4 @@ def parse_args() -> Argumenmts:
         transfer_reward_job_wait_coef=transfer_reward_job_wait_coef,
         transfer_reward_util_coef=transfer_reward_util_coef,
         transfer_reward_invalid_coef=transfer_reward_invalid_coef,
-        simulation_speedup=simulation_speedup,
     )

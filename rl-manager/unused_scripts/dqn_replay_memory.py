@@ -15,15 +15,13 @@ import torch.optim as optim
 import torch.nn.functional as F
 import logging
 
-log = logging.getLogger('infinity.learn')
+log = logging.getLogger("infinity.learn")
 log.setLevel(logging.DEBUG)
 
-Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
+Transition = namedtuple("Transition", ("state", "action", "next_state", "reward"))
 
 
 class ReplayMemory(object):
-
     def __init__(self, capacity):
         self.capacity = capacity
         self.memory = []
@@ -44,7 +42,6 @@ class ReplayMemory(object):
 
 
 class DQN(nn.Module):
-
     def __init__(self):
         super(DQN, self).__init__()
         self.conv1 = nn.Conv1d(6, 16, kernel_size=5, stride=2)
@@ -64,20 +61,19 @@ class DQN(nn.Module):
 
 
 class ModelTrainer(object):
-
     def __init__(self):
         super(ModelTrainer, self).__init__()
 
-        self._storage_path = os.getenv('STORAGE_PATH', '/storage')
-        self._episodes_cnt = int(os.getenv('EPISODES_CNT', '1'))
-        self._device = os.getenv('DEVICE', 'cpu')
+        self._storage_path = os.getenv("STORAGE_PATH", "/storage")
+        self._episodes_cnt = int(os.getenv("EPISODES_CNT", "1"))
+        self._device = os.getenv("DEVICE", "cpu")
         self._policy_net = DQN().to(self._device)
         self._target_net = DQN().to(self._device)
         self._target_net.load_state_dict(self._policy_net.state_dict())
         self._target_net.eval()
         self._optimizer = optim.RMSprop(self._policy_net.parameters())
         self._memory = ReplayMemory(10000)
-        self._batch_size = int(os.getenv('BATCH_SIZE', '128'))
+        self._batch_size = int(os.getenv("BATCH_SIZE", "128"))
         self._gamma = 0.999
         self._eps_start = 0.9
         self._eps_end = 0.05
@@ -89,7 +85,7 @@ class ModelTrainer(object):
         return self._episode_durations
 
     def _get_measurements(self):
-        measurements = self._env.render(mode='array')
+        measurements = self._env.render(mode="array")
         measurements = torch.tensor(measurements)
         measurements = measurements.unsqueeze(0)
 
@@ -97,16 +93,17 @@ class ModelTrainer(object):
 
     def _select_action(self, state):
         sample = random.random()
-        eps_threshold = self._eps_end + (self._eps_start - self._eps_end) * \
-            math.exp(-1. * self._steps_done / self._eps_delay)
+        eps_threshold = self._eps_end + (self._eps_start - self._eps_end) * math.exp(
+            -1.0 * self._steps_done / self._eps_delay
+        )
         self._steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
                 return self._policy_net(state).max(1)[1].view(1, 1)
         else:
-            return torch.tensor([[random.randrange(3)]],
-                                device=self._device,
-                                dtype=torch.long)
+            return torch.tensor(
+                [[random.randrange(3)]], device=self._device, dtype=torch.long
+            )
 
     def _optimize_model(self):
         if len(self._memory) < self._batch_size:
@@ -122,12 +119,11 @@ class ModelTrainer(object):
         non_final_mask = torch.tensor(
             tuple(map(lambda s: s is not None, batch.next_state)),
             device=self._device,
-            dtype=torch.uint8
+            dtype=torch.uint8,
         )
-        non_final_next_states = torch.cat([
-            s for s in batch.next_state
-            if s is not None
-        ])
+        non_final_next_states = torch.cat(
+            [s for s in batch.next_state if s is not None]
+        )
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
@@ -142,16 +138,16 @@ class ModelTrainer(object):
 
         # Compute V(s_{t+1}) for all next states.
         next_state_values = torch.zeros(self._batch_size, device=self._device)
-        next_state_values[non_final_mask] =\
+        next_state_values[non_final_mask] = (
             self._target_net(non_final_next_states).max(1)[0].detach()
+        )
         # Compute the expected Q values
-        expected_state_action_values =\
-            (next_state_values * self._gamma) + reward_batch
+        expected_state_action_values = (next_state_values * self._gamma) + reward_batch
 
         # Compute Huber loss
         loss = F.smooth_l1_loss(
-            state_action_values,
-            expected_state_action_values.unsqueeze(1))
+            state_action_values, expected_state_action_values.unsqueeze(1)
+        )
 
         # Optimize the model
         self._optimizer.zero_grad()
@@ -163,7 +159,7 @@ class ModelTrainer(object):
     def train(self, simulation_start, simulation_end):
         self._steps_done = 0
         self._episode_durations = []
-        self._env = gym.make('SingleDCAppEnv-v0').unwrapped
+        self._env = gym.make("SingleDCAppEnv-v0").unwrapped
         max_total_reward = None
         for i_episode in range(self._episodes_cnt):
             log.debug("Episode: " + str(i_episode))
@@ -175,28 +171,24 @@ class ModelTrainer(object):
             current_measurements = self._get_measurements()
             state = current_measurements - last_measurements
 
-            log.debug(f'Input size: {state.size()}')
-            log.debug('Training: ' + str(simulation_start) + ' till ' +
-                      str(simulation_end))
+            log.debug(f"Input size: {state.size()}")
+            log.debug(
+                "Training: " + str(simulation_start) + " till " + str(simulation_end)
+            )
 
             # run the simulation for a constant amount of time
             # ... or until it is 'done' - the status returned is 'done'
             start = int(simulation_start / 1000)
             end = int(simulation_end / 1000) + 1
 
-            log.debug('Running the episode for: ' + str(end-start+1) + 's')
+            log.debug("Running the episode for: " + str(end - start + 1) + "s")
             for t in range(end - start + 1):
                 log.debug("Iteration: " + str(t))
                 # Select and perform an action
                 action = self._select_action(state)
                 _, reward, done, _ = self._env.step(action.item())
                 total_reward += reward
-                log.debug(
-                    "Reward for action: "
-                    + str(reward)
-                    + " act: "
-                    + str(action)
-                )
+                log.debug("Reward for action: " + str(reward) + " act: " + str(action))
                 reward = torch.tensor([reward], device=self._device)
 
                 # Observe new state
@@ -232,15 +224,13 @@ class ModelTrainer(object):
                     break
             # Update the target network
             if i_episode % self._target_update == 0:
-                self._target_net.load_state_dict(
-                    self._policy_net.state_dict()
-                )
+                self._target_net.load_state_dict(self._policy_net.state_dict())
 
-        log.debug('Complete')
+        log.debug("Complete")
 
         self._env.close()
 
-        log.debug('Saving the result of training')
+        log.debug("Saving the result of training")
 
         buff = BytesIO()
         torch.save(self._policy_net.state_dict(), buff)

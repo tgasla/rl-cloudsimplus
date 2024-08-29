@@ -35,10 +35,14 @@ public class WrappedSimulation {
     // "waitingJobsRatioTimestep"
     // );
 
+
+    // TODO: I should not have it hardcoded here.
+    // I should pass a map with <key, value> metrics into the metricsstorage
+    // and then calculate the elements of the maps
     private static final int datacenterMetricsCount = 1;
-    private static final int hostMetricsCount = 10;
-    private static final int vmMetricsCount = 7;
-    private static final int jobMetricsCount = 5;
+    private static final int hostMetricsCount = 4;
+    private static final int vmMetricsCount = 1;
+    private static final int jobMetricsCount = 1;
 
     // private final MetricsStorage metricsStorage = new MetricsStorage(HISTORY_LENGTH,
     // metricsNames);
@@ -148,8 +152,9 @@ public class WrappedSimulation {
 
     public SimulationStepResult step(final int[] action) {
         validateSimulationReset();
-
         this.currentStep++;
+
+        debug("Step " + this.currentStep + " starts");
 
         boolean isValid = executeAction(action);
         cloudSimProxy.runFor(settings.getTimestepInterval());
@@ -166,7 +171,7 @@ public class WrappedSimulation {
 
         recordSimulationData(action, rewards);
 
-        debug("Step " + this.currentStep + " finished ");
+        debug("Step " + this.currentStep + " finished");
         debug("Terminated: " + terminated + ", Truncated: " + truncated);
         debug("Length of future events queue: " + cloudSimProxy.getNumberOfFutureEvents());
         if (terminated || truncated) {
@@ -372,15 +377,16 @@ public class WrappedSimulation {
     private void printEpisodeStatsDebug(double jobWaitReward, double utilReward,
             double invalidReward) {
 
-        debug("\n=============== Episode stats so far ===============" + "\nEpisode Statistics:"
-                + "\nAverage job wait reward in the episode: " + getEpJobWaitRewardMean()
-                + "\nAverage utilization reward in the episode: " + getEpUtilRewardMean()
-                + "\nMax waiting jobs count in the episode: " + getEpWaitingJobsCountMax()
-                + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
+        debug("\n==================== Episode stats so far ===================="
+                + "\nEpisode Statistics:" + "\nAverage job wait reward in the episode: "
+                + getEpJobWaitRewardMean() + "\nAverage utilization reward in the episode: "
+                + getEpUtilRewardMean() + "\nMax waiting jobs count in the episode: "
+                + getEpWaitingJobsCountMax() + "\nMax running vms count in the episode: "
+                + getEpRunningVmsCountMax()
                 + "\n====================================================" + "\nIn this timestep:"
                 + "\nJob wait reward: " + jobWaitReward + "\nUtilization reward: " + utilReward
                 + "\nInvalid reward: " + invalidReward
-                + "\n====================================================");
+                + "\n==============================================================");
     }
 
     private void updateEpisodeStats(double jobWaitReward, double utilReward, boolean isValid) {
@@ -433,12 +439,12 @@ public class WrappedSimulation {
 
         final boolean isValid;
 
-        debug("action is " + action[0] + ", " + action[1] + ", " + action[2]);
+        debug("The action is [" + action[0] + ", " + action[1] + ", " + action[2] + "]");
 
-        // [action, id, type^]
+        // [action, id, type]
         // action = {0: do nothing, 1: create vm, 2: destroy vm}
-        // type = {0: small, 1: medium, 2: large}
-        // ^ needed only when action = 1
+        // id = {hostId to place new vm (when action = 1), vmId to terminate (when action = 2)
+        // type = {0: small, 1: medium, 2: large} (relevant only when action = 1)
 
         if (action[0] == 1) {
             final int hostId = action[1];
@@ -453,9 +459,7 @@ public class WrappedSimulation {
             return isValid;
         }
 
-        else {
-            return true;
-        }
+        return true;
     }
 
     // final long id;
@@ -561,15 +565,6 @@ public class WrappedSimulation {
     // waitingJobsRatioTimestep);
     // }
 
-    // private double getWaitingJobsRatioLastTimestep() {
-    // final int submittedJobsCountLastTimestep =
-    // cloudSimProxy.getSubmittedJobsCountLastTimestep();
-
-    // return submittedJobsCountLastTimestep > 0
-    // ? cloudSimProxy.getWaitingJobsCountLastTimestep()
-    // / (double) submittedJobsCountLastTimestep : 0.0;
-    // }
-
     private double getWaitingJobsRatio() {
         final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
 
@@ -577,20 +572,6 @@ public class WrappedSimulation {
                 ? cloudSimProxy.getWaitingJobsCount() / (double) arrivedJobsCount
                 : 0.0;
     }
-
-    // private double getScheduledJobsRatioLastTimestep() {
-    // final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCountLastTimestep();
-
-    // return arrivedJobsCount > 0
-    // ? cloudSimProxy.getScheduledJobsCountLastTimestep() / (double) arrivedJobsCount : 0.0;
-    // }
-
-    // private double getScheduledJobsRatio() {
-    // final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
-
-    // return arrivedJobsCount > 0
-    // ? cloudSimProxy.getScheduledJobsCount() / (double) arrivedJobsCount : 0.0;
-    // }
 
     private double getHostCoresAllocatedToVmsRatio() {
         return ((double) cloudSimProxy.getAllocatedCores()) / settings.getTotalHostCores();
@@ -608,22 +589,13 @@ public class WrappedSimulation {
     // };
     // }
 
-    // private void print2dArray(double[][] array) {
-    // for (int i = 0; i < array.length; i++) {
-    // for (int j = 0; j < array[0].length; j++) {
-    // System.out.print(array[i][j] + " ");
-    // }
-    // System.out.print("\n");
-    // }
-    // }
-
     private double[][] getObservation() {
         final double[] datacenterMetrics = metricsStorage.getDatacenterMetrics();
         final double[][] hostMetrics = metricsStorage.getHostMetrics();
         final double[][] vmMetrics = metricsStorage.getVmMetrics();
         final double[][] jobMetrics = metricsStorage.getJobMetrics();
 
-        double[][] observation = new double[observationArrayRows][observationArrayColumns];
+        final double[][] observation = new double[observationArrayRows][observationArrayColumns];
         int currentRow = 0;
 
         for (int j = 0; j < datacenterMetrics.length; j++) {
@@ -654,18 +626,11 @@ public class WrappedSimulation {
             currentRow++;
         }
 
-        // print2dArray(observation);
-
         return observation;
     }
 
-    // private double safeMean(final double[] values) {
-    // return values.length > 0 ? StatUtils.mean(values) : 0.0;
-    // }
-
     private double[] calculateReward(final boolean isValid) {
         double[] rewards = new double[4];
-        // final int rewardMultiplier = 1;
         /*
          * reward is the negative cost of running the infrastructure minus any penalties from jobs
          * waiting in the queue minus penalty if action was invalid
@@ -678,9 +643,6 @@ public class WrappedSimulation {
         final double utilReward = -utilizationCoef * getHostCoresAllocatedToVmsRatio();
         final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
 
-        // TODO: this can be eliminated and just make cloudSimProxy method printJobStats public and
-        // call it from here
-        // TODO: CHECK how cloudsimplus formats the logger messages with {}
         LOGGER.debug("jobs arrived:" + cloudSimProxy.getArrivedJobsCount());
         LOGGER.debug("jobs waiting: " + cloudSimProxy.getWaitingJobsCount());
         LOGGER.debug("jobs running: " + cloudSimProxy.getRunningJobsCount());
@@ -690,8 +652,6 @@ public class WrappedSimulation {
         LOGGER.debug("invalidReward:" + invalidReward);
 
         final double totalReward = jobWaitReward + utilReward + invalidReward;
-
-        // totalReward *= rewardMultiplier;
 
         rewards[0] = totalReward;
         rewards[1] = jobWaitReward;

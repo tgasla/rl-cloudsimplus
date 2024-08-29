@@ -93,7 +93,6 @@ def main():
             reward_invalid_coef=args.pretrain_reward_invalid_coef,
             jobs_as_json=json.dumps(jobs),
             max_job_pes=args.pretrain_max_job_pes,
-            simulation_speedup=args.simulation_speedup,
             render_mode="ansi",
             job_log_dir=log_dir,
         )
@@ -127,8 +126,6 @@ def main():
 
         logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
         model.set_logger(logger)
-
-        # TODO: A2C and PPO take a n_steps parameter also :) check it out
 
         # Add some action noise for exploration if applicable
         if hasattr(model, "action_noise"):
@@ -199,7 +196,6 @@ def main():
         reward_invalid_coef=args.transfer_reward_invalid_coef,
         jobs_as_json=json.dumps(jobs),
         max_job_pes=args.transfer_max_job_pes,
-        simulation_speedup=args.simulation_speedup,
         render_mode="ansi",
         job_log_dir=new_log_dir,
     )

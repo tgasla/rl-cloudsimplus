@@ -74,7 +74,7 @@ public class SimulationFactory {
             long totalMi = cloudletDescriptor.getMi();
             // long normalSplitMi = totalMi / splitCount;
 
-            // Distribute the MI and PEs for each split part
+            // Distribute the PEs for each split part
             for (int i = 0; i < splitCount; i++) {
                 // Last split might have different MI and PES due to remainder
                 // long miForThisSplit = (i < splitCount - 1)
@@ -101,28 +101,21 @@ public class SimulationFactory {
     }
 
     private List<CloudletDescriptor> loadJobsFromParams(final String jobsAsJson) {
-        List<CloudletDescriptor> retVal = new ArrayList<>();
+        List<CloudletDescriptor> jobList = new ArrayList<>();
         LOGGER.info(jobsAsJson);
         final List<CloudletDescriptor> deserialized =
                 gson.fromJson(jobsAsJson, cloudletDescriptors);
 
         for (CloudletDescriptor cloudletDescriptor : deserialized) {
-            retVal.add(ensureMinValues(cloudletDescriptor));
+            jobList.add(ensureMinValues(cloudletDescriptor));
         }
 
-        LOGGER.info("Deserialized " + retVal.size() + " jobs");
+        LOGGER.info("Deserialized " + jobList.size() + " jobs");
 
-        return retVal;
+        return jobList;
     }
 
     private CloudletDescriptor ensureMinValues(final CloudletDescriptor cloudletDescriptor) {
-        // if you uncomment the lines below, then simulationSpeedup controls two things:
-        // 1. how fast are jobs coming and
-        // 2. how long do jobs run
-        // However, it is better to control only 1. and let 2. be controlled by the
-        // MIPS number in utils.py (applicable only if reading SWF files)
-        // final long newMi = Math.max((long) (cloudletMi / simulationSpeedup), 1);
-        // final long newDelay = Math.max(0, (long) (cloudletDelay / simulationSpeedup));
         final long mi = Math.max(1, cloudletDescriptor.getMi());
         final long cloudletDelay = Math.max(0, cloudletDescriptor.getSubmissionDelay());
         final int pesNumber = Math.max(1, cloudletDescriptor.getNumberOfCores());

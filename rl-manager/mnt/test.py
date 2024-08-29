@@ -34,7 +34,6 @@ def main():
         reward_invalid_coef="0.4",
         jobs_as_json=json.dumps(jobs),
         max_job_pes="1",
-        simulation_speedup="1",
         render_mode="ansi",
     )
 

@@ -49,13 +49,6 @@ public class SimulationSettings {
     // Get SimulationSettings from parameters
     // passed from the python client endpoint - the Gymnasium environment,
     // if an environment variable is not set, a default value is given
-    // TODO: I should create a map inside the class defining the parameter names.
-    // Then, get the parameters and do a get for every parameter in a loop
-    // to set the parameters.
-    // TODO: Maybe even better, write these parameter names and values into a file
-    // so that both java and python can get these without repeating code.
-    // TODO: Also, initial_vm_parameters should also be here instead of inside
-    // the SimulationFactory class.
     public SimulationSettings(final Map<String, String> parameters) {
         sourceOfJobs = parameters.getOrDefault("SOURCE_OF_JOBS", "PARAMS");
         jobs = parameters.getOrDefault("JOBS", "[]");

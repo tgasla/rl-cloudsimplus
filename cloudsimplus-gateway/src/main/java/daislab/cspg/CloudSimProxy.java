@@ -58,24 +58,25 @@ public class CloudSimProxy {
     private final Map<Long, Double> originalSubmissionDelay;
     private final List<Cloudlet> inputJobs;
     private final List<Cloudlet> unsubmittedJobs;
-    private int triedToSubmitJobCount;
+    private final Set<Cloudlet> arrivedJobs;
     private List<Double> jobsFinishedWaitTimeLastTimestep;
+    private int triedToSubmitJobCount;
     private int nextVmId;
     private int unableToSubmitJobCount;
-    // private int lastSubmittedJobIndex;
-    // private int previousLastSubmittedJobIndex;
 
     public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
         this.inputJobs = new ArrayList<>(inputJobs);
         this.unsubmittedJobs = new ArrayList<>(inputJobs);
+        // arrivedJobs is Set because we don't care about order, we just need apply .size() to
+        // see how many jobs have arrived (to avoid searching with streams and filtering the
+        // inputJobs list and also we avoid duplicates easily
+        this.arrivedJobs = new HashSet<>();
         originalSubmissionDelay = new HashMap<>();
         jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
         this.settings = settings;
         nextVmId = 0;
         triedToSubmitJobCount = 0;
         unableToSubmitJobCount = 0;
-        // lastSubmittedJobIndex = 0;
-        // previousLastSubmittedJobIndex = 0;
 
         cloudSimPlus = new CloudSimPlus(minTimeBetweenEvents);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
@@ -212,7 +213,6 @@ public class CloudSimProxy {
                     "The simulation is not running - " + "please reset or create a new one!");
         }
 
-        final long startTime = TimeMeasurement.startTiming();
         final double target = cloudSimPlus.clock() + interval;
 
         jobsFinishedWaitTimeLastTimestep.clear();
@@ -234,10 +234,8 @@ public class CloudSimProxy {
             broker.getCloudletCreatedList().clear();
         }
 
-        long elapsedTimeInNs = TimeMeasurement.calculateElapsedTime(startTime);
         String startTimeFormat = String.format("%.1f", clock() - interval);
-        LOGGER.debug("runFor [" + startTimeFormat + " - " + clock() + "] took " + elapsedTimeInNs
-                + "ns / " + elapsedTimeInNs / 1_000_000_000d + "s");
+        LOGGER.debug("runFor [" + startTimeFormat + " - " + clock() + "]");
     }
 
     private boolean shouldPrintJobStats() {
@@ -329,22 +327,21 @@ public class CloudSimProxy {
         });
     }
 
-    // TODO: I should consider submitting all jobs immediately when simulation starts
-    // using the submission delay that I have on the dataset. I assume that it will work.
-    // It will be practically the same and this code below will be eliminated, providing
-    // a more smooth code flow.
-
     private void scheduleJobsUntil(final double target) {
         List<Cloudlet> jobsToSubmit = new ArrayList<>();
         this.triedToSubmitJobCount = 0;
         this.unableToSubmitJobCount = 0;
-        // previousLastSubmittedJobIndex = lastSubmittedJobIndex;
 
         for (final Iterator<Cloudlet> it = unsubmittedJobs.iterator(); it.hasNext();) {
             Cloudlet cloudlet = it.next();
             if (cloudlet.getSubmissionDelay() > target) {
                 continue;
             }
+
+            // arrivedJobs is a Set, so when jobs already arrived (and in the list) need to be
+            // rescheduled, those jobs are added to the unsubmittedJobs list again for rescheduling
+            // but they will not be added twice in the arrivedJobs Set
+            this.arrivedJobs.add(cloudlet);
 
             triedToSubmitJobCount++;
             // Do not schedule cloudlet if there are no suitable vms to run it
@@ -358,7 +355,6 @@ public class CloudSimProxy {
             cloudlet.setSubmissionDelay(Math.max(cloudlet.getSubmissionDelay() - clock(), 0));
             jobsToSubmit.add(cloudlet);
             it.remove();
-            // lastSubmittedJobIndex++;
         }
 
         if (!jobsToSubmit.isEmpty()) {
@@ -416,18 +412,15 @@ public class CloudSimProxy {
         return cpuPercentUsage;
     }
 
-    // public int getSubmittedJobsCountLastTimestep() {
-    // return lastSubmittedJobIndex - previousLastSubmittedJobIndex;
-    // }
-
-    // public int getSubmittedJobsCount() {
-    // return lastSubmittedJobIndex;
+    // unoptimal
+    // public long getArrivedJobsCount() {
+    // return inputJobs.parallelStream()
+    // .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
+    // .count();
     // }
 
     public long getArrivedJobsCount() {
-        return inputJobs.parallelStream()
-                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
-                .count();
+        return this.arrivedJobs.size();
     }
 
     public long getArrivedJobsCountLastTimestep() {
@@ -455,7 +448,6 @@ public class CloudSimProxy {
                 .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
                 .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) > start)
                 .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.INEXEC))
-                // .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.QUEUED))
                 .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)).count();
     }
 
@@ -475,7 +467,6 @@ public class CloudSimProxy {
         return inputJobs.parallelStream()
                 .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
                 .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.INEXEC))
-                // .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.QUEUED))
                 .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)).count();
     }
 
@@ -525,7 +516,7 @@ public class CloudSimProxy {
 
         // assuming average startup delay is 56s as in 10.48550/arXiv.2107.03467
         final double delay = settings.getVmStartupDelay();
-        // TODO: instead of submissiondelay, maybe consider adding the vm boot up delay
+        // submissiondelay or vm boot up delay
         newVm.setSubmissionDelay(delay);
         broker.submitVm(newVm);
         LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
@@ -535,12 +526,19 @@ public class CloudSimProxy {
     // if a vm is destroyed, this method returns true, otherwise false
     public boolean removeVm(final int index) {
         List<Vm> vmExecList = broker.getVmExecList();
+        final int vmCount = broker.getVmExecList().size();
         LOGGER.debug("vmExecList.size = " + vmExecList);
 
-        if (vmExecList.isEmpty()) {
-            LOGGER.warn("Can't kill VM. No VMs running.");
+        if (index >= vmCount) {
+            LOGGER.warn("Can't kill vm with index " + index + " because only " + vmCount
+                    + " vms are running.");
             return false;
         }
+
+        // if (vmExecList.isEmpty()) {
+        // LOGGER.warn("Can't kill VM. No VMs running.");
+        // return false;
+        // }
 
         Vm vmToKill = vmExecList.get(index);
 
