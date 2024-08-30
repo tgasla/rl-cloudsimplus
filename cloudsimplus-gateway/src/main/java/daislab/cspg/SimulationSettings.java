@@ -2,8 +2,6 @@ package daislab.cspg;
 
 import java.util.Map;
 
-// import static org.apache.commons.lang3.SystemUtils.getEnvironmentVariable;
-
 /*
  * Class to describe the simulation settings. We provide two constructors.
  * 
@@ -20,96 +18,74 @@ public class SimulationSettings {
     private final int initialSVmCount;
     private final int initialMVmCount;
     private final int initialLVmCount;
-    private final String jobs;
-    private final String sourceOfJobs;
     private final boolean splitLargeJobs;
     private final int maxJobPes;
-    private final double vmRunningHourlyCost;
+    private final double vmHourlyCost;
+    private final int hostsCount;
     private final long hostPeMips;
-    private final long hostBw;
+    private final int hostPes;
     private final long hostRam;
-    private final long hostSize;
-    private final int hostPeCnt;
-    private final int datacenterHostsCnt;
-    private final long basicVmRam;
-    private final int basicVmPeCount;
-    private final long basicVmSize;
-    private final long basicVmBw;
+    private final long hostStorage;
+    private final long hostBw;
+    private final int smallVmPes;
+    private final long smallVmRam;
+    private final long smallVmStorage;
+    private final long smallVmBw;
     private final double vmStartupDelay;
     private final double vmShutdownDelay;
-    private final boolean printJobsPeriodically;
     private final boolean payingForTheFullHour;
-    private final boolean storeCreatedCloudletsDatacenterBroker;
+    private final boolean keepCreatedCloudletList;
     private final double rewardJobWaitCoef;
     private final double rewardUtilizationCoef;
     private final double rewardInvalidCoef;
-    private final String jobLogDir;
-    private final int maxSteps;
+    private final int maxEpisodeLength;
 
-    // Get SimulationSettings from parameters
-    // passed from the python client endpoint - the Gymnasium environment,
-    // if an environment variable is not set, a default value is given
-    public SimulationSettings(final Map<String, String> parameters) {
-        sourceOfJobs = parameters.getOrDefault("SOURCE_OF_JOBS", "PARAMS");
-        jobs = parameters.getOrDefault("JOBS", "[]");
-        initialSVmCount = Integer.parseInt(parameters.getOrDefault("INITIAL_S_VM_COUNT", "0"));
-        initialMVmCount = Integer.parseInt(parameters.getOrDefault("INITIAL_M_VM_COUNT", "0"));
-        initialLVmCount = Integer.parseInt(parameters.getOrDefault("INITIAL_L_VM_COUNT", "0"));
-        timestepInterval = Double.parseDouble(parameters.getOrDefault("TIMESTEP_INTERVAL", "1.0"));
-        splitLargeJobs = Boolean
-                .parseBoolean(parameters.getOrDefault("SPLIT_LARGE_JOBS", "true").toLowerCase());
-        maxJobPes = Integer.parseInt(parameters.getOrDefault("MAX_JOB_PES", "1"));
-        vmRunningHourlyCost =
-                Double.parseDouble(parameters.getOrDefault("VM_RUNNING_HOURLY_COST", "0.086"));
-        hostPeMips = Long.parseLong(parameters.getOrDefault("HOST_PE_MIPS", "10000"));
-        hostBw = Long.parseLong(parameters.getOrDefault("HOST_BW", "50000"));
-        hostRam = Long.parseLong(parameters.getOrDefault("HOST_RAM", "65536"));
-        hostSize = Long.parseLong(parameters.getOrDefault("HOST_SIZE", "100000"));
-        hostPeCnt = Integer.parseInt(parameters.getOrDefault("HOST_PE_CNT", "14"));
-        datacenterHostsCnt =
-                Integer.parseInt(parameters.getOrDefault("DATACENTER_HOSTS_CNT", "3000"));
-        basicVmRam = Long.parseLong(parameters.getOrDefault("BASIC_VM_RAM", "8192"));
-        basicVmPeCount = Integer.parseInt(parameters.getOrDefault("BASIC_VM_PE_CNT", "2"));
-        basicVmSize = Long.parseLong(parameters.getOrDefault("BASIC_VM_SIZE", "4000"));
-        basicVmBw = Long.parseLong(parameters.getOrDefault("BASIC_VM_BW", "1000"));
-        vmStartupDelay = Double.parseDouble(parameters.getOrDefault("VM_STARTUP_DELAY", "0"));
-        vmShutdownDelay = Double.parseDouble(parameters.getOrDefault("VM_SHUTDOWN_DELAY", "0"));
-        printJobsPeriodically =
-                Boolean.parseBoolean(parameters.getOrDefault("PRINT_JOBS_PERIODICALLY", "true"));
-        payingForTheFullHour =
-                Boolean.parseBoolean(parameters.getOrDefault("PAYING_FOR_THE_FULL_HOUR", "false"));
-        storeCreatedCloudletsDatacenterBroker = Boolean.parseBoolean(
-                parameters.getOrDefault("STORE_CREATED_CLOUDLETS_DATACENTER_BROKER", "false"));
-        rewardJobWaitCoef =
-                Double.parseDouble(parameters.getOrDefault("REWARD_JOB_WAIT_COEF", "0.3"));
-        rewardUtilizationCoef =
-                Double.parseDouble(parameters.getOrDefault("REWARD_UTILIZATION_COEF", "0.3"));
-        rewardInvalidCoef =
-                Double.parseDouble(parameters.getOrDefault("REWARD_INVALID_COEF", "0.4"));
-        jobLogDir = parameters.getOrDefault("JOB_LOG_DIR", "./logs");
-        maxSteps = Integer.parseInt(parameters.getOrDefault("MAX_TIMESTEPS_PER_EPISODE", "5000"));
+    // Get SimulationSettings from environment variables
+    public SimulationSettings() {
+        initialSVmCount = Integer.parseInt(System.getenv("INITIAL_S_VM_COUNT"));
+        initialMVmCount = Integer.parseInt(System.getenv("INITIAL_M_VM_COUNT"));
+        initialLVmCount = Integer.parseInt(System.getenv("INITIAL_L_VM_COUNT"));
+        timestepInterval = Double.parseDouble(System.getenv("TIMESTEP_INTERVAL"));
+        splitLargeJobs = Boolean.parseBoolean(System.getenv("SPLIT_LARGE_JOBS"));
+        maxJobPes = Integer.parseInt(System.getenv("MAX_JOB_PES"));
+        vmHourlyCost = Double.parseDouble(System.getenv("VM_HOURLY_COST"));
+        hostPeMips = Long.parseLong(System.getenv("HOST_PE_MIPS"));
+        hostRam = Long.parseLong(System.getenv("HOST_RAM"));
+        hostStorage = Long.parseLong(System.getenv("HOST_STORAGE"));
+        hostBw = Long.parseLong(System.getenv("HOST_BW"));
+        hostPes = Integer.parseInt(System.getenv("HOST_PES"));
+        hostsCount = Integer.parseInt(System.getenv("HOSTS_COUNT"));
+        smallVmPes = Integer.parseInt(System.getenv("SMALL_VM_PES"));
+        smallVmRam = Long.parseLong(System.getenv("SMALL_VM_RAM"));
+        smallVmStorage = Long.parseLong(System.getenv("SMALL_VM_STORAGE"));
+        smallVmBw = Long.parseLong(System.getenv("SMALL_VM_BW"));
+        vmStartupDelay = Double.parseDouble(System.getenv("VM_STARTUP_DELAY"));
+        vmShutdownDelay = Double.parseDouble(System.getenv("VM_SHUTDOWN_DELAY"));
+        payingForTheFullHour = Boolean.parseBoolean(System.getenv("PAYING_FOR_THE_FULL_HOUR"));
+        keepCreatedCloudletList = Boolean.parseBoolean(System.getenv("KEEP_CREATED_CLOUDLET_LIST"));
+        rewardJobWaitCoef = Double.parseDouble(System.getenv("REWARD_JOB_WAIT_COEF"));
+        rewardUtilizationCoef = Double.parseDouble(System.getenv("REWARD_UTIL_COEF"));
+        rewardInvalidCoef = Double.parseDouble(System.getenv("REWARD_INVALID_COEF"));
+        maxEpisodeLength = Integer.parseInt(System.getenv("MAX_EPISODE_LENGTH"));
     }
 
     @Override
     public String toString() {
-        return "SimulationSettings {" + "\n" + "vmRunningHourlyCost=" + vmRunningHourlyCost + ",\n"
-                + "initialSVmCount=" + initialSVmCount + ",\n" + "initialMVmCount="
-                + initialMVmCount + ",\n" + "initialLVmCount=" + initialLVmCount + ",\n"
-                + "sourceOfJobs=" + sourceOfJobs + ",\n" + "splitLargeJobs=" + splitLargeJobs
-                + ",\n" + "maxJobPes=" + maxJobPes + ",\n" + "timestepInterval=" + timestepInterval
-                + ",\n" + "hostPeMips=" + hostPeMips + ",\n" + "hostBw=" + hostBw + ",\n"
-                + "hostRam=" + hostRam + ",\n" + "hostSize=" + hostSize + ",\n" + "hostPeCnt="
-                + hostPeCnt + ",\n" + "datacenterHostsCnt=" + datacenterHostsCnt + ",\n"
-                + "basicVmRam=" + basicVmRam + ",\n" + "basicVmPeCount=" + basicVmPeCount + ",\n"
-                + "basicVmSize=" + basicVmSize + ",\n" + "basicVmBw=" + basicVmBw + ",\n"
-                + "vmStartupDelay" + vmStartupDelay + ",\n" + "vmShutdownDelay" + vmShutdownDelay
-                + ",\n" + "printJobsPeriodically=" + printJobsPeriodically + ",\n"
-                + "payingForTheFullHour=" + payingForTheFullHour + ",\n"
-                + "storeCreatedCloudletsDatacenterBroker=" + storeCreatedCloudletsDatacenterBroker
-                + ",\n" + "rewardJobWaitCoef=" + rewardJobWaitCoef + ",\n"
-                + "rewardUtilizationCoef=" + rewardUtilizationCoef + ",\n" + "rewardInvalidCoef="
-                + rewardInvalidCoef + ",\n" + "jobLogDir=" + jobLogDir + ",\n" + "maxSteps="
-                + maxSteps + ",\n" + "}";
+        return "SimulationSettings {" + "\n" + "initialSVmCount=" + initialSVmCount + ",\n"
+                + "initialMVmCount=" + initialMVmCount + ",\n" + "initialLVmCount="
+                + initialLVmCount + ",\n" + "splitLargeJobs=" + splitLargeJobs + ",\n"
+                + "maxJobPes=" + maxJobPes + ",\n" + "timestepInterval=" + timestepInterval + ",\n"
+                + "hostPeMips=" + hostPeMips + ",\n" + "hostBw=" + hostBw + ",\n" + "hostRam="
+                + hostRam + ",\n" + "hostStorage=" + hostStorage + ",\n" + "hostPes=" + hostPes
+                + ",\n" + "hostsCount=" + hostsCount + ",\n" + "smallVmRam=" + smallVmRam + ",\n"
+                + "smallVmPes=" + smallVmPes + ",\n" + "smallVmStorage=" + smallVmStorage + ",\n"
+                + "smallVmBw=" + smallVmBw + ",\n" + "vmStartupDelay" + vmStartupDelay + ",\n"
+                + "vmShutdownDelay" + vmShutdownDelay + ",\n" + "vmHourlyCost=" + vmHourlyCost
+                + ",\n" + "payingForTheFullHour=" + payingForTheFullHour + ",\n"
+                + "keepCreatedCloudletList=" + keepCreatedCloudletList + ",\n"
+                + "rewardJobWaitCoef=" + rewardJobWaitCoef + ",\n" + "rewardUtilizationCoef="
+                + rewardUtilizationCoef + ",\n" + "rewardInvalidCoef=" + rewardInvalidCoef + ",\n"
+                + "maxEpisodeLength=" + maxEpisodeLength + ",\n" + "}";
     }
 
     public int getInitialSVmCount() {
@@ -124,14 +100,6 @@ public class SimulationSettings {
         return initialLVmCount;
     }
 
-    public String getSourceOfJobs() {
-        return sourceOfJobs;
-    }
-
-    public String getJobsAsJson() {
-        return jobs;
-    }
-
     public boolean isSplitLargeJobs() {
         return splitLargeJobs;
     }
@@ -144,8 +112,8 @@ public class SimulationSettings {
         return timestepInterval;
     }
 
-    public double getVmRunningHourlyCost() {
-        return vmRunningHourlyCost;
+    public double getVmHourlyCost() {
+        return vmHourlyCost;
     }
 
     public long getHostPeMips() {
@@ -160,24 +128,36 @@ public class SimulationSettings {
         return hostRam;
     }
 
-    public long getHostSize() {
-        return hostSize;
+    public long getHostStorage() {
+        return hostStorage;
     }
 
-    public int getHostPeCnt() {
-        return hostPeCnt;
+    public int getHostPes() {
+        return hostPes;
     }
 
-    public int getDatacenterHostsCnt() {
-        return datacenterHostsCnt;
+    public int getHostsCount() {
+        return hostsCount;
     }
 
     public long getDatacenterCores() {
-        return datacenterHostsCnt * hostPeCnt;
+        return hostsCount * hostPes;
     }
 
-    public int getBasicVmPeCnt() {
-        return basicVmPeCount;
+    public int getSmallVmPes() {
+        return smallVmPes;
+    }
+
+    public long getSmallVmStorage() {
+        return smallVmStorage;
+    }
+
+    public long getSmallVmBw() {
+        return smallVmBw;
+    }
+
+    public long getSmallVmRam() {
+        return smallVmRam;
     }
 
     public double getVmStartupDelay() {
@@ -188,32 +168,16 @@ public class SimulationSettings {
         return vmShutdownDelay;
     }
 
-    public long getBasicVmSize() {
-        return basicVmSize;
-    }
-
-    public long getBasicVmBw() {
-        return basicVmBw;
-    }
-
-    public long getBasicVmRam() {
-        return basicVmRam;
-    }
-
     public long getTotalHostCores() {
-        return datacenterHostsCnt * hostPeCnt;
-    }
-
-    public boolean isPrintJobsPeriodically() {
-        return printJobsPeriodically;
+        return hostsCount * hostPes;
     }
 
     public boolean isPayingForTheFullHour() {
         return payingForTheFullHour;
     }
 
-    public boolean isStoreCreatedCloudletsDatacenterBroker() {
-        return storeCreatedCloudletsDatacenterBroker;
+    public boolean isKeepCreatedCloudletList() {
+        return keepCreatedCloudletList;
     }
 
     public double getRewardJobWaitCoef() {
@@ -228,11 +192,7 @@ public class SimulationSettings {
         return rewardInvalidCoef;
     }
 
-    public String getJobLogDir() {
-        return jobLogDir;
-    }
-
-    public int getMaxSteps() {
-        return maxSteps;
+    public int getMaxEpisodeLength() {
+        return maxEpisodeLength;
     }
 }

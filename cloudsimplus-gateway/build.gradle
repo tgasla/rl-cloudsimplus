@@ -91,7 +91,6 @@ docker {
     url = 'unix:///var/run/docker.sock'
     javaApplication {
         baseImage = 'amazoncorretto:21-alpine-jdk'
-        ports = [25333]
         images = [dockerImageTag]
         jvmArgs = ["-Xms${totalMemorySizeInGigabytes}G", "-Xmx${totalMemorySizeInGigabytes}G"]
     }

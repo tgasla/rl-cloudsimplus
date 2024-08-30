@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class VmCost {
 
-    private final double perIterationBasicVMCost;
+    private final double perIterationSmallVmCost;
 
     private List<Vm> createdVms = new ArrayList<>();
     private boolean payForFullHour;
@@ -28,7 +28,7 @@ public class VmCost {
         iterationsInHour = 3600 / timestepInterval;
 
         final double perSecondVMCost = perHourVMCost * 0.00028; // 1/3600
-        perIterationBasicVMCost = perSecondVMCost * timestepInterval;
+        perIterationSmallVmCost = perSecondVMCost * timestepInterval;
     }
 
     public void addNewVmToList(final Vm vm) {
@@ -49,7 +49,7 @@ public class VmCost {
         for (Vm vm : createdVms) {
             // check if the vm is started
             double m = getSizeMultiplier(vm);
-            final double perIterationVMCost = perIterationBasicVMCost * m;
+            final double perIterationVMCost = perIterationSmallVmCost * m;
             if (vm.getStartTime() > -1) {
                 if (vm.getFinishTime() > -1) {
                     // vm was stopped -

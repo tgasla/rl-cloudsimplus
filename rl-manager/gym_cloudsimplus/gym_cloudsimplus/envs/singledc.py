@@ -34,28 +34,18 @@ class SingleDC(gym.Env):
     """
 
     metadata = {"render_modes": ["human", "ansi"]}
-    address = os.getenv("CLOUDSIM_GATEWAY_HOST", "gateway")
-    port = os.getenv("CLOUDSIM_GATEWAY_PORT", "25333")
-    parameters = GatewayParameters(address=address, port=int(port), auto_convert=True)
+    parameters = GatewayParameters(address="gateway", auto_convert=True)
 
     def __init__(
         self,
-        split_large_jobs="true",
-        max_job_pes="1",
-        host_pe_mips="10",
-        host_pes="10",
-        basic_vm_pes="2",
-        datacenter_hosts_cnt="10",
-        reward_job_wait_coef="0.3",
-        reward_util_coef="0.3",
-        reward_invalid_coef="0.4",
-        max_timesteps_per_episode="5000",
-        jobs_as_json=None,
-        jobs_from_file=None,
-        render_mode=None,
-        job_log_dir=None,
+        jobs_as_json="[]",
+        render_mode="ansi",
     ):
         super(SingleDC, self).__init__()
+
+        hosts_count = os.getenv("HOSTS_COUNT")
+        host_pes = os.getenv("HOST_PES")
+        small_vm_pes = os.getenv("SMALL_VM_PES")
 
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
         self.simulation_environment = self.gateway.entry_point
@@ -63,13 +53,10 @@ class SingleDC(gym.Env):
         self.episode_num = 0
         # TODO: have to define it in .env and pass it preperly in arg
         self.min_job_pes = 1
-        self.max_timesteps_per_episode = int(max_timesteps_per_episode)
-        self.max_vms_count = (
-            int(datacenter_hosts_cnt) * int(host_pes) // int(basic_vm_pes)
-        )
-        self.max_jobs_count = self.max_vms_count * int(basic_vm_pes) // self.min_job_pes
+        self.max_vms_count = int(hosts_count) * int(host_pes) // int(small_vm_pes)
+        self.max_jobs_count = self.max_vms_count * int(small_vm_pes) // self.min_job_pes
         self.observation_rows = (
-            1 + int(datacenter_hosts_cnt) + self.max_vms_count + self.max_jobs_count
+            1 + int(hosts_count) + self.max_vms_count + self.max_jobs_count
         )
         self.observation_cols = 4
 
@@ -86,9 +73,7 @@ class SingleDC(gym.Env):
         # action = {0: do nothing, 1: create vm, 2: destroy vm}
         # type = {0: small, 1: medium, 2: large}
         # ^ needed only when action = 1
-        self.action_space = spaces.MultiDiscrete(
-            np.array([3, int(datacenter_hosts_cnt), 3])
-        )
+        self.action_space = spaces.MultiDiscrete(np.array([3, int(hosts_count), 3]))
 
         self.observation_space = spaces.Box(
             low=0,
@@ -97,37 +82,6 @@ class SingleDC(gym.Env):
             dtype=np.float32,
         )
 
-        # These parameters are passed when calling gym.make in learn.py
-        # to the java cloudsimplus gateway.
-        # If a parameter is not defined, it gets a default value.
-        params = {
-            "SPLIT_LARGE_JOBS": split_large_jobs,
-            "HOST_PE_CNT": host_pes,
-            "HOST_PE_MIPS": host_pe_mips,
-            "BASIC_VM_PE_CNT": basic_vm_pes,
-            "DATACENTER_HOSTS_CNT": datacenter_hosts_cnt,
-            "REWARD_JOB_WAIT_COEF": reward_job_wait_coef,
-            "REWARD_UTILIZATION_COEF": reward_util_coef,
-            "REWARD_INVALID_COEF": reward_invalid_coef,
-            "MAX_JOB_PES": max_job_pes,
-            "JOB_LOG_DIR": job_log_dir,
-            "MAX_TIMESTEPS_PER_EPISODE": max_timesteps_per_episode,
-        }
-
-        if (jobs_as_json and jobs_from_file) or (
-            jobs_as_json is None and jobs_from_file is None
-        ):
-            gym.logger.warn(
-                "Invalid job parameter"
-                'Exactly one between ["jobs_as_json" | "jobs_from_file"] should be not None'
-            )
-        elif jobs_as_json:
-            params["SOURCE_OF_JOBS"] = "PARAMS"
-            params["JOBS"] = jobs_as_json
-        elif jobs_from_file:
-            params["SOURCE_OF_JOBS"] = "FILE"
-            params["JOBS_FILE"] = jobs_from_file
-
         if render_mode is not None and render_mode not in self.metadata["render_modes"]:
             gym.logger.warn(
                 "Invalid render mode" 'Render modes allowed: ["human" | "ansi"]'
@@ -135,7 +89,7 @@ class SingleDC(gym.Env):
 
         self.render_mode = render_mode
 
-        self.simulation_id = self.simulation_environment.createSimulation(params)
+        self.simulation_id = self.simulation_environment.createSimulation(jobs_as_json)
 
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()

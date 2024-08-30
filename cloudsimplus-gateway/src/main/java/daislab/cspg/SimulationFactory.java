@@ -21,38 +21,19 @@ public class SimulationFactory {
     private static final Type cloudletDescriptors =
             new TypeToken<List<CloudletDescriptor>>() {}.getType();
 
-    public static final String SOURCE_OF_JOBS_PARAMS = "PARAMS";
-    public static final String SOURCE_OF_JOBS_FILE = "JOBS_FILE";
-    public static final String SOURCE_OF_JOBS_DATABASE = "DB";
-    public static final String SOURCE_OF_JOBS = "SOURCE_OF_JOBS";
-    public static final String SOURCE_OF_JOBS_DEFAULT = SOURCE_OF_JOBS_PARAMS;
-
     private static final Gson gson = new Gson();
 
     private int created = 0;
 
-    public synchronized WrappedSimulation create(final Map<String, String> maybeParameters) {
+    public synchronized WrappedSimulation create(final String jobsAsJson) {
         String identifier = "Sim" + created;
         created++;
 
-        final SimulationSettings settings = new SimulationSettings(maybeParameters);
+        final SimulationSettings settings = new SimulationSettings();
         LOGGER.info("Simulation settings dump");
         LOGGER.info(settings.toString());
 
-        List<CloudletDescriptor> jobs;
-
-        switch (settings.getSourceOfJobs()) {
-            case SOURCE_OF_JOBS_DATABASE:
-                jobs = loadJobsFromDatabase();
-                break;
-            case SOURCE_OF_JOBS_FILE:
-                jobs = loadJobsFromFile();
-                break;
-            case SOURCE_OF_JOBS_DEFAULT:
-                // fall-through
-            default:
-                jobs = loadJobsFromParams(settings.getJobsAsJson());
-        }
+        List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
 
         if (settings.isSplitLargeJobs()) {
             LOGGER.info("Splitting large jobs");
@@ -100,7 +81,7 @@ public class SimulationFactory {
         return splitted;
     }
 
-    private List<CloudletDescriptor> loadJobsFromParams(final String jobsAsJson) {
+    private List<CloudletDescriptor> loadJobsFromJson(final String jobsAsJson) {
         List<CloudletDescriptor> jobList = new ArrayList<>();
         LOGGER.info(jobsAsJson);
         final List<CloudletDescriptor> deserialized =
@@ -122,13 +103,4 @@ public class SimulationFactory {
 
         return new CloudletDescriptor(cloudletDescriptor.getJobId(), cloudletDelay, mi, pesNumber);
     }
-
-    private List<CloudletDescriptor> loadJobsFromDatabase() {
-        throw new NotImplementedException("Feature not implemented yet!");
-    }
-
-    private List<CloudletDescriptor> loadJobsFromFile() {
-        throw new NotImplementedException("Feature not implemented yet!");
-    }
-
 }

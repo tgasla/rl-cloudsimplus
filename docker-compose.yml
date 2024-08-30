@@ -1,8 +1,34 @@
 services:
-  # uses port 25333
+  # uses port 25333 by default
   gateway:
     image: gateway:2.0.0
     container_name: gateway
+    environment:
+      - INITIAL_S_VM_COUNT=0
+      - INITIAL_M_VM_COUNT=0
+      - INITIAL_L_VM_COUNT=0
+      - MAX_EPISODE_LENGTH=100
+      - TIMESTEP_INTERVAL=1
+      - SPLIT_LARGE_JOBS=true
+      - MAX_JOB_PES=1
+      - VM_HOURLY_COST=0.086
+      - HOSTS_COUNT=10
+      - HOST_PE_MIPS=10
+      - HOST_PES=10
+      - HOST_RAM=65536
+      - HOST_STORAGE=100000
+      - HOST_BW=50000
+      - SMALL_VM_PES=2
+      - SMALL_VM_RAM=8192
+      - SMALL_VM_STORAGE=4000
+      - SMALL_VM_BW=1000
+      - VM_STARTUP_DELAY=0
+      - VM_SHUTDOWN_DELAY=0
+      - PAYING_FOR_THE_FULL_HOUR=false
+      - KEEP_CREATED_CLOUDLET_LIST=false
+      - REWARD_JOB_WAIT_COEF=0.3
+      - REWARD_UTIL_COEF=0.3
+      - REWARD_INVALID_COEF=0.4
     volumes:
       - ./logs:/app/logs
 
@@ -14,13 +40,22 @@ services:
     depends_on:
       - gateway
     environment:
-      CLOUDSIM_GATEWAY_HOST: gateway
-      CLOUDSIM_GATEWAY_PORT: 25333
+      - ALGO=PPO
+      - TRAINING_TIMESTEPS=1000000
+      - MAX_JOB_PES=1
+      - HOSTS_COUNT=10
+      - HOST_PE_MIPS=10
+      - HOST_PES=10
+      - SMALL_VM_PES=2
+      - REWARD_JOB_WAIT_COEF=0.3
+      - REWARD_UTIL_COEF=0.3
+      - REWARD_INVALID_COEF=0.4
+      - JOB_TRACE_FILENAME=gradual
     volumes:
       - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
     command: >
-      python3 mnt/run.py --algo=${ALGO} --max-timesteps-per-episode=${MAX_TIMESTEPS_PER_EPISODE} --pretrain-timesteps=${PRETRAIN_TIMESTEPS} --pretrain-hosts=${PRETRAIN_HOSTS} --pretrain-host-pes=${PRETRAIN_HOST_PES}  --pretrain-host-pe-mips=${PRETRAIN_HOST_PE_MIPS}  --pretrain-job-trace-filename=${PRETRAIN_JOB_TRACE_FILENAME}  --pretrain-max-job-pes=${PRETRAIN_MAX_JOB_PES}  --pretrain-reward-job-wait-coef=${PRETRAIN_REWARD_JOB_WAIT_COEF}  --pretrain-reward-util-coef=${PRETRAIN_REWARD_UTIL_COEF} --pretrain-reward-invalid-coef=${PRETRAIN_REWARD_INVALID_COEF}  --pretrain-dir=${PRETRAIN_DIR}  --transfer-timesteps=${TRANSFER_TIMESTEPS}  --transfer-hosts=${TRANSFER_HOSTS}  --transfer-host-pes=${TRANSFER_HOST_PES}  --transfer-host-pe-mips=${TRANSFER_HOST_PE_MIPS}  --transfer-job-trace-filename=${TRANSFER_JOB_TRACE_FILENAME}  --transfer-max-job-pes=${TRANSFER_MAX_JOB_PES}  --transfer-reward-job-wait-coef=${TRANSFER_REWARD_JOB_WAIT_COEF}  --transfer-reward-util-coef=${TRANSFER_REWARD_UTIL_COEF}  --transfer-reward-invalid-coef=${TRANSFER_REWARD_INVALID_COEF}
+      python3 mnt/train.py
     # command: python3 mnt/test.py
 
   manager-cuda:

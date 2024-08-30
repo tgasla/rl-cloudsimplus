@@ -70,10 +70,10 @@ public class WrappedSimulation {
         this.identifier = identifier;
         this.initialJobsDescriptors = jobs;
         this.simulationHistory = new SimulationHistory();
-        this.hostsCount = settings.getDatacenterHostsCnt();
-        this.maxVmsCount = settings.getDatacenterHostsCnt() * settings.getHostPeCnt()
-                / settings.getBasicVmPeCnt();
-        final int maxJobsCount = maxVmsCount * settings.getBasicVmPeCnt() / this.minJobPes;
+        this.hostsCount = settings.getHostsCount();
+        this.maxVmsCount =
+                settings.getHostsCount() * settings.getHostPes() / settings.getSmallVmPes();
+        final int maxJobsCount = maxVmsCount * settings.getSmallVmPes() / this.minJobPes;
         this.observationArrayRows = 1 + hostsCount + maxVmsCount + maxJobsCount;
         this.observationArrayColumns =
                 Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
@@ -163,7 +163,7 @@ public class WrappedSimulation {
         collectMetrics();
 
         boolean terminated = !cloudSimProxy.isRunning();
-        boolean truncated = !terminated && (this.currentStep >= this.settings.getMaxSteps());
+        boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
 
         // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
         double[][] observation = getObservation();
@@ -304,13 +304,13 @@ public class WrappedSimulation {
                     // host.getVmList().size(),
                     // smallVmCount,
                     smallVmCount
-                            / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("S")),
+                            / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("S")),
                     // mediumVmCount,
                     mediumVmCount
-                            / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("M")),
+                            / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("M")),
                     // largeVmCount,
                     largeVmCount
-                            / (settings.getHostPeCnt() / cloudSimProxy.getVmCoreCountByType("L")),
+                            / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("L")),
                     host.getBusyPesNumber() / host.getPesNumber()};
         }
         return hostMetrics;

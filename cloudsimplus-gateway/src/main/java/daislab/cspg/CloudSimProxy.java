@@ -81,7 +81,7 @@ public class CloudSimProxy {
         cloudSimPlus = new CloudSimPlus(minTimeBetweenEvents);
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         datacenter = createDatacenter();
-        vmCost = new VmCost(settings.getVmRunningHourlyCost(), settings.getTimestepInterval(),
+        vmCost = new VmCost(settings.getVmHourlyCost(), settings.getTimestepInterval(),
                 settings.isPayingForTheFullHour());
 
         final List<Vm> smallVmList = createVmList(settings.getInitialSVmCount(), SMALL);
@@ -121,7 +121,7 @@ public class CloudSimProxy {
     }
 
     public long getVmCoreCountByType(final String type) {
-        return settings.getBasicVmPeCnt() * getSizeMultiplier(type);
+        return settings.getSmallVmPes() * getSizeMultiplier(type);
     }
 
     private void ensureAllJobsCompleteBeforeSimulationEnds() {
@@ -144,13 +144,13 @@ public class CloudSimProxy {
     private Datacenter createDatacenter() {
         List<Host> hostList = new ArrayList<>();
 
-        for (int i = 0; i < settings.getDatacenterHostsCnt(); i++) {
+        for (int i = 0; i < settings.getHostsCount(); i++) {
             List<Pe> peList = createPeList();
 
             final long hostRam = settings.getHostRam();
             final long hostBw = settings.getHostBw();
-            final long hostSize = settings.getHostSize();
-            Host host = new HostWithoutCreatedList(hostRam, hostBw, hostSize, peList)
+            final long hostStorage = settings.getHostStorage();
+            Host host = new HostWithoutCreatedList(hostRam, hostBw, hostStorage, peList)
                     .setRamProvisioner(new ResourceProvisionerSimple())
                     .setBwProvisioner(new ResourceProvisionerSimple())
                     .setVmScheduler(new VmSchedulerTimeShared());
@@ -176,9 +176,9 @@ public class CloudSimProxy {
         int sizeMultiplier = getSizeMultiplier(type);
 
         Vm vm = new VmSimple(nextVmId, settings.getHostPeMips(),
-                settings.getBasicVmPeCnt() * sizeMultiplier);
-        vm.setRam(settings.getBasicVmRam() * sizeMultiplier).setBw(settings.getBasicVmBw())
-                .setSize(settings.getBasicVmSize())
+                settings.getSmallVmPes() * sizeMultiplier);
+        vm.setRam(settings.getSmallVmRam() * sizeMultiplier).setBw(settings.getSmallVmBw())
+                .setSize(settings.getSmallVmStorage())
                 .setCloudletScheduler(new OptimizedCloudletScheduler()).setDescription(type)
                 .setShutDownDelay(settings.getVmShutdownDelay());
 
@@ -187,7 +187,7 @@ public class CloudSimProxy {
 
     private List<Pe> createPeList() {
         List<Pe> peList = new ArrayList<>();
-        for (int i = 0; i < settings.getHostPeCnt(); i++) {
+        for (int i = 0; i < settings.getHostPes(); i++) {
             peList.add(new PeSimple(settings.getHostPeMips(), new PeProvisionerSimple()));
         }
 
@@ -230,7 +230,7 @@ public class CloudSimProxy {
         // to avoid OOMing we need to clear that list
         // it is a safe operation in our environment, because that list is only used in
         // CloudSimPlus when a VM is being upscaled (we don't do that)
-        if (!settings.isStoreCreatedCloudletsDatacenterBroker()) {
+        if (!settings.isKeepCreatedCloudletList()) {
             broker.getCloudletCreatedList().clear();
         }
 
@@ -239,8 +239,7 @@ public class CloudSimProxy {
     }
 
     private boolean shouldPrintJobStats() {
-        return (settings.isPrintJobsPeriodically() && (int) Math.round(clock()) % 1000 == 0)
-                || !isRunning();
+        return ((int) Math.round(clock()) % 1000 == 0) || !isRunning();
     }
 
     public void printJobStats() {
