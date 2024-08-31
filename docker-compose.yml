@@ -12,6 +12,7 @@ services:
       - HOST_PES=${HOST_PES}
       - HOST_PE_MIPS=${HOST_PE_MIPS}
       - MAX_JOB_PES=${MAX_JOB_PES}
+      - SMALL_VM_PES=${SMALL_VM_PES}
       - INITIAL_S_VM_COUNT=0
       - INITIAL_M_VM_COUNT=0
       - INITIAL_L_VM_COUNT=0
@@ -21,7 +22,6 @@ services:
       - HOST_RAM=65536
       - HOST_STORAGE=100000
       - HOST_BW=50000
-      - SMALL_VM_PES=2
       - SMALL_VM_RAM=8192
       - SMALL_VM_STORAGE=4000
       - SMALL_VM_BW=1000
@@ -44,12 +44,15 @@ services:
     environment:
       - ALGO=${ALGO}
       - TRAINING_TIMESTEPS=${TRAINING_TIMESTEPS}
+      - REWARD_JOB_WAIT_COEF=${REWARD_JOB_WAIT_COEF}
+      - REWARD_UTIL_COEF=${REWARD_UTIL_COEF}
+      - REWARD_INVALID_COEF=${REWARD_INVALID_COEF}
       - MAX_JOB_PES=${MAX_JOB_PES}
       - HOST_COUNT=${HOST_COUNT}
       - HOST_PE_MIPS=${HOST_PE_MIPS}
       - HOST_PES=${HOST_PES}
       - JOB_TRACE_FILENAME=${JOB_TRACE_FILENAME}
-      - SMALL_VM_PES=2
+      - SMALL_VM_PES=${SMALL_VM_PES}
     volumes:
       - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
