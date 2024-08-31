@@ -4,17 +4,20 @@ services:
     image: gateway:2.0.0
     container_name: gateway
     environment:
+      - MAX_EPISODE_LENGTH=${MAX_EPISODE_LENGTH}
+      - REWARD_JOB_WAIT_COEF=${REWARD_JOB_WAIT_COEF}
+      - REWARD_UTIL_COEF=${REWARD_UTIL_COEF}
+      - REWARD_INVALID_COEF=${REWARD_INVALID_COEF}
+      - HOST_COUNT=${HOST_COUNT}
+      - HOST_PES=${HOST_PES}
+      - HOST_PE_MIPS=${HOST_PE_MIPS}
+      - MAX_JOB_PES=${MAX_JOB_PES}
       - INITIAL_S_VM_COUNT=0
       - INITIAL_M_VM_COUNT=0
       - INITIAL_L_VM_COUNT=0
-      - MAX_EPISODE_LENGTH=100
       - TIMESTEP_INTERVAL=1
       - SPLIT_LARGE_JOBS=true
-      - MAX_JOB_PES=1
       - VM_HOURLY_COST=0.086
-      - HOSTS_COUNT=10
-      - HOST_PE_MIPS=10
-      - HOST_PES=10
       - HOST_RAM=65536
       - HOST_STORAGE=100000
       - HOST_BW=50000
@@ -24,11 +27,10 @@ services:
       - SMALL_VM_BW=1000
       - VM_STARTUP_DELAY=0
       - VM_SHUTDOWN_DELAY=0
+      - MEDIUM_VM_MULTIPLIER=2
+      - LARGE_VM_MULTIPLIER=4
       - PAYING_FOR_THE_FULL_HOUR=false
-      - KEEP_CREATED_CLOUDLET_LIST=false
-      - REWARD_JOB_WAIT_COEF=0.3
-      - REWARD_UTIL_COEF=0.3
-      - REWARD_INVALID_COEF=0.4
+      - CLEAR_CREATED_CLOUDLET_LIST=true
     volumes:
       - ./logs:/app/logs
 
@@ -40,17 +42,14 @@ services:
     depends_on:
       - gateway
     environment:
-      - ALGO=PPO
-      - TRAINING_TIMESTEPS=1000000
-      - MAX_JOB_PES=1
-      - HOSTS_COUNT=10
-      - HOST_PE_MIPS=10
-      - HOST_PES=10
+      - ALGO=${ALGO}
+      - TRAINING_TIMESTEPS=${TRAINING_TIMESTEPS}
+      - MAX_JOB_PES=${MAX_JOB_PES}
+      - HOST_COUNT=${HOST_COUNT}
+      - HOST_PE_MIPS=${HOST_PE_MIPS}
+      - HOST_PES=${HOST_PES}
+      - JOB_TRACE_FILENAME=${JOB_TRACE_FILENAME}
       - SMALL_VM_PES=2
-      - REWARD_JOB_WAIT_COEF=0.3
-      - REWARD_UTIL_COEF=0.3
-      - REWARD_INVALID_COEF=0.4
-      - JOB_TRACE_FILENAME=gradual
     volumes:
       - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt

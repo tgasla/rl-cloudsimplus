@@ -17,8 +17,6 @@ from callbacks.save_on_best_training_reward_callback import (
 )
 
 from utils.filename_generator import generate_filename
-
-# from utils.argparser import parse_args
 from utils.trace_utils import csv_to_cloudlet_descriptor
 
 
@@ -38,7 +36,7 @@ def main():
     # args = parse_args()
     algorithm_str = os.getenv("ALGO")
     timesteps = os.getenv("TRAINING_TIMESTEPS")
-    hosts_count = os.getenv("HOSTS_COUNT")
+    host_count = os.getenv("HOST_COUNT")
     host_pes = os.getenv("HOST_PES")
     host_pe_mips = os.getenv("HOST_PE_MIPS")
     reward_job_wait_coef = os.getenv("REWARD_JOB_WAIT_COEF")
@@ -50,7 +48,7 @@ def main():
     experiment_id = generate_filename(
         algorithm_str=algorithm_str,
         pretrain_timesteps=timesteps,
-        pretrain_hosts=hosts_count,
+        pretrain_hosts=host_count,
         pretrain_host_pes=host_pes,
         pretrain_host_pe_mips=host_pe_mips,
         pretrain_reward_job_wait_coef=reward_job_wait_coef,
@@ -73,6 +71,7 @@ def main():
     timestamp = datetime_to_str()
     filename_id = timestamp + "_" + experiment_id
     log_dir = os.path.join(base_log_dir, f"{filename_id}")
+
     # Read jobs
     jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{job_trace_filename}.csv")
     print(job_trace_filename, jobs)

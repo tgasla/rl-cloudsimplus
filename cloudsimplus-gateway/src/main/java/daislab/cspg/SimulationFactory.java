@@ -29,18 +29,17 @@ public class SimulationFactory {
         String identifier = "Sim" + created;
         created++;
 
-        final SimulationSettings settings = new SimulationSettings();
         LOGGER.info("Simulation settings dump");
-        LOGGER.info(settings.toString());
+        LOGGER.info(Settings.printSettings());
 
         List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
 
-        if (settings.isSplitLargeJobs()) {
+        if (Settings.isSplitLargeJobs()) {
             LOGGER.info("Splitting large jobs");
-            jobs = splitLargeJobs(jobs, settings.getMaxJobPes());
+            jobs = splitLargeJobs(jobs, Settings.getMaxJobPes());
         }
 
-        return new WrappedSimulation(identifier, settings, jobs);
+        return new WrappedSimulation(identifier, jobs);
     }
 
     private List<CloudletDescriptor> splitLargeJobs(final List<CloudletDescriptor> jobs,

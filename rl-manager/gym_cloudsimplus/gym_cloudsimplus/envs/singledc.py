@@ -43,7 +43,7 @@ class SingleDC(gym.Env):
     ):
         super(SingleDC, self).__init__()
 
-        hosts_count = os.getenv("HOSTS_COUNT")
+        host_count = os.getenv("HOST_COUNT")
         host_pes = os.getenv("HOST_PES")
         small_vm_pes = os.getenv("SMALL_VM_PES")
 
@@ -53,10 +53,10 @@ class SingleDC(gym.Env):
         self.episode_num = 0
         # TODO: have to define it in .env and pass it preperly in arg
         self.min_job_pes = 1
-        self.max_vms_count = int(hosts_count) * int(host_pes) // int(small_vm_pes)
+        self.max_vms_count = int(host_count) * int(host_pes) // int(small_vm_pes)
         self.max_jobs_count = self.max_vms_count * int(small_vm_pes) // self.min_job_pes
         self.observation_rows = (
-            1 + int(hosts_count) + self.max_vms_count + self.max_jobs_count
+            1 + int(host_count) + self.max_vms_count + self.max_jobs_count
         )
         self.observation_cols = 4
 
@@ -73,7 +73,7 @@ class SingleDC(gym.Env):
         # action = {0: do nothing, 1: create vm, 2: destroy vm}
         # type = {0: small, 1: medium, 2: large}
         # ^ needed only when action = 1
-        self.action_space = spaces.MultiDiscrete(np.array([3, int(hosts_count), 3]))
+        self.action_space = spaces.MultiDiscrete(np.array([3, int(host_count), 3]))
 
         self.observation_space = spaces.Box(
             low=0,

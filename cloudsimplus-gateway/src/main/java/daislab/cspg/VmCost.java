@@ -44,35 +44,26 @@ public class VmCost {
     // Maybe because if payForFullHour is true, we want to keep counting a vm
     // which has been created but stopped.
     public double getVMCostPerIteration(final double clock) {
-        double totalCost = 0.0;
+        double totalCost = 0;
         List<Vm> toRemove = new ArrayList<>();
         for (Vm vm : createdVms) {
             // check if the vm is started
-            double m = getSizeMultiplier(vm);
-            final double perIterationVMCost = perIterationSmallVmCost * m;
-            if (vm.getStartTime() > -1) {
-                if (vm.getFinishTime() > -1) {
-                    // vm was stopped -
-                    // we continue to pay for it within the last running hour if need to
-                    if (payForFullHour && (clock <= vm.getFinishTime() + iterationsInHour)) {
-                        totalCost += perIterationVMCost;
-                    } else {
-                        toRemove.add(vm);
-                    }
-                } else {
-                    // vm still running - just add the cost
+            double multiplier = Settings.getSizeMultiplier(vm.getDescription());
+            final double perIterationVMCost = perIterationSmallVmCost * multiplier;
+            if (vm.getStartTime() > -1 && vm.getFinishTime() > -1) {
+                // vm was stopped -
+                // we continue to pay for it within the last running hour if need to
+                if (payForFullHour && (clock <= vm.getFinishTime() + iterationsInHour)) {
                     totalCost += perIterationVMCost;
+                } else {
+                    toRemove.add(vm);
                 }
-            } else {
-                // created - not running yet, need to pay for it
+            } else if (vm.getStartTime() > -1) {
+                // vm still running - just add the cost
                 totalCost += perIterationVMCost;
             }
         }
         createdVms.removeAll(toRemove);
         return totalCost;
-    }
-
-    public double getSizeMultiplier(final Vm vm) {
-        return CloudSimProxy.getSizeMultiplier(vm.getDescription());
     }
 }

@@ -245,6 +245,14 @@ def main():
 
     env.close()
 
+    # If you want to disable retraining on the transfer environment then you should:
+    # (1) do not change the learning rate or any parameters of the model
+    # (2) set reset_num_timesteps=False when calling model.learn(..)
+
+    # On the other hand, if you want to enable retraining:
+    # (1) set the learning rate of the model to a small number, ideally smaller than the initial default
+    # (2) set reset_num_timesteps=True when calling model.learn(..)
+
 
 if __name__ == "__main__":
     main()
