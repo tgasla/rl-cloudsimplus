@@ -32,16 +32,16 @@ public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
         host = getDatacenter().getHostById(hostId);
 
         suitability = allocateHostForVm(vm, host);
-        if (!suitability.fully()) {
-            LOGGER.debug("This should never be printed as it is already checked.\n"
-                    + "Action failed because host is not suitable.\n" + "Reason: "
-                    + suitability.toString());
-            return suitability;
-        }
+        // if (!suitability.fully()) {
+        // LOGGER.debug("This should never be printed as it is already checked.\n"
+        // + "Action failed because host is not suitable.\n" + "Reason: "
+        // + suitability.toString());
+        // return suitability;
+        // }
 
         // set the desctiption to be the vm type
         vm.setDescription(vmDescription.substring(0, index));
-        LOGGER.debug("New vm " + vm.getId() + " allocated to host " + hostId);
+        LOGGER.debug("New vm {} allocated to host {}", vm.getId(), hostId);
         return suitability;
     }
 }

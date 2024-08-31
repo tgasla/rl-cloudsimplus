@@ -29,8 +29,7 @@ public class SimulationFactory {
         String identifier = "Sim" + created;
         created++;
 
-        LOGGER.info("Simulation settings dump");
-        LOGGER.info(Settings.printSettings());
+        LOGGER.info("Simulation settings dump\n{}", Settings.printSettings());
 
         List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
 
@@ -76,7 +75,7 @@ public class SimulationFactory {
             }
         }
 
-        LOGGER.info("Splitted: " + jobs.size() + " into " + splitted.size());
+        LOGGER.info("Splitted: {} into {}", jobs.size(), splitted.size());
         return splitted;
     }
 
@@ -90,7 +89,7 @@ public class SimulationFactory {
             jobList.add(ensureMinValues(cloudletDescriptor));
         }
 
-        LOGGER.info("Deserialized " + jobList.size() + " jobs");
+        LOGGER.info("Deserialized {} jobs", jobList.size());
 
         return jobList;
     }

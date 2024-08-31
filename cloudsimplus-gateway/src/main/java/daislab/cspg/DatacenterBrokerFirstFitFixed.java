@@ -49,8 +49,8 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
 
         if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
             final Cloudlet cloudlet = (Cloudlet) evt.getData();
-            LOGGER.debug("Cloudlet returned: " + cloudlet.getId() + "/" + cloudlet.getVm().getId()
-                    + " Scheduling more cloudlets...");
+            LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
+                    cloudlet.getId(), cloudlet.getVm().getId());
             requestDatacentersToCreateWaitingCloudlets();
         }
 

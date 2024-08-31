@@ -105,8 +105,7 @@ public class CloudSimProxy {
     private void ensureAllJobsCompleteBeforeSimulationEnds() {
         cloudSimPlus.addOnEventProcessingListener(info -> {
             if (getNumberOfFutureEvents() == 1 && hasUnfinishedJobs()) {
-                LOGGER.debug("There are unfinished jobs. "
-                        + "Sending a NONE event to prevent simulation from ending.");
+                LOGGER.debug("Jobs not finished. Sending empty event to keep simulation running.");
                 sendEmptyEventAt(Settings.getTimestepInterval());
             }
         });
@@ -133,7 +132,7 @@ public class CloudSimProxy {
 
             hostList.add(host);
         }
-        LOGGER.debug("Creating datacenter...");
+        LOGGER.debug("Creating datacenter");
         return new DatacenterSimple(cloudSimPlus, hostList, new VmAllocationPolicyRl());
     }
 
@@ -194,7 +193,7 @@ public class CloudSimProxy {
         jobsFinishedWaitTimeLastTimestep.clear();
 
         scheduleJobsUntil(target);
-        LOGGER.debug("Jobs waiting: " + getWaitingJobsCount());
+        LOGGER.debug("Jobs waiting: {}", getWaitingJobsCount());
         runForInternal(interval, target);
 
         if (shouldPrintJobStats()) {
@@ -211,7 +210,7 @@ public class CloudSimProxy {
         }
 
         String startTimeFormat = String.format("%.1f", clock() - interval);
-        LOGGER.debug("runFor [" + startTimeFormat + " - " + clock() + "]");
+        LOGGER.debug("runFor [{}-{}]", startTimeFormat, clock());
     }
 
     private boolean shouldPrintJobStats() {
@@ -220,9 +219,8 @@ public class CloudSimProxy {
 
     public void printJobStats() {
         if (!isRunning()) {
-            LOGGER.info("Simulation terminated.");
-            LOGGER.info("Jobs finished: " + getBroker().getCloudletFinishedList().size() + "/"
-                    + inputJobs.size());
+            LOGGER.info("Simulation terminated. Jobs finished: {}/{}",
+                    getBroker().getCloudletFinishedList().size(), inputJobs.size());
         }
         LOGGER.info("All jobs: " + inputJobs.size());
         Map<Cloudlet.Status, Integer> countByStatus = new HashMap<>();
@@ -277,8 +275,8 @@ public class CloudSimProxy {
         cloudlet.addOnStartListener(new EventListener<CloudletVmEventInfo>() {
             @Override
             public void update(CloudletVmEventInfo info) {
-                LOGGER.debug("Cloudlet:" + cloudlet.getId() + " started running on vm "
-                        + cloudlet.getVm().getId() + " at " + clock());
+                LOGGER.debug("Cloudlet: {} started running on VM {} at {} ", cloudlet.getId(),
+                        cloudlet.getVm().getId(), clock());
             }
         });
     }
@@ -297,7 +295,7 @@ public class CloudSimProxy {
                 final double waitTime =
                         cloudlet.getStartTime() - originalSubmissionDelay.get(cloudlet.getId());
                 jobsFinishedWaitTimeLastTimestep.add(waitTime);
-                LOGGER.debug("Cloudlet wait time is " + waitTime);
+                LOGGER.debug("cloudletWaitTime: {}", waitTime);
             }
         });
     }
@@ -337,13 +335,12 @@ public class CloudSimProxy {
         }
 
         if (this.unableToSubmitJobCount > 0) {
-            LOGGER.debug("Unable to submit " + this.unableToSubmitJobCount
-                    + " jobs because there was no vm available");
+            LOGGER.debug("Unable to submit {} jobs: no vm available", this.unableToSubmitJobCount);
         }
     }
 
     private void submitCloudletsList(final List<Cloudlet> jobsToSubmit) {
-        LOGGER.debug("Submitting: " + jobsToSubmit.size() + " jobs");
+        LOGGER.debug("Submitting: {} jobs", jobsToSubmit.size());
         broker.submitCloudletList(jobsToSubmit);
 
         // we immediately clear up that list because it is not really
@@ -466,7 +463,7 @@ public class CloudSimProxy {
     }
 
     public boolean addNewVm(final String type, final long hostId) {
-        LOGGER.debug("Agent action: Create a " + type + " VM on host " + hostId);
+        LOGGER.debug("Agent action: Create a {} VM on host {}", type, hostId);
 
         final Host host = datacenter.getHostById(hostId);
 
@@ -481,8 +478,8 @@ public class CloudSimProxy {
         if (!host.isSuitableForVm(newVm)) {
             LOGGER.debug("Vm creating ignored, host not suitable");
             // LOGGER.debug("Host MIPS:" + host.getVmScheduler().getTotalAvailableMips());
-            LOGGER.debug("Host Vm List Size:" + host.getVmList().size());
-            LOGGER.debug("Total Vm Exec List Size:" + broker.getVmExecList().size());
+            LOGGER.debug("Host Vm List Size: {}", host.getVmList().size());
+            LOGGER.debug("Total Vm Exec List Size: {}", broker.getVmExecList().size());
             return false;
         }
 
@@ -494,7 +491,7 @@ public class CloudSimProxy {
         // submissiondelay or vm boot up delay
         newVm.setSubmissionDelay(delay);
         broker.submitVm(newVm);
-        LOGGER.debug("VM creating requested, delay: " + delay + " type: " + type);
+        LOGGER.debug("Requested VM of type: {}, delay: {}", type, delay);
         return true;
     }
 
@@ -502,11 +499,10 @@ public class CloudSimProxy {
     public boolean removeVm(final int index) {
         List<Vm> vmExecList = broker.getVmExecList();
         final int vmCount = broker.getVmExecList().size();
-        LOGGER.debug("vmExecList.size = " + vmExecList);
+        LOGGER.debug("vmExecList.size: {}", vmExecList);
 
         if (index >= vmCount) {
-            LOGGER.warn("Can't kill vm with index " + index + " because only " + vmCount
-                    + " vms are running.");
+            LOGGER.warn("Can't kill VM with index {}: no such index found", index);
             return false;
         }
 
@@ -546,8 +542,8 @@ public class CloudSimProxy {
 
         vm.getCloudletScheduler().clear();
 
-        LOGGER.debug("Killing VM: " + vm.getId() + ", to-reschedule cloudlets count: "
-                + affectedCloudlets.size() + ", type: " + vmSize);
+        LOGGER.debug("Killing VM {} ({}), cloudlets to reschedule: {}" + vm.getId(), vmSize,
+                affectedCloudlets.size());
         if (!affectedCloudlets.isEmpty()) {
             rescheduleCloudlets(affectedCloudlets);
         }
