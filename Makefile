@@ -25,11 +25,11 @@ build-manager:
 run-tensorboard:
 	docker run --rm --name tensorboard -t -d -v ./logs/:/logs/ -p 80:6006 tensorboard
 
-run-compose-detached:
-	docker compose up -d
+run-sim-cpu:
+	docker compose up --build
 
-run-compose-detached-build:
-	docker compose up -d --build
+run-sim-gpu:
+	docker compose --profile cuda up --build
 
 rmi-compose-images: rmi-gateway rmi-manager
 
@@ -45,20 +45,12 @@ rmi-manager:
 clean-gateway:
 	cd cloudsimplus-gateway && ./gradlew clean
 
-clean-up:
+stop:
 	docker compose down
-	docker stop manager
 	docker system prune -f
-	sudo rm -rf logs/*
-
-prune-all:
-	docker system prune -f
-	docker volume prune -f
-	docker container prune -f
-	docker image prune -f
 
 .PHONY: build-all build-compose-images build-tensorboard build-gateway \
-build-gateway-debug build-manager run-tensorboard run-compose-detached \
-run-compose-detached-build rmi-compose-images rmi-tensorboard rmi-gateway \
-rmi-manager clean-gateway prune-all
+build-gateway-debug build-manager run-tensorboard run-sim-cpu \
+run-sim-gpu rmi-compose-images rmi-tensorboard rmi-gateway \
+rmi-manager clean-gateway stop
  

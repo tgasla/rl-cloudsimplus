@@ -11,12 +11,10 @@ import com.google.gson.Gson;
 public class SimulationStepInfo {
 
     private final Gson gson = new Gson();
-    private final double jobWaitReward; // scheduledJobsReward
-    private final double utilReward; // unutilizationPenalty
+    private final double jobWaitReward;
+    private final double utilReward;
     private final double invalidReward;
-    private final double epJobWaitRewardMean; // epScheduledJobsRewardMean
-    private final double epUtilRewardMean; // epUnutilizationPenaltyMean
-    private final int epValidCount;
+    private final boolean valid;
 
     // Metrics for all entities
     private final double[][] hostMetrics;
@@ -30,9 +28,7 @@ public class SimulationStepInfo {
         this.jobWaitReward = 0;
         this.utilReward = 0;
         this.invalidReward = 0;
-        this.epJobWaitRewardMean = 0;
-        this.epUtilRewardMean = 0;
-        this.epValidCount = 0;
+        this.valid = true;
         this.hostMetrics = new double[1][1];
         this.vmMetrics = new double[1][1];
         this.jobMetrics = new double[1][1];
@@ -41,15 +37,12 @@ public class SimulationStepInfo {
         this.unutilizedAll = 0;
     }
 
-    public SimulationStepInfo(final double[] rewards, final List<Object> episodeRewardStats,
-            final List<double[][]> timestepMetrics, final List<Double> jobWaitTime,
-            final double[] unutilizedStats) {
+    public SimulationStepInfo(final double[] rewards, final List<double[][]> timestepMetrics,
+            final List<Double> jobWaitTime, final double[] unutilizedStats) {
         this.jobWaitReward = rewards[1];
         this.utilReward = rewards[2];
         this.invalidReward = rewards[3];
-        this.epJobWaitRewardMean = (double) episodeRewardStats.get(0);
-        this.epUtilRewardMean = (double) episodeRewardStats.get(1);
-        this.epValidCount = (int) episodeRewardStats.get(2);
+        this.valid = this.invalidReward == 0 ? true : false;
         this.hostMetrics = timestepMetrics.get(0);
         this.vmMetrics = timestepMetrics.get(1);
         this.jobMetrics = timestepMetrics.get(2);
@@ -70,16 +63,8 @@ public class SimulationStepInfo {
         return invalidReward;
     }
 
-    public double getEpJobWaitRewardMean() {
-        return epJobWaitRewardMean;
-    }
-
-    public double getEpUtilRewardMean() {
-        return epUtilRewardMean;
-    }
-
-    public int getEpValidCount() {
-        return epValidCount;
+    public boolean isValid() {
+        return valid;
     }
 
     public double[][] getHostMetrics() {
@@ -120,10 +105,7 @@ public class SimulationStepInfo {
 
     @Override
     public String toString() {
-        // TODO: I also have to print the Maps.toString() here
         return "SimulationStepInfo{" + "jobWaitReward" + jobWaitReward + ", utilReward="
-                + utilReward + ", invalidReward=" + invalidReward + ", epJobWaitRewardMean"
-                + epJobWaitRewardMean + ", epUtilRewardMean=" + epUtilRewardMean + ", epValidCount="
-                + epValidCount + '}';
+                + utilReward + ", invalidReward=" + invalidReward + ", valid=" + valid + '}';
     }
 }

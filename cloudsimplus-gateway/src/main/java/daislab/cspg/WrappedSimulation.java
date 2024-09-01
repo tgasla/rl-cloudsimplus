@@ -55,9 +55,6 @@ public class WrappedSimulation {
     private final int minJobPes = 1;
     private CloudSimProxy cloudSimProxy;
     private int currentStep;
-    private double epJobWaitRewardMean = 0.0;
-    private double epUtilRewardMean = 0.0;
-    private int epValidCount = 0;
     private long epWaitingJobsCountMax = 0;
     private long epRunningVmsCountMax = 0;
 
@@ -107,9 +104,6 @@ public class WrappedSimulation {
     }
 
     public void resetEpisodeStats() {
-        resetEpJobWaitRewardMean();
-        resetEpUtilRewardMean();
-        resetEpValidCount();
         resetEpWaitingJobsCountMax();
         resetEpRunningVmsCountMax();
     }
@@ -168,12 +162,11 @@ public class WrappedSimulation {
             printAndResetSimulationHistory();
         }
 
-        updateEpisodeStats(rewards[1], rewards[2], isValid);
+        updateEpisodeStats();
         printEpisodeStatsDebug(rewards[1], rewards[2], rewards[3]);
 
-        SimulationStepInfo info = new SimulationStepInfo(rewards, getEpisodeRewardStats(),
-                getCurrentTimestepMetrics(), cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(),
-                getUnutilizedStats());
+        SimulationStepInfo info = new SimulationStepInfo(rewards, getCurrentTimestepMetrics(),
+                cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedStats());
 
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
     }
@@ -358,19 +351,12 @@ public class WrappedSimulation {
     // return resultArray;
     // }
 
-    private void updateValidCount(boolean isValid) {
-        if (isValid) {
-            epValidCount++;
-        }
-    }
 
     private void printEpisodeStatsDebug(double jobWaitReward, double utilReward,
             double invalidReward) {
 
         LOGGER.debug("\n==================== Episode stats so far ===================="
-                + "\nEpisode Statistics:\nAverage job wait reward: " + getEpJobWaitRewardMean()
-                + "\nAverage utilization reward: " + getEpUtilRewardMean()
-                + "\nMax waiting jobs count: " + getEpWaitingJobsCountMax()
+                + "\nEpisode Statistics:\nMax waiting jobs count: " + getEpWaitingJobsCountMax()
                 + "\nMax running vms count in the episode:" + getEpRunningVmsCountMax()
                 + "\n===================================================="
                 + "\nTimestep statistics:\nJob wait reward:" + jobWaitReward
@@ -378,23 +364,9 @@ public class WrappedSimulation {
                 + "\n==============================================================");
     }
 
-    private void updateEpisodeStats(double jobWaitReward, double utilReward, boolean isValid) {
-        updateEpJobWaitRewardMean(Settings.getRewardJobWaitCoef() * jobWaitReward);
-        updateEpUtilRewardMean(Settings.getRewardUtilizationCoef() * utilReward);
-        updateValidCount(isValid);
-
+    private void updateEpisodeStats() {
         updateEpWaitingJobsCountMax(cloudSimProxy.getWaitingJobsCount());
         updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
-    }
-
-    private List<Object> getEpisodeRewardStats() {
-        List<Object> stats = new ArrayList<>();
-
-        stats.add(getEpJobWaitRewardMean());
-        stats.add(getEpUtilRewardMean());
-        stats.add(getEpValidCount());
-
-        return stats;
     }
 
     // private long continuousToDiscrete(final double continuous, final long bucketsNum) {
@@ -703,39 +675,6 @@ public class WrappedSimulation {
         if (runningVms > epRunningVmsCountMax) {
             epRunningVmsCountMax = runningVms;
         }
-    }
-
-    private void updateEpJobWaitRewardMean(double jobWaitReward) {
-        epJobWaitRewardMean =
-                (epJobWaitRewardMean * (currentStep - 1) + jobWaitReward) / currentStep;
-    }
-
-    private void updateEpUtilRewardMean(double utilReward) {
-        epUtilRewardMean = (epUtilRewardMean * (currentStep - 1) + utilReward) / currentStep;
-    }
-
-    private double getEpJobWaitRewardMean() {
-        return epJobWaitRewardMean;
-    }
-
-    private double getEpUtilRewardMean() {
-        return epUtilRewardMean;
-    }
-
-    private int getEpValidCount() {
-        return epValidCount;
-    }
-
-    private void resetEpJobWaitRewardMean() {
-        epJobWaitRewardMean = 0.0;
-    }
-
-    private void resetEpUtilRewardMean() {
-        epUtilRewardMean = 0.0;
-    }
-
-    private void resetEpValidCount() {
-        epValidCount = 0;
     }
 
     public void seed() {

@@ -32,6 +32,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.best_reward = -np.inf
         self.save_best_episode_details = save_best_episode_details
         self.previous_best_episode_num = None
+        self.isValid = None
         self.current_episode_num = 0
 
         self._reset_episode_details()
@@ -47,10 +48,11 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             "timestep": timesteps,
             "obs": self.observations,
             "action": self.actions,
-            "job_wait_reward": self.job_wait_reward,
-            "util_reward": self.util_reward,
-            "invalid_reward": self.invalid_reward,
+            "job_wait_reward": self.job_wait_rewards,
+            "util_reward": self.util_rewards,
+            "invalid_reward": self.invalid_rewards,
             "reward": self.rewards,
+            "isValid": self.isValid,
             "next_obs": self.new_observations,
         }
         return episode_details
@@ -64,12 +66,12 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.vm_metrics = []
         self.job_metrics = []
         self.job_wait_time = []
-        self.job_wait_reward = []
-        self.util_reward = []
-        self.invalid_reward = []
+        self.job_wait_rewards = []
+        self.util_rewards = []
+        self.invalid_rewards = []
         self.unutilized_active = []
         self.unutilized_all = []
-
+        self.isValid = []
         self.current_episode_length = 0
 
     def _delete_previous_best(self) -> None:
@@ -88,11 +90,12 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
         self.job_metrics.append(self.locals["infos"][0]["job_metrics"])
         self.job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
-        self.job_wait_reward.append(self.locals["infos"][0]["job_wait_reward"])
-        self.util_reward.append(self.locals["infos"][0]["util_reward"])
-        self.invalid_reward.append(self.locals["infos"][0]["invalid_reward"])
+        self.job_wait_rewards.append(self.locals["infos"][0]["job_wait_reward"])
+        self.util_rewards.append(self.locals["infos"][0]["util_reward"])
+        self.invalid_rewards.append(self.locals["infos"][0]["invalid_reward"])
         self.unutilized_active.append(self.locals["infos"][0]["unutilized_active"])
         self.unutilized_all.append(self.locals["infos"][0]["unutilized_all"])
+        self.isValid.append(self.locals["infos"][0]["isValid"])
 
     def _maybe_save_replay_buffer(self) -> None:
         if (
@@ -186,16 +189,17 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         invalid_reward = self.locals["infos"][0]["invalid_reward"]
         self.logger.record_mean("ep_inv_rew_mean", invalid_reward)
 
-        total_reward = np.sum(self.rewards)
-        self.logger.record("ep_total_rew", total_reward)
-
+    # Write episode info in a row in the log
     def _write_log_row(self) -> None:
         first_ep_timestep = self.num_timesteps - self.current_episode_length + 1
         last_ep_timestep = self.num_timesteps
+        total_reward = np.sum(self.rewards)
         self.logger.record("episode_num", self.current_episode_num)
         self.logger.record("episode_length", self.current_episode_length)
         self.logger.record("first_ep_timestep", first_ep_timestep)
         self.logger.record("last_ep_timestep", last_ep_timestep)
+        self.logger.record("ep_total_rew", total_reward)
+        self.logger.record("ep_valid_count", np.sum(self.isValid))
         self.logger.dump()
 
     def _on_step(self) -> bool:
