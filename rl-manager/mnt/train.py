@@ -25,11 +25,12 @@ def datetime_to_str():
 
 
 def main():
-    monitor_info_keywords = (
-        "ep_job_wait_rew_mean",
-        "ep_util_rew_mean",
-        "ep_valid_count",
-    )
+    monitor_info_keywords = ()
+    # monitor_info_keywords = (
+    #     "ep_job_wait_rew_mean",
+    #     "ep_util_rew_mean",
+    #     "ep_valid_count",
+    # )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

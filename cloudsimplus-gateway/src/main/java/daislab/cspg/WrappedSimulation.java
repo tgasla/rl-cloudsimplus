@@ -172,7 +172,7 @@ public class WrappedSimulation {
         printEpisodeStatsDebug(rewards[1], rewards[2], rewards[3]);
 
         SimulationStepInfo info = new SimulationStepInfo(rewards, getEpisodeRewardStats(),
-                getCurrentTimestepMetrics(), cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), // jobWaitTime
+                getCurrentTimestepMetrics(), cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(),
                 getUnutilizedStats());
 
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
@@ -379,8 +379,8 @@ public class WrappedSimulation {
     }
 
     private void updateEpisodeStats(double jobWaitReward, double utilReward, boolean isValid) {
-        updateEpJobWaitRewardMean(-Settings.getRewardJobWaitCoef() * jobWaitReward);
-        updateEpUtilRewardMean(-Settings.getRewardUtilizationCoef() * utilReward);
+        updateEpJobWaitRewardMean(Settings.getRewardJobWaitCoef() * jobWaitReward);
+        updateEpUtilRewardMean(Settings.getRewardUtilizationCoef() * utilReward);
         updateValidCount(isValid);
 
         updateEpWaitingJobsCountMax(cloudSimProxy.getWaitingJobsCount());

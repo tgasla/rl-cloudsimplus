@@ -1,7 +1,7 @@
-import csv
 import os
 import numpy as np
 import pandas as pd
+from typing import Any, Dict
 
 # from stable_baselines3.common import results_plotter
 # from stable_baselines3.common.results_plotter import plot_results
@@ -24,7 +24,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         save_replay_buffer: bool = True,
         save_best_episode_details: bool = True,
         verbose: int = 1,
-    ):
+    ) -> None:
         super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
         self.log_dir = log_dir
         self.save_replay_buffer = (save_replay_buffer,)
@@ -32,18 +32,19 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.best_reward = -np.inf
         self.save_best_episode_details = save_best_episode_details
         self.previous_best_episode_num = None
+        self.current_episode_num = 0
 
-        self._reset_log_info()
+        self._reset_episode_details()
 
-    def get(self, attr):
+    def get(self, attr) -> Any:
         return self.training_env.env_method("get_wrapper_attr", attr)[0]
 
-    def _create_episode_details_dict(self):
+    def _create_episode_details_dict(self) -> Dict:
+        timesteps = np.arange(
+            self.num_timesteps - self.current_episode_length + 1, self.num_timesteps + 1
+        )
         episode_details = {
-            "timestep": np.arange(
-                self.num_timesteps - len(self.observations),
-                self.num_timesteps,
-            ),
+            "timestep": timesteps,
             "obs": self.observations,
             "action": self.actions,
             "job_wait_reward": self.job_wait_reward,
@@ -54,7 +55,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         }
         return episode_details
 
-    def _reset_log_info(self):
+    def _reset_episode_details(self) -> None:
         self.observations = []
         self.actions = []
         self.rewards = []
@@ -69,14 +70,16 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_active = []
         self.unutilized_all = []
 
-    def _delete_previous_best(self):
+        self.current_episode_length = 0
+
+    def _delete_previous_best(self) -> None:
         if self.previous_best_episode_num:
             log_file = os.path.join(
                 self.log_dir, f"best_model_actions_{self.previous_best_episode_num}.csv"
             )
             os.remove(log_file)
 
-    def _save_timestep_details(self):
+    def _save_timestep_details(self) -> None:
         self.observations.append(self.locals["obs_tensor"][0].cpu())
         self.actions.append(self.locals["actions"][0])
         self.rewards.append(self.locals["rewards"][0])
@@ -91,7 +94,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_active.append(self.locals["infos"][0]["unutilized_active"])
         self.unutilized_all.append(self.locals["infos"][0]["unutilized_all"])
 
-    def _maybe_save_replay_buffer(self):
+    def _maybe_save_replay_buffer(self) -> None:
         if (
             hasattr(self.model, "replay_buffer")
             and self.model.replay_buffer is not None
@@ -102,7 +105,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                 print((f"Saving replay buffer to" f"{replay_buffer_path}"))
             self.model.save_replay_buffer(replay_buffer_path)
 
-    def _create_csv_paths(self):
+    def _create_csv_paths(self) -> Dict:
         host_metrics_path = os.path.join(self.log_dir, "host_metrics.csv")
         vm_metrics_path = os.path.join(self.log_dir, "vm_metrics.csv")
         job_metrics_path = os.path.join(self.log_dir, "job_metrics.csv")
@@ -119,7 +122,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         }
         return paths
 
-    def _write_simulation_details_to_csvs(self, paths):
+    def _write_simulation_details_to_csvs(self, paths) -> None:
         host_metrics_df = pd.DataFrame(self.host_metrics)
         vm_metrics_df = pd.DataFrame(self.vm_metrics)
         job_metrics_df = pd.DataFrame(self.job_metrics)
@@ -134,19 +137,19 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         unutilized_active_df.to_csv(paths["unutilized_active"], header=False)
         unutilized_all_df.to_csv(paths["unutilized_all"], header=False)
 
-    def _maybe_save_best_episode_details(self):
+    def _maybe_save_best_episode_details(self) -> None:
         if self.save_best_episode_details:
             episode_details = self._create_episode_details_dict()
             df = pd.DataFrame(episode_details)
             episode_details_path = os.path.join(
                 self.log_dir,
-                f"best_model_actions_{self.get('episode_num') - 1}.csv",
+                f"best_model_actions_{self.current_episode_num}.csv",
             )
             if self.verbose >= 1:
-                print((f"Saving episode details to" f"{episode_details_path}"))
+                print((f"Saving DRL episode details to" f"{episode_details_path}"))
             df.to_csv(episode_details_path, index=False)
             self._delete_previous_best()
-            self.previous_best_episode_num = self.get("episode_num") - 1
+            self.previous_best_episode_num = self.current_episode_num
 
             csv_paths = self._create_csv_paths()
 
@@ -155,23 +158,45 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
             self._write_simulation_details_to_csvs(csv_paths)
 
-    def _maybe_print_current_episode_info(self, current_reward):
+    def _maybe_print_current_episode_info(self, current_reward) -> None:
         if self.verbose >= 1:
-            # you can access it also with self.locals['self'].num_timesteps
             # -1 because it is called when reset is already done,
             # so episode number is already incremented
+            # you can access it also with self.locals['self'].num_timesteps
             print(f"Current timesteps: {self.num_timesteps - 1}")
-            print(f"Episode number: {self.get('episode_num') - 1}")
+            print(f"Episode number: {self.current_episode_num}")
             print(f"Episode length: {len(self.observations)}")
             print(f"Best reward: {self.best_reward:.2f}")
             print(f"Current reward: {current_reward:.2f}")
 
-    def _save_new_best(self):
+    def _save_new_best(self) -> None:
         if self.verbose >= 1:
             print(f"Saving new best model to {self.save_path}")
         self.model.save(self.save_path)
         self._maybe_save_replay_buffer()
         self._maybe_save_best_episode_details()
+
+    def _record_reward_values(self) -> None:
+        job_wait_reward = self.locals["infos"][0]["job_wait_reward"]
+        self.logger.record_mean("ep_job_wait_rew_mean", job_wait_reward)
+
+        util_reward = self.locals["infos"][0]["util_reward"]
+        self.logger.record_mean("ep_util_rew_mean", util_reward)
+
+        invalid_reward = self.locals["infos"][0]["invalid_reward"]
+        self.logger.record_mean("ep_inv_rew_mean", invalid_reward)
+
+        total_reward = np.sum(self.rewards)
+        self.logger.record("ep_total_rew", total_reward)
+
+    def _write_log_row(self) -> None:
+        first_ep_timestep = self.num_timesteps - self.current_episode_length + 1
+        last_ep_timestep = self.num_timesteps
+        self.logger.record("episode_num", self.current_episode_num)
+        self.logger.record("episode_length", self.current_episode_length)
+        self.logger.record("first_ep_timestep", first_ep_timestep)
+        self.logger.record("last_ep_timestep", last_ep_timestep)
+        self.logger.dump()
 
     def _on_step(self) -> bool:
         # because the environment is a VecEnv environment, the variables are dones
@@ -179,10 +204,14 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # allow to return the done and info information for all environments.
         # We know that we have a VecEnv but only 1 environment, so we just take
         # the first element of the tuple.
+        self.current_episode_length += 1
         self._save_timestep_details()
+        self._record_reward_values()
 
         if self.locals["dones"][0]:
-            print("Env terminated. Printing stat lengths")
+            self.current_episode_num += 1
+            print("Episode terminated")
+            self._write_log_row()
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), "timesteps")
             if len(x) == 0:
@@ -196,5 +225,5 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                 self.best_reward = current_reward
                 self._save_new_best()
 
-            self._reset_log_info()
+            self._reset_episode_details()
         return True

@@ -50,7 +50,6 @@ class SingleDC(gym.Env):
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
         self.simulation_environment = self.gateway.entry_point
 
-        self.episode_num = 0
         # TODO: have to define it in .env and pass it preperly in arg
         self.min_job_pes = 1
         self.max_vms_count = int(host_count) * int(host_pes) // int(small_vm_pes)
@@ -93,8 +92,6 @@ class SingleDC(gym.Env):
 
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()
-
-        self.episode_num += 1
 
         result = self.simulation_environment.reset(self.simulation_id)
         self.simulation_environment.seed(self.simulation_id)
