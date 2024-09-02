@@ -21,10 +21,10 @@
     </encoder>
   </appender>
 
-  <logger name="DatacenterBroker" level="ERROR" />
-  <!-- <logger name="daislab.cspg.WrappedSimulation" level="ERROR" /> -->
-  <logger name="CloudletSchedulerAbstract" level="ERROR" />
-
+  <logger name="DatacenterBroker" level="DEBUG" />
+  <logger name="daislab.cspg.WrappedSimulation" level="DEBUG" />
+  <logger name="CloudletSchedulerAbstract" level="DEBUG" />
+ 
   <root level="DEBUG">
     <appender-ref ref="STDOUT"/>
     <appender-ref ref="FILE"/>

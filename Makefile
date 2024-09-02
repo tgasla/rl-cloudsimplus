@@ -1,6 +1,3 @@
-# TODO: I have to ditch this makefile in favor of a batch script.
-# This would make much more sense.
-
 MANAGER_VERSION=0.10
 GATEWAY_VERSION=2.0.0
 
@@ -21,6 +18,9 @@ build-gateway-debug:
 
 build-manager:
 	docker build -t manager:${MANAGER_VERSION} rl-manager
+
+upgrade-gradle:
+	./gradlew wrapper --gradle-version=8.10 --distribution-type=bin
 
 run-tensorboard:
 	docker run --rm --name tensorboard -t -d -v ./logs/:/logs/ -p 80:6006 tensorboard
@@ -55,7 +55,6 @@ stop:
 	docker system prune -f
 
 .PHONY: build-all build-compose-images build-tensorboard build-gateway \
-build-gateway-debug build-manager run-tensorboard run-sim-cpu \
+build-gateway-debug build-manager upgrade-gradle run-tensorboard run-sim-cpu \
 run-sim-gpu rmi-compose-images rmi-tensorboard rmi-gateway \
 rmi-manager clean-gateway stop
- 

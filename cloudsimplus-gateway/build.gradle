@@ -57,7 +57,7 @@ dependencies {
     implementation 'org.cloudsimplus:cloudsimplus:8.5.2'
     implementation 'org.slf4j:slf4j-api:2.0.16'
     implementation 'net.sf.py4j:py4j:0.10.9.7'
-    implementation 'ch.qos.logback:logback-classic:1.5.6'
+    implementation 'ch.qos.logback:logback-classic:1.5.7'
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
     implementation 'org.apache.commons:commons-csv:1.10.0'
     implementation 'com.google.code.gson:gson:2.11.0'
@@ -92,7 +92,7 @@ docker {
     javaApplication {
         baseImage = 'amazoncorretto:21-alpine-jdk'
         images = [dockerImageTag]
-        jvmArgs = ["-Xms${totalMemorySizeInGigabytes}G", "-Xmx${totalMemorySizeInGigabytes}G"]
+        jvmArgs = ["-Xms1G", "-Xmx${totalMemorySizeInGigabytes}G"]
     }
 }
 
