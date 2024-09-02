@@ -3,10 +3,11 @@
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
-    <file>cspg.current.log</file>
+    <file>logs/cspg.current.log</file>
+    <append>true</append>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <!-- daily rollover -->
-      <fileNamePattern>cspg.%d{yyyy-MM-dd}.log.gz</fileNamePattern> <!-- Compression enabled -->
+      <fileNamePattern>logs/cspg.%d{yyyy-MM-dd}.log.gz</fileNamePattern> <!-- Compression enabled -->
 
       <!-- keep 30 days' worth of history -->
       <maxHistory>30</maxHistory>

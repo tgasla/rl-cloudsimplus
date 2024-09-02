@@ -59,9 +59,7 @@ dependencies {
     implementation 'net.sf.py4j:py4j:0.10.9.7'
     implementation 'ch.qos.logback:logback-classic:1.5.7'
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
-    implementation 'org.apache.commons:commons-csv:1.10.0'
     implementation 'com.google.code.gson:gson:2.11.0'
-    implementation 'org.postgresql:postgresql:42.7.3'
     
     testImplementation 'commons-io:commons-io:2.16.1'
     testImplementation 'org.hamcrest:hamcrest:3.0'
