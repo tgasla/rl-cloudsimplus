@@ -155,27 +155,18 @@ class SingleDC(gym.Env):
     def _raw_info_to_dict(self, raw_info):
         info = {
             "job_wait_reward": raw_info.getJobWaitReward(),
-            "util_reward": raw_info.getUtilReward(),
+            "running_vm_cores_reward": raw_info.getRunningVmCoresReward(),
+            "unutilized_vm_cores_reward": raw_info.getUnutilizedVmCoresReward(),
             "invalid_reward": raw_info.getInvalidReward(),
             "isValid": raw_info.isValid(),
             "host_metrics": json.loads(raw_info.getHostMetricsAsJson()),
             "vm_metrics": json.loads(raw_info.getVmMetricsAsJson()),
             "job_metrics": json.loads(raw_info.getJobMetricsAsJson()),
             "job_wait_time": json.loads(raw_info.getJobWaitTimeAsJson()),
-            "unutilized_active": raw_info.getUnutilizedActive(),
-            "unutilized_all": raw_info.getUnutilizedAll(),
+            "unutilized_vm_core_ratio": raw_info.getUnutilizedVmCoreRatio(),
         }
         return info
 
     def _to_nparray(self, raw_obs):
         obs = list(raw_obs)
         return np.array(obs, dtype=np.float32)
-
-    # def _flatten(self, test_list):
-    #     if isinstance(test_list, list):
-    #         temp = []
-    #         for ele in test_list:
-    #             temp.extend(self._flatten(ele))
-    #         return temp
-    #     else:
-    #         return [test_list]

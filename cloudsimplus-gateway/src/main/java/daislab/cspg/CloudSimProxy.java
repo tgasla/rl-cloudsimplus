@@ -246,6 +246,11 @@ public class CloudSimProxy {
         // printCloudlet(cloudlet);
         // }
         // }
+
+        // LOGGER.debug("jobs arrived:" + cloudSimProxy.getArrivedJobsCount());
+        // LOGGER.debug("jobs waiting: " + cloudSimProxy.getWaitingJobsCount());
+        // LOGGER.debug("jobs running: " + cloudSimProxy.getRunningJobsCount());
+        // LOGGER.debug("jobs finished: " + cloudSimProxy.getFinishedJobsCount());
     }
 
     // private void printCloudlet(final Cloudlet cloudlet) {

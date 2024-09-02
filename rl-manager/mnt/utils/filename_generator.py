@@ -7,7 +7,8 @@ def generate_filename(
     pretrain_job_trace_filename=None,
     pretrain_max_job_pes=None,
     pretrain_reward_job_wait_coef=None,
-    pretrain_reward_util_coef=None,
+    pretrain_reward_running_vm_cores_coef=None,
+    pretrain_reward_unutilized_vm_cores_coef=None,
     pretrain_reward_invalid_coef=None,
     transfer_hosts=None,
     transfer_host_pes=None,
@@ -15,7 +16,8 @@ def generate_filename(
     transfer_job_trace_filename=None,
     transfer_max_job_pes=None,
     transfer_reward_job_wait_coef=None,
-    transfer_reward_util_coef=None,
+    transfer_reward_running_vm_cores_coef=None,
+    transfer_reward_unutilized_vm_cores_coef=None,
     transfer_reward_invalid_coef=None,
     transfer_timesteps=None,
     pretrain_dir=None,
@@ -30,7 +32,8 @@ def generate_filename(
             f"_{pretrain_job_trace_filename}"
             f"_{pretrain_max_job_pes}MJC"
             f"_{pretrain_reward_job_wait_coef}Q"
-            f"_{pretrain_reward_util_coef}U"
+            f"_{pretrain_reward_running_vm_cores_coef}R"
+            f"_{pretrain_reward_unutilized_vm_cores_coef}U"
             f"_{pretrain_reward_invalid_coef}I"
         )
         if transfer_timesteps is not None:
@@ -43,7 +46,8 @@ def generate_filename(
                 f"_{transfer_job_trace_filename}"
                 f"_{transfer_max_job_pes}MJC"
                 f"_{transfer_reward_job_wait_coef}Q"
-                f"_{transfer_reward_util_coef}U"
+                f"_{transfer_reward_running_vm_cores_coef}R"
+                f"_{transfer_reward_unutilized_vm_cores_coef}U"
                 f"_{transfer_reward_invalid_coef}I"
             )
     else:
@@ -56,7 +60,8 @@ def generate_filename(
             f"_{transfer_job_trace_filename}"
             f"_{transfer_max_job_pes}MJC"
             f"_{transfer_reward_job_wait_coef}Q"
-            f"_{transfer_reward_util_coef}U"
+            f"_{transfer_reward_running_vm_cores_coef}R"
+            f"_{transfer_reward_unutilized_vm_cores_coef}U"
             f"_{transfer_reward_invalid_coef}I"
         )
     return filename_id

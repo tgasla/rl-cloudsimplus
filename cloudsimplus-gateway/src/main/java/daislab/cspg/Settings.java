@@ -1,7 +1,5 @@
 package daislab.cspg;
 
-import java.util.Map;
-
 /*
  * Class to describe the simulation settings. We provide two constructors.
  * 
@@ -55,31 +53,32 @@ public class Settings {
             Boolean.parseBoolean(System.getenv("CLEAR_CREATED_CLOUDLET_LIST"));
     private static final double rewardJobWaitCoef =
             Double.parseDouble(System.getenv("REWARD_JOB_WAIT_COEF"));
-    private static final double rewardUtilizationCoef =
-            Double.parseDouble(System.getenv("REWARD_UTIL_COEF"));
+    private static final double rewardRunningVmCoresCoef =
+            Double.parseDouble(System.getenv("REWARD_RUNNING_VM_CORES_COEF"));
+    private static final double rewardUnutilizedVmCoresCoef =
+            Double.parseDouble(System.getenv("REWARD_UNUTILIZED_VM_CORES_COEF"));
     private static final double rewardInvalidCoef =
             Double.parseDouble(System.getenv("REWARD_INVALID_COEF"));
     private static final int maxEpisodeLength =
             Integer.parseInt(System.getenv("MAX_EPISODE_LENGTH"));
 
     public static String printSettings() {
-        return "SimulationSettings {" + "\n" + "initialSVmCount=" + initialSVmCount + ",\n"
-                + "initialMVmCount=" + initialMVmCount + ",\n" + "initialLVmCount="
-                + initialLVmCount + ",\n" + "splitLargeJobs=" + splitLargeJobs + ",\n"
-                + "maxJobPes=" + maxJobPes + ",\n" + "timestepInterval=" + timestepInterval + ",\n"
-                + "hostPeMips=" + hostPeMips + ",\n" + "hostBw=" + hostBw + ",\n" + "hostRam="
-                + hostRam + ",\n" + "hostStorage=" + hostStorage + ",\n" + "hostPes=" + hostPes
-                + ",\n" + "hostsCount=" + hostsCount + ",\n" + "smallVmRam=" + smallVmRam + ",\n"
-                + "smallVmPes=" + smallVmPes + ",\n" + "smallVmStorage=" + smallVmStorage + ",\n"
-                + "smallVmBw=" + smallVmBw + ",\n" + "mediumVmMultiplier=" + mediumVmMultiplier
-                + ",\n" + "largeVmMultiplier=" + largeVmMultiplier + ",\n" + "vmStartupDelay="
-                + vmStartupDelay + ",\n" + "vmShutdownDelay=" + vmShutdownDelay + ",\n"
-                + "vmHourlyCost=" + vmHourlyCost + ",\n" + "payingForTheFullHour="
+        return "SimulationSettings {\ninitialSVmCount=" + initialSVmCount + ",\ninitialMVmCount="
+                + initialMVmCount + ",\ninitialLVmCount=" + initialLVmCount + ",\nsplitLargeJobs="
+                + splitLargeJobs + ",\nmaxJobPes=" + maxJobPes + ",\ntimestepInterval="
+                + timestepInterval + ",\nhostPeMips=" + hostPeMips + ",\nhostBw=" + hostBw + ",\n"
+                + "hostRam=" + hostRam + ",\nhostStorage=" + hostStorage + ",\nhostPes=" + hostPes
+                + ",\nhostsCount=" + hostsCount + ",\nsmallVmRam=" + smallVmRam + ",\nsmallVmPes="
+                + smallVmPes + ",\nsmallVmStorage=" + smallVmStorage + ",\nsmallVmBw=" + smallVmBw
+                + ",\nmediumVmMultiplier=" + mediumVmMultiplier + ",\nlargeVmMultiplier="
+                + largeVmMultiplier + ",\nvmStartupDelay=" + vmStartupDelay + ",\nvmShutdownDelay="
+                + vmShutdownDelay + ",\nvmHourlyCost=" + vmHourlyCost + ",\npayingForTheFullHour="
                 + payingForTheFullHour + ",\n" + "clearCreatedCloudletList="
-                + clearCreatedCloudletList + ",\n" + "rewardJobWaitCoef=" + rewardJobWaitCoef
-                + ",\n" + "rewardUtilizationCoef=" + rewardUtilizationCoef + ",\n"
-                + "rewardInvalidCoef=" + rewardInvalidCoef + ",\n" + "maxEpisodeLength="
-                + maxEpisodeLength + ",\n" + "}";
+                + clearCreatedCloudletList + ",\nrewardJobWaitCoef=" + rewardJobWaitCoef
+                + ",\nrewardRunningVmCoresCoef=" + rewardRunningVmCoresCoef
+                + ",\nrewardUnutilizedVmCoresCoef=" + rewardUnutilizedVmCoresCoef
+                + ",\nrewardInvalidCoef=" + rewardInvalidCoef + ",\nmaxEpisodeLength="
+                + maxEpisodeLength + ",\n}";
     }
 
     public static int getInitialSVmCount() {
@@ -186,8 +185,12 @@ public class Settings {
         return rewardJobWaitCoef;
     }
 
-    public static double getRewardUtilizationCoef() {
-        return rewardUtilizationCoef;
+    public static double getRewardRunningVmCoresCoef() {
+        return rewardRunningVmCoresCoef;
+    }
+
+    public static double getRewardUnutilizedVmCoresCoef() {
+        return rewardUnutilizedVmCoresCoef;
     }
 
     public static double getRewardInvalidCoef() {

@@ -11,7 +11,6 @@ from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
-import custom_agents
 from callbacks.save_on_best_training_reward_callback import (
     SaveOnBestTrainingRewardCallback,
 )
@@ -25,23 +24,16 @@ def datetime_to_str():
 
 
 def main():
-    monitor_info_keywords = ()
-    # monitor_info_keywords = (
-    #     "ep_job_wait_rew_mean",
-    #     "ep_util_rew_mean",
-    #     "ep_valid_count",
-    # )
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # args = parse_args()
     algorithm_str = os.getenv("ALGO")
-    timesteps = os.getenv("TRAINING_TIMESTEPS")
+    timesteps = os.getenv("TIMESTEPS")
     host_count = os.getenv("HOST_COUNT")
     host_pes = os.getenv("HOST_PES")
     host_pe_mips = os.getenv("HOST_PE_MIPS")
     reward_job_wait_coef = os.getenv("REWARD_JOB_WAIT_COEF")
-    reward_util_coef = os.getenv("REWARD_UTIL_COEF")
+    reward_running_vm_cores_coef = os.getenv("REWARD_RUNNING_VM_CORES_COEF")
+    reward_unutilized_vm_cores_coef = os.getenv("REWARD_UNUTILIZED_VM_CORES_COEF")
     reward_invalid_coef = os.getenv("REWARD_INVALID_COEF")
     max_job_pes = os.getenv("MAX_JOB_PES")
     job_trace_filename = os.getenv("JOB_TRACE_FILENAME")
@@ -53,7 +45,8 @@ def main():
         pretrain_host_pes=host_pes,
         pretrain_host_pe_mips=host_pe_mips,
         pretrain_reward_job_wait_coef=reward_job_wait_coef,
-        pretrain_reward_util_coef=reward_util_coef,
+        pretrain_reward_running_vm_cores_coef=reward_running_vm_cores_coef,
+        pretrain_reward_unutilized_vm_cores_coef=reward_unutilized_vm_cores_coef,
         pretrain_reward_invalid_coef=reward_invalid_coef,
         pretrain_job_trace_filename=job_trace_filename,
         pretrain_max_job_pes=max_job_pes,
@@ -66,8 +59,7 @@ def main():
         algorithm = getattr(sb3, algorithm_str)
         policy = "MlpPolicy"
     else:
-        algorithm = getattr(custom_agents, algorithm_str)
-        policy = "RngPolicy"
+        raise AttributeError(f"Algorithm '{algorithm_str}' not found in sb3 module.")
 
     timestamp = datetime_to_str()
     filename_id = timestamp + "_" + experiment_id
@@ -85,7 +77,8 @@ def main():
 
     # Monitor needs the environment to have a render_mode set
     # If render_mode is None, it will give a warning.
-    menv = Monitor(env, log_dir, info_keywords=monitor_info_keywords)
+    # add info_keywords if needed
+    menv = Monitor(env, log_dir)
 
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
     if algorithm_str == "A2C":

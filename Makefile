@@ -31,6 +31,9 @@ run-sim-cpu:
 run-sim-gpu:
 	docker compose --profile cuda up --build
 
+run-sim-gpu-d:
+	docker compose --profile cuda up --build -d
+
 rmi-compose-images: rmi-gateway rmi-manager
 
 rmi-tensorboard:
@@ -45,6 +48,8 @@ rmi-manager:
 clean-gateway:
 	cd cloudsimplus-gateway && ./gradlew clean
 
+wipe-logs:
+	cd logs && rm -rf *
 stop:
 	docker compose down
 	docker system prune -f

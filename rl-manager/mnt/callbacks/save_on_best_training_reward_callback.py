@@ -34,12 +34,14 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.previous_best_episode_num = None
         self.isValid = None
         self.current_episode_num = 0
+        self.best_episode_filename_prefix = "best_episode"
 
         self._reset_episode_details()
 
     def get(self, attr) -> Any:
         return self.training_env.env_method("get_wrapper_attr", attr)[0]
 
+    # The episode details will be written to the file best_episode_{episode_num}.csv
     def _create_episode_details_dict(self) -> Dict:
         timesteps = np.arange(
             self.num_timesteps - self.current_episode_length + 1, self.num_timesteps + 1
@@ -49,7 +51,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             "obs": self.observations,
             "action": self.actions,
             "job_wait_reward": self.job_wait_rewards,
-            "util_reward": self.util_rewards,
+            "running_vm_cores_reward": self.running_vm_cores_rewards,
+            "unutilized_vm_cores_reward": self.unutilized_vm_cores_rewards,
             "invalid_reward": self.invalid_rewards,
             "reward": self.rewards,
             "isValid": self.isValid,
@@ -67,17 +70,18 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.job_metrics = []
         self.job_wait_time = []
         self.job_wait_rewards = []
-        self.util_rewards = []
+        self.running_vm_cores_rewards = []
+        self.unutilized_vm_cores_rewards = []
         self.invalid_rewards = []
-        self.unutilized_active = []
-        self.unutilized_all = []
+        self.unutilized_vm_core_ratio = []
         self.isValid = []
         self.current_episode_length = 0
 
     def _delete_previous_best(self) -> None:
         if self.previous_best_episode_num:
             log_file = os.path.join(
-                self.log_dir, f"best_model_actions_{self.previous_best_episode_num}.csv"
+                self.log_dir,
+                f"{self.best_episode_filename_prefix}_{self.previous_best_episode_num}.csv",
             )
             os.remove(log_file)
 
@@ -91,11 +95,17 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.job_metrics.append(self.locals["infos"][0]["job_metrics"])
         self.job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
         self.job_wait_rewards.append(self.locals["infos"][0]["job_wait_reward"])
-        self.util_rewards.append(self.locals["infos"][0]["util_reward"])
+        self.running_vm_cores_rewards.append(
+            self.locals["infos"][0]["running_vm_cores_reward"]
+        )
+        self.unutilized_vm_cores_rewards.append(
+            self.locals["infos"][0]["unutilized_vm_cores_reward"]
+        )
         self.invalid_rewards.append(self.locals["infos"][0]["invalid_reward"])
-        self.unutilized_active.append(self.locals["infos"][0]["unutilized_active"])
-        self.unutilized_all.append(self.locals["infos"][0]["unutilized_all"])
         self.isValid.append(self.locals["infos"][0]["isValid"])
+        self.unutilized_vm_core_ratio.append(
+            self.locals["infos"][0]["unutilized_vm_core_ratio"]
+        )
 
     def _maybe_save_replay_buffer(self) -> None:
         if (
@@ -113,15 +123,15 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         vm_metrics_path = os.path.join(self.log_dir, "vm_metrics.csv")
         job_metrics_path = os.path.join(self.log_dir, "job_metrics.csv")
         job_wait_time_path = os.path.join(self.log_dir, "job_wait_time.csv")
-        unutilized_active_path = os.path.join(self.log_dir, "unutilized_active.csv")
-        unutilized_all_path = os.path.join(self.log_dir, "unutilized_all.csv")
+        unutilized_vm_core_ratio_path = os.path.join(
+            self.log_dir, "unutilized_vm_core_ratio.csv"
+        )
         paths = {
             "host_metrics": host_metrics_path,
             "vm_metrics": vm_metrics_path,
             "job_metrics": job_metrics_path,
             "job_wait_time": job_wait_time_path,
-            "unutilized_active": unutilized_active_path,
-            "unutilized_all": unutilized_all_path,
+            "unutilized_vm_core_ratio": unutilized_vm_core_ratio_path,
         }
         return paths
 
@@ -130,15 +140,15 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         vm_metrics_df = pd.DataFrame(self.vm_metrics)
         job_metrics_df = pd.DataFrame(self.job_metrics)
         job_wait_time_df = pd.DataFrame(self.job_wait_time)
-        unutilized_active_df = pd.DataFrame(self.unutilized_active)
-        unutilized_all_df = pd.DataFrame(self.unutilized_all)
+        unutilized_vm_core_ratio_df = pd.DataFrame(self.unutilized_vm_core_ratio)
 
         host_metrics_df.to_csv(paths["host_metrics"], header=False)
         vm_metrics_df.to_csv(paths["vm_metrics"], header=False)
         job_metrics_df.to_csv(paths["job_metrics"], header=False)
         job_wait_time_df.to_csv(paths["job_wait_time"], header=False)
-        unutilized_active_df.to_csv(paths["unutilized_active"], header=False)
-        unutilized_all_df.to_csv(paths["unutilized_all"], header=False)
+        unutilized_vm_core_ratio_df.to_csv(
+            paths["unutilized_vm_core_ratio"], header=False
+        )
 
     def _maybe_save_best_episode_details(self) -> None:
         if self.save_best_episode_details:
@@ -146,7 +156,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             df = pd.DataFrame(episode_details)
             episode_details_path = os.path.join(
                 self.log_dir,
-                f"best_model_actions_{self.current_episode_num}.csv",
+                f"{self.best_episode_filename_prefix}_{self.current_episode_num}.csv",
             )
             if self.verbose >= 1:
                 print((f"Saving DRL episode details to" f"{episode_details_path}"))
@@ -179,27 +189,24 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self._maybe_save_replay_buffer()
         self._maybe_save_best_episode_details()
 
-    def _record_reward_values(self) -> None:
-        job_wait_reward = self.locals["infos"][0]["job_wait_reward"]
-        self.logger.record_mean("ep_job_wait_rew_mean", job_wait_reward)
-
-        util_reward = self.locals["infos"][0]["util_reward"]
-        self.logger.record_mean("ep_util_rew_mean", util_reward)
-
-        invalid_reward = self.locals["infos"][0]["invalid_reward"]
-        self.logger.record_mean("ep_inv_rew_mean", invalid_reward)
-
-    # Write episode info in a row in the log
+    # Write episode info in a row in the log progress.csv
     def _write_log_row(self) -> None:
         first_ep_timestep = self.num_timesteps - self.current_episode_length + 1
         last_ep_timestep = self.num_timesteps
-        total_reward = np.sum(self.rewards)
         self.logger.record("episode_num", self.current_episode_num)
         self.logger.record("episode_length", self.current_episode_length)
         self.logger.record("first_ep_timestep", first_ep_timestep)
         self.logger.record("last_ep_timestep", last_ep_timestep)
-        self.logger.record("ep_total_rew", total_reward)
+        self.logger.record("ep_total_rew", np.sum(self.rewards))
         self.logger.record("ep_valid_count", np.sum(self.isValid))
+        self.logger.record("ep_job_wait_rew", np.sum(self.job_wait_rewards))
+        self.logger.record(
+            "ep_running_vm_cores_rew", np.sum(self.running_vm_cores_rewards)
+        )
+        self.logger.record(
+            "ep_unutil_vm_cores_rew", np.sum(self.unutilized_vm_cores_rewards)
+        )
+        self.logger.record("ep_inv_rew", np.sum(self.invalid_rewards))
         self.logger.dump()
 
     def _on_step(self) -> bool:
@@ -210,7 +217,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # the first element of the tuple.
         self.current_episode_length += 1
         self._save_timestep_details()
-        self._record_reward_values()
 
         if self.locals["dones"][0]:
             self.current_episode_num += 1
