@@ -404,13 +404,13 @@ public class WrappedSimulation {
 
         if (action[0] == 1) {
             final int hostId = action[1];
-            final int vmTypeIndex = action[2];
+            final int vmTypeIndex = action[3];
             isValid = addNewVm(Settings.VM_TYPES[vmTypeIndex], hostId);
             return isValid;
         }
 
         else if (action[0] == 2) {
-            final int vmIndex = action[1];
+            final int vmIndex = action[2];
             isValid = removeVm(vmIndex);
             return isValid;
         }

@@ -72,7 +72,9 @@ class SingleDC(gym.Env):
         # action = {0: do nothing, 1: create vm, 2: destroy vm}
         # type = {0: small, 1: medium, 2: large}
         # ^ needed only when action = 1
-        self.action_space = spaces.MultiDiscrete(np.array([3, int(host_count), 3]))
+        self.action_space = spaces.MultiDiscrete(
+            np.array([3, int(host_count), self.max_vms_count, 3])
+        )
 
         self.observation_space = spaces.Box(
             low=0,
