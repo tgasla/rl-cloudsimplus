@@ -511,11 +511,6 @@ public class CloudSimProxy {
             return false;
         }
 
-        // if (vmExecList.isEmpty()) {
-        // LOGGER.warn("Can't kill VM. No VMs running.");
-        // return false;
-        // }
-
         Vm vmToKill = vmExecList.get(index);
 
         destroyVm(vmToKill);
