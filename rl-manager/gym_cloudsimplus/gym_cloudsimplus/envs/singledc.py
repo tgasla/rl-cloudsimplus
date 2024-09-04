@@ -166,6 +166,7 @@ class SingleDC(gym.Env):
             "job_metrics": json.loads(raw_info.getJobMetricsAsJson()),
             "job_wait_time": json.loads(raw_info.getJobWaitTimeAsJson()),
             "unutilized_vm_core_ratio": raw_info.getUnutilizedVmCoreRatio(),
+            "dotString": raw_info.getDotString(),
         }
         return info
 

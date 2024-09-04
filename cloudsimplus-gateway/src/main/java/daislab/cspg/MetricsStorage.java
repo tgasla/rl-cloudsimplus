@@ -50,9 +50,9 @@ public class MetricsStorage {
     }
 
     public void clear() {
-        Arrays.fill(this.datacenterMetrics, 0.0);
-        Arrays.stream(this.hostMetrics).forEach(array -> Arrays.fill(array, 0.0));
-        Arrays.stream(this.vmMetrics).forEach(array -> Arrays.fill(array, 0.0));
-        Arrays.stream(this.jobMetrics).forEach(array -> Arrays.fill(array, 0.0));
+        Arrays.fill(this.datacenterMetrics, 0);
+        Arrays.stream(this.hostMetrics).forEach(array -> Arrays.fill(array, 0));
+        Arrays.stream(this.vmMetrics).forEach(array -> Arrays.fill(array, 0));
+        Arrays.stream(this.jobMetrics).forEach(array -> Arrays.fill(array, 0));
     }
 }

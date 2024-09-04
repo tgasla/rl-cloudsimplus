@@ -76,6 +76,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_vm_core_ratio = []
         self.isValid = []
         self.current_episode_length = 0
+        self.episode_dot_strings = []
 
     def _delete_previous_best(self) -> None:
         if self.previous_best_episode_num:
@@ -106,6 +107,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_vm_core_ratio.append(
             self.locals["infos"][0]["unutilized_vm_core_ratio"]
         )
+        self.episode_dot_strings.append(self.locals["infos"][0]["dotString"])
 
     def _maybe_save_replay_buffer(self) -> None:
         if (
@@ -209,6 +211,12 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.logger.record("ep_inv_rew", np.sum(self.invalid_rewards))
         self.logger.dump()
 
+    def _write_dot_strings_to_file(self) -> None:
+        dot_path = os.path.join(self.log_dir, "dot_graphs.txt")
+        with open(dot_path, "w") as file:
+            for s in self.episode_dot_strings:
+                file.write(f"{s}\n")
+
     def _on_step(self) -> bool:
         # because the environment is a VecEnv environment, the variables are dones
         # and infos instead of done and info. Also, the variables are tuples that
@@ -222,6 +230,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             self.current_episode_num += 1
             print("Episode terminated")
             self._write_log_row()
+            self._write_dot_strings_to_file()
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), "timesteps")
             if len(x) == 0:
