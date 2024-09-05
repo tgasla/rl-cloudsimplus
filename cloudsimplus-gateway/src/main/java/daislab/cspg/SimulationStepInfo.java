@@ -9,7 +9,6 @@ import com.google.gson.Gson;
  * call.
  */
 public class SimulationStepInfo {
-
     private final Gson gson = new Gson();
     private final double jobWaitReward;
     private final double runningVmCoresReward;
@@ -26,7 +25,7 @@ public class SimulationStepInfo {
 
     private final String dotString;
 
-    public SimulationStepInfo() {
+    public SimulationStepInfo(final String identifier) {
         this.jobWaitReward = 0;
         this.runningVmCoresReward = 0;
         this.unutilizedVmCoresReward = 0;
@@ -114,7 +113,7 @@ public class SimulationStepInfo {
 
     @Override
     public String toString() {
-        return "SimulationStepInfo {" + "jobWaitReward" + jobWaitReward + ", runningVmCoresReward="
+        return "SimulationStepInfo { jobWaitReward=" + jobWaitReward + ", runningVmCoresReward="
                 + runningVmCoresReward + "unutilizedVmCoresReward=" + unutilizedVmCoresReward
                 + ", invalidReward=" + invalidReward + ", valid=" + valid + '}';
     }

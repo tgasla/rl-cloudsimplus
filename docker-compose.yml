@@ -3,58 +3,20 @@ services:
   gateway:
     image: gateway:2.0.0
     container_name: gateway
-    environment:
-      - MAX_EPISODE_LENGTH=${MAX_EPISODE_LENGTH}
-      - REWARD_JOB_WAIT_COEF=${REWARD_JOB_WAIT_COEF}
-      - REWARD_RUNNING_VM_CORES_COEF=${REWARD_RUNNING_VM_CORES_COEF}
-      - REWARD_UNUTILIZED_VM_CORES_COEF=${REWARD_UNUTILIZED_VM_CORES_COEF}
-      - REWARD_INVALID_COEF=${REWARD_INVALID_COEF}
-      - HOST_COUNT=${HOST_COUNT}
-      - HOST_PES=${HOST_PES}
-      - HOST_PE_MIPS=${HOST_PE_MIPS}
-      - MAX_JOB_PES=${MAX_JOB_PES}
-      - SMALL_VM_PES=${SMALL_VM_PES}
-      - INITIAL_S_VM_COUNT=0
-      - INITIAL_M_VM_COUNT=0
-      - INITIAL_L_VM_COUNT=0
-      - TIMESTEP_INTERVAL=1
-      - SPLIT_LARGE_JOBS=true
-      - VM_HOURLY_COST=0.086
-      - HOST_RAM=65536
-      - HOST_STORAGE=100000
-      - HOST_BW=50000
-      - SMALL_VM_RAM=8192
-      - SMALL_VM_STORAGE=4000
-      - SMALL_VM_BW=1000
-      - VM_STARTUP_DELAY=0
-      - VM_SHUTDOWN_DELAY=0
-      - MEDIUM_VM_MULTIPLIER=2
-      - LARGE_VM_MULTIPLIER=4
-      - PAYING_FOR_THE_FULL_HOUR=false
-      - CLEAR_CREATED_CLOUDLET_LIST=true
+    env_file: .env
     volumes:
       - ./logs:/app/logs
 
   manager: &cpu
     profiles: [ "" ]
     image: manager:0.10
-    container_name: manager
+    # container_name: manager
     build: rl-manager
     depends_on:
       - gateway
-    environment:
-      - ALGO=${ALGO}
-      - TIMESTEPS=${TIMESTEPS}
-      - REWARD_JOB_WAIT_COEF=${REWARD_JOB_WAIT_COEF}
-      - REWARD_RUNNING_VM_CORES_COEF=${REWARD_RUNNING_VM_CORES_COEF}
-      - REWARD_UNUTILIZED_VM_CORES_COEF=${REWARD_UNUTILIZED_VM_CORES_COEF}
-      - REWARD_INVALID_COEF=${REWARD_INVALID_COEF}
-      - MAX_JOB_PES=${MAX_JOB_PES}
-      - HOST_COUNT=${HOST_COUNT}
-      - HOST_PE_MIPS=${HOST_PE_MIPS}
-      - HOST_PES=${HOST_PES}
-      - JOB_TRACE_FILENAME=${JOB_TRACE_FILENAME}
-      - SMALL_VM_PES=${SMALL_VM_PES}
+    env_file: .env
+    deploy:
+      replicas: ${REPLICAS}
     volumes:
       - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
@@ -66,6 +28,7 @@ services:
     <<: *cpu
     profiles: [ "cuda" ]
     deploy:
+      replicas: ${REPLICAS}
       resources:
         reservations:
           devices:

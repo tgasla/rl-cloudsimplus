@@ -77,10 +77,6 @@ public class WrappedSimulation {
         LOGGER.info("Creating simulation: {}", identifier);
     }
 
-    public String getIdentifier() {
-        return identifier;
-    }
-
     public SimulationResetResult reset() {
         LOGGER.info("Reset initiated");
         LOGGER.info("job count: " + initialJobsDescriptors.size());
@@ -91,12 +87,12 @@ public class WrappedSimulation {
 
         List<Cloudlet> cloudlets = initialJobsDescriptors.stream()
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
-        cloudSimProxy = new CloudSimProxy(cloudlets);
+        cloudSimProxy = new CloudSimProxy(identifier, cloudlets);
 
         // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
         double[][] obs = getObservation();
         resetEpisodeStats();
-        SimulationStepInfo info = new SimulationStepInfo();
+        SimulationStepInfo info = new SimulationStepInfo(identifier);
 
         return new SimulationResetResult(obs, info);
     }
@@ -719,6 +715,10 @@ public class WrappedSimulation {
         }
     }
 
+    public String getIdentifier() {
+        return identifier;
+    }
+
     public void seed() {
         // there is no randomness so far...
     }
@@ -732,6 +732,6 @@ public class WrappedSimulation {
     }
 
     private String getLoggerPrefix() {
-        return WrappedSimulation.class.getSimpleName() + ": " + getIdentifier();
+        return WrappedSimulation.class.getSimpleName() + ": " + identifier;
     }
 }

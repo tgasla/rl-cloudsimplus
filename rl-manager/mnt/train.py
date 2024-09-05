@@ -37,6 +37,7 @@ def main():
     reward_invalid_coef = os.getenv("REWARD_INVALID_COEF")
     max_job_pes = os.getenv("MAX_JOB_PES")
     job_trace_filename = os.getenv("JOB_TRACE_FILENAME")
+    replica_id = os.getenv("HOSTNAME")
 
     experiment_id = generate_filename(
         algorithm_str=algorithm_str,
@@ -62,7 +63,7 @@ def main():
         raise AttributeError(f"Algorithm '{algorithm_str}' not found in sb3 module.")
 
     timestamp = datetime_to_str()
-    filename_id = timestamp + "_" + experiment_id
+    filename_id = timestamp + "_" + experiment_id + "_" + replica_id
     log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
     # Read jobs

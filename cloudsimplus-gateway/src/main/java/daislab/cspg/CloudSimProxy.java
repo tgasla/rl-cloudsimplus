@@ -8,7 +8,6 @@ import org.cloudsimplus.core.events.SimEvent;
 import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.datacenters.DatacenterSimple;
 import org.cloudsimplus.hosts.Host;
-import org.cloudsimplus.hosts.HostAbstract;
 import org.cloudsimplus.provisioners.PeProvisionerSimple;
 import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
@@ -17,34 +16,30 @@ import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
 import org.cloudsimplus.listeners.CloudletVmEventInfo;
-import org.cloudsimplus.listeners.DatacenterBrokerEventInfo;
 import org.cloudsimplus.listeners.EventListener;
 import org.cloudsimplus.resources.Ram;
 import org.cloudsimplus.resources.Bandwidth;
-import org.cloudsimplus.resources.ResourceManageable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.IntStream;
 
 public class CloudSimProxy {
 
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
+    private final Logger LOGGER = LoggerFactory.getLogger(getLoggerPrefix());
 
+    private final String identifier;
     private final CloudSimPlus cloudSimPlus;
     private final Datacenter datacenter;
     private final DatacenterBrokerFirstFitFixed broker;
@@ -58,7 +53,8 @@ public class CloudSimProxy {
     private int nextVmId;
     private int unableToSubmitJobCount;
 
-    public CloudSimProxy(final List<Cloudlet> inputJobs) {
+    public CloudSimProxy(final String identifier, final List<Cloudlet> inputJobs) {
+        this.identifier = identifier;
         this.inputJobs = new ArrayList<>(inputJobs);
         this.unsubmittedJobs = new ArrayList<>(inputJobs);
         // arrivedJobs is Set because we don't care about order, we just need apply .size() to
@@ -537,8 +533,8 @@ public class CloudSimProxy {
                 Stream.concat(execCloudlets.stream(), waitingCloudlets.stream())
                         .collect(Collectors.toList());
 
-        datacenter.getVmAllocationPolicy().deallocateHostForVm(vm); // this internally calls the
-                                                                    // destroyVm
+        // this internally calls destroyVm
+        datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
 
         vm.getCloudletScheduler().clear();
 
@@ -550,19 +546,8 @@ public class CloudSimProxy {
     }
 
     private void rescheduleCloudlets(final List<Cloudlet> affectedCloudlets) {
-        // final double currentClock = clock();
-
         affectedCloudlets.forEach(cloudlet -> {
             cloudlet.setSubmissionDelay(0);
-            // if the Cloudlet still hasn't been started,
-            // let it start at the scheduled time,
-            // else, start it immediately
-            // we can also start it on the next timestepInterval
-            // THIS IS NOT NEEDED ACTUALLY. There is no way the cloudlet
-            // is not already submitted because it was in the vm's queue.
-            // Double submissionDelay = originalSubmissionDelay.get(cloudlet.getId());
-            // submissionDelay = Math.max(0, submissionDelay - currentClock);
-            // cloudlet.setSubmissionDelay(submissionDelay);
         });
 
         unsubmittedJobs.addAll(affectedCloudlets);
@@ -590,5 +575,9 @@ public class CloudSimProxy {
 
     public double getRunningCost() {
         return vmCost.getVMCostPerIteration(clock());
+    }
+
+    private String getLoggerPrefix() {
+        return CloudSimProxy.class.getSimpleName() + ": " + identifier;
     }
 }
