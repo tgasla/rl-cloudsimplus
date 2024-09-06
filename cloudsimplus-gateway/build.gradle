@@ -41,8 +41,8 @@ test {
     useJUnitPlatform()
     // enable/disable system out messages on junit tests
     // enable testLogging if log.level == 'DEBUG'
-    // testLogging.showStandardStreams = System.getProperty('log.level', 'INFO') == 'DEBUG'
-    testLogging.showStandardStreams = false
+    testLogging.showStandardStreams = System.getProperty('log.level', 'INFO') == 'DEBUG'
+    // testLogging.showStandardStreams = false
 }
 
 // In this section you declare where to find the dependencies of your project

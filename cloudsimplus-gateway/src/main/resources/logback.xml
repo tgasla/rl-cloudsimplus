@@ -23,7 +23,7 @@
   </appender>
 
   <logger name="DatacenterBroker" level="DEBUG" />
-  <logger name="daislab.cspg.WrappedSimulation" level="DEBUG" />
+  <logger name="WrappedSimulation" level="DEBUG" />
   <logger name="CloudletSchedulerAbstract" level="DEBUG" />
  
   <root level="DEBUG">

@@ -588,10 +588,10 @@ public class WrappedSimulation {
                 }
             }
         }
-        System.out.println("obstreearray");
-        for (int i = 0; i < treeArray.length; i++) {
-            System.out.println(treeArray[i]);
-        }
+        // System.out.println("obstreearray");
+        // for (int i = 0; i < treeArray.length; i++) {
+        // System.out.println(treeArray[i]);
+        // }
         return treeArray;
     }
 

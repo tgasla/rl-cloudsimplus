@@ -20,8 +20,7 @@ services:
     volumes:
       - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
-    command: >
-      python3 mnt/train.py
+    command: python3 mnt/train.py
     # command: python3 mnt/test.py
 
   manager-cuda:
