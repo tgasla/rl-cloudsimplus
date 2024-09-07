@@ -60,7 +60,8 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.5.7'
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
     implementation 'com.google.code.gson:gson:2.11.0'
-    
+    implementation 'org.yaml:snakeyaml:2.3'
+
     testImplementation 'commons-io:commons-io:2.16.1'
     testImplementation 'org.hamcrest:hamcrest:3.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.0'

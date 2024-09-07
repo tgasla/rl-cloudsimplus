@@ -40,6 +40,7 @@ public class CloudSimProxy {
     private final Logger LOGGER = LoggerFactory.getLogger(getLoggerPrefix());
 
     private final String identifier;
+    private final SimulationSettings settings;
     private final CloudSimPlus cloudSimPlus;
     private final Datacenter datacenter;
     private final DatacenterBrokerFirstFitFixed broker;
@@ -53,8 +54,10 @@ public class CloudSimProxy {
     private int nextVmId;
     private int unableToSubmitJobCount;
 
-    public CloudSimProxy(final String identifier, final List<Cloudlet> inputJobs) {
+    public CloudSimProxy(final String identifier, final SimulationSettings settings,
+            final List<Cloudlet> inputJobs) {
         this.identifier = identifier;
+        this.settings = settings;
         this.inputJobs = new ArrayList<>(inputJobs);
         this.unsubmittedJobs = new ArrayList<>(inputJobs);
         // arrivedJobs is Set because we don't care about order, we just need apply .size() to
@@ -67,15 +70,14 @@ public class CloudSimProxy {
         triedToSubmitJobCount = 0;
         unableToSubmitJobCount = 0;
 
-        cloudSimPlus = new CloudSimPlus(Settings.getMinTimeBetweenEvents());
+        cloudSimPlus = new CloudSimPlus(settings.getMinTimeBetweenEvents());
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         datacenter = createDatacenter();
-        vmCost = new VmCost(Settings.getVmHourlyCost(), Settings.getTimestepInterval(),
-                Settings.isPayingForTheFullHour());
+        vmCost = new VmCost(settings);
 
-        final List<Vm> smallVmList = createVmList(Settings.getInitialSVmCount(), Settings.SMALL);
-        final List<Vm> mediumVmList = createVmList(Settings.getInitialMVmCount(), Settings.MEDIUM);
-        final List<Vm> largeVmList = createVmList(Settings.getInitialLVmCount(), Settings.LARGE);
+        final List<Vm> smallVmList = createVmList(settings.getInitialSVmCount(), settings.SMALL);
+        final List<Vm> mediumVmList = createVmList(settings.getInitialMVmCount(), settings.MEDIUM);
+        final List<Vm> largeVmList = createVmList(settings.getInitialLVmCount(), settings.LARGE);
         broker.submitVmList(smallVmList);
         broker.submitVmList(mediumVmList);
         broker.submitVmList(largeVmList);
@@ -89,11 +91,11 @@ public class CloudSimProxy {
         ensureAllJobsCompleteBeforeSimulationEnds();
 
         cloudSimPlus.startSync();
-        runFor(Settings.getMinTimeBetweenEvents());
+        runFor(settings.getMinTimeBetweenEvents());
     }
 
     public long getVmCoreCountByType(final String type) {
-        return Settings.getSmallVmPes() * Settings.getSizeMultiplier(type);
+        return settings.getSmallVmPes() * settings.getSizeMultiplier(type);
     }
 
     // this will prevent the simulation from ending
@@ -102,7 +104,7 @@ public class CloudSimProxy {
         cloudSimPlus.addOnEventProcessingListener(info -> {
             if (getNumberOfFutureEvents() == 1 && hasUnfinishedJobs()) {
                 LOGGER.debug("Jobs not finished. Sending empty event to keep simulation running.");
-                sendEmptyEventAt(Settings.getTimestepInterval());
+                sendEmptyEventAt(settings.getTimestepInterval());
             }
         });
     }
@@ -115,12 +117,12 @@ public class CloudSimProxy {
     private Datacenter createDatacenter() {
         List<Host> hostList = new ArrayList<>();
 
-        for (int i = 0; i < Settings.getHostsCount(); i++) {
+        for (int i = 0; i < settings.getHostsCount(); i++) {
             List<Pe> peList = createPeList();
 
-            final long hostRam = Settings.getHostRam();
-            final long hostBw = Settings.getHostBw();
-            final long hostStorage = Settings.getHostStorage();
+            final long hostRam = settings.getHostRam();
+            final long hostBw = settings.getHostBw();
+            final long hostStorage = settings.getHostStorage();
             Host host = new HostWithoutCreatedList(hostRam, hostBw, hostStorage, peList)
                     .setRamProvisioner(new ResourceProvisionerSimple())
                     .setBwProvisioner(new ResourceProvisionerSimple())
@@ -144,22 +146,22 @@ public class CloudSimProxy {
     }
 
     private Vm createVm(final String type) {
-        int sizeMultiplier = Settings.getSizeMultiplier(type);
+        int sizeMultiplier = settings.getSizeMultiplier(type);
 
-        Vm vm = new VmSimple(nextVmId, Settings.getHostPeMips(),
-                Settings.getSmallVmPes() * sizeMultiplier);
-        vm.setRam(Settings.getSmallVmRam() * sizeMultiplier).setBw(Settings.getSmallVmBw())
-                .setSize(Settings.getSmallVmStorage())
+        Vm vm = new VmSimple(nextVmId, settings.getHostPeMips(),
+                settings.getSmallVmPes() * sizeMultiplier);
+        vm.setRam(settings.getSmallVmRam() * sizeMultiplier).setBw(settings.getSmallVmBw())
+                .setSize(settings.getSmallVmStorage())
                 .setCloudletScheduler(new OptimizedCloudletScheduler()).setDescription(type)
-                .setShutDownDelay(Settings.getVmShutdownDelay());
+                .setShutDownDelay(settings.getVmShutdownDelay());
 
         return vm;
     }
 
     private List<Pe> createPeList() {
         List<Pe> peList = new ArrayList<>();
-        for (int i = 0; i < Settings.getHostPes(); i++) {
-            peList.add(new PeSimple(Settings.getHostPeMips(), new PeProvisionerSimple()));
+        for (int i = 0; i < settings.getHostPes(); i++) {
+            peList.add(new PeSimple(settings.getHostPeMips(), new PeProvisionerSimple()));
         }
 
         return peList;
@@ -174,7 +176,7 @@ public class CloudSimProxy {
             adjustedInterval = target - clock();
             // Use the minimum time between events if the remaining time is non-positive
             adjustedInterval =
-                    adjustedInterval <= 0 ? Settings.getMinTimeBetweenEvents() : adjustedInterval;
+                    adjustedInterval <= 0 ? settings.getMinTimeBetweenEvents() : adjustedInterval;
         }
     }
 
@@ -201,7 +203,7 @@ public class CloudSimProxy {
         // to avoid OOMing we need to clear that list
         // it is a safe operation in our environment, because that list is only used in
         // CloudSimPlus when a VM is being upscaled (we don't do that)
-        if (Settings.isClearCreatedCloudletList()) {
+        if (settings.isClearCreatedCloudletList()) {
             broker.getCloudletCreatedList().clear();
         }
 
@@ -397,7 +399,7 @@ public class CloudSimProxy {
     }
 
     public long getArrivedJobsCountLastTimestep() {
-        double start = clock() - Settings.getTimestepInterval();
+        double start = clock() - settings.getTimestepInterval();
         return inputJobs.parallelStream()
                 .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
                 .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) > start).count();
@@ -416,7 +418,7 @@ public class CloudSimProxy {
     }
 
     public long getWaitingJobsCountLastTimestep() {
-        double start = clock() - Settings.getTimestepInterval();
+        double start = clock() - settings.getTimestepInterval();
         return inputJobs.parallelStream()
                 .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
                 .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) > start)
@@ -425,7 +427,7 @@ public class CloudSimProxy {
     }
 
     public long getScheduledJobsCountLastTimestep() {
-        double start = clock() - Settings.getTimestepInterval();
+        double start = clock() - settings.getTimestepInterval();
         return inputJobs.parallelStream()
                 .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
                 .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) > start)
@@ -488,7 +490,7 @@ public class CloudSimProxy {
         nextVmId++;
 
         // assuming average startup delay is 56s as in 10.48550/arXiv.2107.03467
-        final double delay = Settings.getVmStartupDelay();
+        final double delay = settings.getVmStartupDelay();
         // submissiondelay or vm boot up delay
         newVm.setSubmissionDelay(delay);
         broker.submitVm(newVm);

@@ -1,0 +1,50 @@
+
+common:
+    initial_s_vm_count: 0
+    initial_m_vm_count: 0
+    initial_l_vm_count: 0
+    timestep_interval: 1.0
+    split_large_jobs: true
+    vm_hourly_cost: 0.086
+    host_ram: 65536
+    host_storage: 100000
+    host_bw: 50000
+    small_vm_ram: 8192
+    small_vm_storage: 4000
+    small_vm_bw: 1000
+    vm_startup_delay: 0.0
+    vm_shutdown_delay: 0.0
+    medium_vm_multiplier: 2
+    large_vm_multiplier: 4
+    paying_for_the_full_hour: false
+    clear_created_cloudlet_list: true
+
+exp_1:
+    host_count: 10
+    host_pes: 10
+    host_pe_mips: 10
+    max_job_pes: 1
+    small_vm_pes: 2
+    job_trace_filename: gradual
+    algorithm: PPO
+    timesteps: 2000000
+    max_episode_length: 100
+    reward_job_wait_coef: 0.25
+    reward_running_vm_cores_coef: 0.25
+    reward_unutilized_vm_cores_coef: 0.25
+    reward_invalid_coef: 0.25
+
+exp_2:
+    host_count: 10
+    host_pes: 10
+    host_pe_mips: 10
+    max_job_pes: 1
+    small_vm_pes: 2
+    job_trace_filename: gradual
+    algorithm: PPO
+    timesteps: 2000000
+    max_episode_length: 100
+    reward_job_wait_coef: 0.33
+    reward_running_vm_cores_coef: 0.33
+    reward_unutilized_vm_cores_coef: 0.34
+    reward_invalid_coef: 0.0

@@ -3,31 +3,26 @@ services:
   gateway:
     image: gateway:2.0.0
     container_name: gateway
-    env_file: .env
-    volumes:
-      - ./logs:/app/logs
-
   manager: &cpu
     profiles: [ "" ]
     image: manager:0.10
     # container_name: manager
     build: rl-manager
+    deploy:
+      replicas: 2
     depends_on:
       - gateway
-    env_file: .env
-    deploy:
-      replicas: ${REPLICAS}
     volumes:
       - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
+      - /run/docker.sock:/run/docker.sock:ro
     command: python3 mnt/train.py
-    # command: python3 mnt/test.py
 
   manager-cuda:
     <<: *cpu
     profiles: [ "cuda" ]
     deploy:
-      replicas: ${REPLICAS}
+      replicas: 2
       resources:
         reservations:
           devices:

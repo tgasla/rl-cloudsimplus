@@ -16,19 +16,18 @@ public class VmCost {
     private final double perIterationSmallVmCost;
 
     private List<Vm> createdVms = new ArrayList<>();
-    private boolean payForFullHour;
     private double iterationsInHour;
+    private SimulationSettings settings;
 
-    public VmCost(final double perHourVMCost, final double timestepInterval,
-            final boolean payForFullHour) {
-        this.payForFullHour = payForFullHour;
+    public VmCost(final SimulationSettings settings) {
+        this.settings = settings;
 
         // timestepInterval are the seconds we are "staying" at each iteration
 
-        iterationsInHour = 3600 / timestepInterval;
+        iterationsInHour = 3600 / settings.getTimestepInterval();
 
-        final double perSecondVMCost = perHourVMCost * 0.00028; // 1/3600
-        perIterationSmallVmCost = perSecondVMCost * timestepInterval;
+        final double perSecondVMCost = settings.getVmHourlyCost() * 0.00028; // 1/3600
+        perIterationSmallVmCost = perSecondVMCost * settings.getTimestepInterval();
     }
 
     public void addNewVmToList(final Vm vm) {
@@ -48,12 +47,13 @@ public class VmCost {
         List<Vm> toRemove = new ArrayList<>();
         for (Vm vm : createdVms) {
             // check if the vm is started
-            double multiplier = Settings.getSizeMultiplier(vm.getDescription());
+            double multiplier = settings.getSizeMultiplier(vm.getDescription());
             final double perIterationVMCost = perIterationSmallVmCost * multiplier;
             if (vm.getStartTime() > -1 && vm.getFinishTime() > -1) {
                 // vm was stopped -
                 // we continue to pay for it within the last running hour if need to
-                if (payForFullHour && (clock <= vm.getFinishTime() + iterationsInHour)) {
+                if (settings.isPayingForTheFullHour()
+                        && (clock <= vm.getFinishTime() + iterationsInHour)) {
                     totalCost += perIterationVMCost;
                 } else {
                     toRemove.add(vm);

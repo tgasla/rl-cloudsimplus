@@ -18,8 +18,8 @@ public class MultiSimulationEnvironment {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
 
-    public String createSimulation(String jobsAsJson) {
-        WrappedSimulation simulation = simulationFactory.create(jobsAsJson);
+    public String createSimulation(final Map<String, Object> params, final String jobsAsJson) {
+        WrappedSimulation simulation = simulationFactory.create(params, jobsAsJson);
         String identifier = simulation.getIdentifier();
 
         simulations.put(identifier, simulation);
