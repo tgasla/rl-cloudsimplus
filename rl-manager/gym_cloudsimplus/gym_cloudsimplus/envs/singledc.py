@@ -1,4 +1,3 @@
-from curses import raw
 import gymnasium as gym
 import os
 import json
@@ -39,17 +38,29 @@ class SingleDC(gym.Env):
 
     def __init__(
         self,
+        params,
         jobs_as_json="[]",
         render_mode="ansi",
     ):
         super(SingleDC, self).__init__()
 
-        host_count = os.getenv("HOST_COUNT")
-        host_pes = os.getenv("HOST_PES")
-        small_vm_pes = os.getenv("SMALL_VM_PES")
-
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
         self.simulation_environment = self.gateway.entry_point
+
+        host_count = params["host_count"]
+        host_pes = params["host_pes"]
+        # host_pe_mips = config[f"exp_{replica_id}"]["host_pe_mips"]
+        # reward_job_wait_coef = config[f"exp_{replica_id}"]["reward_job_wait_coef"]
+        # reward_running_vm_cores_coef = config[f"exp_{replica_id}"][
+        # "reward_running_vm_cores_coef"
+        # ]
+        # reward_unutilized_vm_cores_coef = config[f"exp_{replica_id}"][
+        # "reward_unutilized_vm_cores_coef"
+        # ]
+        # reward_invalid_coef = config[f"exp_{replica_id}"]["reward_invalid_coef"]
+        # max_job_pes = config[f"exp_{replica_id}"]["max_job_pes"]
+        # job_trace_filename = config[f"exp_{replica_id}"]["job_trace_filename"]
+        small_vm_pes = params["small_vm_pes"]
 
         # TODO: have to define it in .env and pass it preperly in arg
         self.min_job_pes = 1
@@ -91,7 +102,9 @@ class SingleDC(gym.Env):
 
         self.render_mode = render_mode
 
-        self.simulation_id = self.simulation_environment.createSimulation(jobs_as_json)
+        self.simulation_id = self.simulation_environment.createSimulation(
+            params, jobs_as_json
+        )
 
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()

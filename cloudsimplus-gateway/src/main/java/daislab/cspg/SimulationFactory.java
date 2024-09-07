@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class SimulationFactory {
 
@@ -21,20 +22,22 @@ public class SimulationFactory {
 
     private int created = 0;
 
-    public synchronized WrappedSimulation create(final String jobsAsJson) {
-        String identifier = "Sim" + created;
-        created++;
+    public synchronized WrappedSimulation create(final Map<String, Object> params,
+            final String jobsAsJson) {
+        String identifier = "Sim" + created++;
 
-        LOGGER.info("Simulation settings dump\n{}", Settings.printSettings());
+        final SimulationSettings settings = new SimulationSettings(params);
+
+        LOGGER.info("Simulation settings dump\n{}", settings.printSettings());
 
         List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
 
-        if (Settings.isSplitLargeJobs()) {
+        if (settings.isSplitLargeJobs()) {
             LOGGER.info("Splitting large jobs");
-            jobs = splitLargeJobs(jobs, Settings.getMaxJobPes());
+            jobs = splitLargeJobs(jobs, settings.getMaxJobPes());
         }
 
-        return new WrappedSimulation(identifier, jobs);
+        return new WrappedSimulation(identifier, settings, jobs);
     }
 
     private List<CloudletDescriptor> splitLargeJobs(final List<CloudletDescriptor> jobs,

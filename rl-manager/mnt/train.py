@@ -1,9 +1,11 @@
 import os
 from datetime import datetime
 import json
+import pycurl
+from io import BytesIO
 import numpy as np
 import gymnasium as gym
-import gym_cloudsimplus
+import gym_cloudsimplus  # noqa: F401
 import torch
 
 import stable_baselines3 as sb3
@@ -17,6 +19,7 @@ from callbacks.save_on_best_training_reward_callback import (
 
 from utils.filename_generator import generate_filename
 from utils.trace_utils import csv_to_cloudlet_descriptor
+from utils.parse_config import dict_from_config
 
 
 def datetime_to_str():
@@ -26,18 +29,41 @@ def datetime_to_str():
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    algorithm_str = os.getenv("ALGO")
-    timesteps = os.getenv("TIMESTEPS")
-    host_count = os.getenv("HOST_COUNT")
-    host_pes = os.getenv("HOST_PES")
-    host_pe_mips = os.getenv("HOST_PE_MIPS")
-    reward_job_wait_coef = os.getenv("REWARD_JOB_WAIT_COEF")
-    reward_running_vm_cores_coef = os.getenv("REWARD_RUNNING_VM_CORES_COEF")
-    reward_unutilized_vm_cores_coef = os.getenv("REWARD_UNUTILIZED_VM_CORES_COEF")
-    reward_invalid_coef = os.getenv("REWARD_INVALID_COEF")
-    max_job_pes = os.getenv("MAX_JOB_PES")
-    job_trace_filename = os.getenv("JOB_TRACE_FILENAME")
-    replica_id = os.getenv("HOSTNAME")
+    response_buffer = BytesIO()
+
+    hostname = os.getenv("HOSTNAME")
+
+    # Define the socket path and container URL
+    unix_socket_path = "/run/docker.sock"
+    container_url = f"http://docker/containers/{hostname}/json"
+
+    # Initialize a cURL object
+    curl = pycurl.Curl()
+
+    # Set cURL options
+    curl.setopt(pycurl.UNIX_SOCKET_PATH, unix_socket_path)
+    curl.setopt(pycurl.URL, container_url)
+    curl.setopt(pycurl.WRITEFUNCTION, response_buffer.write)
+    curl.perform()
+    curl.close()
+
+    response_data = response_buffer.getvalue().decode("utf-8")
+
+    replica_id = json.loads(response_data)["Name"].split("-")[-1]
+
+    params = dict_from_config(replica_id, "mnt/config.yml")
+
+    algorithm_str = params["algorithm"]
+    timesteps = params["timesteps"]
+    host_count = params["host_count"]
+    host_pes = params["host_pes"]
+    host_pe_mips = params["host_pe_mips"]
+    reward_job_wait_coef = params["reward_job_wait_coef"]
+    reward_running_vm_cores_coef = params["reward_running_vm_cores_coef"]
+    reward_unutilized_vm_cores_coef = params["reward_unutilized_vm_cores_coef"]
+    reward_invalid_coef = params["reward_invalid_coef"]
+    max_job_pes = params["max_job_pes"]
+    job_trace_filename = params["job_trace_filename"]
 
     experiment_id = generate_filename(
         algorithm_str=algorithm_str,
@@ -63,18 +89,22 @@ def main():
         raise AttributeError(f"Algorithm '{algorithm_str}' not found in sb3 module.")
 
     timestamp = datetime_to_str()
-    filename_id = timestamp + "_" + experiment_id + "_" + replica_id
+    filename_id = timestamp + "_" + experiment_id + "_" + hostname
     log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
     # Read jobs
     jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{job_trace_filename}.csv")
-    print(job_trace_filename, jobs)
+    # print(job_trace_filename, jobs)
 
     # Create folder if needed
     os.makedirs(log_dir, exist_ok=True)
 
     # Create and wrap the environment
-    env = gym.make("SingleDC-v0", jobs_as_json=json.dumps(jobs))
+    env = gym.make(
+        "SingleDC-v0",
+        params=params,
+        jobs_as_json=json.dumps(jobs),
+    )
 
     # Monitor needs the environment to have a render_mode set
     # If render_mode is None, it will give a warning.
