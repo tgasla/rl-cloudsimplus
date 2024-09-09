@@ -7,7 +7,7 @@
 
 ## Requirements
 
-Linux Debian 12/11/10 or MacOS 14/13/12/11
+Linux Debian >=10 or MacOS >=11
 
 ### 1. Install Docker
 
@@ -24,7 +24,7 @@ Linux Debian 12/11/10 or MacOS 14/13/12/11
 
 You can install OpenJDK 21 JDK and JRE
 
-- For Linux
+- For Linux Debian
 
 ```bash
 sudo apt install openjdk-21-jdk openjdk-21-jre
