@@ -27,24 +27,24 @@ exp_1:
     small_vm_pes: 2
     job_trace_filename: gradual
     algorithm: PPO
-    timesteps: 2000000
+    timesteps: 4000000
     max_episode_length: 100
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
 
-exp_2:
-    host_count: 10
-    host_pes: 10
-    host_pe_mips: 10
-    max_job_pes: 1
-    small_vm_pes: 2
-    job_trace_filename: gradual
-    algorithm: PPO
-    timesteps: 2000000
-    max_episode_length: 100
-    reward_job_wait_coef: 0.33
-    reward_running_vm_cores_coef: 0.33
-    reward_unutilized_vm_cores_coef: 0.34
-    reward_invalid_coef: 0.0
+# exp_2:
+#     host_count: 10
+#     host_pes: 10
+#     host_pe_mips: 10
+#     max_job_pes: 1
+#     small_vm_pes: 2
+#     job_trace_filename: gradual
+#     algorithm: PPO
+#     timesteps: 2000000
+#     max_episode_length: 100
+#     reward_job_wait_coef: 0.33
+#     reward_running_vm_cores_coef: 0.33
+#     reward_unutilized_vm_cores_coef: 0.34
+#     reward_invalid_coef: 0.0
