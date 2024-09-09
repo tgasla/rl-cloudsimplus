@@ -27,7 +27,7 @@ You can install OpenJDK 21 JDK and JRE
 - For Linux
 
 ```bash
-sudo apt-get install openjdk-21-jdk openjdk-21-jre
+sudo apt install openjdk-21-jdk openjdk-21-jre
 ```
 
 - For MacOS using [brew](https://brew.sh/)
