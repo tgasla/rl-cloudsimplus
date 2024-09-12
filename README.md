@@ -14,7 +14,7 @@ Linux Debian >=10 or MacOS >=11
 <https://docs.docker.com/get-docker/>
 
  > [!WARNING]
- > If you install Docker Desktop for MacOS, make sure you are giving enough memory in your containers by going to <b> settings.. > Resources </b> and increasing the Memory Limit
+ > If you install Docker Desktop for MacOS, make sure you are giving enough memory in your containers by going to <b> Settings... > Resources </b> and increasing the Memory Limit
 
 ### 2. Install Docker Compose
 
@@ -46,9 +46,9 @@ or you can also try Azul Zulu
 ### 4. Set the JAVA_HOME environment variable to the right path
 
 > [!IMPORTANT]  
-> The exact path may vary (different distro and different arch).
+> The exact path may vary (different distro, different arch, etc.).
 
-- For linux
+- For Linux
 
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
@@ -65,7 +65,7 @@ export JAVA_HOME=/usr/libexec/java_home
 
 Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
 
-`cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
+`cloudsimplus_gateway/gradlew wrapper --gradle-version 8.6 --distribution-type all`
 -->
 
 <!--
@@ -89,7 +89,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 
 Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
 
-`cloudsimplus_gateway/gradlew wrapper --gradle-version 7.3 --distribution-type all`
+`cloudsimplus_gateway/gradlew wrapper --gradle-version 8.6 --distribution-type all`
 -->
 
 ## Build images
