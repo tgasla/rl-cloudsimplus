@@ -49,20 +49,9 @@ class SingleDC(gym.Env):
 
         host_count = params["host_count"]
         host_pes = params["host_pes"]
-        # host_pe_mips = config[f"exp_{replica_id}"]["host_pe_mips"]
-        # reward_job_wait_coef = config[f"exp_{replica_id}"]["reward_job_wait_coef"]
-        # reward_running_vm_cores_coef = config[f"exp_{replica_id}"][
-        # "reward_running_vm_cores_coef"
-        # ]
-        # reward_unutilized_vm_cores_coef = config[f"exp_{replica_id}"][
-        # "reward_unutilized_vm_cores_coef"
-        # ]
-        # reward_invalid_coef = config[f"exp_{replica_id}"]["reward_invalid_coef"]
-        # max_job_pes = config[f"exp_{replica_id}"]["max_job_pes"]
-        # job_trace_filename = config[f"exp_{replica_id}"]["job_trace_filename"]
         small_vm_pes = params["small_vm_pes"]
 
-        # TODO: have to define it in .env and pass it preperly in arg
+        # TODO: have to define it in config.yml and pass it in
         self.min_job_pes = 1
         self.max_vms_count = int(host_count) * int(host_pes) // int(small_vm_pes)
         self.max_jobs_count = self.max_vms_count * int(small_vm_pes) // self.min_job_pes

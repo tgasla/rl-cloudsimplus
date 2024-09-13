@@ -5,8 +5,7 @@ RUN pip3 install --upgrade pip==24.2
 RUN pip3 install stable-baselines3==2.3.2 tensorboard==2.17.1 tqdm==4.66.5 rich==13.7.1 pyyaml==6.0.2 pycurl==7.45.3
 
 COPY gym_cloudsimplus /gym_cloudsimplus
-# COPY config.yml /mgr/config.yml
-RUN pip3 install /gym_cloudsimplus
+RUN pip3 install -e /gym_cloudsimplus
 
 RUN apt-get update \
     && apt-get purge --auto-remove -yqq \

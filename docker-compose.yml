@@ -15,7 +15,7 @@ services:
       - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
       - /run/docker.sock:/run/docker.sock:ro
-    command: python3 mnt/train.py
+    command: python mnt/entrypoint.py
 
   manager-cuda:
     <<: *cpu

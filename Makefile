@@ -16,7 +16,7 @@ build-manager:
 	docker build -t manager:${MANAGER_VERSION} rl-manager
 
 upgrade-gradle:
-	cd cloudsimplus-gateway && ./gradlew wrapper --gradle-version=${version} --distribution-type=bin
+	cd cloudsimplus-gateway && ./gradlew wrapper --gradle-version=${GRADLE_VERSION} --distribution-type=bin
 
 run-tensorboard:
 	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 80:6006 tensorboard

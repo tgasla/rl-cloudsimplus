@@ -1,8 +1,5 @@
 import os
-from datetime import datetime
 import json
-import pycurl
-from io import BytesIO
 import numpy as np
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
@@ -19,39 +16,10 @@ from callbacks.save_on_best_training_reward_callback import (
 
 from utils.filename_generator import generate_filename
 from utils.trace_utils import csv_to_cloudlet_descriptor
-from utils.parse_config import dict_from_config
 
 
-def datetime_to_str():
-    return datetime.now().strftime("%y%m%d-%H%M%S")
-
-
-def main():
+def train(hostname, params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    response_buffer = BytesIO()
-
-    hostname = os.getenv("HOSTNAME")
-
-    # Define the socket path and container URL
-    unix_socket_path = "/run/docker.sock"
-    container_url = f"http://docker/containers/{hostname}/json"
-
-    # Initialize a cURL object
-    curl = pycurl.Curl()
-
-    # Set cURL options
-    curl.setopt(pycurl.UNIX_SOCKET_PATH, unix_socket_path)
-    curl.setopt(pycurl.URL, container_url)
-    curl.setopt(pycurl.WRITEFUNCTION, response_buffer.write)
-    curl.perform()
-    curl.close()
-
-    response_data = response_buffer.getvalue().decode("utf-8")
-
-    replica_id = json.loads(response_data)["Name"].split("-")[-1]
-
-    params = dict_from_config(replica_id, "mnt/config.yml")
 
     algorithm_str = params["algorithm"]
     timesteps = params["timesteps"]
@@ -65,18 +33,20 @@ def main():
     max_job_pes = params["max_job_pes"]
     job_trace_filename = params["job_trace_filename"]
 
-    experiment_id = generate_filename(
+    filename_id = generate_filename(
         algorithm_str=algorithm_str,
-        pretrain_timesteps=timesteps,
-        pretrain_hosts=host_count,
-        pretrain_host_pes=host_pes,
-        pretrain_host_pe_mips=host_pe_mips,
-        pretrain_reward_job_wait_coef=reward_job_wait_coef,
-        pretrain_reward_running_vm_cores_coef=reward_running_vm_cores_coef,
-        pretrain_reward_unutilized_vm_cores_coef=reward_unutilized_vm_cores_coef,
-        pretrain_reward_invalid_coef=reward_invalid_coef,
-        pretrain_job_trace_filename=job_trace_filename,
-        pretrain_max_job_pes=max_job_pes,
+        timesteps=timesteps,
+        hosts=host_count,
+        host_pes=host_pes,
+        host_pe_mips=host_pe_mips,
+        reward_job_wait_coef=reward_job_wait_coef,
+        reward_running_vm_cores_coef=reward_running_vm_cores_coef,
+        reward_unutilized_vm_cores_coef=reward_unutilized_vm_cores_coef,
+        reward_invalid_coef=reward_invalid_coef,
+        job_trace_filename=job_trace_filename,
+        max_job_pes=max_job_pes,
+        mode="train",
+        hostname=hostname,
     )
 
     base_log_dir = "./logs/"
@@ -88,23 +58,18 @@ def main():
     else:
         raise AttributeError(f"Algorithm '{algorithm_str}' not found in sb3 module.")
 
-    timestamp = datetime_to_str()
-    filename_id = timestamp + "_" + experiment_id + "_" + hostname
     log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
     # Read jobs
-    jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{job_trace_filename}.csv")
+    job_trace_path = os.path.join("mnt", "traces", f"{job_trace_filename}.csv")
+    jobs = csv_to_cloudlet_descriptor(job_trace_path)
     # print(job_trace_filename, jobs)
 
     # Create folder if needed
     os.makedirs(log_dir, exist_ok=True)
 
     # Create and wrap the environment
-    env = gym.make(
-        "SingleDC-v0",
-        params=params,
-        jobs_as_json=json.dumps(jobs),
-    )
+    env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
 
     # Monitor needs the environment to have a render_mode set
     # If render_mode is None, it will give a warning.
@@ -158,7 +123,3 @@ def main():
 
     # Delete model
     del model
-
-
-if __name__ == "__main__":
-    main()
