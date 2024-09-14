@@ -5,6 +5,7 @@ from io import BytesIO
 from utils.parse_config import dict_from_config
 from train import train
 from test import test
+from transfer import transfer
 
 CONFIG_FILE = "mnt/config.yml"
 
@@ -40,7 +41,7 @@ def main():
     if mode == "train":
         train(hostname, params)
     elif mode == "transfer":
-        pass
+        transfer(hostname, params)
     elif mode == "test":
         test(hostname, params)
     else:
