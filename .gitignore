@@ -217,10 +217,11 @@ gradle-app.setting
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
-# Log directories
-logs/
-old_logs/
-globecom_logs/
-
 # VSCode hidden files
 .vscode/
+
+# Log directories
+logs/
+
+# Experiment config
+*.yml

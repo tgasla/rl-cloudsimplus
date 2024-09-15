@@ -25,24 +25,58 @@ exp_1:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: gradual
+    job_trace_filename: ascending
     algorithm: PPO
-    timesteps: 1000000
+    timesteps: 2000000
     max_episode_length: 100
-    reward_job_wait_coef: 0.33
-    reward_running_vm_cores_coef: 0.33
-    reward_unutilized_vm_cores_coef: 0.34
-    reward_invalid_coef: 0.0
+    reward_job_wait_coef: 0.25
+    reward_running_vm_cores_coef: 0.25
+    reward_unutilized_vm_cores_coef: 0.25
+    reward_invalid_coef: 0.25
     train_model_dir: 240905-204230_PPO_2M_10H_10P_10M_gradual_1MJC_0.25Q_0.25R_0.25U_0.25I_ca14dc2cdf54 # applicable only if mode == transfer or mode == test
 
 exp_2:
-    mode: transfer # [train, transfer, test]
+    mode: transfer
     host_count: 10
     host_pes: 10
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: gradual
+    job_trace_filename: hill
+    algorithm: PPO
+    timesteps: 2000000
+    max_episode_length: 100
+    reward_job_wait_coef: 0.25
+    reward_running_vm_cores_coef: 0.25
+    reward_unutilized_vm_cores_coef: 0.25
+    reward_invalid_coef: 0.25
+    train_model_dir: 240905-204230_PPO_2M_10H_10P_10M_gradual_1MJC_0.25Q_0.25R_0.25U_0.25I_ca14dc2cdf54
+
+exp_3:
+    mode: transfer
+    host_count: 10
+    host_pes: 10
+    host_pe_mips: 10
+    max_job_pes: 1
+    small_vm_pes: 2
+    job_trace_filename: valley
+    algorithm: PPO
+    timesteps: 2000000
+    max_episode_length: 100
+    reward_job_wait_coef: 0.25
+    reward_running_vm_cores_coef: 0.25
+    reward_unutilized_vm_cores_coef: 0.25
+    reward_invalid_coef: 0.25
+    train_model_dir: 240905-204230_PPO_2M_10H_10P_10M_gradual_1MJC_0.25Q_0.25R_0.25U_0.25I_ca14dc2cdf54
+
+exp_4:
+    mode: transfer
+    host_count: 10
+    host_pes: 10
+    host_pe_mips: 10
+    max_job_pes: 1
+    small_vm_pes: 2
+    job_trace_filename: descending
     algorithm: PPO
     timesteps: 1000000
     max_episode_length: 100
@@ -50,4 +84,4 @@ exp_2:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    train_model_dir: 240905-204230_PPO_2M_10H_10P_10M_gradual_1MJC_0.25Q_0.25R_0.25U_0.25I_ca14dc2cdf54 # applicable only if mode == transfer or mode == test
+    train_model_dir: 240905-204230_PPO_2M_10H_10P_10M_gradual_1MJC_0.25Q_0.25R_0.25U_0.25I_ca14dc2cdf54
