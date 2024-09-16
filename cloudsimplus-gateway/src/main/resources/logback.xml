@@ -22,11 +22,11 @@
     </encoder>
   </appender>
 
-  <logger name="DatacenterBroker" level="DEBUG" />
-  <logger name="WrappedSimulation" level="DEBUG" />
-  <logger name="CloudletSchedulerAbstract" level="DEBUG" />
+  <!-- <logger name="DatacenterBroker" level="INFO" /> -->
+  <!-- <logger name="WrappedSimulation" level="INFO" /> -->
+  <!-- <logger name="CloudletSchedulerAbstract" level="INFO" /> -->
  
-  <root level="DEBUG">
+  <root level="INFO">
     <appender-ref ref="STDOUT"/>
     <appender-ref ref="FILE"/>
   </root>

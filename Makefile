@@ -39,6 +39,7 @@ wipe-logs:
 stop:
 	docker compose down
 	docker system prune -f
+	docker system prune --volumes -f
 
 .PHONY: build build-compose-images build-tensorboard build-gateway \
 build-manager upgrade-gradle run-tensorboard run-cpu \
