@@ -34,6 +34,6 @@ public class Main {
                     timer.cancel();
                 }
             }
-        }, 5000, 5000); // Start after 10 seconds and then check every 5 seconds
+        }, 5000, 5000); // Start after 5 seconds and then check every 5 seconds
     }
 }
