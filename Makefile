@@ -12,6 +12,10 @@ build-gateway:
 	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=DEBUG
 	cd cloudsimplus-gateway && ./gradlew dockerBuildImage
 
+build-gateway-no-debug:
+	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=INFO
+	cd cloudsimplus-gateway && ./gradlew dockerBuildImage
+
 build-manager:
 	docker build -t manager:${MANAGER_VERSION} rl-manager
 
