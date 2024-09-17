@@ -3,6 +3,7 @@ package daislab.cspg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.Thread;
 import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
@@ -27,9 +28,9 @@ public class MultiSimulationEnvironment {
         return identifier;
     }
 
-    public SimulationResetResult reset(final String simulationIdentifier) {
+    public SimulationResetResult reset(final String simulationIdentifier, final long seed) {
         final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
-        return simulation.reset();
+        return simulation.reset(seed);
     }
 
     private void validateIdentifier(final String simulationIdentifier) {
@@ -45,6 +46,12 @@ public class MultiSimulationEnvironment {
         final WrappedSimulation simulation = simulations.remove(simulationIdentifier);
 
         simulation.close();
+        // TODO: I should do a memory leak examination.
+        LOGGER.debug("Simulation {} terminated. {} simulations still running.",
+                simulationIdentifier, simulations.size());
+        if (simulations.isEmpty()) {
+            LOGGER.debug("All experiments finished running.");
+        }
     }
 
     public String render(final String simulationIdentifier) {
@@ -60,26 +67,19 @@ public class MultiSimulationEnvironment {
         return simulation.step(actionPrimitive);
     }
 
-    public void seed(final String simulationIdentifier) {
-        final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
-
-        simulation.seed();
-    }
-
     public double clock(final String simulationIdentifier) {
         final WrappedSimulation simulation = getValidSimulation(simulationIdentifier);
 
         return simulation.clock();
     }
 
-    public void shutdown() {
-        LOGGER.info("Shutting down. Reason: Requested by user");
-        System.exit(0);
-    }
-
     WrappedSimulation getValidSimulation(final String simulationIdentifier) {
         validateIdentifier(simulationIdentifier);
 
         return simulations.get(simulationIdentifier);
+    }
+
+    int getActiveConnections() {
+        return simulations.size();
     }
 }

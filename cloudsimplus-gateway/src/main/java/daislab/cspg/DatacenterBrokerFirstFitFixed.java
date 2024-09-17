@@ -2,18 +2,10 @@ package daislab.cspg;
 
 import org.cloudsimplus.brokers.DatacenterBrokerSimple;
 import org.cloudsimplus.cloudlets.Cloudlet;
-import org.cloudsimplus.cloudlets.CloudletSimple;
 import org.cloudsimplus.core.CloudSimPlus;
 import org.cloudsimplus.core.CloudSimTag;
 import org.cloudsimplus.core.events.SimEvent;
-import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.vms.Vm;
-import org.cloudsimplus.vms.VmSimple;
-
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Collections;
 
 /**
  * Fixed version of the original class - uses list of currently executable VMs instead of created

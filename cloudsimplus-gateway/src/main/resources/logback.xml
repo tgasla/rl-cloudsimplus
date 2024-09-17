@@ -26,7 +26,7 @@
   <!-- <logger name="WrappedSimulation" level="INFO" /> -->
   <!-- <logger name="CloudletSchedulerAbstract" level="INFO" /> -->
  
-  <root level="INFO">
+  <root level="DEBUG">
     <appender-ref ref="STDOUT"/>
     <appender-ref ref="FILE"/>
   </root>

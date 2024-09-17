@@ -2,7 +2,6 @@ package daislab.cspg;
 
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.vms.Vm;
-import org.apache.commons.lang3.text.StrTokenizer;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 
@@ -30,13 +29,13 @@ public class WrappedSimulation {
     // "waitingJobsRatioTimestep"
     // );
 
-    // TODO: I should not have it hardcoded here.
     // I should pass a map with <key, value> metrics into the metricsstorage
     // and then calculate the elements of the maps
     // I can simply avoid hardcoding it by first calling collectMetrics and get their lengths. Then
     // calculate maxvmscount and observation array rows and columns
     // In metricstorage initialization I do not need essentialy to give the correct lengths at
     // first.
+    // TODO: I should not have it hardcoded here.
     private static final int datacenterMetricsCount = 6;
     private static final int hostMetricsCount = 9;
     private static final int vmMetricsCount = 6;
@@ -79,7 +78,8 @@ public class WrappedSimulation {
         LOGGER.info("Creating simulation: {}", identifier);
     }
 
-    public SimulationResetResult reset() {
+    public SimulationResetResult reset(final long seed) {
+        // seed ignored for now
         LOGGER.info("Reset initiated");
         LOGGER.info("job count: " + initialJobsDescriptors.size());
 
@@ -301,28 +301,12 @@ public class WrappedSimulation {
         return jobMetrics;
     }
 
-    // private double[] listOfArraysToArray(List<double[]> listOfArrays) {
-    // final int listSize = listOfArrays.size();
-    // final int arraySize = listOfArrays.get(0).length;
-    // // we know that each array in the list ahs the same size
-    // // so we calculate the final array size just by the size of the list
-    // // and the first array length
-    // double[] resultArray = new double[listSize * arraySize];
-
-    // int currentIndex = 0;
-    // for (double[] array : listOfArrays) {
-    // System.arraycopy(array, 0, resultArray, currentIndex, array.length);
-    // currentIndex += array.length;
-    // }
-
-    // return resultArray;
-    // }
-
     private void printEpisodeStatsDebug(double[] reward) {
-        LOGGER.debug("\n==================== Episode stats so far ===================="
+        LOGGER.debug("Printing Episode stats:"
+                + "\n==================== Episode stats so far ===================="
                 + "\nEpisode Statistics:\nMax waiting jobs count: " + getEpWaitingJobsCountMax()
                 + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
-                + "\n===================================================="
+                + "\n=============================================================="
                 + "\nTimestep statistics:\nJob wait reward: " + reward[1]
                 + "\nRunning VM cores reward: " + reward[2] + "\nUnutilized VM cores reward: "
                 + reward[3] + "\nInvalid reward: " + reward[4]
@@ -663,11 +647,11 @@ public class WrappedSimulation {
         final double totalReward =
                 jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
 
-        LOGGER.debug("totalReward" + totalReward);
-        LOGGER.debug("jobWaitReward:" + jobWaitReward);
-        LOGGER.debug("runningVmCoresReward:" + runningVmCoresReward);
-        LOGGER.debug("unutilizedVmCoresReward" + unutilizedVmCoresReward);
-        LOGGER.debug("invalidReward:" + invalidReward);
+        LOGGER.debug("totalReward: " + totalReward);
+        LOGGER.debug("jobWaitReward: " + jobWaitReward);
+        LOGGER.debug("runningVmCoresReward: " + runningVmCoresReward);
+        LOGGER.debug("unutilizedVmCoresReward: " + unutilizedVmCoresReward);
+        LOGGER.debug("invalidReward: " + invalidReward);
 
         rewards[0] = totalReward;
         rewards[1] = jobWaitReward;
@@ -719,10 +703,6 @@ public class WrappedSimulation {
 
     public String getIdentifier() {
         return identifier;
-    }
-
-    public void seed() {
-        // there is no randomness so far...
     }
 
     public double clock() {

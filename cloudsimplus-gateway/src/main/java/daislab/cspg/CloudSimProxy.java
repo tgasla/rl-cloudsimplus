@@ -4,7 +4,6 @@ import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.cloudlets.CloudletExecution;
 import org.cloudsimplus.core.CloudSimPlus;
 import org.cloudsimplus.core.CloudSimTag;
-import org.cloudsimplus.core.events.SimEvent;
 import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.datacenters.DatacenterSimple;
 import org.cloudsimplus.hosts.Host;
@@ -17,8 +16,6 @@ import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
 import org.cloudsimplus.listeners.CloudletVmEventInfo;
 import org.cloudsimplus.listeners.EventListener;
-import org.cloudsimplus.resources.Ram;
-import org.cloudsimplus.resources.Bandwidth;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +33,7 @@ import java.util.stream.Stream;
 import java.util.stream.IntStream;
 
 public class CloudSimProxy {
-
-    private final Logger LOGGER = LoggerFactory.getLogger(getLoggerPrefix());
-
+    private final Logger LOGGER;
     private final String identifier;
     private final SimulationSettings settings;
     private final CloudSimPlus cloudSimPlus;
@@ -56,6 +51,7 @@ public class CloudSimProxy {
 
     public CloudSimProxy(final String identifier, final SimulationSettings settings,
             final List<Cloudlet> inputJobs) {
+        this.LOGGER = LoggerFactory.getLogger(getLoggerPrefix());
         this.identifier = identifier;
         this.settings = settings;
         this.inputJobs = new ArrayList<>(inputJobs);

@@ -71,7 +71,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 <!--
 - For Zulu
 
-    `export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home`
+    `export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home`
 
 - For OpenJDK downloaded using brew
 
@@ -81,7 +81,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 
   and then add the given path to your shell profile
   
-  `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
+  `export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home`
 -->
 
 <!--

@@ -1,5 +1,4 @@
 import gymnasium as gym
-import os
 import json
 from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
@@ -97,9 +96,9 @@ class SingleDC(gym.Env):
 
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()
-
-        result = self.simulation_environment.reset(self.simulation_id)
-        self.simulation_environment.seed(self.simulation_id)
+        if seed is None:
+            seed = 0
+        result = self.simulation_environment.reset(self.simulation_id, seed)
 
         raw_obs = result.getObs()
         obs = self._to_nparray(raw_obs)
@@ -155,6 +154,8 @@ class SingleDC(gym.Env):
 
     def close(self):
         # close the resources
+        self.simulation_environment.close(self.simulation_id)
+        # close the python client side
         self.gateway.close()
 
     def _raw_info_to_dict(self, raw_info):
