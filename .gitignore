@@ -222,6 +222,3 @@ gradle-app.setting
 
 # Log directories
 logs/
-
-# Experiment config
-**/config.yml
