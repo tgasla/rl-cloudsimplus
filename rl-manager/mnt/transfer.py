@@ -129,3 +129,4 @@ def transfer(hostname, params):
     )
 
     env.close()
+    del model

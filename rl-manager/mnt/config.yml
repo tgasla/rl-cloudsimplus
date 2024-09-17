@@ -27,7 +27,7 @@ experiment_1:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: ascending_max30
+    job_trace_filename: two_peaks_max30
     algorithm: PPO
     timesteps: 2048
     max_episode_length: 100
@@ -36,7 +36,6 @@ experiment_1:
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
 
-
 experiment_2:
     mode: train
     host_count: 10
@@ -44,9 +43,9 @@ experiment_2:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: ascending_max30
+    job_trace_filename: two_peaks_max30
     algorithm: PPO
-    timesteps: 2048
+    timesteps: 2000000
     max_episode_length: 100
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
@@ -61,9 +60,9 @@ experiment_3:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: ascending_max30
+    job_trace_filename: three_peaks_max30
     algorithm: PPO
-    timesteps: 2048
+    timesteps: 2000000
     max_episode_length: 100
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
