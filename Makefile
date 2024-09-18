@@ -41,7 +41,7 @@ wipe-logs:
 	cd logs && rm -rf *
 
 stop:
-	docker compose down
+	docker compose down --remove-orphans || docker compose down --remove-orphans
 	docker system prune -f
 	docker system prune --volumes -f
 
