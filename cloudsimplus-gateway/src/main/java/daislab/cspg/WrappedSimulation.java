@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 // import com.google.gson.Gson;
 
 public class WrappedSimulation {
-    private final Logger LOGGER;
+    private final Logger LOGGER = LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
 
     private final List<CloudletDescriptor> initialJobsDescriptors;
     // private final List<String> metricsNames = Arrays.asList(
@@ -73,8 +73,6 @@ public class WrappedSimulation {
         this.metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
                 vmMetricsCount, jobMetricsCount, this.hostsCount, this.maxVmsCount, maxJobsCount);
 
-        this.LOGGER = LoggerFactory.getLogger(getLoggerPrefix());
-
         LOGGER.info("Creating simulation: {}", identifier);
     }
 
@@ -89,12 +87,12 @@ public class WrappedSimulation {
 
         List<Cloudlet> cloudlets = initialJobsDescriptors.stream()
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
-        cloudSimProxy = new CloudSimProxy(identifier, settings, cloudlets);
+        cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
         // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
         double[][] obs = getObservation();
         resetEpisodeStats();
-        SimulationStepInfo info = new SimulationStepInfo(identifier);
+        SimulationStepInfo info = new SimulationStepInfo();
 
         return new SimulationResetResult(obs, info);
     }
@@ -139,8 +137,10 @@ public class WrappedSimulation {
         boolean isValid = executeAction(action);
         cloudSimProxy.runFor(settings.getTimestepInterval());
 
-        final int[] treeArray = createObservationTreeArray();
-        final String dotString = observationTreeArrayToDot(treeArray);
+        // Temporarily disabled
+        // final TreeArray treeArray = new TreeArray(getObservationAsTreeArray());
+        // final String dotString = treeArray.toDot();
+
         // gets telemetry data and saves it into metricsStorage
         collectMetrics();
 
@@ -165,7 +165,7 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo(rewards, getCurrentTimestepMetrics(),
                 cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
-                dotString);
+                getObservationAsTreeArray());
 
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
     }
@@ -508,45 +508,7 @@ public class WrappedSimulation {
         return result;
     }
 
-    private String observationTreeArrayToDot(int[] state) {
-        StringBuilder dotString =
-                new StringBuilder("graph {\nd0 [label=").append(state[0]).append("] ");
-        StringBuilder dc = new StringBuilder("d0");
-        int hostNumIdx = 1;
-        int hostCoreIdx = hostNumIdx + 1;
-        // loop over the hosts
-        for (int i = 0; i < state[hostNumIdx]; i++) {
-            StringBuilder host = new StringBuilder("h").append(i);
-            dotString.append("\n").append(host).append(" [label=").append(state[hostCoreIdx])
-                    .append("] ");
-            dotString.append(dc).append("--").append(host);
-            int vmNumIdx = hostCoreIdx + 1;
-            int vmCoreIdx = vmNumIdx + 1;
-            // loop over the vms
-            for (int j = 0; j < state[vmNumIdx]; j++) {
-                StringBuilder vm = new StringBuilder(host).append("v").append(j);
-                dotString.append("\n").append(vm).append(" [label=").append(state[vmCoreIdx])
-                        .append("] ");
-                dotString.append(host).append("--").append(vm);
-                int jobNumIdx = vmCoreIdx + 1;
-                int jobCoreIdx = jobNumIdx + 1;
-                // loop over the jobs
-                for (int k = 0; k < state[jobNumIdx]; k++) {
-                    StringBuilder job = new StringBuilder(vm).append("j").append(k);
-                    dotString.append("\n").append(job).append(" [label=").append(state[jobCoreIdx])
-                            .append("] ");
-                    dotString.append(vm).append("--").append(job);
-                    jobCoreIdx += 2;
-                }
-                vmCoreIdx = jobCoreIdx;
-            }
-            hostCoreIdx = vmCoreIdx;
-        }
-        dotString.append("\n}");
-        return dotString.toString();
-    }
-
-    private int[] createObservationTreeArray() {
+    private int[] getObservationAsTreeArray() {
         final int hostsNum = settings.getHostsCount();
         final int vmsNum = getRunningVmsCount().intValue();
         final int jobsNum = getRunningCloudletsCount().intValue();
@@ -574,7 +536,7 @@ public class WrappedSimulation {
                 }
             }
         }
-        // System.out.println("obstreearray");
+        // System.out.println("obsTreeArray");
         // for (int i = 0; i < treeArray.length; i++) {
         // System.out.println(treeArray[i]);
         // }
@@ -711,9 +673,5 @@ public class WrappedSimulation {
 
     public void printJobStats() {
         cloudSimProxy.printJobStats();
-    }
-
-    private String getLoggerPrefix() {
-        return WrappedSimulation.class.getSimpleName() + ": " + identifier;
     }
 }

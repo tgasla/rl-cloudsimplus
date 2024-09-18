@@ -16,6 +16,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         MultiSimulationEnvironment simulationEnvironment = new MultiSimulationEnvironment();
         InetAddress all = InetAddress.getByName("0.0.0.0");
+        // DEFAULT_PORT = 25333
         GatewayServer gatewayServer =
                 new GatewayServer(simulationEnvironment, GatewayServer.DEFAULT_PORT, all,
                         GatewayServer.DEFAULT_CONNECT_TIMEOUT, GatewayServer.DEFAULT_READ_TIMEOUT,

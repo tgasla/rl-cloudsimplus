@@ -22,14 +22,17 @@ tasks.withType(JavaCompile) {
 
 task configureLogging {
     doLast {
-        def logLevel = System.getProperty('log.level', 'INFO')
+        def logLevel = System.getProperty('log.level')?.trim()
+        if (!logLevel) {
+            logLevel = "INFO"
+        }
         def logbackFile = file('src/main/resources/logback.xml')
         if (!logbackFile.exists()) {
             logger.warn "Logback configuration file not found."
             return
         }
         def logbackConfig = logbackFile.text
-        logbackConfig = logbackConfig.replaceAll('<root level="\\w+">', "<root level=\"$logLevel\">")
+        logbackConfig = logbackConfig.replaceAll('<root level="\\w*">', "<root level=\"$logLevel\">")
         logbackFile.write(logbackConfig)
         logger.lifecycle "Logging level set to $logLevel"
     }
@@ -42,11 +45,9 @@ test {
     // enable/disable system out messages on junit tests
     // enable testLogging if log.level == 'DEBUG'
     testLogging.showStandardStreams = System.getProperty('log.level', 'INFO') == 'DEBUG'
-    // testLogging.showStandardStreams = false
 }
 
 // In this section you declare where to find the dependencies of your project
-
 repositories {
     mavenCentral()
 }
@@ -57,10 +58,9 @@ dependencies {
     implementation 'org.cloudsimplus:cloudsimplus:8.5.2'
     implementation 'org.slf4j:slf4j-api:2.0.16'
     implementation 'net.sf.py4j:py4j:0.10.9.7'
-    implementation 'ch.qos.logback:logback-classic:1.5.7'
+    implementation 'ch.qos.logback:logback-classic:1.5.8'
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
     implementation 'com.google.code.gson:gson:2.11.0'
-    implementation 'org.yaml:snakeyaml:2.3'
 
     testImplementation 'commons-io:commons-io:2.16.1'
     testImplementation 'org.hamcrest:hamcrest:3.0'
@@ -69,18 +69,18 @@ dependencies {
 }
 
 def dockerImageTag = 'gateway:2.0.0'
-def os = System.getProperty('os.name').toLowerCase()
-def totalMemorySizeInGigabytes
+// def os = System.getProperty('os.name').toLowerCase()
+// def totalMemorySizeInGigabytes
 
-if (os.contains('linux')) {
-    def totalMemorySizeInBytes = "cat /proc/meminfo | grep MemTotal".execute().text.split(":")[1].trim().split()[0].toLong() * 1024
-    totalMemorySizeInGigabytes = Math.round(totalMemorySizeInBytes / (1024 * 1024 * 1024))
-} else if (os.contains('mac')) {
-    def totalMemorySizeInBytes = "sysctl -n hw.memsize".execute().text.trim().toLong()
-    totalMemorySizeInGigabytes = Math.round(totalMemorySizeInBytes / (1024 * 1024 * 1024))
-} else {
-    throw new IllegalStateException("Unsupported operating system: $os")
-}
+// if (os.contains('linux')) {
+//     def totalMemorySizeInBytes = "cat /proc/meminfo | grep MemTotal".execute().text.split(":")[1].trim().split()[0].toLong() * 1024
+//     totalMemorySizeInGigabytes = Math.round(totalMemorySizeInBytes / (1024 * 1024 * 1024))
+// } else if (os.contains('mac')) {
+//     def totalMemorySizeInBytes = "sysctl -n hw.memsize".execute().text.trim().toLong()
+//     totalMemorySizeInGigabytes = Math.round(totalMemorySizeInBytes / (1024 * 1024 * 1024))
+// } else {
+//     throw new IllegalStateException("Unsupported operating system: $os")
+// }
 
 application {
     mainClass.set('daislab.cspg.Main')
@@ -89,20 +89,21 @@ application {
 docker {
     url = 'unix:///var/run/docker.sock'
     javaApplication {
-        baseImage = 'amazoncorretto:21-alpine-jdk'
+        baseImage = 'amazoncorretto:21-alpine'
         images = [dockerImageTag]
-        jvmArgs = ["-Xms1G", "-Xmx${totalMemorySizeInGigabytes}G"]
+        ports = []
+        // jvmArgs = ["-Xms1G", "-Xmx${totalMemorySizeInGigabytes}G"]
     }
 }
 
 // You can add environment variables either here or in the docker-compose.yml
-dockerCreateDockerfile {
-    environmentVariable 'JAVA_OPTS',
-        '-XX:+UnlockExperimentalVMOptions ' +
-        '-XX:+UseCGroupMemoryLimitForHeap ' +
-        '-XX:+HeapDumpOnOutOfMemoryError ' +
-        '-XX:HeapDumpPath=/external'
-}
+// dockerCreateDockerfile {
+//     environmentVariable 'JAVA_OPTS',
+//         '-XX:+UnlockExperimentalVMOptions ' +
+//         '-XX:+UseCGroupMemoryLimitForHeap ' +
+//         '-XX:+HeapDumpOnOutOfMemoryError ' +
+//         '-XX:HeapDumpPath=/external'
+// }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21

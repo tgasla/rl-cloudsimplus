@@ -168,7 +168,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             lastVmIndex = ++lastVmIndex % getVmExecList().size();
         }
 
-        LOGGER.warn("{}: {}: {} (PEs: {}) couldn't be mapped to any suitable VM.",
+        LOGGER.debug("{}: {}: {} (PEs: {}) couldn't be mapped to any suitable VM.",
                 getSimulation().clockStr(), getName(), cloudlet, cloudlet.getPesNumber());
 
         // if we return NULL, that VM is not created so the cloudlet lands

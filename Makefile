@@ -8,12 +8,12 @@ build-compose-images: build-gateway build-manager
 build-tensorboard:
 	docker build -t tensorboard tensorboard
 
-build-gateway:
+build-gateway-debug:
 	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=DEBUG
 	cd cloudsimplus-gateway && ./gradlew dockerBuildImage
 
-build-gateway-no-debug:
-	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=INFO
+build-gateway:
+	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=${LOG_LEVEL}
 	cd cloudsimplus-gateway && ./gradlew dockerBuildImage
 
 build-manager:
@@ -45,6 +45,9 @@ stop:
 	docker system prune -f
 	docker system prune --volumes -f
 
+clear-gradle:
+	cd ~/.gradle && rm -rf *
+
 .PHONY: build build-compose-images build-tensorboard build-gateway \
-build-manager upgrade-gradle run-tensorboard run-cpu \
-run-gpu clean-gateway wipe-logs stop
+	build-manager upgrade-gradle run-tensorboard run-cpu \
+	run-gpu clean-gateway wipe-logs stop

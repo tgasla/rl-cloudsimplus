@@ -23,7 +23,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         log_dir: str,
         save_replay_buffer: bool = True,
         save_best_episode_details: bool = True,
-        verbose: int = 1,
+        verbose: int = 0,
     ) -> None:
         super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
         self.log_dir = log_dir
@@ -76,7 +76,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_vm_core_ratio = []
         self.isValid = []
         self.current_episode_length = 0
-        self.episode_dot_strings = []
+        self.observation_tree_arrays = []
+        # self.episode_dot_strings = []
 
     def _delete_previous_best(self) -> None:
         if self.previous_best_episode_num:
@@ -107,7 +108,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_vm_core_ratio.append(
             self.locals["infos"][0]["unutilized_vm_core_ratio"]
         )
-        self.episode_dot_strings.append(self.locals["infos"][0]["dotString"])
+        self.observation_tree_arrays.append(
+            self.locals["infos"][0]["observation_tree_array"]
+        )
+        # self.episode_dot_strings.append(self.locals["infos"][0]["dot_string"])
 
     def _maybe_save_replay_buffer(self) -> None:
         if (
@@ -195,27 +199,49 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
     def _write_log_row(self) -> None:
         first_ep_timestep = self.num_timesteps - self.current_episode_length + 1
         last_ep_timestep = self.num_timesteps
-        self.logger.record("episode_num", self.current_episode_num)
-        self.logger.record("episode_length", self.current_episode_length)
-        self.logger.record("first_ep_timestep", first_ep_timestep)
-        self.logger.record("last_ep_timestep", last_ep_timestep)
-        self.logger.record("ep_total_rew", np.sum(self.rewards))
-        self.logger.record("ep_valid_count", np.sum(self.isValid))
-        self.logger.record("ep_job_wait_rew", np.sum(self.job_wait_rewards))
         self.logger.record(
-            "ep_running_vm_cores_rew", np.sum(self.running_vm_cores_rewards)
+            "train/episode_num", self.current_episode_num, exclude="tensorboard"
         )
         self.logger.record(
-            "ep_unutil_vm_cores_rew", np.sum(self.unutilized_vm_cores_rewards)
+            "train/episode_length", self.current_episode_length, exclude="tensorboard"
         )
-        self.logger.record("ep_inv_rew", np.sum(self.invalid_rewards))
+        self.logger.record(
+            "train/first_ep_timestep", first_ep_timestep, exclude="tensorboard"
+        )
+        self.logger.record(
+            "train/last_ep_timestep", last_ep_timestep, exclude="tensorboard"
+        )
+        self.logger.record(
+            "train/ep_total_rew", np.sum(self.rewards), exclude="tensorboard"
+        )
+        self.logger.record(
+            "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
+        )
+        self.logger.record(
+            "train/ep_job_wait_rew",
+            np.sum(self.job_wait_rewards),
+            exclude="tensorboard",
+        )
+        self.logger.record(
+            "train/ep_running_vm_cores_rew",
+            np.sum(self.running_vm_cores_rewards),
+            exclude="tensorboard",
+        )
+        self.logger.record(
+            "train/ep_unutil_vm_cores_rew",
+            np.sum(self.unutilized_vm_cores_rewards),
+            exclude="tensorboard",
+        )
+        self.logger.record(
+            "train/ep_inv_rew", np.sum(self.invalid_rewards), exclude="tensorboard"
+        )
         self.logger.dump()
 
-    def _write_dot_strings_to_file(self) -> None:
-        dot_path = os.path.join(self.log_dir, "dot_graphs.txt")
-        with open(dot_path, "w") as file:
-            for s in self.episode_dot_strings:
-                file.write(f"{s}\n")
+    # def _write_dot_strings_to_file(self) -> None:
+    #     dot_path = os.path.join(self.log_dir, "dot_graphs.txt")
+    #     with open(dot_path, "w") as file:
+    #         for s in self.episode_dot_strings:
+    #             file.write(f"{s}\n")
 
     def _on_step(self) -> bool:
         # because the environment is a VecEnv environment, the variables are dones
@@ -228,9 +254,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
         if self.locals["dones"][0]:
             self.current_episode_num += 1
-            print("Episode terminated")
+            if self.verbose >= 1:
+                print("Episode terminated")
             self._write_log_row()
-            self._write_dot_strings_to_file()
+            # self._write_dot_strings_to_file()
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), "timesteps")
             if len(x) == 0:

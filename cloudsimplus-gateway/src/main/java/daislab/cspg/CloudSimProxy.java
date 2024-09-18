@@ -33,8 +33,7 @@ import java.util.stream.Stream;
 import java.util.stream.IntStream;
 
 public class CloudSimProxy {
-    private final Logger LOGGER;
-    private final String identifier;
+    private final Logger LOGGER = LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
     private final SimulationSettings settings;
     private final CloudSimPlus cloudSimPlus;
     private final Datacenter datacenter;
@@ -49,10 +48,7 @@ public class CloudSimProxy {
     private int nextVmId;
     private int unableToSubmitJobCount;
 
-    public CloudSimProxy(final String identifier, final SimulationSettings settings,
-            final List<Cloudlet> inputJobs) {
-        this.LOGGER = LoggerFactory.getLogger(getLoggerPrefix());
-        this.identifier = identifier;
+    public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
         this.settings = settings;
         this.inputJobs = new ArrayList<>(inputJobs);
         this.unsubmittedJobs = new ArrayList<>(inputJobs);
@@ -573,9 +569,5 @@ public class CloudSimProxy {
 
     public double getRunningCost() {
         return vmCost.getVMCostPerIteration(clock());
-    }
-
-    private String getLoggerPrefix() {
-        return CloudSimProxy.class.getSimpleName() + ": " + identifier;
     }
 }

@@ -9,8 +9,8 @@
       <!-- daily rollover -->
       <fileNamePattern>logs/cspg.%d{yyyy-MM-dd}.log.gz</fileNamePattern> <!-- Compression enabled -->
 
-      <!-- keep 30 days' worth of history -->
-      <maxHistory>30</maxHistory>
+      <!-- keep 7 days worth of history -->
+      <maxHistory>7</maxHistory>
     </rollingPolicy>
   </appender>
 
@@ -26,8 +26,9 @@
   <!-- <logger name="WrappedSimulation" level="INFO" /> -->
   <!-- <logger name="CloudletSchedulerAbstract" level="INFO" /> -->
  
-  <root level="DEBUG">
-    <appender-ref ref="STDOUT"/>
-    <appender-ref ref="FILE"/>
-  </root>
+<!-- By default, the level of the root level is set to INFO -->
+<root level="INFO">
+    <!-- <appender-ref ref="STDOUT" /> -->
+    <!-- <appender-ref ref="FILE" /> -->
+</root>
 </configuration>

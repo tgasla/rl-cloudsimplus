@@ -3,16 +3,13 @@ package daislab.cspg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.Thread;
-import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
 
 public class MultiSimulationEnvironment {
 
-    private Map<String, WrappedSimulation> simulations =
-            Collections.synchronizedMap(new HashMap<>());
+    private Map<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
 
     private SimulationFactory simulationFactory = new SimulationFactory();
 

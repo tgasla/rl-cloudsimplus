@@ -1,8 +1,9 @@
 services:
-  # uses port 25333 by default
   gateway:
     image: gateway:2.0.0
     container_name: gateway
+    volumes:
+      - ./logs:/app/logs
 
   manager: &cpu
     profiles: [ "" ]

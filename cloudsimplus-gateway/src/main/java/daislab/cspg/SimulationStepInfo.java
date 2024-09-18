@@ -22,10 +22,10 @@ public class SimulationStepInfo {
     private final double[][] jobMetrics;
     private final List<Double> jobWaitTime;
     private final double unutilizedVmCoreRatio;
+    private final int[] observationTreeArray;
+    // private final String dotString;
 
-    private final String dotString;
-
-    public SimulationStepInfo(final String identifier) {
+    public SimulationStepInfo() {
         this.jobWaitReward = 0;
         this.runningVmCoresReward = 0;
         this.unutilizedVmCoresReward = 0;
@@ -36,12 +36,13 @@ public class SimulationStepInfo {
         this.jobMetrics = new double[1][1];
         this.jobWaitTime = new ArrayList<>();
         this.valid = true;
-        this.dotString = "";
+        this.observationTreeArray = new int[1];
+        // this.dotString = "";
     }
 
     public SimulationStepInfo(final double[] rewards, final List<double[][]> timestepMetrics,
             final List<Double> jobWaitTime, final double unutilizedVmCoreRatio,
-            final String dotString) {
+            final int[] observationTreeArray) {
         this.jobWaitReward = rewards[1];
         this.runningVmCoresReward = rewards[2];
         this.unutilizedVmCoresReward = rewards[3];
@@ -52,7 +53,8 @@ public class SimulationStepInfo {
         this.jobWaitTime = jobWaitTime;
         this.unutilizedVmCoreRatio = unutilizedVmCoreRatio;
         this.valid = this.invalidReward == 0 ? true : false;
-        this.dotString = dotString;
+        this.observationTreeArray = observationTreeArray;
+        // this.dotString = dotString;
     }
 
     public double getJobWaitReward() {
@@ -107,9 +109,12 @@ public class SimulationStepInfo {
         return unutilizedVmCoreRatio;
     }
 
-    public String getDotString() {
-        return dotString;
+    public String getObservationTreeArrayAsJson() {
+        return gson.toJson(observationTreeArray);
     }
+    // public String getDotString() {
+    // return dotString;
+    // }
 
     @Override
     public String toString() {
