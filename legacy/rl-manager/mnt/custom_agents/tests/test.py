@@ -5,7 +5,7 @@ from dummy_agents import RNG
 env = gym.make("LunarLander-v2", render_mode="rgb_array")
 
 # Instantiate the agent
-model = RNG("MlpPolicy", env, verbose=True)
+model = RNG("MlpPolicy", env, verbose=1)
 # Train the agent and display a progress bar
 model.learn(total_timesteps=int(1e2), progress_bar=False)
 

@@ -7,9 +7,9 @@ ATTACHED=${ATTACHED:-false}
 
 if [ $NUM_REPLICAS -gt 0 ]; then
     if [ "$ATTACHED" = true ]; then
-        docker compose up --scale manager=$NUM_REPLICAS --build
+        docker compose up --scale manager=$NUM_REPLICAS --build --remove-orphans
     else
-        docker compose up --scale manager=$NUM_REPLICAS -d --build
+        docker compose up --scale manager=$NUM_REPLICAS -d --build --remove-orphans
     fi
 else
     echo "No replicas found in the YAML file."

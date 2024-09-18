@@ -93,7 +93,6 @@ def train(hostname, params):
     model = algorithm(
         policy=policy,
         env=venv,
-        verbose=1,
         device=device,
         seed=np.random.randint(0, 2**32 - 1),
     )
