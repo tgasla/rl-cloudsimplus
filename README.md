@@ -7,8 +7,6 @@
 
 ## Requirements
 
-Linux Debian >=10 or MacOS >=11
-
 ### 1. Install Docker
 
 <https://docs.docker.com/get-docker/>
@@ -20,11 +18,9 @@ Linux Debian >=10 or MacOS >=11
 
 <https://docs.docker.com/compose/install/>
 
-### 3. Install Java 21 JDK and JRE
+### 3. Install Java OpenJDK 21
 
-You can install OpenJDK 21 JDK and JRE
-
-- For Linux Debian
+- For Debian, install the openjdk-21-jdk and openjdk-21-jre packages
 
 ```bash
 sudo apt install openjdk-21-jdk openjdk-21-jre
@@ -39,7 +35,7 @@ brew install openjdk@21
 <!--
 or you can also try Azul Zulu
 
-`https://www.azul.com/downloads/?version=java-17-lts#zulu`
+`https://www.azul.com/downloads/?version=java-21-lts#zulu`
 
 -->
 
@@ -92,53 +88,69 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 8.6 --distribution-type all`
 -->
 
-## Build images
+## Building the docker images
 
-### 1. Build gateway image
-
-Use the following command to build the gateway image:
+### 1. Build TensorBoard, Gateway and RL manager images
 
 ```bash
-make build-gateway
+make build
 ```
 
-To enable debugging and show DEBUG log messages, use the following command:
+> [!IMPORTANT]  
+> It is often useful to rebuild images one at a time, especially when a change is made only in a specific application part.
+> For example, when we change the gateway code, we must rebuild the image before running the application.
+> Optionally, when building, we can specify the log level of the messages printed in stdout and in a log file.
+> If the log level environment variable is not set, the log level is set to INFO by default.
 
 ```bash
-make build-gateway-debug
+[LOG_LEVEL=[TRACE|DEBUG|INFO|WARN|ERROR]] make build-gateway
 ```
 
-### 2. Build manager image
+## Starting the TensorBoard dashboard
 
-To build the manager image, use the following command:
-
-```bash
-make build-manager
-```
-
-### 3. Build TensorBoard image
-
-```bash
-make build-tensorboard
-```
-
-## Start application
-
-First start TensorBoard:
+We have created three docker images. The gateway and manager images consist of the main application and are the docker compose services we need for every experiment we want to run.
+The TensorBoard image is the UI endpoint and helps us keep track of the experiment's progress. Because we do not want to shut down the visualization dashboard everytime we want to stop an experiment,
+the TensorBoard image is not a docker compose service and can be started as a standalone docker container by using the following command *(TODO fix it):
 
 ```bash
 make run-tensorboard
 ```
 
-Use the following command:
+> [!NOTE]
+> You can check that the TensorBoard dashboard is running by visiting [http://localhost](http://localhost).
 
-```bash
-docker compose [--profile cuda] up [--build] [-d | --detach]
+## Running an experiment
+
+To run an experiment, first edit the configuration file located at [rl-manager/mnt/config.yml](https://github.com/tgasla/rl-cloudsimplus/blob/main/rl-manager/mnt/config.yml).
+
+The configuration file contains two sections: the 'common' section and the 'experiment' section. This is because we may run multiple different experiments in parallel.
+- The parameters that all experiments have in common are specified under the 'common' section, and the parameters that are unique among the experiments are defined under the 'experiment_{id} section'
+  - If a parameter is specified in the 'common' section but also appears in an experiment, the common one is ignored, and the experiment one takes effect.
+- To run multiple experiments in parallel, add as many experiment areas as you want, specifying the corresponding parameters for each experiment.
+- Each experiment should have a unique experiment id and each experiment section should be written as 'experiment_{id}'. For simplicity, use ids starting by 1 and increment by 1.
+
+After you are ready editing the configuration file run the following command to start the experiment(s).
+
+bash
+```
+make run-cpu
+```
+> [!NOTE]
+> This command runs all the docker containers in detached mode
+> If you want to use attached mode try the following command:
+
+bash
+```
+make run-gpu-attached
 ```
 
-- The `--profile cuda` flag enables Nvidia CUDA GPU access for the manager.
+## CUDA GPU support
+
+There is also support to run the experiments in CUDA GPUs.
   - You need to have [CUDA](https://developer.nvidia.com/cuda-downloads) and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your system.
   - Make sure to restart docker daemon if you just downloaded the cuda-container-toolkit.
+
+<!--
 - The `--build` flag also builds the manager image
 - The `-d` flag runs the app in detached mode (runs in the background)
 
@@ -147,20 +159,23 @@ If, after running the app, you want to start a second manager (to run a second e
 ```bash
 docker compose run [--build] [-d | --detach] manager
 ```
+-->
 
-## Stop application
+## Stopping the application
 
-To stop the application, use the following command:
+If you want to stop the application and clear all the dangling containers and volumes run the following command:
 
 ```bash
-docker compose down
+make stop
 ```
 
+<!--
 If you also want to clear docker unused data, use the following command:
 
 ```bash
 docker system prune [-f | --force]
 ```
+-->
 
 ## Acknowledgements
 
