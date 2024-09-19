@@ -119,7 +119,7 @@ make run-tensorboard
 > [!NOTE]
 > You can check that the TensorBoard dashboard is running by visiting [http://localhost](http://localhost).
 
-## Running an experiment
+## Editing the experiment configuration file
 
 To run an experiment, first edit the configuration file located at [rl-manager/mnt/config.yml](https://github.com/tgasla/rl-cloudsimplus/blob/main/rl-manager/mnt/config.yml).
 
@@ -128,6 +128,10 @@ The configuration file contains two sections: the 'common' section and the 'expe
   - If a parameter is specified in both the common and experiment sections, the common one is ignored, and the experiment one takes effect.
 - To run multiple experiments in parallel, add as many experiment areas as you want, specifying the corresponding parameters for each experiment.
 - Each experiment should have a unique experiment id, and each section should be written as experiment_{id}. For simplicity, use ids starting by 1 and increment by 1.
+
+There are three experiment modes: train, transfer, and test. When transfer or test mode are specified, an additional 'train_model_dir' key for an experiment should be defined, with the name of the directory in which the trained agent model should be used.
+
+## Running an experiment
 
 After you are ready editing the configuration file run the following command to start the experiment(s).
 
