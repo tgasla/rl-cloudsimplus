@@ -110,7 +110,7 @@ make build
 
 We have created three docker images. The gateway and manager images consist of the main application and are the docker compose services we need for every experiment we want to run.
 The TensorBoard image is the UI endpoint and helps us keep track of the experiment's progress. Because we do not want to shut down the visualization dashboard every time we want to stop an experiment,
-the TensorBoard image is not a docker compose service and can be started as a standalone docker container by using the following command *(TODO fix it):
+the TensorBoard image is not a docker compose service and can be started as a standalone docker container by using the following command (TODO: consider changing it):
 
 ```bash
 make run-tensorboard
@@ -127,7 +127,7 @@ The configuration file contains two sections: the 'common' section and the 'expe
 - The parameters that all experiments have in common are specified under the common section, and the parameters that are unique among the experiments are defined under the experiment_{id} section
   - If a parameter is specified in both the common and experiment sections, the common one is ignored, and the experiment one takes effect.
 - To run multiple experiments in parallel, add as many experiment areas as you want, specifying the corresponding parameters for each experiment.
-- Each experiment should have a unique experiment id and each experiment section should be written as experiment_{id}. For simplicity, use ids starting by 1 and increment by 1.
+- Each experiment should have a unique experiment id, and each section should be written as experiment_{id}. For simplicity, use ids starting by 1 and increment by 1.
 
 After you are ready editing the configuration file run the following command to start the experiment(s).
 
