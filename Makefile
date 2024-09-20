@@ -1,9 +1,9 @@
 MANAGER_VERSION=0.10
 GATEWAY_VERSION=2.0.0
 
-build: build-tensorboard build-compose-images
+build: build-tensorboard build-app
 
-build-compose-images: build-gateway build-manager
+build-app: build-gateway build-manager
 
 build-tensorboard:
 	docker build -t tensorboard tensorboard
@@ -19,9 +19,6 @@ build-gateway:
 build-manager:
 	docker build -t manager:${MANAGER_VERSION} rl-manager
 
-upgrade-gradle:
-	cd cloudsimplus-gateway && ./gradlew wrapper --gradle-version=${GRADLE_VERSION} --distribution-type=bin
-
 run-tensorboard:
 	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 80:6006 tensorboard
 
@@ -30,6 +27,9 @@ run-cpu:
 
 run-gpu:
 	scripts/run_docker_gpu.sh
+
+run-cpu-attached:
+	ATTACHED=true scripts/run_docker_cpu.sh
 
 run-gpu-attached:
 	ATTACHED=true scripts/run_docker_gpu.sh
@@ -44,6 +44,9 @@ stop:
 	docker compose down --remove-orphans
 	docker system prune -f
 	docker system prune --volumes -f
+
+get-gradle:
+        cd cloudsimplus-gateway && ./gradlew wrapper --gradle-version=${GRADLE_VERSION} --distribution-type=bin
 
 clear-gradle:
 	cd ~/.gradle && rm -rf *
