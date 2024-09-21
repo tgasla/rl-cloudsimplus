@@ -164,7 +164,7 @@ or
 make run-gpu-attached
 ```
 
-attached mode.
+for attached mode.
 
 <!--
 - The `--build` flag also builds the manager image
