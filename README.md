@@ -101,7 +101,7 @@ make build
 > If the log level environment variable is not set, the log level is set to INFO by default.
 
 ```bash
-[LOG_LEVEL=[TRACE|DEBUG|INFO|WARN|ERROR]] make build-gateway
+[LOG_LEVEL=TRACE|DEBUG|INFO|WARN|ERROR] make build-gateway
 ```
 
 ## Starting the TensorBoard dashboard
