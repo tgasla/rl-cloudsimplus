@@ -47,17 +47,23 @@ class SingleDC(gym.Env):
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
         self.simulation_environment = self.gateway.entry_point
 
-        host_count = params["host_count"]
+        # host_count = params["host_count"]
         host_pes = params["host_pes"]
         small_vm_pes = params["small_vm_pes"]
 
-        # TODO: have to define it in config.yml and pass it in
+        # if you want to support 1-10 hosts then when calculating max_vms_count and
+        # observation rows, put self.max_hosts instead of host_count
+        # and in action_space put self.max_hosts instead of host_count
+
+        self.action_types_count = 3
+        self.max_hosts = 10
+        self.types_of_vms_count = 3
+
+        # it makes sense to assume that the minimum amount of cores per job will be 1
         self.min_job_pes = 1
-        self.max_vms_count = int(host_count) * int(host_pes) // int(small_vm_pes)
-        self.max_jobs_count = self.max_vms_count * int(small_vm_pes) // self.min_job_pes
-        self.observation_rows = (
-            1 + int(host_count) + self.max_vms_count + self.max_jobs_count
-        )
+        self.max_vms = self.max_hosts * int(host_pes) // int(small_vm_pes)
+        self.max_jobs_count = self.max_vms * int(small_vm_pes) // self.min_job_pes
+        self.observation_rows = 1 + self.max_hosts + self.max_vms + self.max_jobs_count
         self.observation_cols = 4
 
         # Old for continuous action space
@@ -74,7 +80,14 @@ class SingleDC(gym.Env):
         # type = {0: small, 1: medium, 2: large}
         # ^ needed only when action = 1
         self.action_space = spaces.MultiDiscrete(
-            np.array([3, int(host_count), self.max_vms_count, 3])
+            np.array(
+                [
+                    self.action_types_count,
+                    self.max_hosts,
+                    self.max_vms,
+                    self.types_of_vms_count,
+                ]
+            )
         )
 
         self.observation_space = spaces.Box(

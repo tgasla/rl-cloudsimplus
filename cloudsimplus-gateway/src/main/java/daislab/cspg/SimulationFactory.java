@@ -46,7 +46,7 @@ public class SimulationFactory {
         int splittedId = 0;
 
         for (CloudletDescriptor cloudletDescriptor : jobs) {
-            int jobPesNumber = cloudletDescriptor.getNumberOfCores();
+            int jobPesNumber = cloudletDescriptor.getCoresNumber();
             int splitCount = Math.max(1, (jobPesNumber + maxJobPes - 1) / maxJobPes);
             int normalSplitPesNumber = jobPesNumber / splitCount;
             long totalMi = cloudletDescriptor.getMi();
@@ -66,8 +66,7 @@ public class SimulationFactory {
                 CloudletDescriptor splittedDescriptor = new CloudletDescriptor(splittedId++,
                         cloudletDescriptor.getSubmissionDelay(),
                         // we divide by the pesNumber because cloudSimPlus do not parallelize jobs
-                        // :)
-                        // so we artificially do it here.
+                        // :) so we artificially do it here.
                         miForThisSplit / pesForThisSplit, pesForThisSplit);
 
                 splitted.add(ensureMinValues(splittedDescriptor));
@@ -96,7 +95,7 @@ public class SimulationFactory {
     private CloudletDescriptor ensureMinValues(final CloudletDescriptor cloudletDescriptor) {
         final long mi = Math.max(1, cloudletDescriptor.getMi());
         final long cloudletDelay = Math.max(0, cloudletDescriptor.getSubmissionDelay());
-        final int pesNumber = Math.max(1, cloudletDescriptor.getNumberOfCores());
+        final int pesNumber = Math.max(1, cloudletDescriptor.getCoresNumber());
 
         return new CloudletDescriptor(cloudletDescriptor.getJobId(), cloudletDelay, mi, pesNumber);
     }

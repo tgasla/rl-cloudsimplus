@@ -11,14 +11,14 @@ public class CloudletDescriptor {
     private final int jobId;
     private final long submissionDelay;
     private final long mi;
-    private final int numberOfCores;
+    private final int coresNumber;
 
     public CloudletDescriptor(final int jobId, final long submissionDelay, final long mi,
-            final int numberOfCores) {
+            final int coresNumber) {
         this.jobId = jobId;
         this.submissionDelay = submissionDelay;
         this.mi = mi;
-        this.numberOfCores = numberOfCores;
+        this.coresNumber = coresNumber;
     }
 
     public int getJobId() {
@@ -33,34 +33,34 @@ public class CloudletDescriptor {
         return mi;
     }
 
-    public int getNumberOfCores() {
-        return numberOfCores;
+    public int getCoresNumber() {
+        return coresNumber;
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o)
+    public boolean equals(final Object obj) {
+        if (this == obj)
             return true;
-        if (o == null || getClass() != o.getClass())
+        if (obj == null || getClass() != obj.getClass())
             return false;
-        CloudletDescriptor that = (CloudletDescriptor) o;
-        return getJobId() == that.getJobId() && getSubmissionDelay() == that.getSubmissionDelay()
-                && getMi() == that.getMi() && getNumberOfCores() == that.getNumberOfCores();
+        CloudletDescriptor job = (CloudletDescriptor) obj;
+        return getJobId() == job.getJobId() && getSubmissionDelay() == job.getSubmissionDelay()
+                && getMi() == job.getMi() && getCoresNumber() == job.getCoresNumber();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getJobId(), getSubmissionDelay(), getMi(), getNumberOfCores());
+        return Objects.hash(getJobId(), getSubmissionDelay(), getMi(), getCoresNumber());
     }
 
     @Override
     public String toString() {
         return "CloudletDescriptor{" + "jobId=" + jobId + ", submissionDelay=" + submissionDelay
-                + ", mi=" + mi + ", numberOfCores=" + numberOfCores + '}';
+                + ", mi=" + mi + ", numberOfCores=" + coresNumber + '}';
     }
 
     public Cloudlet toCloudlet() {
-        Cloudlet cloudlet = new CloudletSimple(jobId, mi, numberOfCores)
+        Cloudlet cloudlet = new CloudletSimple(jobId, mi, coresNumber)
                 .setFileSize(DataCloudTags.DEFAULT_MTU).setOutputSize(DataCloudTags.DEFAULT_MTU)
                 .setUtilizationModelCpu(new UtilizationModelFull());
         cloudlet.setSubmissionDelay(submissionDelay);

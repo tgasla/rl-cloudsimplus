@@ -47,10 +47,11 @@ public class WrappedSimulation {
     private final MetricsStorage metricsStorage;
     private final SimulationHistory simulationHistory;
     private final int hostsCount;
-    private final int maxVmsCount;
+    private final int maxVms;
     private final int observationArrayRows;
     private final int observationArrayColumns;
     private final int minJobPes = 1;
+    private final int maxHosts = 10;
     private CloudSimProxy cloudSimProxy;
     private int currentStep;
     private long epWaitingJobsCountMax = 0;
@@ -63,21 +64,20 @@ public class WrappedSimulation {
         this.initialJobsDescriptors = jobs;
         this.simulationHistory = new SimulationHistory();
         this.hostsCount = settings.getHostsCount();
-        this.maxVmsCount =
-                settings.getHostsCount() * settings.getHostPes() / settings.getSmallVmPes();
-        final int maxJobsCount = maxVmsCount * settings.getSmallVmPes() / this.minJobPes;
-        this.observationArrayRows = 1 + hostsCount + maxVmsCount + maxJobsCount;
+        this.maxVms = this.maxHosts * settings.getHostPes() / settings.getSmallVmPes();
+        final int maxJobsCount = maxVms * settings.getSmallVmPes() / this.minJobPes;
+        this.observationArrayRows = 1 + maxHosts + maxVms + maxJobsCount;
         this.observationArrayColumns = 4;
         // Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
 
         this.metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
-                vmMetricsCount, jobMetricsCount, this.hostsCount, this.maxVmsCount, maxJobsCount);
+                vmMetricsCount, jobMetricsCount, this.maxHosts, this.maxVms, maxJobsCount);
 
         LOGGER.info("Creating simulation: {}", identifier);
     }
 
     public SimulationResetResult reset(final long seed) {
-        // seed ignored for now
+        // ignoring seed for now
         LOGGER.info("Reset initiated");
         LOGGER.info("job count: " + initialJobsDescriptors.size());
 
@@ -496,6 +496,10 @@ public class WrappedSimulation {
     // metricsStorage.getLastMetricValue("waitingJobsRatioTimestep")
     // };
     // }
+
+    /*
+     * Function to get a vertical subarray of an array
+     */
     private double[][] getColumns(final double[][] matrix, final int[] columnIndices) {
         int numRows = matrix.length;
         int numCols = columnIndices.length;
@@ -555,7 +559,10 @@ public class WrappedSimulation {
         final double[][] vmMetrics = getColumns(metricsStorage.getVmMetrics(), new int[] {5});
         final double[][] jobMetrics = getColumns(metricsStorage.getJobMetrics(), new int[] {5});
         final double[][] observation = new double[observationArrayRows][observationArrayColumns];
-
+        /*
+         * if you want to support 1-10 hosts, then below when assigning new values after loops for
+         * currentRow put this.maxHosts instead of this.hostsCount
+         */
         int currentRow = 0;
 
         for (int j = 0; j < datacenterMetrics.length; j++) {
@@ -570,6 +577,9 @@ public class WrappedSimulation {
             currentRow++;
         }
 
+        currentRow = 1 + this.maxHosts;
+
+
         for (int i = 0; i < vmMetrics.length; i++) {
             for (int j = 0; j < vmMetrics[i].length; j++) {
                 observation[currentRow][j] = vmMetrics[i][j];
@@ -577,7 +587,7 @@ public class WrappedSimulation {
             currentRow++;
         }
 
-        currentRow = 1 + this.hostsCount + this.maxVmsCount;
+        currentRow = 1 + this.maxHosts + this.maxVms;
 
         for (int i = 0; i < jobMetrics.length; i++) {
             for (int j = 0; j < jobMetrics[i].length; j++) {

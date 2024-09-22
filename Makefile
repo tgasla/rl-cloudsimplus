@@ -46,7 +46,7 @@ stop:
 	docker system prune --volumes -f
 
 get-gradle:
-        cd cloudsimplus-gateway && ./gradlew wrapper --gradle-version=${GRADLE_VERSION} --distribution-type=bin
+	cd cloudsimplus-gateway && ./gradlew wrapper --gradle-version=${GRADLE_VERSION} --distribution-type=bin
 
 clear-gradle:
 	cd ~/.gradle && rm -rf *
