@@ -9,15 +9,16 @@ import com.google.gson.Gson;
 public class SimulationResetResult {
 
     private final Gson gson = new Gson();
-    private final double[][] obs;
+    // private final double[][] obs;
+    private final int[] obs;
     private final SimulationStepInfo info;
 
-    public SimulationResetResult(final double[][] obs, final SimulationStepInfo info) {
+    public SimulationResetResult(final int[] obs, final SimulationStepInfo info) {
         this.obs = obs;
         this.info = info;
     }
 
-    public double[][] getObs() {
+    public int[] getObs() {
         return obs;
     }
 

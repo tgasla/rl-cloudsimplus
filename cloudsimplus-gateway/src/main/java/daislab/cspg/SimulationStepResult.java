@@ -7,13 +7,14 @@ import java.util.Arrays;
  */
 public class SimulationStepResult {
 
-    private final double[][] obs;
+    // private final double[][] obs;
+    private final int[] obs;
     private final double reward;
     private final boolean terminated;
     private final boolean truncated;
     private final SimulationStepInfo info;
 
-    public SimulationStepResult(final double[][] obs, final double reward, final boolean terminated,
+    public SimulationStepResult(final int[] obs, final double reward, final boolean terminated,
             final boolean truncated, final SimulationStepInfo info) {
         this.obs = obs;
         this.reward = reward;
@@ -22,7 +23,7 @@ public class SimulationStepResult {
         this.info = info;
     }
 
-    public double[][] getObs() {
+    public int[] getObs() {
         return obs;
     }
 

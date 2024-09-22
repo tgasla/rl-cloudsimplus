@@ -62,9 +62,10 @@ class SingleDC(gym.Env):
         # it makes sense to assume that the minimum amount of cores per job will be 1
         self.min_job_pes = 1
         self.max_vms = self.max_hosts * int(host_pes) // int(small_vm_pes)
-        self.max_jobs_count = self.max_vms * int(small_vm_pes) // self.min_job_pes
-        self.observation_rows = 1 + self.max_hosts + self.max_vms + self.max_jobs_count
-        self.observation_cols = 4
+        self.max_jobs = self.max_vms * int(small_vm_pes) // self.min_job_pes
+        # self.observation_rows = 1 + self.max_hosts + self.max_vms + self.max_jobs
+        # self.observation_cols = 4
+        self.observation_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
 
         # Old for continuous action space
         # self.action_space = spaces.Box(
@@ -90,11 +91,16 @@ class SingleDC(gym.Env):
             )
         )
 
-        self.observation_space = spaces.Box(
-            low=0,
-            high=1,
-            shape=(self.observation_rows, self.observation_cols),
-            dtype=np.float32,
+        # self.observation_space = spaces.Box(
+        #     low=0,
+        #     high=1,
+        #     shape=(self.observation_rows, self.observation_cols),
+        #     dtype=np.float32,
+        # )
+
+        self.max_cores_per_node = 100
+        self.observation_space = spaces.MultiDiscrete(
+            self.max_cores_per_node * np.ones(self.observation_length)
         )
 
         if render_mode is not None and render_mode not in self.metadata["render_modes"]:
@@ -116,10 +122,13 @@ class SingleDC(gym.Env):
 
         raw_obs = result.getObs()
         obs = self._to_nparray(raw_obs)
+        padded_obs = np.resize(obs, self.observation_length)
+        padded_obs[len(obs) :] = 0
+
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
 
-        return obs, info
+        return padded_obs, info
 
     def step(self, action):
         # Py4J cannot translate np.array(dtype=np.float32) to java List<double>
@@ -136,13 +145,15 @@ class SingleDC(gym.Env):
         truncated = result.isTruncated()
         raw_obs = result.getObs()
         obs = self._to_nparray(raw_obs)
+        padded_obs = np.resize(obs, self.observation_length)
+        padded_obs[len(obs) :] = 0
 
         info = self._raw_info_to_dict(raw_info)
 
         if self.render_mode == "human":
             self.render()
 
-        return (obs, reward, terminated, truncated, info)
+        return (padded_obs, reward, terminated, truncated, info)
 
     def render(self):
         if self.render_mode is None:

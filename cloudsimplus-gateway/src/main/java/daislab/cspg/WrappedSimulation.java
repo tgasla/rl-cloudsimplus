@@ -90,11 +90,12 @@ public class WrappedSimulation {
         cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
         // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
-        double[][] obs = getObservation();
+        // double[][] obs = getObservation();
+        int[] observation = getObservationAsTreeArray();
         resetEpisodeStats();
         SimulationStepInfo info = new SimulationStepInfo();
 
-        return new SimulationResetResult(obs, info);
+        return new SimulationResetResult(observation, info);
     }
 
     public void resetEpisodeStats() {
@@ -148,7 +149,8 @@ public class WrappedSimulation {
         boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
 
         // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
-        double[][] observation = getObservation();
+        // double[][] observation = getObservation();
+        int[] observation = getObservationAsTreeArray();
         double[] rewards = calculateReward(isValid);
 
         recordSimulationData(action, rewards);
