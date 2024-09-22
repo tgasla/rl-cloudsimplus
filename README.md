@@ -94,7 +94,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 make build
 ```
 
-> [!IMPORTANT]  
+> [!NOTE]  
 > It is often useful to rebuild images one at a time, especially when a change is made only in a specific application part.
 > For example, when we change the gateway code, we must rebuild the image before running the application.
 > Optionally, when building, we can specify the log level of the messages printed in stdout and in a log file.
