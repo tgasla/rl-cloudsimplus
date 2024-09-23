@@ -98,7 +98,7 @@ class SingleDC(gym.Env):
         #     dtype=np.float32,
         # )
 
-        self.max_cores_per_node = 100
+        self.max_cores_per_node = 101
         self.observation_space = spaces.MultiDiscrete(
             self.max_cores_per_node * np.ones(self.observation_length)
         )
@@ -124,6 +124,8 @@ class SingleDC(gym.Env):
         obs = self._to_nparray(raw_obs)
         padded_obs = np.resize(obs, self.observation_length)
         padded_obs[len(obs) :] = 0
+
+        print(padded_obs)
 
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
