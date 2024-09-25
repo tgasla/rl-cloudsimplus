@@ -63,6 +63,7 @@ def train(hostname, params):
     # Read jobs
     job_trace_path = os.path.join("mnt", "traces", f"{job_trace_filename}.csv")
     jobs = csv_to_cloudlet_descriptor(job_trace_path)
+
     # print(job_trace_filename, jobs)
 
     # Create folder if needed

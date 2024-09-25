@@ -100,9 +100,10 @@ def test(hostname, params):
             current_step += 1
             action, _ = model.predict(obs)
             obs, reward, terminated, truncated, info = env.step(action)
-            print(
-                f"Step: {current_length}, obs: {obs}, reward: {reward}, terminated: {terminated}, truncated: {truncated}, info: {info}"
-            )
+            # print(
+            # f"Step: {current_length}, obs: {obs}, reward: {reward}, terminated: {terminated}, truncated: {truncated}, info: {info}"
+            # )
+            print()
             episode_reward += reward
             done = terminated or truncated
 

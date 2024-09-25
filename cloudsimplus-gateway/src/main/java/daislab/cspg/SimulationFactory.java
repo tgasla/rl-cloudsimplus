@@ -44,7 +44,6 @@ public class SimulationFactory {
             final int maxJobPes) {
         List<CloudletDescriptor> splitted = new ArrayList<>();
         int splittedId = 0;
-
         for (CloudletDescriptor cloudletDescriptor : jobs) {
             int jobPesNumber = cloudletDescriptor.getCores();
             int splitCount = Math.max(1, (jobPesNumber + maxJobPes - 1) / maxJobPes);
