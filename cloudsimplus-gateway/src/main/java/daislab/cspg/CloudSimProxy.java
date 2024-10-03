@@ -187,6 +187,13 @@ public class CloudSimProxy {
         jobsFinishedWaitTimeLastTimestep.clear();
 
         int unableToSubmitJobCount = scheduleJobsUntil(target);
+        if (unableToSubmitJobCount > 0) {
+            LOGGER.warn("{}: Unable to submit {} jobs", clock(), unableToSubmitJobCount);
+            List<Vm> vmList = addVmsNeeded(unableToSubmitJobCount);
+            broker.submitVmList(vmList, settings.getVmStartupDelay()); // submit all VMs
+            // } else {
+            // terminateUnusedVms();
+        }
 
         // LOGGER.warn("{} jobs are waiting", getWaitingJobsCount());
         // LOGGER.warn("{} jobs are ready", getReadyJobsCount());
@@ -195,13 +202,6 @@ public class CloudSimProxy {
 
         if (shouldPrintJobStats()) {
             printJobStats();
-        }
-        if (unableToSubmitJobCount > 0) {
-            LOGGER.warn("{}: Unable to submit {} jobs", clock(), unableToSubmitJobCount);
-            List<Vm> vmList = addVmsNeeded(unableToSubmitJobCount);
-            broker.submitVmList(vmList, settings.getVmStartupDelay()); // submit all VMs
-            // } else {
-            // terminateUnusedVms();
         }
 
         // the size of cloudletsCreatedList grows to huge numbers
