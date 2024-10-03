@@ -16,7 +16,7 @@ common:
     vm_shutdown_delay: 0.0
     medium_vm_multiplier: 2
     large_vm_multiplier: 4
-    paying_for_the_full_hour: false
+    paying_for_the_full_hour: false #unused
     clear_created_cloudlet_list: true
 
 experiment_1:

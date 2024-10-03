@@ -3,8 +3,6 @@ package daislab.cspg;
 import org.cloudsimplus.brokers.DatacenterBrokerSimple;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.core.CloudSimPlus;
-import org.cloudsimplus.core.CloudSimTag;
-import org.cloudsimplus.core.events.SimEvent;
 import org.cloudsimplus.vms.Vm;
 
 /**
@@ -27,32 +25,32 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         super(simulation);
     }
 
-    @Override
-    public void processEvent(final SimEvent evt) {
-        super.processEvent(evt);
-        /*
-         * This is important! CLOUDLET_RETURN is sent whenever a cloudlet finishes executing. The
-         * default behaviour in CloudSim Plus is to destroy a Vm when it has no more cloudlets to
-         * execute. Here we override the default behaviour and we trigger the creation of waiting
-         * cloudlets so they can be possibly allocated inside a Vm. This is because in our case, we
-         * may reschedule some cloudlets so we want the VMs to trigger the creation of those waiting
-         * cloudlets
-         */
+    // @Override
+    // public void processEvent(final SimEvent evt) {
+    // super.processEvent(evt);
+    // /*
+    // * This is important! CLOUDLET_RETURN is sent whenever a cloudlet finishes executing. The
+    // * default behaviour in CloudSim Plus is to destroy a Vm when it has no more cloudlets to
+    // * execute. Here we override the default behaviour and we trigger the creation of waiting
+    // * cloudlets so they can be possibly allocated inside a Vm. This is because in our case, we
+    // * may reschedule some cloudlets so we want the VMs to trigger the creation of those waiting
+    // * cloudlets
+    // */
 
-        if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
-            final Cloudlet cloudlet = (Cloudlet) evt.getData();
-            LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
-                    cloudlet.getId(), cloudlet.getVm().getId());
-            requestDatacentersToCreateWaitingCloudlets();
-        }
+    // if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
+    // final Cloudlet cloudlet = (Cloudlet) evt.getData();
+    // LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
+    // cloudlet.getId(), cloudlet.getVm().getId());
+    // requestDatacentersToCreateWaitingCloudlets();
+    // }
 
-        // Clean the vm created list because over an episode we may create/destroy
-        // many vms so we do not want to cause OOM.
-        if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
-            LOGGER.debug("Cleaning the vmCreatedList");
-            getVmCreatedList().clear();
-        }
-    }
+    // // Clean the vm created list because over an episode we may create/destroy
+    // // many vms so we do not want to cause OOM.
+    // if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
+    // LOGGER.debug("Cleaning the vmCreatedList");
+    // getVmCreatedList().clear();
+    // }
+    // }
 
     /*
      * This function triggers immediately the cloudlet to vm mapping and this behaviour leads to 0

@@ -187,6 +187,12 @@ public class CloudSimProxy {
         jobsFinishedWaitTimeLastTimestep.clear();
 
         int unableToSubmitJobCount = scheduleJobsUntil(target);
+
+        // LOGGER.warn("{} jobs are waiting", getWaitingJobsCount());
+        // LOGGER.warn("{} jobs are ready", getReadyJobsCount());
+        // LOGGER.warn("{} jobs are queued", getQueuedJobsCount());
+        runForInternal(interval, target);
+
         if (shouldPrintJobStats()) {
             printJobStats();
         }
@@ -198,11 +204,6 @@ public class CloudSimProxy {
             // terminateUnusedVms();
         }
 
-        // LOGGER.warn("{} jobs are waiting", getWaitingJobsCount());
-        // LOGGER.warn("{} jobs are ready", getReadyJobsCount());
-        // LOGGER.warn("{} jobs are queued", getQueuedJobsCount());
-        runForInternal(interval, target);
-
         // the size of cloudletsCreatedList grows to huge numbers
         // as we re-schedule cloudlets when VMs get killed
         // to avoid OOMing we need to clear that list
@@ -211,6 +212,8 @@ public class CloudSimProxy {
         if (settings.isClearCreatedCloudletList()) {
             broker.getCloudletCreatedList().clear();
         }
+
+        broker.getVmCreatedList().clear();
 
         final String startTimeFormat = String.format("%.1f", clock() - interval);
         LOGGER.debug("{}: runFor [{}-{}]", clock(), startTimeFormat, clock());
@@ -221,7 +224,8 @@ public class CloudSimProxy {
     }
 
     public void printJobStats() {
-        LOGGER.info("{}: Vms created: {}", clock(), vmsCreated);
+        LOGGER.info("{}: Vms created in total: {}", clock(), vmsCreated);
+        LOGGER.info("{}: Vms running now: {}", clock(), broker.getVmExecList().size());
         LOGGER.info("{}: All jobs: {} ", clock(), inputJobs.size());
         Map<Cloudlet.Status, Integer> countByStatus = new HashMap<>();
         for (Cloudlet c : inputJobs) {
@@ -283,6 +287,13 @@ public class CloudSimProxy {
             vmList.addAll(currentList);
             LOGGER.info("{}: Creating {} {}-core VMs", clock(), howMany, vmCores);
         }
+
+        if (jobCount > 0) {
+            String smallVmType = settings.VM_TYPES[0];
+            vmList.add(createVm(smallVmType).setDescription(smallVmType));
+            LOGGER.info("{}: Creating 1 {}-core VM", clock(), getVmCoreCountByType(smallVmType));
+        }
+
         return vmList;
     }
 
@@ -416,7 +427,7 @@ public class CloudSimProxy {
     }
 
     private void submitCloudletsList(final List<Cloudlet> jobsToSubmit) {
-        LOGGER.debug("Submitting: {} jobs", jobsToSubmit.size());
+        LOGGER.info("{}: Submitting: {} jobs", clock(), jobsToSubmit.size());
         broker.submitCloudletList(jobsToSubmit);
 
         // we immediately clear up that list because it is not really
