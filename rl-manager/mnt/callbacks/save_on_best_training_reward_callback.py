@@ -76,7 +76,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_vm_core_ratio = []
         self.isValid = []
         self.current_episode_length = 0
-        # self.observation_tree_arrays = []
+        self.observation_tree_arrays = []
         # self.episode_dot_strings = []
 
     def _delete_previous_best(self) -> None:
@@ -108,9 +108,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_vm_core_ratio.append(
             self.locals["infos"][0]["unutilized_vm_core_ratio"]
         )
-        # self.observation_tree_arrays.append(
-        #     self.locals["infos"][0]["observation_tree_array"]
-        # )
+        self.observation_tree_arrays.append(
+            self.locals["infos"][0]["observation_tree_array"]
+        )
         # self.episode_dot_strings.append(self.locals["infos"][0]["dot_string"])
 
     def _maybe_save_replay_buffer(self) -> None:
@@ -237,12 +237,12 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         )
         self.logger.dump()
 
-    # def _write_observation_tree_arrays_to_file(self) -> None:
-    #     filepath = os.path.join(self.log_dir, "observation_tree_arrays.csv")
-    #     with open(filepath, "a") as file:
-    #         for array in self.observation_tree_arrays:
-    #             file.write(f"{array}\n")
-    #         file.write("\n")
+    def _write_observation_tree_arrays_to_file(self) -> None:
+        filepath = os.path.join(self.log_dir, "observation_tree_arrays.csv")
+        with open(filepath, "a") as file:
+            for array in self.observation_tree_arrays:
+                file.write(f"{array}\n")
+            file.write("\n")
 
     # def _write_dot_strings_to_file(self) -> None:
     #     dot_path = os.path.join(self.log_dir, "dot_graphs.txt")
@@ -265,7 +265,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                 print("Episode terminated")
             self._write_log_row()
             # turned off to avoid accumulating logs
-            # self._write_observation_tree_arrays_to_file()
+            self._write_observation_tree_arrays_to_file()
             # self._write_dot_strings_to_file()
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), "timesteps")

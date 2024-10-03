@@ -129,9 +129,10 @@ public class WrappedSimulation {
         }
     }
 
-    public SimulationStepResult step(final int[] action) {
+    public SimulationStepResult step(int[] action) {
         validateSimulationReset();
         this.currentStep++;
+        action = new int[] {1, 0, 0, 0};
 
         LOGGER.debug("Step {} starts", this.currentStep);
 

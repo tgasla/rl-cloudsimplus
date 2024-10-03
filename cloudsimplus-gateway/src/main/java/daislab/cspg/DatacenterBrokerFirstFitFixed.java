@@ -1,5 +1,6 @@
 package daislab.cspg;
 
+import static org.cloudsimplus.brokers.DatacenterBroker.LOGGER;
 import org.cloudsimplus.brokers.DatacenterBrokerSimple;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.core.CloudSimPlus;
@@ -44,13 +45,6 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
                     cloudlet.getId(), cloudlet.getVm().getId());
             requestDatacentersToCreateWaitingCloudlets();
-        }
-
-        // Clean the vm created list because over an episode we may create/destroy
-        // many vms so we do not want to run out of memory.
-        if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
-            LOGGER.debug("Cleaning the vmCreatedList");
-            getVmCreatedList().clear();
         }
     }
 
@@ -124,7 +118,8 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
          * position where the last search finished. A slight detail: if in the previous search the
          * job was placed in a vm, the search on the next iteration starts from this same vm (i.e.
          * if in last search the job was placed in vm 5, the next search starts again from vm 5). If
-         * no vm was found on the previous search, the search starts from the beginning.
+         * no vm was found on the previous search, the search starts from the next of the last tried
+         * vm.
          */
 
         if (cloudlet.isBoundToVm()) {
@@ -137,12 +132,13 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         }
 
         /**
-         * If we delete a VM when in the previous iteration we had lastVmIndex set to size() - 1
-         * then we are going to explode... if we don't have the line below :) For example, if the
-         * lastVmIndex is 9 and then we delete a vm, the lastvmindex will cause an
-         * OutOfBoundsException if we call getVmExecList().get(lastVmIndex) because now there are 9
-         * vms in the vmExecList (indeces [0-8]). The line below will do lastVmIndex = 0 (9 mod 9)
-         * The rest of the code remains the same as the original CloudSim Plus implementation.
+         * If we delete a VM when in the previous iteration, the lastVmIndex should be updated
+         * properly, otherwise we are going to explode if we don't have the line below :) For
+         * example, if we have 10 vms (indeces [0-9]), the lastVmIndex is 9 and then we delete a vm,
+         * the lastvmindex will cause an OutOfBoundsException if we call
+         * getVmExecList().get(lastVmIndex) because now there are 9 vms in the vmExecList (indeces
+         * [0-8]). The line below will do lastVmIndex = 9 mod 9 = 0. The rest of the code remains
+         * the same as the original CloudSim Plus implementation.
          */
         lastVmIndex %= getVmExecList().size();
 
@@ -168,11 +164,10 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             lastVmIndex = ++lastVmIndex % getVmExecList().size();
         }
 
-        LOGGER.debug("{}: {}: {} (PEs: {}) couldn't be mapped to any suitable VM.",
+        LOGGER.warn("{}: {}: {} (PEs: {}) couldn't be mapped to any suitable VM.",
                 getSimulation().clockStr(), getName(), cloudlet, cloudlet.getPesNumber());
 
-        // if we return NULL, that VM is not created so the cloudlet lands
-        // on "waiting" list
+        // if we return NULL, the cloudlet status remains INSTANTIATED
         return Vm.NULL;
     }
 }

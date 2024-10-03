@@ -44,9 +44,7 @@ public class CloudSimProxy {
     private final List<Cloudlet> unsubmittedJobs;
     private final Set<Cloudlet> arrivedJobs;
     private List<Double> jobsFinishedWaitTimeLastTimestep;
-    private int triedToSubmitJobCount;
-    private int nextVmId;
-    private int unableToSubmitJobCount;
+    private int vmsCreated;
 
     public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
         this.settings = settings;
@@ -58,21 +56,22 @@ public class CloudSimProxy {
         this.arrivedJobs = new HashSet<>();
         originalSubmissionDelay = new HashMap<>();
         jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
-        nextVmId = 0;
-        triedToSubmitJobCount = 0;
-        unableToSubmitJobCount = 0;
+        vmsCreated = 0;
 
         cloudSimPlus = new CloudSimPlus(settings.getMinTimeBetweenEvents());
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         datacenter = createDatacenter();
         vmCost = new VmCost(settings);
 
-        final List<Vm> smallVmList = createVmList(settings.getInitialSVmCount(), settings.SMALL);
-        final List<Vm> mediumVmList = createVmList(settings.getInitialMVmCount(), settings.MEDIUM);
-        final List<Vm> largeVmList = createVmList(settings.getInitialLVmCount(), settings.LARGE);
-        broker.submitVmList(smallVmList);
-        broker.submitVmList(mediumVmList);
-        broker.submitVmList(largeVmList);
+        List<Vm> initialVmList = new ArrayList<>();
+        for (int i = 0; i < settings.VM_TYPES.length; i++) {
+            String vmType = settings.VM_TYPES[i];
+            List<Vm> vmList = createVmList(settings.getInitialVmCounts()[i], vmType);
+            initialVmList.forEach(v -> v.setDescription(vmType));
+            initialVmList.addAll(vmList);
+        }
+        initialVmList.forEach(v -> vmCost.addNewVmToList(v));
+        broker.submitVmList(initialVmList);
 
         Collections.sort(this.inputJobs,
                 (c1, c2) -> Double.compare(c1.getSubmissionDelay(), c2.getSubmissionDelay()));
@@ -86,7 +85,7 @@ public class CloudSimProxy {
         runFor(settings.getMinTimeBetweenEvents());
     }
 
-    public long getVmCoreCountByType(final String type) {
+    public int getVmCoreCountByType(final String type) {
         return settings.getSmallVmPes() * settings.getSizeMultiplier(type);
     }
 
@@ -131,7 +130,6 @@ public class CloudSimProxy {
 
         for (int i = 0; i < vmCount; i++) {
             vmList.add(createVm(type));
-            nextVmId++;
         }
 
         return vmList;
@@ -140,12 +138,16 @@ public class CloudSimProxy {
     private Vm createVm(final String type) {
         int sizeMultiplier = settings.getSizeMultiplier(type);
 
-        Vm vm = new VmSimple(nextVmId, settings.getHostPeMips(),
+        Vm vm = new VmSimple(vmsCreated++, settings.getHostPeMips(),
                 settings.getSmallVmPes() * sizeMultiplier);
         vm.setRam(settings.getSmallVmRam() * sizeMultiplier).setBw(settings.getSmallVmBw())
                 .setSize(settings.getSmallVmStorage())
-                .setCloudletScheduler(new OptimizedCloudletScheduler()).setDescription(type)
+                .setCloudletScheduler(new OptimizedCloudletScheduler())
                 .setShutDownDelay(settings.getVmShutdownDelay());
+
+        // submissiondelay or vm boot up delay
+        vm.setSubmissionDelay(settings.getVmStartupDelay());
+        vmCost.addNewVmToList(vm);
 
         return vm;
     }
@@ -183,7 +185,6 @@ public class CloudSimProxy {
         jobsFinishedWaitTimeLastTimestep.clear();
 
         scheduleJobsUntil(target);
-        LOGGER.debug("Jobs waiting: {}", getWaitingJobsCount());
         runForInternal(interval, target);
 
         if (shouldPrintJobStats()) {
@@ -199,20 +200,19 @@ public class CloudSimProxy {
             broker.getCloudletCreatedList().clear();
         }
 
-        String startTimeFormat = String.format("%.1f", clock() - interval);
-        LOGGER.debug("runFor [{}-{}]", startTimeFormat, clock());
+
+        final String startTimeFormat = String.format("%.1f", clock() - interval);
+        LOGGER.debug("{}: runFor [{}-{}]", clock(), startTimeFormat, clock());
     }
 
     private boolean shouldPrintJobStats() {
-        return ((int) Math.round(clock()) % 1000 == 0) || !isRunning();
+        return ((int) Math.round(clock()) % 1 == 0) || !isRunning();
     }
 
     public void printJobStats() {
-        if (!isRunning()) {
-            LOGGER.info("Simulation terminated. Jobs finished: {}/{}",
-                    getBroker().getCloudletFinishedList().size(), inputJobs.size());
-        }
-        LOGGER.info("All jobs: " + inputJobs.size());
+        LOGGER.info("{}: Vms created in total: {}", clock(), vmsCreated);
+        LOGGER.info("{}: Vms running now: {}", clock(), broker.getVmExecList().size());
+        LOGGER.info("{}: All jobs: {} ", clock(), inputJobs.size());
         Map<Cloudlet.Status, Integer> countByStatus = new HashMap<>();
         for (Cloudlet c : inputJobs) {
             final Cloudlet.Status status = c.getStatus();
@@ -221,7 +221,7 @@ public class CloudSimProxy {
         }
 
         for (Map.Entry<Cloudlet.Status, Integer> e : countByStatus.entrySet()) {
-            LOGGER.info(e.getKey().toString() + ": " + e.getValue());
+            LOGGER.info("{}: {}: {}", clock(), e.getKey().toString(), e.getValue());
         }
 
         // LOGGER.info("Jobs which are still queued");
@@ -237,8 +237,8 @@ public class CloudSimProxy {
         // }
         // }
 
-        // LOGGER.debug("jobs arrived:" + cloudSimProxy.getArrivedJobsCount());
-        // LOGGER.debug("jobs waiting: " + cloudSimProxy.getWaitingJobsCount());
+        LOGGER.debug("{}: Jobs arrived:", clock(), getArrivedJobsCount());
+        LOGGER.debug("{}: Jobs arrived but not yet running: {}", clock(), getWaitingJobsCount());
         // LOGGER.debug("jobs running: " + cloudSimProxy.getRunningJobsCount());
         // LOGGER.debug("jobs finished: " + cloudSimProxy.getFinishedJobsCount());
     }
@@ -280,8 +280,8 @@ public class CloudSimProxy {
         cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
             @Override
             public void update(CloudletVmEventInfo info) {
-                LOGGER.debug("Cloudlet: " + cloudlet.getId() + " that was running on vm "
-                        + cloudlet.getVm().getId() + " (runs "
+                LOGGER.debug(clock() + ": Cloudlet: " + cloudlet.getId()
+                        + " that was running on vm " + cloudlet.getVm().getId() + " (runs "
                         + cloudlet.getVm().getCloudletScheduler().getCloudletExecList().size()
                         + " cloudlets) on host " + cloudlet.getVm().getHost() + " (runs "
                         + cloudlet.getVm().getHost().getVmList().size() + " vms) finished at "
@@ -297,8 +297,6 @@ public class CloudSimProxy {
 
     private void scheduleJobsUntil(final double target) {
         List<Cloudlet> jobsToSubmit = new ArrayList<>();
-        this.triedToSubmitJobCount = 0;
-        this.unableToSubmitJobCount = 0;
 
         for (final Iterator<Cloudlet> it = unsubmittedJobs.iterator(); it.hasNext();) {
             Cloudlet cloudlet = it.next();
@@ -311,10 +309,8 @@ public class CloudSimProxy {
             // but they will not be added twice in the arrivedJobs Set
             this.arrivedJobs.add(cloudlet);
 
-            triedToSubmitJobCount++;
             // Do not schedule cloudlet if there are no suitable vms to run it
             if (!isAnyVmSuitableForCloudlet(cloudlet)) {
-                unableToSubmitJobCount++;
                 // LOGGER.debug("unable to submit cloudlet. Status remains " +
                 // cloudlet.getStatus());
                 continue;
@@ -327,10 +323,6 @@ public class CloudSimProxy {
 
         if (!jobsToSubmit.isEmpty()) {
             submitCloudletsList(jobsToSubmit);
-        }
-
-        if (this.unableToSubmitJobCount > 0) {
-            LOGGER.debug("Unable to submit {} jobs: no vm available", this.unableToSubmitJobCount);
         }
     }
 
@@ -360,7 +352,7 @@ public class CloudSimProxy {
     }
 
     public int getLastCreatedVmId() {
-        return nextVmId - 1;
+        return vmsCreated - 1;
     }
 
     public long getAllocatedCores() {
@@ -401,14 +393,6 @@ public class CloudSimProxy {
         return jobsFinishedWaitTimeLastTimestep;
     }
 
-    public int getUnableToSubmitJobCount() {
-        return this.unableToSubmitJobCount;
-    }
-
-    public int getTriedToSubmitJobCount() {
-        return this.triedToSubmitJobCount;
-    }
-
     public long getWaitingJobsCountLastTimestep() {
         double start = clock() - settings.getTimestepInterval();
         return inputJobs.parallelStream()
@@ -442,6 +426,18 @@ public class CloudSimProxy {
                 .filter(cloudlet -> cloudlet.getStatus().equals(Cloudlet.Status.INEXEC)).count();
     }
 
+    private long getQueuedJobsCount() {
+        return inputJobs.parallelStream()
+                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
+                .filter(cloudlet -> cloudlet.getStatus().equals(Cloudlet.Status.QUEUED)).count();
+    }
+
+    private long getReadyJobsCount() {
+        return inputJobs.parallelStream()
+                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
+                .filter(cloudlet -> cloudlet.getStatus().equals(Cloudlet.Status.READY)).count();
+    }
+
     public long getFinishedJobsCount() {
         return inputJobs.parallelStream()
                 .filter(cloudlet -> cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)).count();
@@ -472,21 +468,13 @@ public class CloudSimProxy {
 
         if (!host.isSuitableForVm(newVm)) {
             LOGGER.debug("Vm creating ignored, host not suitable");
-            // LOGGER.debug("Host MIPS:" + host.getVmScheduler().getTotalAvailableMips());
             LOGGER.debug("Host Vm List Size: {}", host.getVmList().size());
             LOGGER.debug("Total Vm Exec List Size: {}", broker.getVmExecList().size());
             return false;
         }
 
-        vmCost.addNewVmToList(newVm);
-        nextVmId++;
-
-        // assuming average startup delay is 56s as in 10.48550/arXiv.2107.03467
-        final double delay = settings.getVmStartupDelay();
-        // submissiondelay or vm boot up delay
-        newVm.setSubmissionDelay(delay);
         broker.submitVm(newVm);
-        LOGGER.debug("Requested VM of type: {}, delay: {}", type, delay);
+        LOGGER.debug("Requested VM of type: {} at host {}", type, hostId);
         return true;
     }
 
@@ -527,12 +515,12 @@ public class CloudSimProxy {
                 Stream.concat(execCloudlets.stream(), waitingCloudlets.stream())
                         .collect(Collectors.toList());
 
-        // this internally calls destroyVm
+        // this internally calls Host.destroyVm
         datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
 
         vm.getCloudletScheduler().clear();
 
-        LOGGER.debug("Killing VM {} ({}), cloudlets to reschedule: {}" + vm.getId(), vmSize,
+        LOGGER.info("Killing VM {} ({}), cloudlets to reschedule: {}" + vm.getId(), vmSize,
                 affectedCloudlets.size());
         if (!affectedCloudlets.isEmpty()) {
             rescheduleCloudlets(affectedCloudlets);

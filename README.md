@@ -122,7 +122,7 @@ make run-tensorboard
 To run an experiment, first edit the configuration file located at [rl-manager/mnt/config.yml](https://github.com/tgasla/rl-cloudsimplus/blob/main/rl-manager/mnt/config.yml).
 
 The configuration file contains two sections: the 'common' section and the 'experiment' section. This is because we may run multiple different experiments in parallel.
-- The parameters that all experiments have in common are specified under the common section, and the parameters that are unique among the experiments are defined under the experiment_{id} section
+- The parameters that all experiments have in common are specified under the common section, and those that are unique among the experiments are defined under the experiment_{id} section
   - If a parameter is specified in both the common and experiment sections, the common one is ignored, and the experiment one takes effect.
 - To run multiple experiments in parallel, add as many experiment areas as you want, specifying the corresponding parameters for each experiment.
 - Each experiment should have a unique experiment id, and each section should be written as experiment_{id}. For simplicity, use ids starting by 1 and increment by 1.
@@ -195,10 +195,9 @@ docker system prune [-f | --force]
 
 ## Acknowledgements
 
-This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
+- This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
 
-The code was based on the work done by [pkoperek](https://github.com/pkoperek) in the following projects:
-
-- [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
-- [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
-- [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)
+- The code was based on the work done by [pkoperek](https://github.com/pkoperek) in the following projects:
+  - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
+  - [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
+  - [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)

@@ -46,7 +46,7 @@ public class SimulationFactory {
         int splittedId = 0;
 
         for (CloudletDescriptor cloudletDescriptor : jobs) {
-            int jobPesNumber = cloudletDescriptor.getCoresNumber();
+            int jobPesNumber = cloudletDescriptor.getCores();
             int splitCount = Math.max(1, (jobPesNumber + maxJobPes - 1) / maxJobPes);
             int normalSplitPesNumber = jobPesNumber / splitCount;
             long totalMi = cloudletDescriptor.getMi();
@@ -95,7 +95,7 @@ public class SimulationFactory {
     private CloudletDescriptor ensureMinValues(final CloudletDescriptor cloudletDescriptor) {
         final long mi = Math.max(1, cloudletDescriptor.getMi());
         final long cloudletDelay = Math.max(0, cloudletDescriptor.getSubmissionDelay());
-        final int pesNumber = Math.max(1, cloudletDescriptor.getCoresNumber());
+        final int pesNumber = Math.max(1, cloudletDescriptor.getCores());
 
         return new CloudletDescriptor(cloudletDescriptor.getJobId(), cloudletDelay, mi, pesNumber);
     }

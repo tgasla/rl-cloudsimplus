@@ -22,6 +22,7 @@ public class SimulationSettings {
     private final int initialSVmCount;
     private final int initialMVmCount;
     private final int initialLVmCount;
+    private final int[] initialVmCounts;
     private final boolean splitLargeJobs;
     private final int maxJobPes;
     private final double vmHourlyCost;
@@ -52,6 +53,7 @@ public class SimulationSettings {
         initialSVmCount = (int) params.get("initial_s_vm_count");
         initialMVmCount = (int) params.get("initial_m_vm_count");
         initialLVmCount = (int) params.get("initial_l_vm_count");
+        initialVmCounts = new int[] {initialSVmCount, initialMVmCount, initialLVmCount};
         splitLargeJobs = (boolean) params.get("split_large_jobs");
         maxJobPes = (int) params.get("max_job_pes");
         vmHourlyCost = (double) params.get("vm_hourly_cost");
@@ -107,6 +109,10 @@ public class SimulationSettings {
 
     public int getInitialLVmCount() {
         return initialLVmCount;
+    }
+
+    public int[] getInitialVmCounts() {
+        return initialVmCounts;
     }
 
     public boolean isSplitLargeJobs() {
