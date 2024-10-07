@@ -13,7 +13,6 @@ import org.cloudsimplus.resources.Pe;
 import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicyRandom;
 import org.cloudsimplus.distributions.UniformDistr;
-import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
@@ -47,6 +46,7 @@ public class CloudSimProxy {
     private final Set<Cloudlet> arrivedJobs;
     private List<Double> jobsFinishedWaitTimeLastTimestep;
     private int vmsCreated;
+    private boolean firstStep;
 
     public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
         this.settings = settings;
@@ -59,6 +59,7 @@ public class CloudSimProxy {
         originalSubmissionDelay = new HashMap<>();
         jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
         vmsCreated = 0;
+        firstStep = true;
 
         cloudSimPlus = new CloudSimPlus(settings.getMinTimeBetweenEvents());
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
@@ -84,7 +85,7 @@ public class CloudSimProxy {
         ensureAllJobsCompleteBeforeSimulationEnds();
 
         cloudSimPlus.startSync();
-        runFor(settings.getMinTimeBetweenEvents());
+        // runFor(settings.getMinTimeBetweenEvents());
     }
 
     public int getVmCoreCountByType(final String type) {
@@ -164,8 +165,8 @@ public class CloudSimProxy {
     }
 
     // This function proceeds simulation clock time
-    private void runForInternal(final double interval, final double target) {
-        double adjustedInterval = interval;
+    private void runForInternal(final double target) {
+        double adjustedInterval = target - clock();
         // Run the simulation until the target time is reached
         while (cloudSimPlus.runFor(adjustedInterval) < target) {
             // Calculate the remaining time to the target
@@ -183,8 +184,18 @@ public class CloudSimProxy {
         }
 
         final double target = cloudSimPlus.clock() + interval;
-
         jobsFinishedWaitTimeLastTimestep.clear();
+
+        if (firstStep) {
+            // Run the simulation for the first time to initialize the simulation
+            // Otherwise the datacenter is not created and the vms, jobs cannot be submitted
+            // TODO: Be careful with the RL implementation because the first step's VM creation is
+            // done before this function is called, so it will fail if not treated properly.
+            firstStep = false;
+            LOGGER.info("{}: Running for {} to initialize the simulation", clock(),
+                    settings.getMinTimeBetweenEvents());
+            runForInternal(settings.getMinTimeBetweenEvents());
+        }
 
         int unableToSubmitJobCount = scheduleJobsUntil(target);
         if (unableToSubmitJobCount > 0) {
@@ -193,14 +204,10 @@ public class CloudSimProxy {
             broker.submitVmList(vmList, settings.getVmStartupDelay()); // submit all VMs
         }
 
-        // LOGGER.warn("{} jobs are waiting", getWaitingJobsCount());
-        // LOGGER.warn("{} jobs are ready", getReadyJobsCount());
-        // LOGGER.warn("{} jobs are queued", getQueuedJobsCount());
         if (shouldPrintJobStats()) {
             printJobStats();
         }
-        runForInternal(interval, target);
-
+        runForInternal(target);
 
         // the size of cloudletsCreatedList and vmCreatedList grows to huge numbers
         // as we re-schedule cloudlets when VMs get killed
@@ -303,6 +310,13 @@ public class CloudSimProxy {
                 LOGGER.debug("{}: cloudletWaitTime: {}", clock(), waitTime);
             }
         });
+    }
+
+    private int countArrivedJobs(final double target) {
+        // I should make this a priorityQueue, then i can count from the start of the list because
+        // all jobs are always sorted by submission delay
+        return (int) unsubmittedJobs.parallelStream()
+                .filter(cloudlet -> cloudlet.getSubmissionDelay() <= target).count();
     }
 
     private int scheduleJobsUntil(final double target) {
