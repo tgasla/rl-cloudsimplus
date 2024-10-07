@@ -128,9 +128,11 @@ public class WrappedSimulation {
         }
     }
 
-    public SimulationStepResult step(final int[] action) {
+    public SimulationStepResult step(int[] action) {
         validateSimulationReset();
         this.currentStep++;
+
+        action = new int[] {1, 0, 0, 0};
 
         LOGGER.debug("Step {} starts", this.currentStep);
 
@@ -153,7 +155,7 @@ public class WrappedSimulation {
 
         recordSimulationData(action, rewards);
 
-        LOGGER.debug("Step {} finished", this.currentStep);
+        LOGGER.info("Step {} finished", this.currentStep);
         LOGGER.debug("Terminated: {}, Truncated: {}", terminated, truncated);
         LOGGER.debug("Length of future events queue: {}", cloudSimProxy.getNumberOfFutureEvents());
         if (terminated || truncated) {
@@ -318,7 +320,7 @@ public class WrappedSimulation {
     }
 
     private void updateEpisodeStats() {
-        updateEpWaitingJobsCountMax(cloudSimProxy.getWaitingJobsCount());
+        updateEpWaitingJobsCountMax(cloudSimProxy.getNotYetRunningJobsCount());
         updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
     }
 
@@ -481,7 +483,7 @@ public class WrappedSimulation {
         final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
 
         return arrivedJobsCount > 0
-                ? cloudSimProxy.getWaitingJobsCount() / (double) arrivedJobsCount
+                ? cloudSimProxy.getNotYetRunningJobsCount() / (double) arrivedJobsCount
                 : 0.0;
     }
 
@@ -504,7 +506,7 @@ public class WrappedSimulation {
     /*
      * Function to get a vertical subarray of an array
      */
-    private double[][] getColumns(final double[][] matrix, final int[] columnIndices) {
+    private double[][] getVertSubarray(final double[][] matrix, final int[] columnIndices) {
         int numRows = matrix.length;
         int numCols = columnIndices.length;
         double[][] result = new double[numRows][numCols];
@@ -544,7 +546,7 @@ public class WrappedSimulation {
                 }
             }
         }
-        // System.out.print("@" + clock() + " obsTreeArray in wrappedSimulation: ");
+        // System.out.print(clock() + " obsTreeArray in wrappedSimulation: ");
         // for (int i = 0; i < treeArray.length; i++) {
         // System.out.print(treeArray[i] + " ");
         // }
@@ -560,9 +562,10 @@ public class WrappedSimulation {
 
         final double[] datacenterMetrics = new double[] {metricsStorage.getDatacenterMetrics()[2]};
         final double[][] hostMetrics =
-                getColumns(metricsStorage.getHostMetrics(), new int[] {3, 5, 7, 8});
-        final double[][] vmMetrics = getColumns(metricsStorage.getVmMetrics(), new int[] {5});
-        final double[][] jobMetrics = getColumns(metricsStorage.getJobMetrics(), new int[] {5});
+                getVertSubarray(metricsStorage.getHostMetrics(), new int[] {3, 5, 7, 8});
+        final double[][] vmMetrics = getVertSubarray(metricsStorage.getVmMetrics(), new int[] {5});
+        final double[][] jobMetrics =
+                getVertSubarray(metricsStorage.getJobMetrics(), new int[] {5});
         final double[][] observation = new double[observationArrayRows][observationArrayColumns];
         /*
          * if you want to support 1-10 hosts, then below when assigning new values after loops for
@@ -583,7 +586,6 @@ public class WrappedSimulation {
         }
 
         currentRow = 1 + this.maxHosts;
-
 
         for (int i = 0; i < vmMetrics.length; i++) {
             for (int j = 0; j < vmMetrics[i].length; j++) {

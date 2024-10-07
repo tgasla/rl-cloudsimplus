@@ -17,7 +17,7 @@ common:
     medium_vm_multiplier: 2
     large_vm_multiplier: 4
     paying_for_the_full_hour: false #unused
-    clear_created_cloudlet_list: true
+    clear_created_lists: true
 
 experiment_1:
     mode: train
