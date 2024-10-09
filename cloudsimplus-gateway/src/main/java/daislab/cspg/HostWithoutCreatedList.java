@@ -33,6 +33,7 @@ public class HostWithoutCreatedList extends HostSimple {
 
     @Override
     protected void addVmToCreatedList(final Vm vm) {
-        // do nothing to avoid accumulating vm data
+        // Do nothing to avoid accumulating vm data. You cannot do a Host.getVmCreatedList().clear()
+        // because it is unmodifiable.
     }
 }

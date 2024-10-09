@@ -22,17 +22,70 @@ import org.cloudsimplus.listeners.EventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.IntStream;
+import java.util.PriorityQueue;
 
+/**
+ * The CloudSimProxy class is responsible for managing and simulating cloud computing resources
+ * using the CloudSimPlus framework. It handles the creation and management of virtual machines
+ * (VMs), scheduling of cloudlet jobs, and tracking of job statuses and costs.
+ * 
+ * <p>
+ * The class provides methods to initialize the simulation, submit VMs and jobs, and ensure that all
+ * jobs are completed before the simulation ends. It also includes utility methods for retrieving
+ * statistics about the simulation, such as the number of VMs created, job statuses, and resource
+ * usage.
+ * </p>
+ * 
+ * <p>
+ * Key functionalities include:
+ * <ul>
+ * <li>Initializing the simulation with specified settings and input jobs.</li>
+ * <li>Creating and submitting VMs based on specified types and counts.</li>
+ * <li>Scheduling and managing cloudlet jobs, including adding listeners for job start and finish
+ * events.</li>
+ * <li>Ensuring that all jobs are completed before the simulation ends.</li>
+ * <li>Providing methods to retrieve statistics about the simulation, such as VM and job statuses,
+ * resource usage, and costs.</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>
+ * The class uses various components from the CloudSimPlus framework, including:
+ * <ul>
+ * <li>{@link CloudSimPlus} for managing the simulation clock and events.</li>
+ * <li>{@link Datacenter} for managing hosts and VMs.</li>
+ * <li>{@link DatacenterBrokerFirstFitFixed} for scheduling and managing cloudlet jobs.</li>
+ * <li>{@link VmCost} for tracking and calculating VM costs.</li>
+ * <li>{@link Cloudlet} for representing cloudlet jobs.</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>
+ * Example usage:
+ * 
+ * <pre>
+ * {@code
+ * SimulationSettings settings = new SimulationSettings();
+ * List<Cloudlet> inputJobs = new ArrayList<>();
+ * CloudSimProxy cloudSimProxy = new CloudSimProxy(settings, inputJobs);
+ * cloudSimProxy.runFor(1000);
+ * }
+ * </pre>
+ * </p>
+ * 
+ * @see CloudSimPlus
+ * @see Datacenter
+ * @see DatacenterBrokerFirstFitFixed
+ * @see VmCost
+ * @see Cloudlet
+ */
 public class CloudSimProxy {
     private final Logger LOGGER = LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
     private final SimulationSettings settings;
@@ -40,32 +93,62 @@ public class CloudSimProxy {
     private final Datacenter datacenter;
     private final DatacenterBrokerFirstFitFixed broker;
     private final VmCost vmCost;
-    private final Map<Long, Double> originalSubmissionDelay;
-    private final List<Cloudlet> inputJobs;
-    private final List<Cloudlet> unsubmittedJobs;
-    private final Set<Cloudlet> arrivedJobs;
+    private final List<Cloudlet> inputJobs; // all jobs to keep track of statuses
+    private final PriorityQueue<Cloudlet> jobQueue; // jobs to be scheduled
+    private final Map<Long, Double> jobArrivalTimeMap; // map to keep track of arrival times
     private List<Double> jobsFinishedWaitTimeLastTimestep;
     private int vmsCreated;
     private boolean firstStep;
 
+    /**
+     * Constructs a new CloudSimProxy instance with the specified simulation settings and input
+     * jobs.
+     *
+     * @param settings the simulation settings to be used
+     * @param inputJobs the list of Cloudlet jobs to be processed
+     */
     public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
         this.settings = settings;
         this.inputJobs = new ArrayList<>(inputJobs);
-        this.unsubmittedJobs = new ArrayList<>(inputJobs);
-        // arrivedJobs is Set because we don't care about order, we just need apply .size() to
-        // see how many jobs have arrived (to avoid searching with streams and filtering the
-        // inputJobs list and also we avoid duplicates easily
-        this.arrivedJobs = new HashSet<>();
-        originalSubmissionDelay = new HashMap<>();
-        jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
-        vmsCreated = 0;
-        firstStep = true;
-
+        jobQueue = new PriorityQueue<>(inputJobs.size(),
+                (c1, c2) -> Double.compare(c1.getSubmissionDelay(), c2.getSubmissionDelay()));
+        jobQueue.addAll(inputJobs);
+        jobArrivalTimeMap = jobQueue.stream()
+                .collect(Collectors.toMap(Cloudlet::getId, Cloudlet::getSubmissionDelay));
         cloudSimPlus = new CloudSimPlus(settings.getMinTimeBetweenEvents());
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         datacenter = createDatacenter();
         vmCost = new VmCost(settings);
+        jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
+        vmsCreated = 0;
+        firstStep = true;
 
+        submitInitialVmList();
+        initializeJobListeners();
+        ensureAllJobsCompleteBeforeSimulationEnds();
+        cloudSimPlus.startSync();
+    }
+
+    /**
+     * Retrieves the number of virtual machine (VM) cores based on the specified VM type.
+     *
+     * @param type the type of the VM for which the core count is to be retrieved.
+     * @return the number of VM cores for the specified type, calculated as the product of the small
+     *         VM processing elements (PEs) and the size multiplier for the given type.
+     */
+    public int getVmCoreCountByType(final String type) {
+        return settings.getSmallVmPes() * settings.getSizeMultiplier(type);
+    }
+
+    /**
+     * Submits the initial list of VMs to the broker.
+     * <p>
+     * This method creates an initial list of VMs based on the VM types and counts specified in the
+     * settings. Each VM is assigned a description corresponding to its type. The VMs are then added
+     * to the cost tracking list and submitted to the broker.
+     * </p>
+     */
+    private void submitInitialVmList() {
         List<Vm> initialVmList = new ArrayList<>();
         for (int i = 0; i < settings.VM_TYPES.length; i++) {
             String vmType = settings.VM_TYPES[i];
@@ -75,60 +158,80 @@ public class CloudSimProxy {
         }
         initialVmList.forEach(v -> vmCost.addNewVmToList(v));
         broker.submitVmList(initialVmList);
-
-        Collections.sort(this.inputJobs,
-                (c1, c2) -> Double.compare(c1.getSubmissionDelay(), c2.getSubmissionDelay()));
-        this.inputJobs.forEach(c -> originalSubmissionDelay.put(c.getId(), c.getSubmissionDelay()));
-        this.inputJobs.forEach(c -> addOnStartListener(c));
-        this.inputJobs.forEach(c -> addOnFinishListener(c));
-
-        ensureAllJobsCompleteBeforeSimulationEnds();
-
-        cloudSimPlus.startSync();
-        // runFor(settings.getMinTimeBetweenEvents());
     }
 
-    public int getVmCoreCountByType(final String type) {
-        return settings.getSmallVmPes() * settings.getSizeMultiplier(type);
+    /**
+     * Initializes job listeners for each job in the inputJobs collection. This method adds both
+     * start and finish listeners to each job.
+     */
+    private void initializeJobListeners() {
+        inputJobs.forEach(this::addOnStartListener);
+        inputJobs.forEach(this::addOnFinishListener);
     }
 
-    // this will prevent the simulation from ending
-    // while some jobs have not yet finished running
+    /**
+     * Ensures that all jobs are completed before the simulation ends. This method sets up an event
+     * listener that checks if there are unfinished jobs when there is only one future event left.
+     * If there are unfinished jobs, it sends an empty event to keep the simulation running.
+     */
     private void ensureAllJobsCompleteBeforeSimulationEnds() {
+        double interval = settings.getTimestepInterval();
         cloudSimPlus.addOnEventProcessingListener(info -> {
             if (getNumberOfFutureEvents() == 1 && hasUnfinishedJobs()) {
                 LOGGER.debug("Jobs not finished. Sending empty event to keep simulation running.");
-                sendEmptyEventAt(settings.getTimestepInterval());
+                cloudSimPlus.send(datacenter, datacenter, interval, CloudSimTag.NONE, null);
             }
         });
     }
 
-    private void sendEmptyEventAt(double time) {
-        // We add NONE events to prevent the simulation from ending
-        cloudSimPlus.send(datacenter, datacenter, time, CloudSimTag.NONE, null);
-    }
-
+    /**
+     * Creates a Datacenter with a list of hosts and a random VM allocation policy.
+     * 
+     * @return A new instance of {@link DatacenterSimple} initialized with the created host list and
+     *         a random VM allocation policy.
+     */
     private Datacenter createDatacenter() {
-        List<Host> hostList = new ArrayList<>();
-
-        for (int i = 0; i < settings.getHostsCount(); i++) {
-            List<Pe> peList = createPeList();
-
-            final long hostRam = settings.getHostRam();
-            final long hostBw = settings.getHostBw();
-            final long hostStorage = settings.getHostStorage();
-            Host host = new HostWithoutCreatedList(hostRam, hostBw, hostStorage, peList)
-                    .setRamProvisioner(new ResourceProvisionerSimple())
-                    .setBwProvisioner(new ResourceProvisionerSimple())
-                    .setVmScheduler(new VmSchedulerTimeShared());
-
-            hostList.add(host);
-        }
+        List<Host> hostList = createHostList();
         LOGGER.debug("Creating datacenter");
         return new DatacenterSimple(cloudSimPlus, hostList,
                 new VmAllocationPolicyRandom(new UniformDistr()));
     }
 
+    /**
+     * Creates a list of hosts based on the settings provided.
+     * 
+     * @return A list of {@link Host} objects.
+     * 
+     *         The method initializes a list of hosts with the following properties: - RAM,
+     *         bandwidth, and storage are set according to the settings. - Each host is assigned a
+     *         list of processing elements (PEs) created by the {@code createPeList()} method. -
+     *         Each host is configured with simple resource provisioners for RAM and bandwidth. -
+     *         Each host uses a time-shared VM scheduler.
+     */
+    private List<Host> createHostList() {
+        List<Host> hostList = new ArrayList<>();
+        final long hostRam = settings.getHostRam();
+        final long hostBw = settings.getHostBw();
+        final long hostStorage = settings.getHostStorage();
+
+        for (int i = 0; i < settings.getHostsCount(); i++) {
+            List<Pe> peList = createPeList();
+            Host host = new HostWithoutCreatedList(hostRam, hostBw, hostStorage, peList)
+                    .setRamProvisioner(new ResourceProvisionerSimple())
+                    .setBwProvisioner(new ResourceProvisionerSimple())
+                    .setVmScheduler(new VmSchedulerTimeShared());
+            hostList.add(host);
+        }
+        return hostList;
+    }
+
+    /**
+     * Creates a list of virtual machines (VMs) of a specified type.
+     *
+     * @param vmCount the number of VMs to create
+     * @param type the type of VMs to create
+     * @return a list of created VMs
+     */
     private List<Vm> createVmList(final int vmCount, final String type) {
         List<Vm> vmList = new ArrayList<>(vmCount);
         for (int i = 0; i < vmCount; i++) {
@@ -138,6 +241,19 @@ public class CloudSimProxy {
         return vmList;
     }
 
+    /**
+     * Creates a new virtual machine (VM) based on the specified type.
+     *
+     * @param type the type of the VM to be created, which determines the size multiplier.
+     * @return the newly created VM instance.
+     *
+     *         The VM is configured with the following properties: - Processing elements (PEs) based
+     *         on the size multiplier. - RAM, bandwidth, and storage size based on the size
+     *         multiplier. - An optimized cloudlet scheduler. - A shutdown delay as specified in the
+     *         settings. - A submission delay (startup delay) as specified in the settings.
+     *
+     *         The VM is also added to the VM cost tracking list.
+     */
     private Vm createVm(final String type) {
         int sizeMultiplier = settings.getSizeMultiplier(type);
 
@@ -155,6 +271,12 @@ public class CloudSimProxy {
         return vm;
     }
 
+    /**
+     * Creates a list of Processing Elements (PEs) for a host. Each PE is initialized with a
+     * specified MIPS (Million Instructions Per Second) capacity and a simple PE provisioner.
+     *
+     * @return a list of PEs configured according to the host settings.
+     */
     private List<Pe> createPeList() {
         List<Pe> peList = new ArrayList<>();
         for (int i = 0; i < settings.getHostPes(); i++) {
@@ -165,8 +287,18 @@ public class CloudSimProxy {
     }
 
     // This function proceeds simulation clock time
+    /**
+     * Runs the simulation until the specified target time is reached or the maximum number of
+     * iterations is exceeded. This method ensures that the simulation progresses in intervals until
+     * the target time is met, adjusting the interval as necessary to avoid infinite loops.
+     *
+     * @param target The target simulation time to run until.
+     */
     private void runForInternal(final double target) {
         double adjustedInterval = target - clock();
+        int maxIterations = 1000; // Safety check to prevent infinite loop
+        int iterations = 0;
+
         // Run the simulation until the target time is reached
         while (cloudSimPlus.runFor(adjustedInterval) < target) {
             // Calculate the remaining time to the target
@@ -174,59 +306,121 @@ public class CloudSimProxy {
             // Use the minimum time between events if the remaining time is non-positive
             adjustedInterval =
                     adjustedInterval <= 0 ? settings.getMinTimeBetweenEvents() : adjustedInterval;
+
+            // Increment the iteration counter and break if it exceeds the maximum allowed
+            // iterations
+            if (++iterations >= maxIterations) {
+                LOGGER.warn(
+                        "Exceeded maximum iterations in runForInternal. Breaking the loop to prevent infinite loop.");
+                break;
+            }
         }
     }
 
-    public void runFor(final double interval) {
-        if (!isRunning()) {
-            throw new IllegalStateException(
-                    "The simulation is not running - " + "please reset or create a new one!");
+    /**
+     * Initializes the simulation if it is the first step.
+     * <p>
+     * This method checks if it is the first step of the simulation. If it is, it runs the
+     * simulation for the first time to initialize it. This is necessary because the datacenter is
+     * not created and VMs or jobs cannot be submitted until the simulation is initialized.
+     * </p>
+     * <p>
+     * Note: Be cautious with the RL (Reinforcement Learning) implementation because the VM creation
+     * for the first step is done before this function is called. This may cause failures if not
+     * handled properly.
+     * </p>
+     *
+     * @param target the target time for the simulation step
+     */
+    private void initializeSimulationIfFirstStep(final double target) {
+        if (firstStep) {
+            firstStep = false;
+            LOGGER.info("[{} - {}]: Running for {} to initialize the simulation", clock(), target,
+                    settings.getMinTimeBetweenEvents());
+            runForInternal(settings.getMinTimeBetweenEvents());
         }
+    }
+
+    /**
+     * Runs the simulation for a specified interval.
+     * 
+     * @param interval The time interval to run the simulation for.
+     * 
+     *        This method ensures the simulation is running and initializes it if it's the first
+     *        step. It then retrieves the list of jobs to submit at the current timestep and checks
+     *        if there are any jobs that cannot be submitted. If there are, it creates the necessary
+     *        VMs and submits them.
+     * 
+     *        The method then attempts to submit the jobs, clears any necessary lists, and continues
+     *        running the simulation internally. If job statistics should be printed, it prints
+     *        them.
+     */
+    public void runFor(final double interval) {
+        ensureSimulationIsRunning();
 
         final double target = cloudSimPlus.clock() + interval;
         jobsFinishedWaitTimeLastTimestep.clear();
 
-        if (firstStep) {
-            // Run the simulation for the first time to initialize the simulation
-            // Otherwise the datacenter is not created and the vms, jobs cannot be submitted
-            // TODO: Be careful with the RL implementation because the first step's VM creation is
-            // done before this function is called, so it will fail if not treated properly.
-            firstStep = false;
-            LOGGER.info("{}: Running for {} to initialize the simulation", clock(),
-                    settings.getMinTimeBetweenEvents());
-            runForInternal(settings.getMinTimeBetweenEvents());
-        }
+        initializeSimulationIfFirstStep(target);
 
-        int unableToSubmitJobCount = scheduleJobsUntil(target);
+        List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(target);
+        int unableToSubmitJobCount = getUnableToSubmitJobCount(jobsToSubmitList);
         if (unableToSubmitJobCount > 0) {
-            LOGGER.warn("{}: Unable to submit {} jobs", clock(), unableToSubmitJobCount);
-            List<Vm> vmList = addVmsNeeded(unableToSubmitJobCount);
+            List<Vm> vmList = createVmsNeeded(target, unableToSubmitJobCount);
             broker.submitVmList(vmList, settings.getVmStartupDelay()); // submit all VMs
         }
 
+        tryToSubmitJobs(target, jobsToSubmitList);
+
+        clearListsIfNeeded();
+        runForInternal(target);
         if (shouldPrintJobStats()) {
             printJobStats();
         }
-        runForInternal(target);
+    }
 
-        // the size of cloudletsCreatedList and vmCreatedList grows to huge numbers
-        // as we re-schedule cloudlets when VMs get killed
-        // to avoid OOMing we need to clear that list
-        // it is a safe operation in our environment, because that list is only used in
-        // CloudSimPlus when a VM is being upscaled (we don't do that)
+    /**
+     * Ensures that the simulation is currently running. If the simulation is not running, it throws
+     * an IllegalStateException.
+     *
+     * @throws IllegalStateException if the simulation is not running.
+     */
+    private void ensureSimulationIsRunning() {
+        if (!isRunning()) {
+            throw new IllegalStateException(
+                    "Simulation is not running. Please reset or create a new one!");
+        }
+    }
+
+    /**
+     * Clears the lists of created cloudlets and VMs if needed to prevent OutOfMemoryError (OOM).
+     * The lists can grow to large sizes as cloudlets are re-scheduled when VMs are terminated. This
+     * method checks a setting to determine if the lists should be cleared. It is safe to clear
+     * these lists in the current environment because they are only used in CloudSimPlus when a VM
+     * is being upscaled, which is not performed in this environment.
+     */
+    private void clearListsIfNeeded() {
         if (settings.isClearCreatedLists()) {
             broker.getCloudletCreatedList().clear();
             broker.getVmCreatedList().clear();
         }
-
-        final String startTimeFormat = String.format("%.1f", clock() - interval);
-        LOGGER.debug("{}: runFor [{}-{}]", clock(), startTimeFormat, clock());
     }
 
     private boolean shouldPrintJobStats() {
         return ((int) Math.round(clock()) % 1 == 0) || !isRunning();
     }
 
+    /**
+     * Logs various statistics about the jobs and VMs in the simulation.
+     * <ul>
+     * <li>Total number of VMs created.</li>
+     * <li>Number of VMs currently running.</li>
+     * <li>Total number of jobs.</li>
+     * <li>Count of jobs by their status.</li>
+     * <li>Number of jobs that have arrived.</li>
+     * <li>Number of jobs that have arrived but are not yet running.</li>
+     * </ul>
+     */
     public void printJobStats() {
         LOGGER.info("{}: Vms created in total: {}", clock(), vmsCreated);
         LOGGER.info("{}: Vms running now: {}", clock(), broker.getVmExecList().size());
@@ -243,13 +437,26 @@ public class CloudSimProxy {
         }
 
         LOGGER.info("{}: Jobs arrived: {}", clock(), getArrivedJobsCount());
-        LOGGER.info("{}: Arrived, but not yet running: {}", clock(), getNotYetRunningJobsCount());
+        // LOGGER.info("{}: Arrived, but not yet running: {}", clock(),
+        // getNotYetRunningJobsCount());
     }
 
-    private List<Vm> addVmsNeeded(final int unableToSubmitJobCount) {
+    /**
+     * Creates a list of VMs needed to handle the specified number of jobs that were unable to be
+     * submitted. The method attempts to create the largest VMs first (best fit) by iterating over
+     * the VM types in reverse order. If there are remaining jobs that cannot be handled by the
+     * largest VMs, it creates a smaller VM to handle the remaining jobs.
+     *
+     * @param target The target value associated with the VM creation process.
+     * @param unableToSubmitJobCount The number of jobs that were unable to be submitted and need to
+     *        be handled by new VMs.
+     * @return A list of VMs created to handle the specified number of jobs.
+     */
+    private List<Vm> createVmsNeeded(final double target, final int unableToSubmitJobCount) {
         int vmTypesCount = settings.VM_TYPES.length;
         int jobCount = unableToSubmitJobCount;
         List<Vm> vmList = new ArrayList<>();
+        LOGGER.warn("[{} - {}]: Unable to submit {} jobs", clock(), target, unableToSubmitJobCount);
 
         // Iterate over the VM types array in reverse order and calculate core counts
         // In reverse order because we want to create the largest VMs first (best fit)
@@ -264,6 +471,7 @@ public class CloudSimProxy {
             LOGGER.info("{}: Creating {} {}-core VMs", clock(), howMany, vmCores);
         }
 
+        // If there are still jobs left, create a small VM to handle them
         if (jobCount > 0) {
             String smallVmType = settings.VM_TYPES[0];
             vmList.add(createVm(smallVmType).setDescription(smallVmType));
@@ -273,6 +481,14 @@ public class CloudSimProxy {
         return vmList;
     }
 
+    /**
+     * Checks if any VM (Virtual Machine) in the broker's execution list is suitable for the given
+     * cloudlet.
+     *
+     * @param cloudlet the cloudlet to be checked for suitability against the VMs.
+     * @return {@code true} if there is at least one VM suitable for the cloudlet, {@code false}
+     *         otherwise.
+     */
     private boolean isAnyVmSuitableForCloudlet(Cloudlet cloudlet) {
         List<Vm> vmExecList = getBroker().getVmExecList();
         for (Vm vm : vmExecList) {
@@ -283,6 +499,13 @@ public class CloudSimProxy {
         return false;
     }
 
+    /**
+     * Adds an event listener to the specified Cloudlet that triggers when the Cloudlet starts
+     * running. The listener logs a debug message with the Cloudlet ID, VM ID, and the current
+     * simulation time.
+     *
+     * @param cloudlet the Cloudlet to which the start listener will be added
+     */
     private void addOnStartListener(Cloudlet cloudlet) {
         cloudlet.addOnStartListener(new EventListener<CloudletVmEventInfo>() {
             @Override
@@ -293,6 +516,13 @@ public class CloudSimProxy {
         });
     }
 
+    /**
+     * Adds an on-finish listener to the specified Cloudlet. The listener logs detailed information
+     * about the Cloudlet's execution and calculates the wait time for the Cloudlet upon its
+     * completion.
+     *
+     * @param cloudlet the Cloudlet to which the on-finish listener will be added
+     */
     private void addOnFinishListener(Cloudlet cloudlet) {
         cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
             @Override
@@ -305,58 +535,106 @@ public class CloudSimProxy {
                         + clock() + " with total execution time "
                         + cloudlet.getTotalExecutionTime());
                 final double waitTime =
-                        cloudlet.getStartTime() - originalSubmissionDelay.get(cloudlet.getId());
+                        cloudlet.getStartTime() - jobArrivalTimeMap.get(cloudlet.getId());
                 jobsFinishedWaitTimeLastTimestep.add(waitTime);
                 LOGGER.debug("{}: cloudletWaitTime: {}", clock(), waitTime);
             }
         });
     }
 
-    private int countArrivedJobs(final double target) {
-        // I should make this a priorityQueue, then i can count from the start of the list because
-        // all jobs are always sorted by submission delay
-        return (int) unsubmittedJobs.parallelStream()
-                .filter(cloudlet -> cloudlet.getSubmissionDelay() <= target).count();
+    /**
+     * Retrieves a list of Cloudlets that are ready to be submitted at the current timestep. The
+     * Cloudlets are selected based on their submission delay, which must be less than or equal to
+     * the specified target time.
+     *
+     * @param target The target time up to which Cloudlets should be selected for submission.
+     * @return A list of Cloudlets that are ready to be submitted at the specified target time.
+     */
+    private List<Cloudlet> getJobsToSubmitAtThisTimestep(final double target) {
+        List<Cloudlet> jobsToSubmit =
+                jobQueue.stream().takeWhile(cloudlet -> cloudlet.getSubmissionDelay() <= target)
+                        .collect(Collectors.toList());
+        return jobsToSubmit;
     }
 
-    private int scheduleJobsUntil(final double target) {
-        List<Cloudlet> jobsToSubmit = new ArrayList<>();
+    /**
+     * Counts the number of cloudlets that cannot be submitted due to the lack of suitable VMs.
+     *
+     * @param cloudletList the list of cloudlets to be checked
+     * @return the number of cloudlets that cannot be submitted
+     */
+    private int getUnableToSubmitJobCount(final List<Cloudlet> cloudletList) {
         int unableToSubmitJobCount = 0;
 
-        for (final Iterator<Cloudlet> it = unsubmittedJobs.iterator(); it.hasNext();) {
-            Cloudlet cloudlet = it.next();
-            if (cloudlet.getSubmissionDelay() > target) {
-                continue;
-            }
-
-            // arrivedJobs is a Set, so when jobs already arrived (and in the list) need to be
-            // rescheduled, those jobs are added to the unsubmittedJobs list again for rescheduling
-            // but they will not be added twice in the arrivedJobs Set
-            this.arrivedJobs.add(cloudlet);
-
+        for (Cloudlet cloudlet : cloudletList) {
             // Do not schedule cloudlet if there are no suitable vms to run it
             if (!isAnyVmSuitableForCloudlet(cloudlet)) {
                 unableToSubmitJobCount++;
-                // LOGGER.debug("unable to submit cloudlet. Status remains " +
-                // cloudlet.getStatus());
+            }
+        }
+        return unableToSubmitJobCount;
+    }
+
+    /**
+     * Attempts to submit a list of cloudlets (jobs) to the cloud infrastructure.
+     * 
+     * This method filters the provided list of cloudlets to identify those that can be submitted
+     * based on the suitability of available VMs and the submission delay.
+     * 
+     * @param target The target time for job submission.
+     * @param cloudletList The list of cloudlets to be considered for submission.
+     */
+    private void tryToSubmitJobs(final double target, final List<Cloudlet> cloudletList) {
+        List<Cloudlet> jobsToSubmit = new ArrayList<>();
+
+        for (Cloudlet cloudlet : cloudletList) {
+
+            // Do not schedule cloudlet if there are no suitable vms to run it
+            if (!isAnyVmSuitableForCloudlet(cloudlet)) {
                 continue;
             }
             // here we calculate how much time the job needs to be submitted
             cloudlet.setSubmissionDelay(Math.max(cloudlet.getSubmissionDelay() - clock(), 0));
             jobsToSubmit.add(cloudlet);
-            it.remove();
         }
 
         if (!jobsToSubmit.isEmpty()) {
-            submitCloudletsList(jobsToSubmit);
+            jobQueue.removeAll(jobsToSubmit);
+            submitCloudletList(jobsToSubmit);
         }
-
-        return unableToSubmitJobCount;
     }
 
-    private void submitCloudletsList(final List<Cloudlet> jobsToSubmit) {
-        LOGGER.info("{}: Submitting: {} jobs", clock(), jobsToSubmit.size());
-        broker.submitCloudletList(jobsToSubmit);
+    // private int scheduleJobsUntil(final double target) {
+    // List<Cloudlet> jobsToSubmit = new ArrayList<>();
+    // int unableToSubmitJobCount = 0;
+
+    // for (final Iterator<Cloudlet> it = jobQueue.iterator(); it.hasNext();) {
+    // Cloudlet cloudlet = it.next();
+    // if (cloudlet.getSubmissionDelay() > target) {
+    // continue;
+    // }
+
+    // // Do not schedule cloudlet if there are no suitable vms to run it
+    // if (!isAnyVmSuitableForCloudlet(cloudlet)) {
+    // unableToSubmitJobCount++;
+    // continue;
+    // }
+    // // here we calculate how much time the job needs to be submitted
+    // cloudlet.setSubmissionDelay(Math.max(cloudlet.getSubmissionDelay() - clock(), 0));
+    // jobsToSubmit.add(cloudlet);
+    // it.remove();
+    // }
+
+    // if (!jobsToSubmit.isEmpty()) {
+    // submitCloudletList(jobsToSubmit);
+    // }
+
+    // return unableToSubmitJobCount;
+    // }
+
+    private void submitCloudletList(final List<Cloudlet> cloudlets) {
+        LOGGER.info("{}: Submitting: {} jobs", clock(), cloudlets.size());
+        broker.submitCloudletList(cloudlets);
     }
 
     public boolean isRunning() {
@@ -393,50 +671,51 @@ public class CloudSimProxy {
     }
 
     public long getArrivedJobsCount() {
-        return this.arrivedJobs.size();
+        return jobArrivalTimeMap.entrySet().parallelStream()
+                .filter(entry -> entry.getValue() <= clock()).count();
     }
 
-    public long getArrivedJobsCountLastTimestep() {
-        double start = clock() - settings.getTimestepInterval();
-        return inputJobs.parallelStream()
-                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
-                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) > start).count();
-    }
+    // public long getArrivedJobsCountLastTimestep() {
+    // double start = clock() - settings.getTimestepInterval();
+    // return inputJobs.parallelStream()
+    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) <= clock())
+    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) > start).count();
+    // }
 
     public List<Double> getFinishedJobsWaitTimeLastTimestep() {
         return jobsFinishedWaitTimeLastTimestep;
     }
 
-    public long getScheduledJobsCountLastTimestep() {
-        double start = clock() - settings.getTimestepInterval();
-        return inputJobs.parallelStream()
-                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
-                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) > start)
-                .filter(cloudlet -> (cloudlet.getStatus().equals(Cloudlet.Status.READY)
-                        || cloudlet.getStatus().equals(Cloudlet.Status.QUEUED)
-                        || cloudlet.getStatus().equals(Cloudlet.Status.INEXEC)
-                        || cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)))
-                .count();
-    }
+    // public long getScheduledJobsCountLastTimestep() {
+    // double start = clock() - settings.getTimestepInterval();
+    // return inputJobs.parallelStream()
+    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) <= clock())
+    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) > start)
+    // .filter(cloudlet -> (cloudlet.getStatus().equals(Cloudlet.Status.READY)
+    // || cloudlet.getStatus().equals(Cloudlet.Status.QUEUED)
+    // || cloudlet.getStatus().equals(Cloudlet.Status.INEXEC)
+    // || cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)))
+    // .count();
+    // }
 
     public long getNotYetRunningJobsCount() {
         return inputJobs.parallelStream()
-                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
+                .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) <= clock())
                 .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.INEXEC))
                 .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)).count();
     }
 
-    private long getQueuedJobsCount() {
-        return inputJobs.parallelStream()
-                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
-                .filter(cloudlet -> cloudlet.getStatus().equals(Cloudlet.Status.QUEUED)).count();
-    }
+    // private long getQueuedJobsCount() {
+    // return inputJobs.parallelStream()
+    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) <= clock())
+    // .filter(cloudlet -> cloudlet.getStatus().equals(Cloudlet.Status.QUEUED)).count();
+    // }
 
-    private long getReadyJobsCount() {
-        return inputJobs.parallelStream()
-                .filter(cloudlet -> originalSubmissionDelay.get(cloudlet.getId()) <= clock())
-                .filter(cloudlet -> cloudlet.getStatus().equals(Cloudlet.Status.READY)).count();
-    }
+    // private long getReadyJobsCount() {
+    // return inputJobs.parallelStream()
+    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) <= clock())
+    // .filter(cloudlet -> cloudlet.getStatus().equals(Cloudlet.Status.READY)).count();
+    // }
 
     public long getRunningJobsCount() {
         return inputJobs.parallelStream()
@@ -524,7 +803,8 @@ public class CloudSimProxy {
         // this internally calls Host.destroyVm
         datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
 
-        vm.getCloudletScheduler().clear();
+        // no need to clear it as it will be destroyed
+        // vm.getCloudletScheduler().clear();
 
         LOGGER.info("{} Killing VM {} ({}), cloudlets to reschedule: {}", clock(), vm.getId(),
                 vmSize, affectedCloudlets.size());
@@ -538,7 +818,7 @@ public class CloudSimProxy {
             cloudlet.setSubmissionDelay(0);
         });
 
-        unsubmittedJobs.addAll(affectedCloudlets);
+        jobQueue.addAll(affectedCloudlets);
     }
 
     public CloudSimPlus getSimulation() {
