@@ -89,7 +89,7 @@ Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrap
 `cloudsimplus_gateway/gradlew wrapper --gradle-version 8.6 --distribution-type all`
 -->
 
-## Building the TensorBoard, Gateway and RL Manager images
+## Building the TensorBoard, Gateway, and RL Manager images
 
 ```bash
 make build
