@@ -43,7 +43,7 @@ or you can also try Azul Zulu
 ### 4. Set the JAVA_HOME environment variable to the right path
 
 > [!IMPORTANT]  
-> The exact path may vary (different distro, different arch, etc.).
+> The exact path may vary (different distro, different arch, etc.)
 
 - For Linux
 
