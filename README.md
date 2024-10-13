@@ -150,7 +150,7 @@ make run-cpu-attached
 
 There is also support to run the experiments in CUDA GPUs.
   - You need to have [CUDA](https://developer.nvidia.com/cuda-downloads) and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your system.
-  - Make sure to restart the docker daemon if you just downloaded the cuda-container-toolkit.
+  - Restart the docker daemon if you just downloaded the cuda-container-toolkit.
 
 Run using all available CUDA devices by running the following command:
 
