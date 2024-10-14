@@ -27,7 +27,7 @@
 sudo apt install openjdk-21-jdk openjdk-21-jre
 ```
 
-- For MacOS using [brew](https://brew.sh/)
+- For MacOS, use [brew](https://brew.sh/)
 
 ```bash
 brew install openjdk@21
