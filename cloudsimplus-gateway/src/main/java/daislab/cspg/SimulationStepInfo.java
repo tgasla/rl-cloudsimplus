@@ -13,8 +13,8 @@ public class SimulationStepInfo {
     private final double jobWaitReward;
     private final double runningVmCoresReward;
     private final double unutilizedVmCoresReward;
-    // private final double invalidReward;
-    // private final boolean valid;
+    private final double invalidReward;
+    private final boolean valid;
 
     // Metrics for all entities
     private final double[][] hostMetrics;
@@ -29,13 +29,13 @@ public class SimulationStepInfo {
         this.jobWaitReward = 0;
         this.runningVmCoresReward = 0;
         this.unutilizedVmCoresReward = 0;
-        // this.invalidReward = 0;
+        this.invalidReward = 0;
         this.unutilizedVmCoreRatio = 0;
         this.hostMetrics = new double[1][1];
         this.vmMetrics = new double[1][1];
         this.jobMetrics = new double[1][1];
         this.jobWaitTime = new ArrayList<>();
-        // this.valid = true;
+        this.valid = true;
         // this.dotString = "";
         this.observationTreeArray = new int[1];
     }
@@ -46,13 +46,13 @@ public class SimulationStepInfo {
         this.jobWaitReward = rewards[1];
         this.runningVmCoresReward = rewards[2];
         this.unutilizedVmCoresReward = rewards[3];
-        // this.invalidReward = rewards[4];
+        this.invalidReward = rewards[4];
         this.hostMetrics = timestepMetrics.get(0);
         this.vmMetrics = timestepMetrics.get(1);
         this.jobMetrics = timestepMetrics.get(2);
         this.jobWaitTime = jobWaitTime;
         this.unutilizedVmCoreRatio = unutilizedVmCoreRatio;
-        // this.valid = this.invalidReward == 0 ? true : false;
+        this.valid = this.invalidReward == 0 ? true : false;
         this.observationTreeArray = observationTreeArray;
         // this.dotString = dotString;
     }
@@ -69,13 +69,13 @@ public class SimulationStepInfo {
         return unutilizedVmCoresReward;
     }
 
-    // public double getInvalidReward() {
-    // return invalidReward;
-    // }
+    public double getInvalidReward() {
+        return invalidReward;
+    }
 
-    // public boolean isValid() {
-    // return valid;
-    // }
+    public boolean isValid() {
+        return valid;
+    }
 
     public double[][] getHostMetrics() {
         return hostMetrics;

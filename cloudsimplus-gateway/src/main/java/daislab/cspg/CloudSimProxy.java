@@ -11,6 +11,7 @@ import org.cloudsimplus.provisioners.PeProvisionerSimple;
 import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
 import org.cloudsimplus.resources.PeSimple;
+import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicyRandom;
 import org.cloudsimplus.distributions.UniformDistr;
 import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.IntStream;
@@ -61,6 +63,8 @@ public class CloudSimProxy {
                 .collect(Collectors.toMap(Cloudlet::getId, Cloudlet::getSubmissionDelay));
         cloudSimPlus = new CloudSimPlus(settings.getMinTimeBetweenEvents());
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
+        broker.setShutdownWhenIdle(false);
+        // broker.setVmDestructionDelay(2 * settings.getMinTimeBetweenEvents());
         datacenter = createDatacenter();
         vmCost = new VmCost(settings);
         jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
@@ -71,6 +75,9 @@ public class CloudSimProxy {
         initializeJobListeners();
         ensureAllJobsCompleteBeforeSimulationEnds();
         cloudSimPlus.startSync();
+
+        // initialize the simulation to allow the datacenter to be created
+        proceedClockTo(settings.getMinTimeBetweenEvents());
     }
 
     /**
@@ -137,8 +144,13 @@ public class CloudSimProxy {
     private Datacenter createDatacenter() {
         List<Host> hostList = createHostList();
         LOGGER.debug("Creating datacenter");
-        return new DatacenterSimple(cloudSimPlus, hostList,
-                new VmAllocationPolicyRandom(new UniformDistr()));
+        final VmAllocationPolicy vmAllocationPolicy;
+        if (settings.getVmManagementStrategy().equals("RL")) {
+            vmAllocationPolicy = new VmAllocationPolicyRl();
+        } else {
+            vmAllocationPolicy = new VmAllocationPolicyRandom(new UniformDistr());
+        }
+        return new DatacenterSimple(cloudSimPlus, hostList, vmAllocationPolicy);
     }
 
     /**
@@ -242,6 +254,8 @@ public class CloudSimProxy {
         int maxIterations = 1000; // Safety check to prevent infinite loop
         int iterations = 0;
 
+        LOGGER.info("{}: Proceeding clock to {}", clock(), targetTime);
+
         // Run the simulation until the target time is reached
         while (cloudSimPlus.runFor(adjustedInterval) < targetTime) {
             // Calculate the remaining time to the target
@@ -260,37 +274,14 @@ public class CloudSimProxy {
         }
     }
 
-    /**
-     * Initializes the simulation if it is the first step.
-     * <p>
-     * This method checks if it is the first step of the simulation. If it is, it runs the
-     * simulation for the first time to initialize it. This is necessary because the datacenter is
-     * not created and VMs or jobs cannot be submitted until the simulation is initialized.
-     * </p>
-     * <p>
-     * Note: Be cautious with the RL (Reinforcement Learning) implementation because the VM creation
-     * for the first step is done before this function is called. This may cause failures if not
-     * handled properly.
-     * </p>
-     *
-     */
-    private void initializeSimulationIfFirstStep() {
-        if (firstStep) {
-            final double targetTime = settings.getMinTimeBetweenEvents();
-            firstStep = false;
-            LOGGER.info("{}: Running for {} to initialize the simulation", clock(),
-                    settings.getMinTimeBetweenEvents());
-            proceedClockTo(targetTime);
-        }
-    }
-
-    public void runOneTimestep() {
-        final double targetTime = clock() + settings.getTimestepInterval();
-        ensureSimulationIsRunning();
-
-        initializeSimulationIfFirstStep();
-        jobsFinishedWaitTimeLastTimestep.clear();
+    public boolean executeOnlineAction() {
+        final double targetTime = calculateTargetTime();
         List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
+        // if (jobsToSubmitList.isEmpty()) {
+        // destroyIdleVms();
+        // return true;
+        // }
+
         int coresNeeded = coresNeededToSubmitJobs(jobsToSubmitList);
         int totalFreeVmCores = getTotalFreeVmCores();
         int unableToSubmitJobCount = coresNeeded - totalFreeVmCores;
@@ -298,11 +289,47 @@ public class CloudSimProxy {
             List<Vm> vmList = createVmsNeeded(targetTime, unableToSubmitJobCount);
             broker.submitVmList(vmList, settings.getVmStartupDelay());
         }
+        return true;
+    }
+
+    private double calculateTargetTime() {
+        // if first step we have already done 0.1 and we need to finish the first step at 1
+        // else, just add 1 to the current time
+        final double targetTime;
+        if (firstStep) {
+            targetTime = settings.getTimestepInterval();
+        } else {
+            targetTime = clock() + settings.getTimestepInterval();
+        }
+        return targetTime;
+    }
+
+    public void runOneTimestep() {
+        final double targetTime = calculateTargetTime();
+        ensureSimulationIsRunning();
+        jobsFinishedWaitTimeLastTimestep.clear();
+        List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
         clearListsIfNeeded();
         proceedClockTo(targetTime);
         tryToSubmitJobs(jobsToSubmitList);
         if (shouldPrintStats()) {
             printStats();
+        }
+        if (firstStep) {
+            firstStep = false;
+        }
+        LOGGER.info("VMs running: {}", broker.getVmExecList().size());
+    }
+
+    private void destroyIdleVms() {
+        List<Vm> idleVms = broker.getVmExecList();
+        LOGGER.info("{}: GAMHMENA VMS pou trexoun {}", clock(), idleVms.size());
+        for (Iterator<Vm> it = idleVms.iterator(); it.hasNext();) {
+            Vm vm = it.next();
+            if (vm.getCloudletScheduler().isEmpty()) {
+                // vm.getHost().getDatacenter().getVmAllocationPolicy().deallocateHostForVm(vm);
+                cloudSimPlus.send(datacenter, datacenter, 0, CloudSimTag.VM_DESTROY, vm);
+            }
         }
     }
 
@@ -413,8 +440,7 @@ public class CloudSimProxy {
      * largest VMs, it creates a smaller VM to handle the remaining jobs.
      *
      * @param targetTime The target time to create the VMs.
-     * @param unableToSubmitJobCount The number of jobs that were unable to be submitted and need to
-     *        be handled by new VMs.
+     * @param coresNeeded The number of cores needed to handle the jobs.
      * @return A list of VMs created to handle the specified number of jobs.
      */
     private List<Vm> createVmsNeeded(final double targetTime, final int coresNeeded) {
@@ -490,13 +516,12 @@ public class CloudSimProxy {
         cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
             @Override
             public void update(CloudletVmEventInfo info) {
-                LOGGER.debug(clock() + ": Cloudlet: " + cloudlet.getId()
-                        + " that was running on vm " + cloudlet.getVm().getId() + " (runs "
-                        + cloudlet.getVm().getCloudletScheduler().getCloudletExecList().size()
-                        + " cloudlets) on host " + cloudlet.getVm().getHost() + " (runs "
-                        + cloudlet.getVm().getHost().getVmList().size() + " vms) finished at "
-                        + clock() + " with total execution time "
-                        + cloudlet.getTotalExecutionTime());
+                LOGGER.debug(
+                        "{}: Cloudlet: {} that was running on vm {} (runs {} cloudlets) on host {} (runs {} vms) finished at {} with total execution time {}",
+                        clock(), cloudlet.getId(), cloudlet.getVm().getId(),
+                        cloudlet.getVm().getCloudletScheduler().getCloudletExecList().size(),
+                        cloudlet.getVm().getHost(), cloudlet.getVm().getHost().getVmList().size(),
+                        clock(), cloudlet.getTotalExecutionTime());
                 final double waitTime =
                         cloudlet.getStartTime() - jobArrivalTimeMap.get(cloudlet.getId());
                 jobsFinishedWaitTimeLastTimestep.add(waitTime);
@@ -789,6 +814,7 @@ public class CloudSimProxy {
 
         // this internally calls Host.destroyVm
         datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
+        vmCost.removeVmFromList(vm);
 
         // no need to clear it as it will be destroyed
         // vm.getCloudletScheduler().clear();

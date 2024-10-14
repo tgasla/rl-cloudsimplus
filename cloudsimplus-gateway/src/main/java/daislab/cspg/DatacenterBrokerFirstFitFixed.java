@@ -27,6 +27,17 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         super(simulation);
     }
 
+    private boolean isVmNewlyCreated(final Vm vm) {
+        final double timeNow = getSimulation().clock();
+        final double vmStartTime = vm.getStartTime();
+        // final double minThreshold = getSimulation().getMinTimeBetweenEvents();
+        if (timeNow - vmStartTime < 5) {
+            LOGGER.debug("VM {} is newly created. Ignoring it...", vm.getId());
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public void processEvent(final SimEvent evt) {
         super.processEvent(evt);
@@ -41,9 +52,16 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
 
         if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
             final Cloudlet cloudlet = (Cloudlet) evt.getData();
+            final Vm vm = cloudlet.getVm();
             LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
-                    cloudlet.getId(), cloudlet.getVm().getId());
+                    cloudlet.getId(), vm.getId());
             requestDatacentersToCreateWaitingCloudlets();
+            if (vm.getCloudletScheduler().isEmpty()) {
+                // LOGGER.info("VM {} is empty", vm.getId());
+                getDatacenter(vm).getVmAllocationPolicy().deallocateHostForVm(vm);
+                // schedule(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
+                // send(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
+            }
         }
 
         // Clean the vm created list because over an episode we may create/destroy

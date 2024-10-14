@@ -32,7 +32,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.best_reward = -np.inf
         self.save_best_episode_details = save_best_episode_details
         self.previous_best_episode_num = None
-        # self.isValid = None
+        self.isValid = None
         self.current_episode_num = 0
         self.best_episode_filename_prefix = "best_episode"
 
@@ -53,9 +53,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             "job_wait_reward": self.job_wait_rewards,
             "running_vm_cores_reward": self.running_vm_cores_rewards,
             "unutilized_vm_cores_reward": self.unutilized_vm_cores_rewards,
-            # "invalid_reward": self.invalid_rewards,
+            "invalid_reward": self.invalid_rewards,
             "reward": self.rewards,
-            # "isValid": self.isValid,
+            "isValid": self.isValid,
             "next_obs": self.new_observations,
         }
         return episode_details
@@ -72,9 +72,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.job_wait_rewards = []
         self.running_vm_cores_rewards = []
         self.unutilized_vm_cores_rewards = []
-        # self.invalid_rewards = []
+        self.invalid_rewards = []
         self.unutilized_vm_core_ratio = []
-        # self.isValid = []
+        self.isValid = []
         self.current_episode_length = 0
         self.observation_tree_arrays = []
         # self.episode_dot_strings = []
@@ -103,8 +103,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_vm_cores_rewards.append(
             self.locals["infos"][0]["unutilized_vm_cores_reward"]
         )
-        # self.invalid_rewards.append(self.locals["infos"][0]["invalid_reward"])
-        # self.isValid.append(self.locals["infos"][0]["isValid"])
+        self.invalid_rewards.append(self.locals["infos"][0]["invalid_reward"])
+        self.isValid.append(self.locals["infos"][0]["isValid"])
         self.unutilized_vm_core_ratio.append(
             self.locals["infos"][0]["unutilized_vm_core_ratio"]
         )
@@ -232,9 +232,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             np.sum(self.unutilized_vm_cores_rewards),
             exclude="tensorboard",
         )
-        # self.logger.record(
-        #     "train/ep_inv_rew", np.sum(self.invalid_rewards), exclude="tensorboard"
-        # )
+        self.logger.record(
+            "train/ep_inv_rew", np.sum(self.invalid_rewards), exclude="tensorboard"
+        )
         self.logger.dump()
 
     def _write_observation_tree_arrays_to_file(self) -> None:

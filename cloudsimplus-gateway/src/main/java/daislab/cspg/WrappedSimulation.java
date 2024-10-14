@@ -80,7 +80,6 @@ public class WrappedSimulation {
         LOGGER.info("job count: " + initialJobsDescriptors.size());
 
         resetCurrentStep();
-
         metricsStorage.clear();
 
         List<Cloudlet> cloudlets = initialJobsDescriptors.stream()
@@ -126,15 +125,15 @@ public class WrappedSimulation {
         }
     }
 
-    public SimulationStepResult step(int[] action) {
+    public SimulationStepResult step(final int[] action) {
         validateSimulationReset();
         currentStep++;
 
-        action = new int[] {1, 0, 0, 0};
+        LOGGER.info("Step {} starting", currentStep);
 
-        LOGGER.info("Step {} starts", currentStep);
+        boolean isValid = settings.getVmManagementStrategy().equals("RL") ? executeRlAction(action)
+                : cloudSimProxy.executeOnlineAction();
 
-        // boolean isValid = executeAction(action);
         cloudSimProxy.runOneTimestep();
 
         // Temporarily disabled
@@ -149,7 +148,7 @@ public class WrappedSimulation {
 
         // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
         double[][] observation = getObservation();
-        double[] rewards = calculateReward();
+        double[] rewards = calculateReward(isValid);
 
         recordSimulationData(action, rewards);
 
@@ -157,7 +156,7 @@ public class WrappedSimulation {
         LOGGER.debug("Terminated: {}, Truncated: {}", terminated, truncated);
         LOGGER.debug("Length of future events queue: {}", cloudSimProxy.getNumberOfFutureEvents());
         if (terminated || truncated) {
-            LOGGER.info("Simulation terminated. Jobs finished: {}/{}",
+            LOGGER.info("Simulation ended. Jobs finished: {}/{}",
                     cloudSimProxy.getBroker().getCloudletFinishedList().size(),
                     initialJobsDescriptors.size());
             printAndResetSimulationHistory();
@@ -345,12 +344,12 @@ public class WrappedSimulation {
         simulationHistory.record("jobWaitReward", reward[1]);
         simulationHistory.record("runningVmCoresReward", reward[2]);
         simulationHistory.record("unutilizedVmCoresReward", reward[3]);
-        // simulationHistory.record("invalidReward", reward[4]);
+        simulationHistory.record("invalidReward", reward[4]);
         simulationHistory.record("vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
         // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
     }
 
-    private boolean executeAction(final int[] action) {
+    private boolean executeRlAction(final int[] action) {
 
         final boolean isValid;
 
@@ -607,8 +606,8 @@ public class WrappedSimulation {
         return observation;
     }
 
-    private double[] calculateReward() {
-        double[] rewards = new double[4];
+    private double[] calculateReward(final boolean isValid) {
+        double[] rewards = new double[5];
         /*
          * reward is the negative cost of running the infrastructure minus any penalties from jobs
          * waiting in the queue minus penalty if action was invalid
@@ -617,12 +616,12 @@ public class WrappedSimulation {
         final double jobWaitCoef = settings.getRewardJobWaitCoef();
         final double runningVmCoresCoef = settings.getRewardRunningVmCoresCoef();
         final double unutilizedVmCoresCoef = settings.getRewardUnutilizedVmCoresCoef();
-        // final double invalidCoef = settings.getRewardInvalidCoef();
+        final double invalidCoef = settings.getRewardInvalidCoef();
 
         final double jobWaitReward = -jobWaitCoef * getWaitingJobsRatio();
         final double runningVmCoresReward = -runningVmCoresCoef * getHostCoresAllocatedToVmsRatio();
         final double unutilizedVmCoresReward = -unutilizedVmCoresCoef * getUnutilizedVmCoreRatio();
-        // final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
+        final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
 
         final double totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
 
@@ -630,13 +629,13 @@ public class WrappedSimulation {
         LOGGER.debug("jobWaitReward: " + jobWaitReward);
         LOGGER.debug("runningVmCoresReward: " + runningVmCoresReward);
         LOGGER.debug("unutilizedVmCoresReward: " + unutilizedVmCoresReward);
-        // LOGGER.debug("invalidReward: " + invalidReward);
+        LOGGER.debug("invalidReward: " + invalidReward);
 
         rewards[0] = totalReward;
         rewards[1] = jobWaitReward;
         rewards[2] = runningVmCoresReward;
         rewards[3] = unutilizedVmCoresReward;
-        // rewards[4] = invalidReward;
+        rewards[4] = invalidReward;
 
         // if (!isValid) {
         // LOGGER.debug("Penalty given to the agent because the selected action was not possible");
