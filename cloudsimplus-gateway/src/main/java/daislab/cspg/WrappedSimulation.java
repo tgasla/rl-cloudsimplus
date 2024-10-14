@@ -7,8 +7,6 @@ import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -61,17 +59,17 @@ public class WrappedSimulation {
             final List<CloudletDescriptor> jobs) {
         this.identifier = identifier;
         this.settings = settings;
-        this.initialJobsDescriptors = jobs;
-        this.simulationHistory = new SimulationHistory();
-        this.hostsCount = settings.getHostsCount();
-        this.maxVms = this.maxHosts * settings.getHostPes() / settings.getSmallVmPes();
-        final int maxJobsCount = maxVms * settings.getSmallVmPes() / this.minJobPes;
-        this.observationArrayRows = 1 + maxHosts + maxVms + maxJobsCount;
-        this.observationArrayColumns = 4;
+        initialJobsDescriptors = jobs;
+        simulationHistory = new SimulationHistory();
+        hostsCount = settings.getHostsCount();
+        maxVms = maxHosts * settings.getHostPes() / settings.getSmallVmPes();
+        final int maxJobsCount = maxVms * settings.getSmallVmPes() / minJobPes;
+        observationArrayRows = 1 + maxHosts + maxVms + maxJobsCount;
+        observationArrayColumns = 4;
         // Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
 
-        this.metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
-                vmMetricsCount, jobMetricsCount, this.maxHosts, this.maxVms, maxJobsCount);
+        metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
+                vmMetricsCount, jobMetricsCount, maxHosts, maxVms, maxJobsCount);
 
         LOGGER.info("Creating simulation: {}", identifier);
     }
@@ -130,14 +128,14 @@ public class WrappedSimulation {
 
     public SimulationStepResult step(int[] action) {
         validateSimulationReset();
-        this.currentStep++;
+        currentStep++;
 
         action = new int[] {1, 0, 0, 0};
 
-        LOGGER.debug("Step {} starts", this.currentStep);
+        LOGGER.info("Step {} starts", currentStep);
 
         // boolean isValid = executeAction(action);
-        cloudSimProxy.runFor(settings.getTimestepInterval());
+        cloudSimProxy.runOneTimestep();
 
         // Temporarily disabled
         // final TreeArray treeArray = new TreeArray(getObservationAsTreeArray());
@@ -155,7 +153,7 @@ public class WrappedSimulation {
 
         recordSimulationData(action, rewards);
 
-        LOGGER.info("Step {} finished", this.currentStep);
+        LOGGER.info("Step {} finished", currentStep);
         LOGGER.debug("Terminated: {}, Truncated: {}", terminated, truncated);
         LOGGER.debug("Length of future events queue: {}", cloudSimProxy.getNumberOfFutureEvents());
         if (terminated || truncated) {
@@ -163,7 +161,6 @@ public class WrappedSimulation {
                     cloudSimProxy.getBroker().getCloudletFinishedList().size(),
                     initialJobsDescriptors.size());
             printAndResetSimulationHistory();
-            cloudSimProxy.printJobStats();
         }
 
         updateEpisodeStats();
@@ -503,8 +500,12 @@ public class WrappedSimulation {
     // };
     // }
 
-    /*
-     * Function to get a vertical subarray of an array
+    /**
+     * Extracts a subarray from the given matrix by selecting specific columns.
+     *
+     * @param matrix The original 2D array from which the subarray will be extracted.
+     * @param columnIndices An array of column indices to be included in the subarray.
+     * @return A 2D array containing the selected columns from the original matrix.
      */
     private double[][] getVertSubarray(final double[][] matrix, final int[] columnIndices) {
         int numRows = matrix.length;
@@ -569,7 +570,7 @@ public class WrappedSimulation {
         final double[][] observation = new double[observationArrayRows][observationArrayColumns];
         /*
          * if you want to support 1-10 hosts, then below when assigning new values after loops for
-         * currentRow put this.maxHosts instead of this.hostsCount
+         * currentRow put maxHosts instead of hostsCount
          */
         int currentRow = 0;
 
@@ -585,7 +586,7 @@ public class WrappedSimulation {
             currentRow++;
         }
 
-        currentRow = 1 + this.maxHosts;
+        currentRow = 1 + maxHosts;
 
         for (int i = 0; i < vmMetrics.length; i++) {
             for (int j = 0; j < vmMetrics[i].length; j++) {
@@ -594,7 +595,7 @@ public class WrappedSimulation {
             currentRow++;
         }
 
-        currentRow = 1 + this.maxHosts + this.maxVms;
+        currentRow = 1 + maxHosts + maxVms;
 
         for (int i = 0; i < jobMetrics.length; i++) {
             for (int j = 0; j < jobMetrics[i].length; j++) {
@@ -685,9 +686,5 @@ public class WrappedSimulation {
 
     public double clock() {
         return cloudSimProxy.clock();
-    }
-
-    public void printJobStats() {
-        cloudSimProxy.printJobStats();
     }
 }
