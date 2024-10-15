@@ -282,11 +282,13 @@ public class CloudSimProxy {
         // return true;
         // }
 
-        int coresNeeded = coresNeededToSubmitJobs(jobsToSubmitList);
+        int coresRequired = coresRequiredToSubmitJobs(jobsToSubmitList);
         int totalFreeVmCores = getTotalFreeVmCores();
-        int unableToSubmitJobCount = coresNeeded - totalFreeVmCores;
-        if (unableToSubmitJobCount > 0) {
-            List<Vm> vmList = createVmsNeeded(targetTime, unableToSubmitJobCount);
+        LOGGER.info("{}: Cores required: {}", clock(), coresRequired);
+        LOGGER.info("{}: Total free VM cores: {}", clock(), totalFreeVmCores);
+        int coresToCreate = coresRequired - totalFreeVmCores;
+        if (coresToCreate > 0) {
+            List<Vm> vmList = createVmsNeeded(targetTime, coresToCreate);
             broker.submitVmList(vmList, settings.getVmStartupDelay());
         }
         return true;
@@ -333,7 +335,7 @@ public class CloudSimProxy {
         }
     }
 
-    private int coresNeededToSubmitJobs(List<Cloudlet> jobsToSubmitList) {
+    private int coresRequiredToSubmitJobs(List<Cloudlet> jobsToSubmitList) {
         return (int) jobsToSubmitList.stream().mapToLong(Cloudlet::getPesNumber).sum();
     }
 
@@ -546,9 +548,17 @@ public class CloudSimProxy {
     }
 
     private int getTotalFreeVmCores() {
-        List<Host> hosts = datacenter.getHostList();
-        return (int) hosts.stream().flatMap(host -> host.getVmList().stream())
-                .mapToLong(vm -> vm.getPesNumber() - vm.getFreePesNumber()).sum();
+
+        // return (int) hosts.stream().flatMap(host -> host.getVmList().stream())
+        // .mapToLong(vm -> vm.getPesNumber() - vm.getFreePesNumber()).sum();
+        // List<Vm> waitingVms = broker.getVmWaitingList();
+        // waitingVmFreewaitingVms.stream().mapToLong(vm -> vm.getPesNumber() -
+        // vm.getFreePesNumber()).sum();
+        return (int) Stream
+                .concat(broker.getVmExecList().stream(), broker.getVmWaitingList().stream())
+                .mapToLong(vm -> vm.getExpectedFreePesNumber()).sum()
+                - (int) broker.getCloudletWaitingList().stream().mapToLong(Cloudlet::getPesNumber)
+                        .sum();
     }
 
     // private int getUnableToSubmitJobCount(final List<Cloudlet> cloudletList) {
