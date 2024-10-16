@@ -128,12 +128,7 @@ public class WrappedSimulation {
 
     public SimulationStepResult step(int[] action) {
         validateSimulationReset();
-<<<<<<< HEAD
-        this.currentStep++;
-        action = new int[] {1, 0, 0, 0};
-=======
         currentStep++;
->>>>>>> online-algorithm
 
         LOGGER.info("Step {} starting", currentStep);
 
