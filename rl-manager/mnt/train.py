@@ -32,6 +32,7 @@ def train(hostname, params):
     reward_invalid_coef = params["reward_invalid_coef"]
     max_job_pes = params["max_job_pes"]
     job_trace_filename = params["job_trace_filename"]
+    vm_allocation_policy = params["vm_allocation_policy"]
 
     filename_id = generate_filename(
         algorithm_str=algorithm_str,
@@ -46,6 +47,7 @@ def train(hostname, params):
         job_trace_filename=job_trace_filename,
         max_job_pes=max_job_pes,
         mode="train",
+        vm_allocation_policy=vm_allocation_policy,
         hostname=hostname,
     )
 

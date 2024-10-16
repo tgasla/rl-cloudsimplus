@@ -47,7 +47,7 @@ public class SimulationSettings {
     private final double rewardUnutilizedVmCoresCoef;
     private final double rewardInvalidCoef;
     private final int maxEpisodeLength;
-    private final String vmManagementStrategy;
+    private final String vmAllocationPolicy;
 
     public SimulationSettings(final Map<String, Object> params) {
         timestepInterval = (double) params.get("timestep_interval");
@@ -79,7 +79,7 @@ public class SimulationSettings {
         rewardUnutilizedVmCoresCoef = (double) params.get("reward_unutilized_vm_cores_coef");
         rewardInvalidCoef = (double) params.get("reward_invalid_coef");
         maxEpisodeLength = (int) params.get("max_episode_length");
-        vmManagementStrategy = (String) params.get("vm_management_strategy");
+        vmAllocationPolicy = (String) params.get("vm_allocation_policy");
     }
 
     public String printSettings() {
@@ -97,8 +97,8 @@ public class SimulationSettings {
                 + ",\nrewardJobWaitCoef=" + rewardJobWaitCoef + ",\nrewardRunningVmCoresCoef="
                 + rewardRunningVmCoresCoef + ",\nrewardUnutilizedVmCoresCoef="
                 + rewardUnutilizedVmCoresCoef + ",\nrewardInvalidCoef=" + rewardInvalidCoef
-                + ",\nmaxEpisodeLength=" + maxEpisodeLength + ",\nvmManagementStrategy="
-                + vmManagementStrategy + ",\n}";
+                + ",\nmaxEpisodeLength=" + maxEpisodeLength + ",\nvmAllocationPolicy="
+                + vmAllocationPolicy + ",\n}";
 
     }
 
@@ -230,8 +230,8 @@ public class SimulationSettings {
         return minTimeBetweenEvents;
     }
 
-    public String getVmManagementStrategy() {
-        return vmManagementStrategy;
+    public String getVmAllocationPolicy() {
+        return vmAllocationPolicy;
     }
 
     public int getSizeMultiplier(final String type) {

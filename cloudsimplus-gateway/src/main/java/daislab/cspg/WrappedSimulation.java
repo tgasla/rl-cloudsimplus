@@ -131,7 +131,7 @@ public class WrappedSimulation {
 
         LOGGER.info("Step {} starting", currentStep);
 
-        boolean isValid = settings.getVmManagementStrategy().equals("RL") ? executeRlAction(action)
+        boolean isValid = settings.getVmAllocationPolicy().equals("RL") ? executeRlAction(action)
                 : cloudSimProxy.executeOnlineAction();
 
         cloudSimProxy.runOneTimestep();

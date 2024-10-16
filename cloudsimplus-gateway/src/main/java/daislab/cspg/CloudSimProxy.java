@@ -13,6 +13,10 @@ import org.cloudsimplus.resources.Pe;
 import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicyRandom;
+import org.cloudsimplus.allocationpolicies.VmAllocationPolicyRoundRobin;
+import org.cloudsimplus.allocationpolicies.VmAllocationPolicyBestFit;
+import org.cloudsimplus.allocationpolicies.VmAllocationPolicyFirstFit;
+import org.cloudsimplus.allocationpolicies.VmAllocationPolicySimple;
 import org.cloudsimplus.distributions.UniformDistr;
 import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
 import org.cloudsimplus.vms.Vm;
@@ -136,21 +140,30 @@ public class CloudSimProxy {
     }
 
     /**
-     * Creates a Datacenter with a list of hosts and a random VM allocation policy.
+     * Creates a Datacenter with a list of hosts and a VM allocation policy.
      * 
-     * @return A new instance of {@link DatacenterSimple} initialized with the created host list and
-     *         a random VM allocation policy.
+     * @return a new instance of {@link DatacenterSimple} initialized with the specified hosts and
+     *         VM allocation policy.
      */
     private Datacenter createDatacenter() {
         List<Host> hostList = createHostList();
         LOGGER.debug("Creating datacenter");
-        final VmAllocationPolicy vmAllocationPolicy;
-        if (settings.getVmManagementStrategy().equals("RL")) {
-            vmAllocationPolicy = new VmAllocationPolicyRl();
-        } else {
-            vmAllocationPolicy = new VmAllocationPolicyRandom(new UniformDistr());
-        }
+        final VmAllocationPolicy vmAllocationPolicy = defineVmAllocationPolicy();
+
         return new DatacenterSimple(cloudSimPlus, hostList, vmAllocationPolicy);
+    }
+
+    private VmAllocationPolicy defineVmAllocationPolicy() {
+        return switch (settings.getVmAllocationPolicy()) {
+            case "rl" -> new VmAllocationPolicyRl();
+            case "random" -> new VmAllocationPolicyRandom(new UniformDistr());
+            case "roundrobin" -> new VmAllocationPolicyRoundRobin();
+            case "firstfit" -> new VmAllocationPolicyFirstFit();
+            case "bestfit" -> new VmAllocationPolicyBestFit();
+            case "worstfit" -> new VmAllocationPolicySimple();
+            default -> throw new IllegalArgumentException(
+                    "Unknown VM allocation policy: " + settings.getVmAllocationPolicy());
+        };
     }
 
     /**
@@ -282,14 +295,17 @@ public class CloudSimProxy {
         // return true;
         // }
 
-        int coresRequired = coresRequiredToSubmitJobs(jobsToSubmitList);
+        int totalCoresRequired = coresRequiredToSubmitJobs(jobsToSubmitList);
         int totalFreeVmCores = getTotalFreeVmCores();
-        LOGGER.info("{}: Cores required: {}", clock(), coresRequired);
+        LOGGER.info("{}: Cores required: {}", clock(), totalCoresRequired);
         LOGGER.info("{}: Total free VM cores: {}", clock(), totalFreeVmCores);
-        int coresToCreate = coresRequired - totalFreeVmCores;
-        if (coresToCreate > 0) {
-            List<Vm> vmList = createVmsNeeded(targetTime, coresToCreate);
-            broker.submitVmList(vmList, settings.getVmStartupDelay());
+        int coresNeeded = totalCoresRequired - totalFreeVmCores;
+        if (coresNeeded > 0) {
+            // List<Vm> vmList = createRequiredVms(targetTime, coresNeeded);
+            List<Vm> vmList = createSingleVm(targetTime, coresNeeded);
+            // can also add a submission delay here: settings.getVmStartupDelay()
+            // not needed because it is done in the createVm() function
+            broker.submitVmList(vmList);
         }
         return true;
     }
@@ -325,7 +341,7 @@ public class CloudSimProxy {
 
     private void destroyIdleVms() {
         List<Vm> idleVms = broker.getVmExecList();
-        LOGGER.info("{}: GAMHMENA VMS pou trexoun {}", clock(), idleVms.size());
+        LOGGER.info("{}: Vms running {}", clock(), idleVms.size());
         for (Iterator<Vm> it = idleVms.iterator(); it.hasNext();) {
             Vm vm = it.next();
             if (vm.getCloudletScheduler().isEmpty()) {
@@ -435,6 +451,26 @@ public class CloudSimProxy {
         // getNotYetRunningJobsCount());
     }
 
+    private List<Vm> createSingleVm(final double targetTime, final int coresNeeded) {
+        final int vmTypesCount = settings.VM_TYPES.length;
+        final List<Vm> vmList = new ArrayList<>();
+        final double startTime = targetTime - settings.getTimestepInterval();
+        int vmTypeIndex = vmTypesCount - 1;
+
+        for (int i = 0; i < vmTypesCount; i++) {
+            if (coresNeeded <= getVmCoreCountByType(settings.VM_TYPES[i])) {
+                vmTypeIndex = i;
+                break;
+            }
+        }
+        final String vmType = settings.VM_TYPES[vmTypeIndex];
+        LOGGER.info("[{} - {}]: {} VM cores are needed, will create 1 {} VM", startTime, targetTime,
+                coresNeeded, vmType);
+        vmList.add(createVm(vmType).setDescription(vmType));
+
+        return vmList;
+    }
+
     /**
      * Creates a list of VMs needed to handle the specified number of jobs that were unable to be
      * submitted. The method attempts to create the largest VMs first (best fit) by iterating over
@@ -445,12 +481,12 @@ public class CloudSimProxy {
      * @param coresNeeded The number of cores needed to handle the jobs.
      * @return A list of VMs created to handle the specified number of jobs.
      */
-    private List<Vm> createVmsNeeded(final double targetTime, final int coresNeeded) {
+    private List<Vm> createRequiredVms(final double targetTime, final int coresNeeded) {
         final int vmTypesCount = settings.VM_TYPES.length;
         final List<Vm> vmList = new ArrayList<>();
         final double startTime = targetTime - settings.getTimestepInterval();
         int remainingCoresNeeded = coresNeeded;
-        LOGGER.warn("[{} - {}]: {} VM cores are needed, will create VMs", startTime, targetTime,
+        LOGGER.info("[{} - {}]: {} VM cores are needed, will create VMs", startTime, targetTime,
                 coresNeeded);
 
         // Iterate over the VM types array in reverse order and calculate core counts
@@ -469,7 +505,7 @@ public class CloudSimProxy {
 
         // If there are still cores needed, create a small VM to handle them
         if (remainingCoresNeeded > 0) {
-            String smallVmType = settings.VM_TYPES[0];
+            final String smallVmType = settings.VM_TYPES[0];
             vmList.add(createVm(smallVmType).setDescription(smallVmType));
             LOGGER.info("[{} - {}]: Creating 1 {}-core VM", clock(), targetTime,
                     getVmCoreCountByType(smallVmType));

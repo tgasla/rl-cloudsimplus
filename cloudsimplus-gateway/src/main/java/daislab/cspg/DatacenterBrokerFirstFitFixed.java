@@ -27,17 +27,6 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         super(simulation);
     }
 
-    private boolean isVmNewlyCreated(final Vm vm) {
-        final double timeNow = getSimulation().clock();
-        final double vmStartTime = vm.getStartTime();
-        // final double minThreshold = getSimulation().getMinTimeBetweenEvents();
-        if (timeNow - vmStartTime < 5) {
-            LOGGER.debug("VM {} is newly created. Ignoring it...", vm.getId());
-            return true;
-        }
-        return false;
-    }
-
     @Override
     public void processEvent(final SimEvent evt) {
         super.processEvent(evt);
