@@ -43,7 +43,7 @@ or you can also try Azul Zulu
 ### 4. Set the JAVA_HOME environment variable to the right path
 
 > [!IMPORTANT]  
-> The exact path may vary (different distro, different arch, etc.)
+> The exact path may vary (distro, arch, etc.)
 
 - For Linux
 
@@ -132,7 +132,7 @@ There are three experiment modes: train, transfer, and test. When transfer or te
 
 ## Running an experiment
 
-After you are ready editing the configuration file run the following command to start the experiment(s).
+After editing the configuration file, run the following command to start the experiment(s).
 
 ```bash
 make run-cpu
@@ -140,7 +140,7 @@ make run-cpu
 
 > [!NOTE]
 > This command runs all the docker containers in detached mode
-> If you want to use attached mode try the following command:
+> If you want to use the attached mode try the following command:
 
 ```bash
 make run-cpu-attached
@@ -180,7 +180,7 @@ docker compose run [--build] [-d | --detach] manager
 
 ## Stopping the application
 
-If you want to stop the application and clear all the dangling containers and volumes run the following command:
+If you want to stop the application and clear all the dangling containers and volumes, run the following command:
 
 ```bash
 make stop
@@ -196,7 +196,7 @@ docker system prune [-f | --force]
 
 ## Acknowledgements
 
-- This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework: a full-featured, highly extensible, easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
+This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework, a full-featured, highly extensible, and easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
 
 - The code was based on the work done by [pkoperek](https://github.com/pkoperek) in the following projects:
   - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
