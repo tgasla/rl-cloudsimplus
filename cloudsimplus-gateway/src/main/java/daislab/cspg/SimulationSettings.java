@@ -41,12 +41,13 @@ public class SimulationSettings {
     private final double vmStartupDelay;
     private final double vmShutdownDelay;
     private final boolean payingForTheFullHour;
-    private final boolean clearCreatedCloudletList;
+    private final boolean clearCreatedLists;
     private final double rewardJobWaitCoef;
     private final double rewardRunningVmCoresCoef;
     private final double rewardUnutilizedVmCoresCoef;
     private final double rewardInvalidCoef;
     private final int maxEpisodeLength;
+    private final String vmAllocationPolicy;
 
     public SimulationSettings(final Map<String, Object> params) {
         timestepInterval = (double) params.get("timestep_interval");
@@ -72,12 +73,13 @@ public class SimulationSettings {
         vmStartupDelay = (double) params.get("vm_startup_delay");
         vmShutdownDelay = (double) params.get("vm_shutdown_delay");
         payingForTheFullHour = (boolean) params.get("paying_for_the_full_hour");
-        clearCreatedCloudletList = (boolean) params.get("clear_created_cloudlet_list");
+        clearCreatedLists = (boolean) params.get("clear_created_lists");
         rewardJobWaitCoef = (double) params.get("reward_job_wait_coef");
         rewardRunningVmCoresCoef = (double) params.get("reward_running_vm_cores_coef");
         rewardUnutilizedVmCoresCoef = (double) params.get("reward_unutilized_vm_cores_coef");
         rewardInvalidCoef = (double) params.get("reward_invalid_coef");
         maxEpisodeLength = (int) params.get("max_episode_length");
+        vmAllocationPolicy = (String) params.get("vm_allocation_policy");
     }
 
     public String printSettings() {
@@ -91,12 +93,13 @@ public class SimulationSettings {
                 + ",\nmediumVmMultiplier=" + mediumVmMultiplier + ",\nlargeVmMultiplier="
                 + largeVmMultiplier + ",\nvmStartupDelay=" + vmStartupDelay + ",\nvmShutdownDelay="
                 + vmShutdownDelay + ",\nvmHourlyCost=" + vmHourlyCost + ",\npayingForTheFullHour="
-                + payingForTheFullHour + ",\n" + "clearCreatedCloudletList="
-                + clearCreatedCloudletList + ",\nrewardJobWaitCoef=" + rewardJobWaitCoef
-                + ",\nrewardRunningVmCoresCoef=" + rewardRunningVmCoresCoef
-                + ",\nrewardUnutilizedVmCoresCoef=" + rewardUnutilizedVmCoresCoef
-                + ",\nrewardInvalidCoef=" + rewardInvalidCoef + ",\nmaxEpisodeLength="
-                + maxEpisodeLength + ",\n}";
+                + payingForTheFullHour + ",\n" + "clearCreatedLists=" + clearCreatedLists
+                + ",\nrewardJobWaitCoef=" + rewardJobWaitCoef + ",\nrewardRunningVmCoresCoef="
+                + rewardRunningVmCoresCoef + ",\nrewardUnutilizedVmCoresCoef="
+                + rewardUnutilizedVmCoresCoef + ",\nrewardInvalidCoef=" + rewardInvalidCoef
+                + ",\nmaxEpisodeLength=" + maxEpisodeLength + ",\nvmAllocationPolicy="
+                + vmAllocationPolicy + ",\n}";
+
     }
 
     public int getInitialSVmCount() {
@@ -199,8 +202,8 @@ public class SimulationSettings {
         return payingForTheFullHour;
     }
 
-    public boolean isClearCreatedCloudletList() {
-        return clearCreatedCloudletList;
+    public boolean isClearCreatedLists() {
+        return clearCreatedLists;
     }
 
     public double getRewardJobWaitCoef() {
@@ -225,6 +228,10 @@ public class SimulationSettings {
 
     public double getMinTimeBetweenEvents() {
         return minTimeBetweenEvents;
+    }
+
+    public String getVmAllocationPolicy() {
+        return vmAllocationPolicy;
     }
 
     public int getSizeMultiplier(final String type) {

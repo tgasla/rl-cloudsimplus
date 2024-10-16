@@ -214,9 +214,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.logger.record(
             "train/ep_total_rew", np.sum(self.rewards), exclude="tensorboard"
         )
-        self.logger.record(
-            "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
-        )
+        # self.logger.record(
+        #     "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
+        # )
         self.logger.record(
             "train/ep_job_wait_rew",
             np.sum(self.job_wait_rewards),

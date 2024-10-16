@@ -66,4 +66,8 @@ public class VmCost {
         createdVms.removeAll(toRemove);
         return totalCost;
     }
+
+    public void removeVmFromList(final Vm vm) {
+        createdVms.remove(vm);
+    }
 }

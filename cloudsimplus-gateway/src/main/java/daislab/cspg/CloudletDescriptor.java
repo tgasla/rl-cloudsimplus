@@ -56,7 +56,7 @@ public class CloudletDescriptor {
     @Override
     public String toString() {
         return "CloudletDescriptor{" + "jobId=" + jobId + ", submissionDelay=" + submissionDelay
-                + ", mi=" + mi + ", numberOfCores=" + cores + '}';
+                + ", mi=" + mi + ", cores=" + cores + '}';
     }
 
     public Cloudlet toCloudlet() {

@@ -26,6 +26,7 @@ def test(hostname, params):
     reward_invalid_coef = params["reward_invalid_coef"]
     max_job_pes = params["max_job_pes"]
     train_model_dir = params["train_model_dir"]
+    vm_allocation_policy = params["vm_allocation_policy"]
 
     jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{job_trace_filename}.csv")
 
@@ -60,6 +61,7 @@ def test(hostname, params):
         max_job_pes=max_job_pes,
         train_model_dir=train_model_dir,
         mode="test",
+        vm_allocation_policy=vm_allocation_policy,
         hostname=hostname,
     )
 
@@ -100,9 +102,10 @@ def test(hostname, params):
             current_step += 1
             action, _ = model.predict(obs)
             obs, reward, terminated, truncated, info = env.step(action)
-            print(
-                f"Step: {current_length}, obs: {obs}, reward: {reward}, terminated: {terminated}, truncated: {truncated}, info: {info}"
-            )
+            # print(
+            # f"Step: {current_length}, obs: {obs}, reward: {reward}, terminated: {terminated}, truncated: {truncated}, info: {info}"
+            # )
+            print()
             episode_reward += reward
             done = terminated or truncated
 

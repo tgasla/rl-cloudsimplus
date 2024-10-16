@@ -7,8 +7,6 @@ import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -61,17 +59,17 @@ public class WrappedSimulation {
             final List<CloudletDescriptor> jobs) {
         this.identifier = identifier;
         this.settings = settings;
-        this.initialJobsDescriptors = jobs;
-        this.simulationHistory = new SimulationHistory();
-        this.hostsCount = settings.getHostsCount();
-        this.maxVms = this.maxHosts * settings.getHostPes() / settings.getSmallVmPes();
-        final int maxJobsCount = maxVms * settings.getSmallVmPes() / this.minJobPes;
-        this.observationArrayRows = 1 + maxHosts + maxVms + maxJobsCount;
-        this.observationArrayColumns = 4;
+        initialJobsDescriptors = jobs;
+        simulationHistory = new SimulationHistory();
+        hostsCount = settings.getHostsCount();
+        maxVms = maxHosts * settings.getHostPes() / settings.getSmallVmPes();
+        final int maxJobsCount = maxVms * settings.getSmallVmPes() / minJobPes;
+        observationArrayRows = 1 + maxHosts + maxVms + maxJobsCount;
+        observationArrayColumns = 4;
         // Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
 
-        this.metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
-                vmMetricsCount, jobMetricsCount, this.maxHosts, this.maxVms, maxJobsCount);
+        metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
+                vmMetricsCount, jobMetricsCount, maxHosts, maxVms, maxJobsCount);
 
         LOGGER.info("Creating simulation: {}", identifier);
     }
@@ -82,7 +80,6 @@ public class WrappedSimulation {
         LOGGER.info("job count: " + initialJobsDescriptors.size());
 
         resetCurrentStep();
-
         metricsStorage.clear();
 
         List<Cloudlet> cloudlets = initialJobsDescriptors.stream()
@@ -131,13 +128,19 @@ public class WrappedSimulation {
 
     public SimulationStepResult step(int[] action) {
         validateSimulationReset();
+<<<<<<< HEAD
         this.currentStep++;
         action = new int[] {1, 0, 0, 0};
+=======
+        currentStep++;
+>>>>>>> online-algorithm
 
-        LOGGER.debug("Step {} starts", this.currentStep);
+        LOGGER.info("Step {} starting", currentStep);
 
-        boolean isValid = executeAction(action);
-        cloudSimProxy.runFor(settings.getTimestepInterval());
+        boolean isValid = settings.getVmAllocationPolicy().equals("RL") ? executeRlAction(action)
+                : cloudSimProxy.executeOnlineAction();
+
+        cloudSimProxy.runOneTimestep();
 
         // Temporarily disabled
         // final TreeArray treeArray = new TreeArray(getObservationAsTreeArray());
@@ -156,14 +159,18 @@ public class WrappedSimulation {
 
         recordSimulationData(action, rewards);
 
-        LOGGER.debug("Step {} finished", this.currentStep);
+        LOGGER.info("Step {} finished", currentStep);
         LOGGER.debug("Terminated: {}, Truncated: {}", terminated, truncated);
         LOGGER.debug("Length of future events queue: {}", cloudSimProxy.getNumberOfFutureEvents());
         if (terminated || truncated) {
+            LOGGER.info("Simulation ended. Jobs finished: {}/{}",
+                    cloudSimProxy.getBroker().getCloudletFinishedList().size(),
+                    initialJobsDescriptors.size());
             printAndResetSimulationHistory();
         }
 
         updateEpisodeStats();
+
         printEpisodeStatsDebug(rewards);
 
         SimulationStepInfo info = new SimulationStepInfo(rewards, getCurrentTimestepMetrics(),
@@ -312,12 +319,11 @@ public class WrappedSimulation {
                 + "\n=============================================================="
                 + "\nTimestep statistics:\nJob wait reward: " + reward[1]
                 + "\nRunning VM cores reward: " + reward[2] + "\nUnutilized VM cores reward: "
-                + reward[3] + "\nInvalid reward: " + reward[4]
-                + "\n==============================================================");
+                + reward[3] + "\n==============================================================");
     }
 
     private void updateEpisodeStats() {
-        updateEpWaitingJobsCountMax(cloudSimProxy.getWaitingJobsCount());
+        updateEpWaitingJobsCountMax(cloudSimProxy.getNotYetRunningJobsCount());
         updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
     }
 
@@ -350,7 +356,7 @@ public class WrappedSimulation {
         // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
     }
 
-    private boolean executeAction(final int[] action) {
+    private boolean executeRlAction(final int[] action) {
 
         final boolean isValid;
 
@@ -480,7 +486,7 @@ public class WrappedSimulation {
         final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
 
         return arrivedJobsCount > 0
-                ? cloudSimProxy.getWaitingJobsCount() / (double) arrivedJobsCount
+                ? cloudSimProxy.getNotYetRunningJobsCount() / (double) arrivedJobsCount
                 : 0.0;
     }
 
@@ -500,10 +506,14 @@ public class WrappedSimulation {
     // };
     // }
 
-    /*
-     * Function to get a vertical subarray of an array
+    /**
+     * Extracts a subarray from the given matrix by selecting specific columns.
+     *
+     * @param matrix The original 2D array from which the subarray will be extracted.
+     * @param columnIndices An array of column indices to be included in the subarray.
+     * @return A 2D array containing the selected columns from the original matrix.
      */
-    private double[][] getColumns(final double[][] matrix, final int[] columnIndices) {
+    private double[][] getVertSubarray(final double[][] matrix, final int[] columnIndices) {
         int numRows = matrix.length;
         int numCols = columnIndices.length;
         double[][] result = new double[numRows][numCols];
@@ -543,10 +553,11 @@ public class WrappedSimulation {
                 }
             }
         }
-        // System.out.println("obsTreeArray");
+        // System.out.print(clock() + " obsTreeArray in wrappedSimulation: ");
         // for (int i = 0; i < treeArray.length; i++) {
-        // System.out.println(treeArray[i]);
+        // System.out.print(treeArray[i] + " ");
         // }
+        // System.out.print("\n");
         return treeArray;
     }
 
@@ -558,13 +569,14 @@ public class WrappedSimulation {
 
         final double[] datacenterMetrics = new double[] {metricsStorage.getDatacenterMetrics()[2]};
         final double[][] hostMetrics =
-                getColumns(metricsStorage.getHostMetrics(), new int[] {3, 5, 7, 8});
-        final double[][] vmMetrics = getColumns(metricsStorage.getVmMetrics(), new int[] {5});
-        final double[][] jobMetrics = getColumns(metricsStorage.getJobMetrics(), new int[] {5});
+                getVertSubarray(metricsStorage.getHostMetrics(), new int[] {3, 5, 7, 8});
+        final double[][] vmMetrics = getVertSubarray(metricsStorage.getVmMetrics(), new int[] {5});
+        final double[][] jobMetrics =
+                getVertSubarray(metricsStorage.getJobMetrics(), new int[] {5});
         final double[][] observation = new double[observationArrayRows][observationArrayColumns];
         /*
          * if you want to support 1-10 hosts, then below when assigning new values after loops for
-         * currentRow put this.maxHosts instead of this.hostsCount
+         * currentRow put maxHosts instead of hostsCount
          */
         int currentRow = 0;
 
@@ -580,8 +592,7 @@ public class WrappedSimulation {
             currentRow++;
         }
 
-        currentRow = 1 + this.maxHosts;
-
+        currentRow = 1 + maxHosts;
 
         for (int i = 0; i < vmMetrics.length; i++) {
             for (int j = 0; j < vmMetrics[i].length; j++) {
@@ -590,7 +601,7 @@ public class WrappedSimulation {
             currentRow++;
         }
 
-        currentRow = 1 + this.maxHosts + this.maxVms;
+        currentRow = 1 + maxHosts + maxVms;
 
         for (int i = 0; i < jobMetrics.length; i++) {
             for (int j = 0; j < jobMetrics[i].length; j++) {
@@ -619,8 +630,7 @@ public class WrappedSimulation {
         final double unutilizedVmCoresReward = -unutilizedVmCoresCoef * getUnutilizedVmCoreRatio();
         final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
 
-        final double totalReward =
-                jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
+        final double totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
 
         LOGGER.debug("totalReward: " + totalReward);
         LOGGER.debug("jobWaitReward: " + jobWaitReward);
@@ -634,9 +644,9 @@ public class WrappedSimulation {
         rewards[3] = unutilizedVmCoresReward;
         rewards[4] = invalidReward;
 
-        if (!isValid) {
-            LOGGER.debug("Penalty given to the agent because the selected action was not possible");
-        }
+        // if (!isValid) {
+        // LOGGER.debug("Penalty given to the agent because the selected action was not possible");
+        // }
         return rewards;
     }
 
@@ -682,9 +692,5 @@ public class WrappedSimulation {
 
     public double clock() {
         return cloudSimProxy.clock();
-    }
-
-    public void printJobStats() {
-        cloudSimProxy.printJobStats();
     }
 }

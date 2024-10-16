@@ -38,6 +38,7 @@ def transfer(hostname, params):
     reward_invalid_coef = params["reward_invalid_coef"]
     max_job_pes = params["max_job_pes"]
     train_model_dir = params["train_model_dir"]
+    vm_allocation_policy = params["vm_allocation_policy"]
 
     jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{job_trace_filename}.csv")
 
@@ -55,6 +56,7 @@ def transfer(hostname, params):
         max_job_pes=max_job_pes,
         train_model_dir=train_model_dir,
         mode="transfer",
+        vm_allocation_policy=vm_allocation_policy,
         hostname=hostname,
     )
 

@@ -1,12 +1,11 @@
 package daislab.cspg;
 
-import static org.cloudsimplus.brokers.DatacenterBroker.LOGGER;
 import org.cloudsimplus.brokers.DatacenterBrokerSimple;
-import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.core.CloudSimPlus;
-import org.cloudsimplus.core.CloudSimTag;
 import org.cloudsimplus.core.events.SimEvent;
+import org.cloudsimplus.core.CloudSimTag;
 import org.cloudsimplus.vms.Vm;
+import org.cloudsimplus.cloudlets.Cloudlet;
 
 /**
  * Fixed version of the original class - uses list of currently executable VMs instead of created
@@ -42,10 +41,24 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
 
         if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
             final Cloudlet cloudlet = (Cloudlet) evt.getData();
+            final Vm vm = cloudlet.getVm();
             LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
-                    cloudlet.getId(), cloudlet.getVm().getId());
+                    cloudlet.getId(), vm.getId());
             requestDatacentersToCreateWaitingCloudlets();
+            if (vm.getCloudletScheduler().isEmpty()) {
+                // LOGGER.info("VM {} is empty", vm.getId());
+                getDatacenter(vm).getVmAllocationPolicy().deallocateHostForVm(vm);
+                // schedule(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
+                // send(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
+            }
         }
+
+        // Clean the vm created list because over an episode we may create/destroy
+        // many vms so we do not want to cause OOM.
+        // if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
+        // LOGGER.debug("Cleaning the vmCreatedList");
+        // getVmCreatedList().clear();
+        // }
     }
 
     /*
@@ -132,7 +145,7 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         }
 
         /**
-         * If we delete a VM when in the previous iteration, the lastVmIndex should be updated
+         * If we delete a VM when in the previous iteration, the lastVmIndex should be uupdated
          * properly, otherwise we are going to explode if we don't have the line below :) For
          * example, if we have 10 vms (indeces [0-9]), the lastVmIndex is 9 and then we delete a vm,
          * the lastvmindex will cause an OutOfBoundsException if we call
