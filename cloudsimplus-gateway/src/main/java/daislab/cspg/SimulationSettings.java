@@ -48,6 +48,7 @@ public class SimulationSettings {
     private final double rewardInvalidCoef;
     private final int maxEpisodeLength;
     private final String vmAllocationPolicy;
+    private final boolean stateAsTreeArray;
 
     public SimulationSettings(final Map<String, Object> params) {
         timestepInterval = (double) params.get("timestep_interval");
@@ -80,6 +81,7 @@ public class SimulationSettings {
         rewardInvalidCoef = (double) params.get("reward_invalid_coef");
         maxEpisodeLength = (int) params.get("max_episode_length");
         vmAllocationPolicy = (String) params.get("vm_allocation_policy");
+        stateAsTreeArray = (boolean) params.get("state_as_tree_array");
     }
 
     public String printSettings() {
@@ -98,6 +100,7 @@ public class SimulationSettings {
                 + rewardRunningVmCoresCoef + ",\nrewardUnutilizedVmCoresCoef="
                 + rewardUnutilizedVmCoresCoef + ",\nrewardInvalidCoef=" + rewardInvalidCoef
                 + ",\nmaxEpisodeLength=" + maxEpisodeLength + ",\nvmAllocationPolicy="
+                + vmAllocationPolicy + ",\nstateAsTreeArray= " + stateAsTreeArray
                 + vmAllocationPolicy + ",\n}";
 
     }
@@ -234,15 +237,16 @@ public class SimulationSettings {
         return vmAllocationPolicy;
     }
 
+    public boolean isStateAsTreeArray() {
+        return stateAsTreeArray;
+    }
+
     public int getSizeMultiplier(final String type) {
-        switch (type) {
-            case MEDIUM:
-                return mediumVmMultiplier; // m5a.xlarge
-            case LARGE:
-                return largeVmMultiplier; // m5a.2xlarge
-            case SMALL:
-            default:
-                return 1; // m5a.large
-        }
+        return switch (type) {
+            case MEDIUM -> mediumVmMultiplier; // m5a.xlarge
+            case LARGE -> largeVmMultiplier; // m5a.2xlarge
+            case SMALL -> 1; // m5a.large
+            default -> 1;
+        };
     }
 }

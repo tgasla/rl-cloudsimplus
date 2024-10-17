@@ -26,37 +26,23 @@ def transfer(hostname, params):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    algorithm_str = params["algorithm"]
-    timesteps = params["timesteps"]
-    job_trace_filename = params["job_trace_filename"]
-    host_count = params["host_count"]
-    host_pes = params["host_pes"]
-    host_pe_mips = params["host_pe_mips"]
-    reward_job_wait_coef = params["reward_job_wait_coef"]
-    reward_running_vm_cores_coef = params["reward_running_vm_cores_coef"]
-    reward_unutilized_vm_cores_coef = params["reward_unutilized_vm_cores_coef"]
-    reward_invalid_coef = params["reward_invalid_coef"]
-    max_job_pes = params["max_job_pes"]
-    train_model_dir = params["train_model_dir"]
-    vm_allocation_policy = params["vm_allocation_policy"]
-
-    jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{job_trace_filename}.csv")
+    jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{params["job_trace_filename"]}.csv")
 
     filename_id = generate_filename(
-        algorithm_str=algorithm_str,
-        timesteps=timesteps,
-        hosts=host_count,
-        host_pes=host_pes,
-        host_pe_mips=host_pe_mips,
-        reward_job_wait_coef=reward_job_wait_coef,
-        reward_running_vm_cores_coef=reward_running_vm_cores_coef,
-        reward_unutilized_vm_cores_coef=reward_unutilized_vm_cores_coef,
-        reward_invalid_coef=reward_invalid_coef,
-        job_trace_filename=job_trace_filename,
-        max_job_pes=max_job_pes,
-        train_model_dir=train_model_dir,
+        algorithm_str=params["algorithm"],
+        timesteps=params["timesteps"],
+        hosts=params["host_count"],
+        host_pes=params["host_pes"],
+        host_pe_mips=params["host_pe_mips"],
+        reward_job_wait_coef=params["reward_job_wait_coef"],
+        reward_running_vm_cores_coef=params["reward_running_vm_cores_coef"],
+        reward_unutilized_vm_cores_coef=params["reward_unutilized_vm_cores_coef"],
+        reward_invalid_coef=params["reward_invalid_coef"],
+        job_trace_filename=params["job_trace_filename"],
+        max_job_pes=params["max_job_pes"],
+        train_model_dir=params["train_model_dir"],
         mode="transfer",
-        vm_allocation_policy=vm_allocation_policy,
+        vm_allocation_policy=params["vm_allocation_policy"],
         hostname=hostname,
     )
 
@@ -64,15 +50,17 @@ def transfer(hostname, params):
 
     best_model_path = os.path.join(
         base_log_dir,
-        f"{train_model_dir}",
+        f"{params["train_model_dir"]}",
         "best_model",
     )
 
     # Select the appropriate algorithm
-    if hasattr(sb3, algorithm_str):
-        algorithm = getattr(sb3, algorithm_str)
+    if hasattr(sb3, params["algorithm"]):
+        algorithm = getattr(sb3, params["algorithm"])
     else:
-        raise AttributeError(f"Algorithm '{algorithm_str}' not found in sb3 module.")
+        raise AttributeError(
+            f"Algorithm '{params["algorithm"]}' not found in sb3 module."
+        )
 
     log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
@@ -85,7 +73,7 @@ def transfer(hostname, params):
     menv = Monitor(env, log_dir)
 
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
-    if algorithm_str == "A2C":
+    if params["algorithm"] == "A2C":
         device = "cpu"
         venv = SubprocVecEnv([lambda: menv], start_method="fork")
     else:
@@ -106,13 +94,13 @@ def transfer(hostname, params):
     if hasattr(model, "replay_buffer"):
         best_replay_buffer_path = os.path.join(
             "logs",
-            f"{train_model_dir}",
+            f"{params["train_model_dir"]}",
             "best_model_replay_buffer",
         )
         model.load_replay_buffer(best_replay_buffer_path)
 
     # Set the learning rate to a small initial value
-    model.learning_rate = learning_rate_dict.get(algorithm_str)
+    model.learning_rate = learning_rate_dict.get(params["algorithm"])
 
     callback = SaveOnBestTrainingRewardCallback(
         log_dir=log_dir,
@@ -120,7 +108,7 @@ def transfer(hostname, params):
 
     # Retrain the agent initializing the weights from the saved agent
     model.learn(
-        total_timesteps=int(timesteps),
+        total_timesteps=int(params["timesteps"]),
         # The right thing to do is to set reset_num_timesteps=True
         # This way, the learning restarts
         # The only problem is that tensorboard recognizes

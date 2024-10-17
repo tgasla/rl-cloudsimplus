@@ -46,6 +46,7 @@ class SingleDC(gym.Env):
 
         self.gateway = JavaGateway(gateway_parameters=self.parameters)
         self.simulation_environment = self.gateway.entry_point
+        self.is_state_as_tree_array = params["is_state_as_tree_array"]
 
         # host_count = params["host_count"]
         host_pes = params["host_pes"]
@@ -120,7 +121,11 @@ class SingleDC(gym.Env):
             seed = 0
         result = self.simulation_environment.reset(self.simulation_id, seed)
 
-        raw_obs = result.getObs()
+        if self.is_state_as_tree_array:
+            raw_obs = result.getObservationTreeArray()
+        else:
+            raw_obs = result.getObservationMatrix()
+
         obs = self._to_nparray(raw_obs)
         padded_obs = np.resize(obs, self.observation_length)
         padded_obs[len(obs) :] = 0
@@ -145,7 +150,12 @@ class SingleDC(gym.Env):
         raw_info = result.getInfo()
         terminated = result.isTerminated()
         truncated = result.isTruncated()
-        raw_obs = result.getObs()
+
+        if self.is_state_as_tree_array:
+            raw_obs = result.getObservationTreeArray()
+        else:
+            raw_obs = result.getObservationMatrix()
+
         obs = self._to_nparray(raw_obs)
         padded_obs = np.resize(obs, self.observation_length)
         padded_obs[len(obs) :] = 0

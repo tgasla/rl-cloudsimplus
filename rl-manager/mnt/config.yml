@@ -10,9 +10,9 @@ common:
     vm_shutdown_delay: 0.0
     medium_vm_multiplier: 2
     large_vm_multiplier: 4
+    state_as_tree_array: true
     split_large_jobs: true
     clear_created_lists: true
-    vm_hourly_cost: 0.086 #unused
     host_ram: 65536
     host_storage: 100000
     host_bw: 50000
@@ -20,6 +20,7 @@ common:
     small_vm_storage: 4000
     small_vm_bw: 1000
     paying_for_the_full_hour: false
+    vm_hourly_cost: 0.086 #unused
 
 experiment_1:
     mode: train

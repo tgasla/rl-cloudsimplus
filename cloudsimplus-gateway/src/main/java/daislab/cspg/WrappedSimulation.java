@@ -80,18 +80,23 @@ public class WrappedSimulation {
         LOGGER.info("job count: " + initialJobsDescriptors.size());
 
         resetCurrentStep();
+        resetEpisodeStats();
         metricsStorage.clear();
+        simulationHistory.reset();
 
         List<Cloudlet> cloudlets = initialJobsDescriptors.stream()
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
-        // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
-        // double[][] obs = getObservation();
-        int[] observation = getObservationAsTreeArray();
-        resetEpisodeStats();
         SimulationStepInfo info = new SimulationStepInfo();
 
+        // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
+        if (settings.isStateAsTreeArray()) {
+            int[] observation = getObservationAsTreeArray();
+            return new SimulationResetResult(observation, info);
+        }
+
+        double[][] observation = getObservationAsMatrix();
         return new SimulationResetResult(observation, info);
     }
 
@@ -147,9 +152,6 @@ public class WrappedSimulation {
         boolean terminated = !cloudSimProxy.isRunning();
         boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
 
-        // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
-        // double[][] observation = getObservation();
-        int[] observation = getObservationAsTreeArray();
         double[] rewards = calculateReward(isValid);
 
         recordSimulationData(action, rewards);
@@ -161,7 +163,7 @@ public class WrappedSimulation {
             LOGGER.info("Simulation ended. Jobs finished: {}/{}",
                     cloudSimProxy.getBroker().getCloudletFinishedList().size(),
                     initialJobsDescriptors.size());
-            printAndResetSimulationHistory();
+            simulationHistory.logHistory();
         }
 
         updateEpisodeStats();
@@ -172,6 +174,12 @@ public class WrappedSimulation {
                 cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
                 getObservationAsTreeArray());
 
+        if (settings.isStateAsTreeArray()) {
+            int[] observation = getObservationAsTreeArray();
+            return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
+        }
+
+        double[][] observation = getObservationAsMatrix();
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
     }
 
@@ -212,11 +220,6 @@ public class WrappedSimulation {
         Long runningVmCores = vmList.parallelStream().map(Vm::getPesNumber).reduce(0L, Long::sum);
 
         return runningVmCores;
-    }
-
-    private void printAndResetSimulationHistory() {
-        simulationHistory.logHistory();
-        simulationHistory.reset();
     }
 
     private Long getRunningVmsCount() {
@@ -556,7 +559,7 @@ public class WrappedSimulation {
         return treeArray;
     }
 
-    private double[][] getObservation() {
+    private double[][] getObservationAsMatrix() {
         // here we get some vertical subarrays of the metrics. The whole array of metrics are only
         // used to pass the info to python and print to csv files then.
         // Vertical because rows in the arrays represent the hosts, vms, jobs etc. So, we take a

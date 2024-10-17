@@ -7,8 +7,8 @@ import java.util.Arrays;
  */
 public class SimulationStepResult {
 
-    // private final double[][] obs;
-    private final int[] obs;
+    private final double[][] observationMatrix;
+    private final int[] observationTreeArray;
     private final double reward;
     private final boolean terminated;
     private final boolean truncated;
@@ -16,15 +16,30 @@ public class SimulationStepResult {
 
     public SimulationStepResult(final int[] obs, final double reward, final boolean terminated,
             final boolean truncated, final SimulationStepInfo info) {
-        this.obs = obs;
+        this.observationTreeArray = obs;
         this.reward = reward;
         this.terminated = terminated;
         this.truncated = truncated;
         this.info = info;
+        this.observationMatrix = null;
     }
 
-    public int[] getObs() {
-        return obs;
+    public SimulationStepResult(final double[][] obs, final double reward, final boolean terminated,
+            final boolean truncated, final SimulationStepInfo info) {
+        this.observationMatrix = obs;
+        this.reward = reward;
+        this.terminated = terminated;
+        this.truncated = truncated;
+        this.info = info;
+        this.observationTreeArray = null;
+    }
+
+    public int[] getObservationTreeArray() {
+        return observationTreeArray;
+    }
+
+    public double[][] getObservationMatrix() {
+        return observationMatrix;
     }
 
     public double getReward() {
@@ -45,8 +60,9 @@ public class SimulationStepResult {
 
     @Override
     public String toString() {
-        return "SimulationStepResult{" + ", obs=" + Arrays.toString(obs) + ", reward=" + reward
-                + ", terminated=" + terminated + ", truncated=" + truncated + ", info="
+        return "SimulationStepResult{" + ", observationMatrix=" + Arrays.toString(observationMatrix)
+                + ", observationTreeArray=" + Arrays.toString(observationTreeArray) + ", reward="
+                + reward + ", terminated=" + terminated + ", truncated=" + truncated + ", info="
                 + info.toString() + '}';
     }
 }
