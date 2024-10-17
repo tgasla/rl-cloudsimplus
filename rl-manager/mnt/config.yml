@@ -1,24 +1,25 @@
 # train_model_dir: applicable only if mode == [transfer|test]
 # vm_allocation_policy: [random, roundrobin, worstfit, bestfit, firstfit]
 common:
+    timestep_interval: 1.0
     initial_s_vm_count: 0
     initial_m_vm_count: 0
     initial_l_vm_count: 0
-    timestep_interval: 1.0
-    split_large_jobs: true
-    vm_hourly_cost: 0.086 #unused
-    host_ram: 65536 #unused
-    host_storage: 100000 #unused
-    host_bw: 50000 #unused
-    small_vm_ram: 8192 #unused
-    small_vm_storage: 4000 #unused
-    small_vm_bw: 1000 #unused
+    max_episode_length: 100
     vm_startup_delay: 0.0
     vm_shutdown_delay: 0.0
     medium_vm_multiplier: 2
     large_vm_multiplier: 4
-    paying_for_the_full_hour: false #unused
+    split_large_jobs: true
     clear_created_lists: true
+    vm_hourly_cost: 0.086 #unused
+    host_ram: 65536
+    host_storage: 100000
+    host_bw: 50000
+    small_vm_ram: 8192 
+    small_vm_storage: 4000
+    small_vm_bw: 1000
+    paying_for_the_full_hour: false
 
 experiment_1:
     mode: train
@@ -31,7 +32,6 @@ experiment_1:
     small_vm_pes: 2
     job_trace_filename: three_peaks_max30
     timesteps: 1000000
-    max_episode_length: 100
     reward_job_wait_coef: 0.33
     reward_running_vm_cores_coef: 0.33
     reward_unutilized_vm_cores_coef: 0.33
@@ -49,7 +49,6 @@ experiment_2:
     small_vm_pes: 2
     job_trace_filename: three_peaks_max30
     timesteps: 1000000
-    max_episode_length: 100
     reward_job_wait_coef: 0.33
     reward_running_vm_cores_coef: 0.33
     reward_unutilized_vm_cores_coef: 0.33
@@ -66,7 +65,6 @@ experiment_3:
     small_vm_pes: 2
     job_trace_filename: three_peaks_max30
     timesteps: 1000000
-    max_episode_length: 100
     reward_job_wait_coef: 0.33
     reward_running_vm_cores_coef: 0.33
     reward_unutilized_vm_cores_coef: 0.33
@@ -83,7 +81,6 @@ experiment_4:
     small_vm_pes: 2
     job_trace_filename: three_peaks_max30
     timesteps: 1000000
-    max_episode_length: 100
     reward_job_wait_coef: 0.33
     reward_running_vm_cores_coef: 0.33
     reward_unutilized_vm_cores_coef: 0.33
@@ -100,7 +97,6 @@ experiment_5:
     small_vm_pes: 2
     job_trace_filename: three_peaks_max30
     timesteps: 1000000
-    max_episode_length: 100
     reward_job_wait_coef: 0.33
     reward_running_vm_cores_coef: 0.33
     reward_unutilized_vm_cores_coef: 0.33
@@ -117,7 +113,6 @@ experiment_6:
     small_vm_pes: 2
     job_trace_filename: three_peaks_max30
     timesteps: 1000000
-    max_episode_length: 100
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
