@@ -15,6 +15,7 @@ def generate_filename(
     reward_invalid_coef=None,
     train_model_dir=None,
     mode=None,
+    vm_allocation_policy=None,
     hostname=None,
 ):
     if train_model_dir is None:
@@ -32,6 +33,7 @@ def generate_filename(
             f"_{reward_unutilized_vm_cores_coef}U"
             f"_{reward_invalid_coef}I"
             f"_{mode}"
+            f"_{vm_allocation_policy}"
             f"_{hostname}"
         )
     else:
@@ -49,6 +51,7 @@ def generate_filename(
             f"_{reward_unutilized_vm_cores_coef}U"
             f"_{reward_invalid_coef}I"
             f"_{mode}"
+            f"_{vm_allocation_policy}"
             f"_{hostname}"
         )
     return filename_id

@@ -1,88 +1,120 @@
 # train_model_dir: applicable only if mode == [transfer|test]
+# vm_allocation_policy: [random, roundrobin, worstfit, bestfit, firstfit]
 common:
+    timestep_interval: 1.0
     initial_s_vm_count: 0
     initial_m_vm_count: 0
     initial_l_vm_count: 0
-    timestep_interval: 1.0
-    split_large_jobs: true
-    vm_hourly_cost: 0.086 #unused
-    host_ram: 65536 #unused
-    host_storage: 100000 #unused
-    host_bw: 50000 #unused
-    small_vm_ram: 8192 #unused
-    small_vm_storage: 4000 #unused
-    small_vm_bw: 1000 #unused
+    max_episode_length: 100
     vm_startup_delay: 0.0
     vm_shutdown_delay: 0.0
     medium_vm_multiplier: 2
     large_vm_multiplier: 4
+    split_large_jobs: true
+    clear_created_lists: true
+    host_ram: 65536
+    host_storage: 100000
+    host_bw: 50000
+    small_vm_ram: 8192 
+    small_vm_storage: 4000
+    small_vm_bw: 1000
     paying_for_the_full_hour: false
-    clear_created_cloudlet_list: true
+    vm_hourly_cost: 0.086 #unused
 
 experiment_1:
-    mode: transfer
-    host_count: 8
+    state_as_tree_array: false
+    mode: train
+    vm_allocation_policy: rl
+    algorithm: PPO
+    host_count: 10
     host_pes: 10
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
     job_trace_filename: three_peaks_max30
-    algorithm: PPO
     timesteps: 1000000
-    max_episode_length: 100
-    reward_job_wait_coef: 0.25
-    reward_running_vm_cores_coef: 0.25
-    reward_unutilized_vm_cores_coef: 0.25
-    reward_invalid_coef: 0.25
-    train_model_dir: 240918-185051_PPO_2M_10H_10P_10M_three_peaks_max30_1MJC_0.25Q_0.25R_0.25U_0.25I_train_1fdff7236cd4
+    reward_job_wait_coef: 0.33
+    reward_running_vm_cores_coef: 0.33
+    reward_unutilized_vm_cores_coef: 0.33
+    reward_invalid_coef: 0.33
+    # train_model_dir: 240918-185051_PPO_2M_10H_10P_10M_three_peaks_max30_1MJC_0.25Q_0.25R_0.25U_0.25I_train_1fdff7236cd4
 
-experiment_2:
-    mode: transfer
-    host_count: 8
-    host_pes: 10
-    host_pe_mips: 10
-    max_job_pes: 1
-    small_vm_pes: 2
-    job_trace_filename: two_peaks_max30
-    algorithm: PPO
-    timesteps: 1000000
-    max_episode_length: 100
-    reward_job_wait_coef: 0.25
-    reward_running_vm_cores_coef: 0.25
-    reward_unutilized_vm_cores_coef: 0.25
-    reward_invalid_coef: 0.25
-    train_model_dir: 240918-185051_PPO_2M_10H_10P_10M_two_peaks_max30_1MJC_0.25Q_0.25R_0.25U_0.25I_train_29aac5b398f6
+# experiment_2:
+#     mode: train
+#     vm_allocation_policy: bestfit
+#     algorithm: PPO
+#     host_count: 10
+#     host_pes: 10
+#     host_pe_mips: 10
+#     max_job_pes: 1
+#     small_vm_pes: 2
+#     job_trace_filename: three_peaks_max30
+#     timesteps: 1000000
+#     reward_job_wait_coef: 0.33
+#     reward_running_vm_cores_coef: 0.33
+#     reward_unutilized_vm_cores_coef: 0.33
+#     reward_invalid_coef: 0.33
 
-experiment_3:
-    mode: transfer
-    host_count: 5
-    host_pes: 10
-    host_pe_mips: 10
-    max_job_pes: 1
-    small_vm_pes: 2
-    job_trace_filename: three_peaks_max30
-    algorithm: PPO
-    timesteps: 1000000
-    max_episode_length: 100
-    reward_job_wait_coef: 0.25
-    reward_running_vm_cores_coef: 0.25
-    reward_unutilized_vm_cores_coef: 0.25
-    reward_invalid_coef: 0.25
-    train_model_dir: 240918-185051_PPO_2M_10H_10P_10M_three_peaks_max30_1MJC_0.25Q_0.25R_0.25U_0.25I_train_1fdff7236cd4
+# experiment_3:
+#     mode: train
+#     vm_allocation_policy: worstfit
+#     algorithm: PPO
+#     host_count: 10
+#     host_pes: 10
+#     host_pe_mips: 10
+#     max_job_pes: 1
+#     small_vm_pes: 2
+#     job_trace_filename: three_peaks_max30
+#     timesteps: 1000000
+#     reward_job_wait_coef: 0.33
+#     reward_running_vm_cores_coef: 0.33
+#     reward_unutilized_vm_cores_coef: 0.33
+#     reward_invalid_coef: 0.33
 
-experiment_4:
-    mode: transfer
-    host_count: 5
-    host_pes: 10
-    host_pe_mips: 10
-    max_job_pes: 1
-    small_vm_pes: 2
-    job_trace_filename: two_peaks_max30
-    algorithm: PPO
-    timesteps: 1000000
-    max_episode_length: 100
-    reward_job_wait_coef: 0.25
-    reward_running_vm_cores_coef: 0.25
-    reward_unutilized_vm_cores_coef: 0.25
-    reward_invalid_coef: 0.25
-    train_model_dir: 240918-185051_PPO_2M_10H_10P_10M_two_peaks_max30_1MJC_0.25Q_0.25R_0.25U_0.25I_train_29aac5b398f6
+# experiment_4:
+#     mode: train
+#     vm_allocation_policy: firstfit
+#     algorithm: PPO
+#     host_count: 10
+#     host_pes: 10
+#     host_pe_mips: 10
+#     max_job_pes: 1
+#     small_vm_pes: 2
+#     job_trace_filename: three_peaks_max30
+#     timesteps: 1000000
+#     reward_job_wait_coef: 0.33
+#     reward_running_vm_cores_coef: 0.33
+#     reward_unutilized_vm_cores_coef: 0.33
+#     reward_invalid_coef: 0.33
+
+# experiment_5:
+#     mode: train
+#     vm_allocation_policy: roundrobin
+#     algorithm: PPO
+#     host_count: 10
+#     host_pes: 10
+#     host_pe_mips: 10
+#     max_job_pes: 1
+#     small_vm_pes: 2
+#     job_trace_filename: three_peaks_max30
+#     timesteps: 1000000
+#     reward_job_wait_coef: 0.33
+#     reward_running_vm_cores_coef: 0.33
+#     reward_unutilized_vm_cores_coef: 0.33
+#     reward_invalid_coef: 0.33
+
+# experiment_6:
+#     mode: train
+#     vm_allocation_policy: rl
+#     algorithm: PPO
+#     host_count: 10
+#     host_pes: 10
+#     host_pe_mips: 10
+#     max_job_pes: 1
+#     small_vm_pes: 2
+#     job_trace_filename: three_peaks_max30
+#     timesteps: 1000000
+#     reward_job_wait_coef: 0.25
+#     reward_running_vm_cores_coef: 0.25
+#     reward_unutilized_vm_cores_coef: 0.25
+#     reward_invalid_coef: 0.25

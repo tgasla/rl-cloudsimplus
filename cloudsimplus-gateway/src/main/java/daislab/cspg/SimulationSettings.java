@@ -22,6 +22,7 @@ public class SimulationSettings {
     private final int initialSVmCount;
     private final int initialMVmCount;
     private final int initialLVmCount;
+    private final int[] initialVmCounts;
     private final boolean splitLargeJobs;
     private final int maxJobPes;
     private final double vmHourlyCost;
@@ -40,18 +41,21 @@ public class SimulationSettings {
     private final double vmStartupDelay;
     private final double vmShutdownDelay;
     private final boolean payingForTheFullHour;
-    private final boolean clearCreatedCloudletList;
+    private final boolean clearCreatedLists;
     private final double rewardJobWaitCoef;
     private final double rewardRunningVmCoresCoef;
     private final double rewardUnutilizedVmCoresCoef;
     private final double rewardInvalidCoef;
     private final int maxEpisodeLength;
+    private final String vmAllocationPolicy;
+    private final boolean stateAsTreeArray;
 
     public SimulationSettings(final Map<String, Object> params) {
         timestepInterval = (double) params.get("timestep_interval");
         initialSVmCount = (int) params.get("initial_s_vm_count");
         initialMVmCount = (int) params.get("initial_m_vm_count");
         initialLVmCount = (int) params.get("initial_l_vm_count");
+        initialVmCounts = new int[] {initialSVmCount, initialMVmCount, initialLVmCount};
         splitLargeJobs = (boolean) params.get("split_large_jobs");
         maxJobPes = (int) params.get("max_job_pes");
         vmHourlyCost = (double) params.get("vm_hourly_cost");
@@ -70,12 +74,14 @@ public class SimulationSettings {
         vmStartupDelay = (double) params.get("vm_startup_delay");
         vmShutdownDelay = (double) params.get("vm_shutdown_delay");
         payingForTheFullHour = (boolean) params.get("paying_for_the_full_hour");
-        clearCreatedCloudletList = (boolean) params.get("clear_created_cloudlet_list");
+        clearCreatedLists = (boolean) params.get("clear_created_lists");
         rewardJobWaitCoef = (double) params.get("reward_job_wait_coef");
         rewardRunningVmCoresCoef = (double) params.get("reward_running_vm_cores_coef");
         rewardUnutilizedVmCoresCoef = (double) params.get("reward_unutilized_vm_cores_coef");
         rewardInvalidCoef = (double) params.get("reward_invalid_coef");
         maxEpisodeLength = (int) params.get("max_episode_length");
+        vmAllocationPolicy = (String) params.get("vm_allocation_policy");
+        stateAsTreeArray = (boolean) params.get("state_as_tree_array");
     }
 
     public String printSettings() {
@@ -89,12 +95,14 @@ public class SimulationSettings {
                 + ",\nmediumVmMultiplier=" + mediumVmMultiplier + ",\nlargeVmMultiplier="
                 + largeVmMultiplier + ",\nvmStartupDelay=" + vmStartupDelay + ",\nvmShutdownDelay="
                 + vmShutdownDelay + ",\nvmHourlyCost=" + vmHourlyCost + ",\npayingForTheFullHour="
-                + payingForTheFullHour + ",\n" + "clearCreatedCloudletList="
-                + clearCreatedCloudletList + ",\nrewardJobWaitCoef=" + rewardJobWaitCoef
-                + ",\nrewardRunningVmCoresCoef=" + rewardRunningVmCoresCoef
-                + ",\nrewardUnutilizedVmCoresCoef=" + rewardUnutilizedVmCoresCoef
-                + ",\nrewardInvalidCoef=" + rewardInvalidCoef + ",\nmaxEpisodeLength="
-                + maxEpisodeLength + ",\n}";
+                + payingForTheFullHour + ",\n" + "clearCreatedLists=" + clearCreatedLists
+                + ",\nrewardJobWaitCoef=" + rewardJobWaitCoef + ",\nrewardRunningVmCoresCoef="
+                + rewardRunningVmCoresCoef + ",\nrewardUnutilizedVmCoresCoef="
+                + rewardUnutilizedVmCoresCoef + ",\nrewardInvalidCoef=" + rewardInvalidCoef
+                + ",\nmaxEpisodeLength=" + maxEpisodeLength + ",\nvmAllocationPolicy="
+                + vmAllocationPolicy + ",\nstateAsTreeArray= " + stateAsTreeArray
+                + vmAllocationPolicy + ",\n}";
+
     }
 
     public int getInitialSVmCount() {
@@ -107,6 +115,10 @@ public class SimulationSettings {
 
     public int getInitialLVmCount() {
         return initialLVmCount;
+    }
+
+    public int[] getInitialVmCounts() {
+        return initialVmCounts;
     }
 
     public boolean isSplitLargeJobs() {
@@ -193,8 +205,8 @@ public class SimulationSettings {
         return payingForTheFullHour;
     }
 
-    public boolean isClearCreatedCloudletList() {
-        return clearCreatedCloudletList;
+    public boolean isClearCreatedLists() {
+        return clearCreatedLists;
     }
 
     public double getRewardJobWaitCoef() {
@@ -221,15 +233,20 @@ public class SimulationSettings {
         return minTimeBetweenEvents;
     }
 
+    public String getVmAllocationPolicy() {
+        return vmAllocationPolicy;
+    }
+
+    public boolean isStateAsTreeArray() {
+        return stateAsTreeArray;
+    }
+
     public int getSizeMultiplier(final String type) {
-        switch (type) {
-            case MEDIUM:
-                return mediumVmMultiplier; // m5a.xlarge
-            case LARGE:
-                return largeVmMultiplier; // m5a.2xlarge
-            case SMALL:
-            default:
-                return 1; // m5a.large
-        }
+        return switch (type) {
+            case MEDIUM -> mediumVmMultiplier; // m5a.xlarge
+            case LARGE -> largeVmMultiplier; // m5a.2xlarge
+            case SMALL -> 1; // m5a.large
+            default -> 1;
+        };
     }
 }

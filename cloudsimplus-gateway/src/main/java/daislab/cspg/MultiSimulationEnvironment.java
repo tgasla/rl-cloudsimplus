@@ -43,7 +43,6 @@ public class MultiSimulationEnvironment {
         final WrappedSimulation simulation = simulations.remove(simulationIdentifier);
 
         simulation.close();
-        // TODO: I should do a memory leak examination.
         LOGGER.debug("Simulation {} terminated. {} simulations still running.",
                 simulationIdentifier, simulations.size());
         if (simulations.isEmpty()) {

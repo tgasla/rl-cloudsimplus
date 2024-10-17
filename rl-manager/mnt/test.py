@@ -14,20 +14,9 @@ from utils.filename_generator import generate_filename
 def test(hostname, params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    algorithm_str = params["algorithm"]
-    timesteps = params["timesteps"]
-    job_trace_filename = params["job_trace_filename"]
-    host_count = params["host_count"]
-    host_pes = params["host_pes"]
-    host_pe_mips = params["host_pe_mips"]
-    reward_job_wait_coef = params["reward_job_wait_coef"]
-    reward_running_vm_cores_coef = params["reward_running_vm_cores_coef"]
-    reward_unutilized_vm_cores_coef = params["reward_unutilized_vm_cores_coef"]
-    reward_invalid_coef = params["reward_invalid_coef"]
-    max_job_pes = params["max_job_pes"]
     train_model_dir = params["train_model_dir"]
 
-    jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{job_trace_filename}.csv")
+    jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{params["job_trace_filename"]}.csv")
 
     # Create and wrap the environment
     env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
@@ -41,25 +30,28 @@ def test(hostname, params):
     )
 
     # Select the appropriate algorithm
-    if hasattr(sb3, algorithm_str):
-        algorithm = getattr(sb3, algorithm_str)
+    if hasattr(sb3, params["algorithm"]):
+        algorithm = getattr(sb3, params["algorithm"])
     else:
-        raise AttributeError(f"Algorithm '{algorithm_str}' not found in sb3 module.")
+        raise AttributeError(
+            f"Algorithm '{params["algorithm"]}' not found in sb3 module."
+        )
 
     filename_id = generate_filename(
-        algorithm_str=algorithm_str,
-        timesteps=timesteps,
-        hosts=host_count,
-        host_pes=host_pes,
-        host_pe_mips=host_pe_mips,
-        reward_job_wait_coef=reward_job_wait_coef,
-        reward_running_vm_cores_coef=reward_running_vm_cores_coef,
-        reward_unutilized_vm_cores_coef=reward_unutilized_vm_cores_coef,
-        reward_invalid_coef=reward_invalid_coef,
-        job_trace_filename=job_trace_filename,
-        max_job_pes=max_job_pes,
-        train_model_dir=train_model_dir,
+        algorithm_str=params["algorithm"],
+        timesteps=params["timesteps"],
+        hosts=params["host_count"],
+        host_pes=params["host_pes"],
+        host_pe_mips=params["host_pe_mips"],
+        reward_job_wait_coef=params["reward_job_wait_coef"],
+        reward_running_vm_cores_coef=params["reward_running_vm_cores_coef"],
+        reward_unutilized_vm_cores_coef=params["reward_unutilized_vm_cores_coef"],
+        reward_invalid_coef=params["reward_invalid_coef"],
+        job_trace_filename=params["job_trace_filename"],
+        max_job_pes=params["max_job_pes"],
+        train_model_dir=params["train_model_dir"],
         mode="test",
+        vm_allocation_policy=params["vm_allocation_policy"],
         hostname=hostname,
     )
 
@@ -82,14 +74,14 @@ def test(hostname, params):
     if hasattr(model, "replay_buffer"):
         best_replay_buffer_path = os.path.join(
             "logs",
-            f"{train_model_dir}",
+            f"{params["train_model_dir"]}",
             "best_model_replay_buffer",
         )
         model.load_replay_buffer(best_replay_buffer_path)
 
     episodes_info = {"r": [], "l": []}
     current_step = 0
-    while current_step < timesteps:
+    while current_step < params["timesteps"]:
         obs, info = env.reset()
         print(f"Environment reset. Obs: {obs} Info: {info}")
         episode_reward = 0
@@ -100,9 +92,10 @@ def test(hostname, params):
             current_step += 1
             action, _ = model.predict(obs)
             obs, reward, terminated, truncated, info = env.step(action)
-            print(
-                f"Step: {current_length}, obs: {obs}, reward: {reward}, terminated: {terminated}, truncated: {truncated}, info: {info}"
-            )
+            # print(
+            # f"Step: {current_length}, obs: {obs}, reward: {reward}, terminated: {terminated}, truncated: {truncated}, info: {info}"
+            # )
+            print()
             episode_reward += reward
             done = terminated or truncated
 

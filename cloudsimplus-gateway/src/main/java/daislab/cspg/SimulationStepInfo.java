@@ -36,8 +36,8 @@ public class SimulationStepInfo {
         this.jobMetrics = new double[1][1];
         this.jobWaitTime = new ArrayList<>();
         this.valid = true;
-        this.observationTreeArray = new int[1];
         // this.dotString = "";
+        this.observationTreeArray = new int[1];
     }
 
     public SimulationStepInfo(final double[] rewards, final List<double[][]> timestepMetrics,
@@ -119,7 +119,6 @@ public class SimulationStepInfo {
     @Override
     public String toString() {
         return "SimulationStepInfo { jobWaitReward=" + jobWaitReward + ", runningVmCoresReward="
-                + runningVmCoresReward + "unutilizedVmCoresReward=" + unutilizedVmCoresReward
-                + ", invalidReward=" + invalidReward + ", valid=" + valid + '}';
+                + runningVmCoresReward + "unutilizedVmCoresReward=" + unutilizedVmCoresReward + '}';
     }
 }

@@ -21,48 +21,42 @@ from utils.trace_utils import csv_to_cloudlet_descriptor
 def train(hostname, params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    algorithm_str = params["algorithm"]
-    timesteps = params["timesteps"]
-    host_count = params["host_count"]
-    host_pes = params["host_pes"]
-    host_pe_mips = params["host_pe_mips"]
-    reward_job_wait_coef = params["reward_job_wait_coef"]
-    reward_running_vm_cores_coef = params["reward_running_vm_cores_coef"]
-    reward_unutilized_vm_cores_coef = params["reward_unutilized_vm_cores_coef"]
-    reward_invalid_coef = params["reward_invalid_coef"]
-    max_job_pes = params["max_job_pes"]
-    job_trace_filename = params["job_trace_filename"]
-
     filename_id = generate_filename(
-        algorithm_str=algorithm_str,
-        timesteps=timesteps,
-        hosts=host_count,
-        host_pes=host_pes,
-        host_pe_mips=host_pe_mips,
-        reward_job_wait_coef=reward_job_wait_coef,
-        reward_running_vm_cores_coef=reward_running_vm_cores_coef,
-        reward_unutilized_vm_cores_coef=reward_unutilized_vm_cores_coef,
-        reward_invalid_coef=reward_invalid_coef,
-        job_trace_filename=job_trace_filename,
-        max_job_pes=max_job_pes,
+        algorithm_str=params["algorithm"],
+        timesteps=params["timesteps"],
+        hosts=params["host_count"],
+        host_pes=params["host_pes"],
+        host_pe_mips=params["host_pe_mips"],
+        reward_job_wait_coef=params["reward_job_wait_coef"],
+        reward_running_vm_cores_coef=params["reward_running_vm_cores_coef"],
+        reward_unutilized_vm_cores_coef=params["reward_unutilized_vm_cores_coef"],
+        reward_invalid_coef=params["reward_invalid_coef"],
+        job_trace_filename=params["job_trace_filename"],
+        max_job_pes=params["max_job_pes"],
         mode="train",
+        vm_allocation_policy=params["vm_allocation_policy"],
         hostname=hostname,
     )
 
     base_log_dir = "./logs/"
 
     # Select the appropriate algorithm
-    if hasattr(sb3, algorithm_str):
-        algorithm = getattr(sb3, algorithm_str)
+    if hasattr(sb3, params["algorithm"]):
+        algorithm = getattr(sb3, params["algorithm"])
         policy = "MlpPolicy"
     else:
-        raise AttributeError(f"Algorithm '{algorithm_str}' not found in sb3 module.")
+        raise AttributeError(
+            f"Algorithm '{params["algorithm"]}' not found in sb3 module."
+        )
 
     log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
     # Read jobs
-    job_trace_path = os.path.join("mnt", "traces", f"{job_trace_filename}.csv")
+    job_trace_path = os.path.join(
+        "mnt", "traces", f"{params["job_trace_filename"]}.csv"
+    )
     jobs = csv_to_cloudlet_descriptor(job_trace_path)
+
     # print(job_trace_filename, jobs)
 
     # Create folder if needed
@@ -77,7 +71,7 @@ def train(hostname, params):
     menv = Monitor(env, log_dir)
 
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
-    if algorithm_str == "A2C":
+    if params["algorithm"] == "A2C":
         device = "cpu"
         venv = SubprocVecEnv([lambda: menv], start_method="fork")
     else:
@@ -112,7 +106,7 @@ def train(hostname, params):
 
     # Train the agent
     model.learn(
-        total_timesteps=int(timesteps),
+        total_timesteps=int(params["timesteps"]),
         log_interval=1,
         callback=callback,
     )

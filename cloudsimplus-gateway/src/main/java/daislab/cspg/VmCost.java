@@ -22,11 +22,11 @@ public class VmCost {
     public VmCost(final SimulationSettings settings) {
         this.settings = settings;
 
-        // timestepInterval are the seconds we are "staying" at each iteration
+        // timestepInterval is the time in seconds between each iteration
 
         iterationsInHour = 3600 / settings.getTimestepInterval();
 
-        final double perSecondVMCost = settings.getVmHourlyCost() * 0.00028; // 1/3600
+        final double perSecondVMCost = settings.getVmHourlyCost() / 3600;
         perIterationSmallVmCost = perSecondVMCost * settings.getTimestepInterval();
     }
 
@@ -50,8 +50,7 @@ public class VmCost {
             double multiplier = settings.getSizeMultiplier(vm.getDescription());
             final double perIterationVMCost = perIterationSmallVmCost * multiplier;
             if (vm.getStartTime() > -1 && vm.getFinishTime() > -1) {
-                // vm was stopped -
-                // we continue to pay for it within the last running hour if need to
+                // vm stopped - we continue to pay for the full hour if needed
                 if (settings.isPayingForTheFullHour()
                         && (clock <= vm.getFinishTime() + iterationsInHour)) {
                     totalCost += perIterationVMCost;
@@ -65,5 +64,9 @@ public class VmCost {
         }
         createdVms.removeAll(toRemove);
         return totalCost;
+    }
+
+    public void removeVmFromList(final Vm vm) {
+        createdVms.remove(vm);
     }
 }

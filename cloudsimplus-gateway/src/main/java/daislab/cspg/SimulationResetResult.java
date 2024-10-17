@@ -9,20 +9,36 @@ import com.google.gson.Gson;
 public class SimulationResetResult {
 
     private final Gson gson = new Gson();
-    private final double[][] obs;
+    private final int[] observationTreeArray;
+    private final double[][] observationMatrix;
     private final SimulationStepInfo info;
 
-    public SimulationResetResult(final double[][] obs, final SimulationStepInfo info) {
-        this.obs = obs;
+    public SimulationResetResult(final int[] obs, final SimulationStepInfo info) {
+        this.observationTreeArray = obs;
         this.info = info;
+        this.observationMatrix = null;
     }
 
-    public double[][] getObs() {
-        return obs;
+    public SimulationResetResult(final double[][] obs, final SimulationStepInfo info) {
+        this.observationMatrix = obs;
+        this.info = info;
+        this.observationTreeArray = null;
     }
 
-    public String getObsAsJson() {
-        return gson.toJson(obs);
+    public int[] getObservationTreeArray() {
+        return observationTreeArray;
+    }
+
+    public double[][] getObservationMatrix() {
+        return observationMatrix;
+    }
+
+    public String getObservationMatrixAsJson() {
+        return gson.toJson(observationMatrix);
+    }
+
+    public String getObservationTreeArrayAsJson() {
+        return gson.toJson(observationTreeArray);
     }
 
     public SimulationStepInfo getInfo() {
@@ -31,7 +47,8 @@ public class SimulationResetResult {
 
     @Override
     public String toString() {
-        return "SimulationStepResult{" + ", obs=" + Arrays.toString(obs) + ", info="
+        return "SimulationStepResult{" + ", observationMatrix=" + Arrays.toString(observationMatrix)
+                + "observationTreeArray= " + Arrays.toString(observationTreeArray) + ", info="
                 + info.toString() + '}';
     }
 }
