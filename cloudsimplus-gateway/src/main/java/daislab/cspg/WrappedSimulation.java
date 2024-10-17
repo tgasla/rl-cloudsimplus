@@ -131,13 +131,13 @@ public class WrappedSimulation {
         }
     }
 
-    public SimulationStepResult step(int[] action) {
+    public SimulationStepResult step(final int[] action) {
         validateSimulationReset();
         currentStep++;
 
         LOGGER.info("Step {} starting", currentStep);
 
-        boolean isValid = settings.getVmAllocationPolicy().equals("RL") ? executeRlAction(action)
+        boolean isValid = settings.getVmAllocationPolicy().equals("rl") ? executeRlAction(action)
                 : cloudSimProxy.executeOnlineAction();
 
         cloudSimProxy.runOneTimestep();

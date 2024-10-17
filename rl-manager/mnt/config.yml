@@ -24,7 +24,7 @@ common:
 experiment_1:
     state_as_tree_array: false
     mode: train
-    vm_allocation_policy: random
+    vm_allocation_policy: rl
     algorithm: PPO
     host_count: 10
     host_pes: 10

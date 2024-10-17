@@ -125,19 +125,17 @@ class SingleDC(gym.Env):
 
         if self.state_as_tree_array:
             raw_obs = result.getObservationTreeArray()
+            initial_obs = self._to_nparray(raw_obs)
+            obs = np.resize(initial_obs, self.observation_length)
+            obs[len(initial_obs) :] = 0
         else:
             raw_obs = result.getObservationMatrix()
-
-        obs = self._to_nparray(raw_obs)
-        padded_obs = np.resize(obs, self.observation_length)
-        padded_obs[len(obs) :] = 0
-
-        print(padded_obs)
+            obs = self._to_nparray(raw_obs)
 
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
 
-        return padded_obs, info
+        return obs, info
 
     def step(self, action):
         # Py4J cannot translate np.array(dtype=np.float32) to java List<double>
@@ -155,19 +153,19 @@ class SingleDC(gym.Env):
 
         if self.state_as_tree_array:
             raw_obs = result.getObservationTreeArray()
+            initial_obs = self._to_nparray(raw_obs)
+            obs = np.resize(initial_obs, self.observation_length)
+            obs[len(initial_obs) :] = 0
         else:
             raw_obs = result.getObservationMatrix()
-
-        obs = self._to_nparray(raw_obs)
-        padded_obs = np.resize(obs, self.observation_length)
-        padded_obs[len(obs) :] = 0
+            obs = self._to_nparray(raw_obs)
 
         info = self._raw_info_to_dict(raw_info)
 
         if self.render_mode == "human":
             self.render()
 
-        return (padded_obs, reward, terminated, truncated, info)
+        return (obs, reward, terminated, truncated, info)
 
     def render(self):
         if self.render_mode is None:
