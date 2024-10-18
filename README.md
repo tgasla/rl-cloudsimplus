@@ -128,7 +128,7 @@ The configuration file contains two sections: the 'common' section and the 'expe
 - To run multiple experiments in parallel, add as many experiment areas as you want, specifying the corresponding parameters for each experiment.
 - Each experiment should have a unique experiment id, and each section should be written as experiment_{id}. For simplicity, use ids starting by 1 and increment by 1.
 
-There are three experiment modes: train, transfer, and test. When transfer or test mode are specified, an additional 'train_model_dir' key for an experiment should be defined, with the name of the directory in which the trained agent model should be used.
+There are three experiment modes: train, transfer, and test. When transfer or test modes are specified, an additional 'train_model_dir' key for an experiment should be defined, with the directory name in which the trained agent model should be used.
 
 ## Running an experiment
 
