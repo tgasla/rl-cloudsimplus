@@ -98,7 +98,7 @@ make build
 > [!NOTE]  
 > It is often useful to rebuild images one at a time, especially when a change is made only in a specific application part.
 > For example, when we change the gateway code, we must rebuild the image before running the application.
-> Optionally, when building, we can specify the log level of the messages printed in stdout and in a log file.
+> Optionally, when building, we can specify the log level of the messages printed in stdout and a log file.
 > If the log level environment variable is not set, the log level is set to INFO by default.
 
 ```bash
@@ -107,7 +107,7 @@ make build
 
 ## Starting the TensorBoard dashboard
 
-We have created three docker images. The gateway and manager images consist of the main application and are the docker compose services we need for every experiment we want to run.
+The project consists of three docker images. The gateway and manager images contain the main application and are the docker compose services we need for every experiment we want to run.
 The TensorBoard image is the UI endpoint and helps us keep track of the experiment's progress. Because we do not want to shut down the visualization dashboard every time we want to stop an experiment,
 the TensorBoard image is not a docker compose service and can be started as a standalone docker container by using the following command (TODO: consider changing it):
 
@@ -140,7 +140,7 @@ make run-cpu
 
 > [!NOTE]
 > This command runs all the docker containers in detached mode
-> If you want to use the attached mode try the following command:
+> If you want to use the attached mode, try the following command:
 
 ```bash
 make run-cpu-attached
