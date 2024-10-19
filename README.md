@@ -120,7 +120,7 @@ make run-tensorboard
 
 ## Editing the experiment configuration file
 
-To run an experiment, first edit the configuration file located at [rl-manager/mnt/config.yml](https://github.com/tgasla/rl-cloudsimplus/blob/main/rl-manager/mnt/config.yml).
+To run an experiment, first edit the configuration file [config.yml](https://github.com/tgasla/rl-cloudsimplus/blob/main/config.yml).
 
 The configuration file contains two sections: the 'common' section and the 'experiment' section. This is because we may run multiple different experiments in parallel.
 - The parameters that all experiments have in common are specified under the common section, and those that are unique among the experiments are defined under the experiment_{id} section

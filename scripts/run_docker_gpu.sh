@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONFIG_FILE="rl-manager/mnt/config.yml"
+CONFIG_FILE="config.yml"
 
 NUM_REPLICAS=$(grep -o -P '^experiment_\d+' "$CONFIG_FILE" | wc -l); \
 ATTACHED=${ATTACHED:-false}

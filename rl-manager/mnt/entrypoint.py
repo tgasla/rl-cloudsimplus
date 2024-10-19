@@ -7,7 +7,7 @@ from train import train
 from test import test
 from transfer import transfer
 
-CONFIG_FILE = "mnt/config.yml"
+CONFIG_FILE = "config.yml"
 
 
 def _find_replica_id(hostname):
@@ -35,7 +35,6 @@ def main():
     hostname = os.getenv("HOSTNAME")
     replica_id = _find_replica_id(hostname)
     params = dict_from_config(replica_id, CONFIG_FILE)
-
     mode = params["mode"]
 
     if mode == "train":

@@ -15,7 +15,7 @@ common:
     host_ram: 65536
     host_storage: 100000
     host_bw: 50000
-    small_vm_ram: 8192 
+    small_vm_ram: 8192
     small_vm_storage: 4000
     small_vm_bw: 1000
     paying_for_the_full_hour: false

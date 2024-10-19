@@ -8,13 +8,15 @@ services:
   manager: &cpu
     profiles: [ "" ]
     image: manager:0.10
-    # container_name: manager
-    build: rl-manager
+    # container_name: manager # disabled to allow multiple instances
+    build:
+      context: .
+      dockerfile: rl-manager/Dockerfile
     depends_on:
       - gateway
     volumes:
-      - ./logs:/mgr/logs
       - ./rl-manager/mnt:/mgr/mnt
+      - ./logs:/mgr/logs
       - /run/docker.sock:/run/docker.sock:ro
     command: python mnt/entrypoint.py
 
