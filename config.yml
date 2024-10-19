@@ -22,7 +22,7 @@ common:
     vm_hourly_cost: 0.086 #unused
 
 experiment_1:
-    state_as_tree_array: false
+    state_as_tree_array: true
     mode: train
     vm_allocation_policy: rl
     algorithm: PPO
