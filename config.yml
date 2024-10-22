@@ -20,12 +20,13 @@ common:
     small_vm_bw: 1000
     paying_for_the_full_hour: false
     vm_hourly_cost: 0.086 #unused
+    log_experiment: true
 
 experiment_1:
-    state_as_tree_array: true
+    state_representation: treearray
     mode: train
-    vm_allocation_policy: rl
-    algorithm: PPO
+    vm_allocation_policy: fromfile
+    algorithm: strategy.csv
     host_count: 10
     host_pes: 10
     host_pe_mips: 10
@@ -36,13 +37,14 @@ experiment_1:
     reward_job_wait_coef: 0.33
     reward_running_vm_cores_coef: 0.33
     reward_unutilized_vm_cores_coef: 0.33
-    reward_invalid_coef: 0.33
+    reward_invalid_coef: 0.0
     # train_model_dir: 240918-185051_PPO_2M_10H_10P_10M_three_peaks_max30_1MJC_0.25Q_0.25R_0.25U_0.25I_train_1fdff7236cd4
 
 # experiment_2:
+#     state_representation: treearray
 #     mode: train
-#     vm_allocation_policy: bestfit
-#     algorithm: PPO
+#     vm_allocation_policy: heuristic
+#     algorithm: worstfit
 #     host_count: 10
 #     host_pes: 10
 #     host_pe_mips: 10
@@ -53,12 +55,13 @@ experiment_1:
 #     reward_job_wait_coef: 0.33
 #     reward_running_vm_cores_coef: 0.33
 #     reward_unutilized_vm_cores_coef: 0.33
-#     reward_invalid_coef: 0.33
+#     reward_invalid_coef: 0.0
 
 # experiment_3:
+#     state_representation: treearray
 #     mode: train
-#     vm_allocation_policy: worstfit
-#     algorithm: PPO
+#     vm_allocation_policy: heuristic
+#     algorithm: roundrobin
 #     host_count: 10
 #     host_pes: 10
 #     host_pe_mips: 10
@@ -69,12 +72,13 @@ experiment_1:
 #     reward_job_wait_coef: 0.33
 #     reward_running_vm_cores_coef: 0.33
 #     reward_unutilized_vm_cores_coef: 0.33
-#     reward_invalid_coef: 0.33
+#     reward_invalid_coef: 0.0
 
 # experiment_4:
+#     state_representation: treearray
 #     mode: train
-#     vm_allocation_policy: firstfit
-#     algorithm: PPO
+#     vm_allocation_policy: heuristic
+#     algorithm: random
 #     host_count: 10
 #     host_pes: 10
 #     host_pe_mips: 10
@@ -85,12 +89,13 @@ experiment_1:
 #     reward_job_wait_coef: 0.33
 #     reward_running_vm_cores_coef: 0.33
 #     reward_unutilized_vm_cores_coef: 0.33
-#     reward_invalid_coef: 0.33
+#     reward_invalid_coef: 0.0
 
 # experiment_5:
+#     state_representation: treearray
 #     mode: train
-#     vm_allocation_policy: roundrobin
-#     algorithm: PPO
+#     vm_allocation_policy: heuristic
+#     algorithm: firstfit
 #     host_count: 10
 #     host_pes: 10
 #     host_pe_mips: 10
@@ -101,9 +106,10 @@ experiment_1:
 #     reward_job_wait_coef: 0.33
 #     reward_running_vm_cores_coef: 0.33
 #     reward_unutilized_vm_cores_coef: 0.33
-#     reward_invalid_coef: 0.33
+#     reward_invalid_coef: 0.0
 
 # experiment_6:
+#     state_representation: treearray
 #     mode: train
 #     vm_allocation_policy: rl
 #     algorithm: PPO

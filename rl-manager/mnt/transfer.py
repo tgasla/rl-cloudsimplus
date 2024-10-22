@@ -26,27 +26,13 @@ def transfer(hostname, params):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{params["job_trace_filename"]}.csv")
-
-    filename_id = generate_filename(
-        algorithm_str=params["algorithm"],
-        timesteps=params["timesteps"],
-        hosts=params["host_count"],
-        host_pes=params["host_pes"],
-        host_pe_mips=params["host_pe_mips"],
-        reward_job_wait_coef=params["reward_job_wait_coef"],
-        reward_running_vm_cores_coef=params["reward_running_vm_cores_coef"],
-        reward_unutilized_vm_cores_coef=params["reward_unutilized_vm_cores_coef"],
-        reward_invalid_coef=params["reward_invalid_coef"],
-        job_trace_filename=params["job_trace_filename"],
-        max_job_pes=params["max_job_pes"],
-        train_model_dir=params["train_model_dir"],
-        mode="transfer",
-        vm_allocation_policy=params["vm_allocation_policy"],
-        hostname=hostname,
+    jobs = csv_to_cloudlet_descriptor(
+        os.path.join("mnt", "traces", f"{params["job_trace_filename"]}.csv")
     )
 
-    base_log_dir = "./logs/"
+    filename_id = generate_filename(params, hostname)
+
+    base_log_dir = "logs"
 
     best_model_path = os.path.join(
         base_log_dir,

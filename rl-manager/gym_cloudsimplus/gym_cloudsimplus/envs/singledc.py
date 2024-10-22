@@ -1,5 +1,7 @@
 import gymnasium as gym
 import json
+import os
+import csv
 from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
 import numpy as np
@@ -34,19 +36,22 @@ class SingleDC(gym.Env):
 
     metadata = {"render_modes": ["human", "ansi"]}
     # default port = 25333
-    parameters = GatewayParameters(address="gateway", auto_convert=True)
+    gateway_parameters = GatewayParameters(address="gateway", auto_convert=True)
 
-    def __init__(
-        self,
-        params,
-        jobs_as_json="[]",
-        render_mode="ansi",
-    ):
+    def __init__(self, params, jobs_as_json="[]", render_mode="ansi"):
         super(SingleDC, self).__init__()
 
-        self.gateway = JavaGateway(gateway_parameters=self.parameters)
+        self.gateway = JavaGateway(gateway_parameters=self.gateway_parameters)
         self.simulation_environment = self.gateway.entry_point
-        self.state_as_tree_array = params["state_as_tree_array"]
+        self.state_representation = params["state_representation"]
+        self.vm_allocation_policy = params["vm_allocation_policy"]
+
+        if self.vm_allocation_policy == "fromfile":
+            self.vm_allocation_policy = "fromfile"
+            with open(os.path.join("mnt", params["algorithm"]), mode="r") as file:
+                csv_reader = csv.reader(file)
+                _ = next(csv_reader)  # skip the header
+                self.action_file_data = list(csv_reader)
 
         # host_count = params["host_count"]
         host_pes = params["host_pes"]
@@ -58,7 +63,7 @@ class SingleDC(gym.Env):
 
         self.action_types_count = 3
         self.max_hosts = 10
-        self.types_of_vms_count = 3
+        self.vm_types_count = 3
 
         # it makes sense to assume that the minimum amount of cores per job will be 1
         self.min_job_pes = 1
@@ -84,12 +89,12 @@ class SingleDC(gym.Env):
                     self.action_types_count,
                     self.max_hosts,
                     self.max_vms,
-                    self.types_of_vms_count,
+                    self.vm_types_count,
                 ]
             )
         )
 
-        if self.state_as_tree_array:
+        if self.state_representation == "treearray":
             self.observation_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
             self.max_cores_per_node = 101
             self.observation_space = spaces.MultiDiscrete(
@@ -118,11 +123,14 @@ class SingleDC(gym.Env):
 
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()
+        self.current_step = 0
+
         if seed is None:
             seed = 0
+
         result = self.simulation_environment.reset(self.simulation_id, seed)
 
-        if self.state_as_tree_array:
+        if self.state_representation == "treearray":
             raw_obs = result.getObservationTreeArray()
             initial_obs = self._to_nparray(raw_obs)
             obs = np.resize(initial_obs, self.observation_length)
@@ -141,8 +149,18 @@ class SingleDC(gym.Env):
         # Fix1: make it dtype=np.float64 and for some reason it works :)
         # Fix2: before sending it to java, convert it to python list first
         # Here, we adopt Fix2
+        self.current_step += 1
 
-        action = action.tolist()
+        if self.vm_allocation_policy == "fromfile":
+            if self.current_step - 1 >= len(self.action_file_data):
+                raise ValueError(
+                    "The number of steps in the simulation exceeds the number of actions in the file"
+                )
+            action = self.action_file_data[self.current_step - 1]
+            action = [int(x) for x in action]
+        else:
+            action = action.tolist()
+
         result = self.simulation_environment.step(self.simulation_id, action)
 
         reward = result.getReward()
@@ -150,7 +168,7 @@ class SingleDC(gym.Env):
         terminated = result.isTerminated()
         truncated = result.isTruncated()
 
-        if self.state_as_tree_array:
+        if self.state_representation == "treearray":
             raw_obs = result.getObservationTreeArray()
             initial_obs = self._to_nparray(raw_obs)
             obs = np.resize(initial_obs, self.observation_length)

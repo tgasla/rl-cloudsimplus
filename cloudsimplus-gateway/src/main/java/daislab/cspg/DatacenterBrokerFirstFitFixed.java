@@ -45,12 +45,12 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
                     cloudlet.getId(), vm.getId());
             requestDatacentersToCreateWaitingCloudlets();
-            if (vm.getCloudletScheduler().isEmpty()) {
-                // LOGGER.info("VM {} is empty", vm.getId());
-                getDatacenter(vm).getVmAllocationPolicy().deallocateHostForVm(vm);
-                // schedule(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
-                // send(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
-            }
+            // if (vm.getCloudletScheduler().isEmpty()) {
+            // LOGGER.info("VM {} is empty, destroying...", vm.getId());
+            // getDatacenter(vm).getVmAllocationPolicy().deallocateHostForVm(vm);
+            // // schedule(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
+            // // send(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
+            // }
         }
 
         // Clean the vm created list because over an episode we may create/destroy

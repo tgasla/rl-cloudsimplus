@@ -29,9 +29,11 @@ public class WrappedSimulation {
 
     // I should pass a map with <key, value> metrics into the metricsstorage
     // and then calculate the elements of the maps
-    // I can simply avoid hardcoding it by first calling collectMetrics and get their lengths. Then
+    // I can simply avoid hardcoding it by first calling collectMetrics and get
+    // their lengths. Then
     // calculate maxvmscount and observation array rows and columns
-    // In metricstorage initialization I do not need essentialy to give the correct lengths at
+    // In metricstorage initialization I do not need essentialy to give the correct
+    // lengths at
     // first.
     // TODO: I should not have it hardcoded here.
     private static final int datacenterMetricsCount = 6;
@@ -90,13 +92,14 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo();
 
-        // gets metric data saved into metricsStorage and concatenates all of them into a 2d array
-        if (settings.isStateAsTreeArray()) {
+        // gets metric data saved into metricsStorage and concatenates all of them into
+        // a 2d array
+        if (settings.getStateRepresentation().equals("treearray")) {
             int[] observation = getObservationAsTreeArray();
             return new SimulationResetResult(observation, info);
         }
 
-        double[][] observation = getObservationAsMatrix();
+        double[][] observation = getObservationAs2dMatrix();
         return new SimulationResetResult(observation, info);
     }
 
@@ -136,9 +139,12 @@ public class WrappedSimulation {
         currentStep++;
 
         LOGGER.info("Step {} starting", currentStep);
-
-        boolean isValid = settings.getVmAllocationPolicy().equals("rl") ? executeRlAction(action)
-                : cloudSimProxy.executeOnlineAction();
+        boolean isValid = switch (settings.getVmAllocationPolicy()) {
+            case "rl", "fromfile" -> executeCustomAction(action);
+            case "heuristic" -> cloudSimProxy.executeHeuristicAction();
+            default -> throw new IllegalArgumentException(
+                    "Unexpected value: " + settings.getVmAllocationPolicy());
+        };
 
         cloudSimProxy.runOneTimestep();
 
@@ -174,12 +180,12 @@ public class WrappedSimulation {
                 cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
                 getObservationAsTreeArray());
 
-        if (settings.isStateAsTreeArray()) {
+        if (settings.getStateRepresentation().equals("treearray")) {
             int[] observation = getObservationAsTreeArray();
             return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
         }
 
-        double[][] observation = getObservationAsMatrix();
+        double[][] observation = getObservationAs2dMatrix();
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
     }
 
@@ -325,7 +331,8 @@ public class WrappedSimulation {
         updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
     }
 
-    // private long continuousToDiscrete(final double continuous, final long bucketsNum) {
+    // private long continuousToDiscrete(final double continuous, final long
+    // bucketsNum) {
     // /*
     // * Explanation:
     // * floor(continuous * bucketsNum) will give you the discrete value
@@ -336,7 +343,8 @@ public class WrappedSimulation {
     // * So, Math.min ensures that the maximum allowed
     // * discrete value will be bucketsNum-1.
     // */
-    // final long discrete = (long) Math.min(Math.floor(continuous * bucketsNum), bucketsNum - 1);
+    // final long discrete = (long) Math.min(Math.floor(continuous * bucketsNum),
+    // bucketsNum - 1);
     // return discrete;
     // }
 
@@ -354,15 +362,17 @@ public class WrappedSimulation {
         // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
     }
 
-    private boolean executeRlAction(final int[] action) {
+    private boolean executeCustomAction(final int[] action) {
 
         final boolean isValid;
 
-        LOGGER.debug("The action is [{}, {}, {}, {}]", action[0], action[1], action[2], action[3]);
+        LOGGER.info("{}: timestep: {}, action: [{}, {}, {}, {}]", clock(), currentStep, action[0],
+                action[1], action[2], action[3]);
 
-        // [action, id, type]
+        // [action, hostId, vmId, type]
         // action = {0: do nothing, 1: create vm, 2: destroy vm}
-        // id = {hostId to place new vm (when action = 1), vmId to terminate (when action = 2)
+        // id = {hostId to place new vm (when action = 1), vmId to terminate (when
+        // action = 2)
         // type = {0: small, 1: medium, 2: large} (relevant only when action = 1)
 
         if (action[0] == 1) {
@@ -434,7 +444,7 @@ public class WrappedSimulation {
     // adds a new vm to the host with hostid if possible
     private boolean addNewVm(final String type, final long hostId) {
         if (!cloudSimProxy.addNewVm(type, hostId)) {
-            LOGGER.debug("Adding a VM of type {} to host {} is invalid. Ignoring", type, hostId);
+            LOGGER.warn("Adding a VM of type {} to host {} is invalid. Ignoring", type, hostId);
             return false;
         }
         return true;
@@ -559,10 +569,12 @@ public class WrappedSimulation {
         return treeArray;
     }
 
-    private double[][] getObservationAsMatrix() {
-        // here we get some vertical subarrays of the metrics. The whole array of metrics are only
+    private double[][] getObservationAs2dMatrix() {
+        // here we get some vertical subarrays of the metrics. The whole array of
+        // metrics are only
         // used to pass the info to python and print to csv files then.
-        // Vertical because rows in the arrays represent the hosts, vms, jobs etc. So, we take a
+        // Vertical because rows in the arrays represent the hosts, vms, jobs etc. So,
+        // we take a
         // specific subset of features (columns) for every host, vm or job.
 
         final double[] datacenterMetrics = new double[] {metricsStorage.getDatacenterMetrics()[2]};
@@ -643,7 +655,8 @@ public class WrappedSimulation {
         rewards[4] = invalidReward;
 
         // if (!isValid) {
-        // LOGGER.debug("Penalty given to the agent because the selected action was not possible");
+        // LOGGER.debug("Penalty given to the agent because the selected action was not
+        // possible");
         // }
         return rewards;
     }

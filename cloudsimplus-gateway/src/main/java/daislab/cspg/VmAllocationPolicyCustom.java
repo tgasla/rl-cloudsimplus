@@ -5,7 +5,7 @@ import org.cloudsimplus.hosts.HostSuitability;
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.vms.Vm;
 
-public class VmAllocationPolicyRl extends VmAllocationPolicySimple {
+public class VmAllocationPolicyCustom extends VmAllocationPolicySimple {
 
     @Override
     public HostSuitability allocateHostForVm(final Vm vm) {

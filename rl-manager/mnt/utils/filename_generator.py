@@ -2,58 +2,36 @@ from datetime import datetime
 
 
 def generate_filename(
-    algorithm_str=None,
-    timesteps=None,
-    hosts=None,
-    host_pes=None,
-    host_pe_mips=None,
-    job_trace_filename=None,
-    max_job_pes=None,
-    reward_job_wait_coef=None,
-    reward_running_vm_cores_coef=None,
-    reward_unutilized_vm_cores_coef=None,
-    reward_invalid_coef=None,
-    train_model_dir=None,
-    mode=None,
-    vm_allocation_policy=None,
+    params,
     hostname=None,
 ):
-    if train_model_dir is None:
-        filename_id = (
-            f"{_datetime_to_str()}"
-            f"_{algorithm_str}"
-            f"_{_millify(timesteps)}"
-            f"_{hosts}H"
-            f"_{host_pes}P"
-            f"_{host_pe_mips}M"
-            f"_{job_trace_filename}"
-            f"_{max_job_pes}MJC"
-            f"_{reward_job_wait_coef}Q"
-            f"_{reward_running_vm_cores_coef}R"
-            f"_{reward_unutilized_vm_cores_coef}U"
-            f"_{reward_invalid_coef}I"
-            f"_{mode}"
-            f"_{vm_allocation_policy}"
-            f"_{hostname}"
-        )
-    else:
-        filename_id = (
-            f"{train_model_dir}"
-            f"_{_datetime_to_str()}"
-            f"_{_millify(timesteps)}"
-            f"_{hosts}H"
-            f"_{host_pes}P"
-            f"_{host_pe_mips}M"
-            f"_{job_trace_filename}"
-            f"_{max_job_pes}MJC"
-            f"_{reward_job_wait_coef}Q"
-            f"_{reward_running_vm_cores_coef}R"
-            f"_{reward_unutilized_vm_cores_coef}U"
-            f"_{reward_invalid_coef}I"
-            f"_{mode}"
-            f"_{vm_allocation_policy}"
-            f"_{hostname}"
-        )
+    optional_params = {
+        "timesteps": _millify(params.get("timesteps")),
+        "host_count": f"{params.get("host_count")}H",
+        "host_pes": f"{params.get("host_pes")}P",
+        "host_pe_mips": f"{params.get("host_pe_mips")}M",
+        "job_trace_filename": f"{params.get("job_trace_filename")}",
+        "max_job_pes": f"{params.get("max_job_pes")}",
+        "reward_job_wait_coef": f"{params.get("reward_job_wait_coef")}W",
+        "reward_running_vm_cores_coef": f"{params.get("reward_running_vm_cores_coef")}R",
+        "reward_unutilized_vm_cores_coef": f"{params.get("reward_unutilized_vm_cores_coef")}U",
+        "reward_invalid_coef": f"{params.get("reward_invalid_coef")}I",
+        "mode": params.get("mode"),
+        "vm_allocation_policy": params.get("vm_allocation_policy"),
+        "algorithm": params.get("algorithm"),
+        "state_representation": params.get("state_representation"),
+        "hostname": hostname,
+    }
+
+    filename_id = ""
+    if params.get("train_model_dir"):
+        filename_id += f"{params.get("train_model_dir")}_"
+
+    filename_id += _datetime_to_str()
+
+    filename_id += "".join(
+        f"_{value}" for value in optional_params.values() if value is not None
+    )
     return filename_id
 
 

@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Iterator;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.IntStream;
@@ -155,7 +156,15 @@ public class CloudSimProxy {
 
     private VmAllocationPolicy defineVmAllocationPolicy() {
         return switch (settings.getVmAllocationPolicy()) {
-            case "rl" -> new VmAllocationPolicyRl();
+            case "rl", "fromfile" -> new VmAllocationPolicyCustom();
+            case "heuristic" -> defineHeuristicVmAllocationPolicy();
+            default -> throw new IllegalArgumentException(
+                    "Unknown VM allocation policy: " + settings.getVmAllocationPolicy());
+        };
+    }
+
+    private VmAllocationPolicy defineHeuristicVmAllocationPolicy() {
+        return switch (settings.getAlgorithm()) {
             case "random" -> new VmAllocationPolicyRandom(new UniformDistr());
             case "roundrobin" -> new VmAllocationPolicyRoundRobin();
             case "firstfit" -> new VmAllocationPolicyFirstFit();
@@ -287,17 +296,18 @@ public class CloudSimProxy {
         }
     }
 
-    public boolean executeOnlineAction() {
+    public boolean executeHeuristicAction() {
         final double targetTime = calculateTargetTime();
         List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
-        // if (jobsToSubmitList.isEmpty()) {
-        // destroyIdleVms();
-        // return true;
-        // }
+        if (jobsToSubmitList.isEmpty()) {
+            destroyLargestIdleVm();
+            return true;
+        }
 
         int totalCoresRequired = coresRequiredToSubmitJobs(jobsToSubmitList);
         int totalFreeVmCores = getTotalFreeVmCores();
-        LOGGER.info("{}: Cores required: {}", clock(), totalCoresRequired);
+        LOGGER.info("{}: Cores required by next batch of arriving jobs: {}", clock(),
+                totalCoresRequired);
         LOGGER.info("{}: Total free VM cores: {}", clock(), totalFreeVmCores);
         int coresNeeded = totalCoresRequired - totalFreeVmCores;
         if (coresNeeded > 0) {
@@ -339,17 +349,32 @@ public class CloudSimProxy {
         LOGGER.info("VMs running: {}", broker.getVmExecList().size());
     }
 
-    private void destroyIdleVms() {
-        List<Vm> idleVms = broker.getVmExecList();
-        LOGGER.info("{}: Vms running {}", clock(), idleVms.size());
-        for (Iterator<Vm> it = idleVms.iterator(); it.hasNext();) {
-            Vm vm = it.next();
-            if (vm.getCloudletScheduler().isEmpty()) {
-                // vm.getHost().getDatacenter().getVmAllocationPolicy().deallocateHostForVm(vm);
-                cloudSimPlus.send(datacenter, datacenter, 0, CloudSimTag.VM_DESTROY, vm);
-            }
+    private void destroyLargestIdleVm() {
+        List<Vm> idleVms = broker.getVmExecList().stream()
+                .filter(vm -> vm.getCloudletScheduler().isEmpty()).collect(Collectors.toList());
+
+        idleVms.stream().max(Comparator.comparingLong(Vm::getPesNumber)).ifPresent(largestVm -> {
+            cloudSimPlus.send(datacenter, datacenter, 0, CloudSimTag.VM_DESTROY, largestVm);
+            LOGGER.info("No jobs to submit, destroying the largest idle VM");
+            LOGGER.info("VMs running: {}", broker.getVmExecList().size());
+        });
+
+        if (idleVms.isEmpty()) {
+            LOGGER.info("No idle VMs available for destruction.");
         }
     }
+
+    // private void destroyIdleVms() {
+    // List<Vm> idleVms = broker.getVmExecList();
+    // LOGGER.info("{}: Vms running {}", clock(), idleVms.size());
+    // for (Iterator<Vm> it = idleVms.iterator(); it.hasNext();) {
+    // Vm vm = it.next();
+    // if (vm.getCloudletScheduler().isEmpty()) {
+    // // vm.getHost().getDatacenter().getVmAllocationPolicy().deallocateHostForVm(vm);
+    // cloudSimPlus.send(datacenter, datacenter, 0, CloudSimTag.VM_DESTROY, vm);
+    // }
+    // }
+    // }
 
     private int coresRequiredToSubmitJobs(List<Cloudlet> jobsToSubmitList) {
         return (int) jobsToSubmitList.stream().mapToLong(Cloudlet::getPesNumber).sum();
@@ -421,16 +446,11 @@ public class CloudSimProxy {
      * </ul>
      */
     public void printStats() {
-        // Contradictory to the previous functions which are called before the clock is
-        // procceded,
-        // this function is called after the clock is procceded. So, we need to
-        // calculate the start
-        // time of the timestep (instead of the target time) to get the correct
-        // statistics.
-        // This is done because this function also calls getArrivedJobsCount() which is
-        // also called
-        // in WrappedSimulation.java:calculateReward() function after the clock is
-        // procceded.
+        // Contradictory to the previous functions which are called before the clock is procceded,
+        // this function is called after the clock is procceded. So, we need to calculate the start
+        // time of the timestep (instead of the target time) to get the correct statistics. This is
+        // done because this function also calls getArrivedJobsCount() which is also called in
+        // WrappedSimulation.java:calculateReward() function after the clock is procceded.
         final double startTime = clock() - settings.getTimestepInterval();
 
         LOGGER.info("[{} - {}]: All jobs: {} ", startTime, clock(), inputJobs.size());
@@ -481,38 +501,38 @@ public class CloudSimProxy {
      * @param coresNeeded The number of cores needed to handle the jobs.
      * @return A list of VMs created to handle the specified number of jobs.
      */
-    private List<Vm> createRequiredVms(final double targetTime, final int coresNeeded) {
-        final int vmTypesCount = settings.VM_TYPES.length;
-        final List<Vm> vmList = new ArrayList<>();
-        final double startTime = targetTime - settings.getTimestepInterval();
-        int remainingCoresNeeded = coresNeeded;
-        LOGGER.info("[{} - {}]: {} VM cores are needed, will create VMs", startTime, targetTime,
-                coresNeeded);
+    // private List<Vm> createRequiredVms(final double targetTime, final int coresNeeded) {
+    // final int vmTypesCount = settings.VM_TYPES.length;
+    // final List<Vm> vmList = new ArrayList<>();
+    // final double startTime = targetTime - settings.getTimestepInterval();
+    // int remainingCoresNeeded = coresNeeded;
+    // LOGGER.info("[{} - {}]: {} VM cores are needed, will create VMs", startTime, targetTime,
+    // coresNeeded);
 
-        // Iterate over the VM types array in reverse order and calculate core counts
-        // In reverse order because we want to create the largest VMs first (best fit)
-        for (int i = vmTypesCount - 1; i >= 0; i--) {
-            String vmType = settings.VM_TYPES[i];
-            int vmCores = getVmCoreCountByType(vmType);
-            int howMany = remainingCoresNeeded / vmCores;
-            remainingCoresNeeded %= vmCores;
-            List<Vm> currentList = createVmList(howMany, vmType);
-            currentList.forEach(v -> v.setDescription(vmType));
-            vmList.addAll(currentList);
-            LOGGER.info("[{} - {}]: Creating {} {}-core VMs", startTime, targetTime, howMany,
-                    vmCores);
-        }
+    // // Iterate over the VM types array in reverse order and calculate core counts
+    // // In reverse order because we want to create the largest VMs first (best fit)
+    // for (int i = vmTypesCount - 1; i >= 0; i--) {
+    // String vmType = settings.VM_TYPES[i];
+    // int vmCores = getVmCoreCountByType(vmType);
+    // int howMany = remainingCoresNeeded / vmCores;
+    // remainingCoresNeeded %= vmCores;
+    // List<Vm> currentList = createVmList(howMany, vmType);
+    // currentList.forEach(v -> v.setDescription(vmType));
+    // vmList.addAll(currentList);
+    // LOGGER.info("[{} - {}]: Creating {} {}-core VMs", startTime, targetTime, howMany,
+    // vmCores);
+    // }
 
-        // If there are still cores needed, create a small VM to handle them
-        if (remainingCoresNeeded > 0) {
-            final String smallVmType = settings.VM_TYPES[0];
-            vmList.add(createVm(smallVmType).setDescription(smallVmType));
-            LOGGER.info("[{} - {}]: Creating 1 {}-core VM", clock(), targetTime,
-                    getVmCoreCountByType(smallVmType));
-        }
+    // // If there are still cores needed, create a small VM to handle them
+    // if (remainingCoresNeeded > 0) {
+    // final String smallVmType = settings.VM_TYPES[0];
+    // vmList.add(createVm(smallVmType).setDescription(smallVmType));
+    // LOGGER.info("[{} - {}]: Creating 1 {}-core VM", clock(), targetTime,
+    // getVmCoreCountByType(smallVmType));
+    // }
 
-        return vmList;
-    }
+    // return vmList;
+    // }
 
     /**
      * Checks if any VM (Virtual Machine) in the broker's execution list is suitable for the given
@@ -590,11 +610,13 @@ public class CloudSimProxy {
         // List<Vm> waitingVms = broker.getVmWaitingList();
         // waitingVmFreewaitingVms.stream().mapToLong(vm -> vm.getPesNumber() -
         // vm.getFreePesNumber()).sum();
-        return (int) Stream
+        int totalFreeCores = (int) Stream
                 .concat(broker.getVmExecList().stream(), broker.getVmWaitingList().stream())
                 .mapToLong(vm -> vm.getExpectedFreePesNumber()).sum()
                 - (int) broker.getCloudletWaitingList().stream().mapToLong(Cloudlet::getPesNumber)
                         .sum();
+
+        return Math.max(totalFreeCores, 0);
     }
 
     // private int getUnableToSubmitJobCount(final List<Cloudlet> cloudletList) {

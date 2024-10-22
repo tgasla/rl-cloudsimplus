@@ -29,7 +29,6 @@ public class SimulationHistory {
     }
 
     public void logHistory() {
-        LOGGER.info("Simulation History");
         history.entrySet().forEach(entry -> {
             LOGGER.info(entry.getKey() + ": " + Arrays.toString(entry.getValue().toArray()));
         });

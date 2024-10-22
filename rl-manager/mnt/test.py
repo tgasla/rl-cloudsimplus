@@ -16,16 +16,18 @@ def test(hostname, params):
 
     train_model_dir = params["train_model_dir"]
 
-    jobs = csv_to_cloudlet_descriptor(f"mnt/traces/{params["job_trace_filename"]}.csv")
+    jobs = csv_to_cloudlet_descriptor(
+        os.path.join("mnt", "traces", f"{params["job_trace_filename"]}.csv")
+    )
 
     # Create and wrap the environment
     env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
 
-    base_log_dir = "./logs/"
+    base_log_dir = "logs"
 
     best_model_path = os.path.join(
         base_log_dir,
-        f"{train_model_dir}",
+        train_model_dir,
         "best_model",
     )
 
@@ -37,23 +39,7 @@ def test(hostname, params):
             f"Algorithm '{params["algorithm"]}' not found in sb3 module."
         )
 
-    filename_id = generate_filename(
-        algorithm_str=params["algorithm"],
-        timesteps=params["timesteps"],
-        hosts=params["host_count"],
-        host_pes=params["host_pes"],
-        host_pe_mips=params["host_pe_mips"],
-        reward_job_wait_coef=params["reward_job_wait_coef"],
-        reward_running_vm_cores_coef=params["reward_running_vm_cores_coef"],
-        reward_unutilized_vm_cores_coef=params["reward_unutilized_vm_cores_coef"],
-        reward_invalid_coef=params["reward_invalid_coef"],
-        job_trace_filename=params["job_trace_filename"],
-        max_job_pes=params["max_job_pes"],
-        train_model_dir=params["train_model_dir"],
-        mode="test",
-        vm_allocation_policy=params["vm_allocation_policy"],
-        hostname=hostname,
-    )
+    filename_id = generate_filename(params, hostname)
 
     log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
@@ -74,7 +60,7 @@ def test(hostname, params):
     if hasattr(model, "replay_buffer"):
         best_replay_buffer_path = os.path.join(
             "logs",
-            f"{params["train_model_dir"]}",
+            params["train_model_dir"],
             "best_model_replay_buffer",
         )
         model.load_replay_buffer(best_replay_buffer_path)

@@ -48,7 +48,8 @@ public class SimulationSettings {
     private final double rewardInvalidCoef;
     private final int maxEpisodeLength;
     private final String vmAllocationPolicy;
-    private final boolean stateAsTreeArray;
+    private final String algorithm;
+    private final String stateRepresentation;
 
     public SimulationSettings(final Map<String, Object> params) {
         timestepInterval = (double) params.get("timestep_interval");
@@ -81,7 +82,8 @@ public class SimulationSettings {
         rewardInvalidCoef = (double) params.get("reward_invalid_coef");
         maxEpisodeLength = (int) params.get("max_episode_length");
         vmAllocationPolicy = (String) params.get("vm_allocation_policy");
-        stateAsTreeArray = (boolean) params.get("state_as_tree_array");
+        algorithm = (String) params.get("algorithm");
+        stateRepresentation = (String) params.get("state_representation");
     }
 
     public String printSettings() {
@@ -100,8 +102,8 @@ public class SimulationSettings {
                 + rewardRunningVmCoresCoef + ",\nrewardUnutilizedVmCoresCoef="
                 + rewardUnutilizedVmCoresCoef + ",\nrewardInvalidCoef=" + rewardInvalidCoef
                 + ",\nmaxEpisodeLength=" + maxEpisodeLength + ",\nvmAllocationPolicy="
-                + vmAllocationPolicy + ",\nstateAsTreeArray= " + stateAsTreeArray
-                + vmAllocationPolicy + ",\n}";
+                + vmAllocationPolicy + ",\nstateRepresentation= " + stateRepresentation
+                + vmAllocationPolicy + "\nalgorithm= " + algorithm + ",\n}";
 
     }
 
@@ -237,8 +239,12 @@ public class SimulationSettings {
         return vmAllocationPolicy;
     }
 
-    public boolean isStateAsTreeArray() {
-        return stateAsTreeArray;
+    public String getAlgorithm() {
+        return algorithm;
+    }
+
+    public String getStateRepresentation() {
+        return stateRepresentation;
     }
 
     public int getSizeMultiplier(final String type) {
@@ -246,7 +252,7 @@ public class SimulationSettings {
             case MEDIUM -> mediumVmMultiplier; // m5a.xlarge
             case LARGE -> largeVmMultiplier; // m5a.2xlarge
             case SMALL -> 1; // m5a.large
-            default -> 1;
+            default -> throw new IllegalArgumentException("Unexpected value: " + type);
         };
     }
 }

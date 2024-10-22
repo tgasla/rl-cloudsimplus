@@ -20,28 +20,22 @@ from utils.trace_utils import csv_to_cloudlet_descriptor
 
 def train(hostname, params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # print(params)
+    filename_id = generate_filename(params, hostname)
 
-    filename_id = generate_filename(
-        algorithm_str=params["algorithm"],
-        timesteps=params["timesteps"],
-        hosts=params["host_count"],
-        host_pes=params["host_pes"],
-        host_pe_mips=params["host_pe_mips"],
-        reward_job_wait_coef=params["reward_job_wait_coef"],
-        reward_running_vm_cores_coef=params["reward_running_vm_cores_coef"],
-        reward_unutilized_vm_cores_coef=params["reward_unutilized_vm_cores_coef"],
-        reward_invalid_coef=params["reward_invalid_coef"],
-        job_trace_filename=params["job_trace_filename"],
-        max_job_pes=params["max_job_pes"],
-        mode="train",
-        vm_allocation_policy=params["vm_allocation_policy"],
-        hostname=hostname,
-    )
-
-    base_log_dir = "./logs/"
+    base_log_dir = "logs"
 
     # Select the appropriate algorithm
-    if hasattr(sb3, params["algorithm"]):
+    if (
+        params["vm_allocation_policy"] == "fromfile"
+        or params["vm_allocation_policy"] == "heuristic"
+    ):
+        # If the vm_allocation_policy is fromfile or heuristic, pick a default algorithm
+        # so the code triggers the simulation environment creation
+        # NOTE: the algorithm decision through learning is not used at all in this case
+        algorithm = getattr(sb3, "PPO")
+        policy = "MlpPolicy"
+    elif params["vm_allocation_policy"] == "rl" and hasattr(sb3, params["algorithm"]):
         algorithm = getattr(sb3, params["algorithm"])
         policy = "MlpPolicy"
     else:
@@ -60,7 +54,8 @@ def train(hostname, params):
     # print(job_trace_filename, jobs)
 
     # Create folder if needed
-    os.makedirs(log_dir, exist_ok=True)
+    if params["log_experiment"]:
+        os.makedirs(log_dir, exist_ok=True)
 
     # Create and wrap the environment
     env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
@@ -68,14 +63,15 @@ def train(hostname, params):
     # Monitor needs the environment to have a render_mode set
     # If render_mode is None, it will give a warning.
     # add info_keywords if needed
-    menv = Monitor(env, log_dir)
+    if params["log_experiment"]:
+        env = Monitor(env, log_dir)
 
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
     if params["algorithm"] == "A2C":
         device = "cpu"
-        venv = SubprocVecEnv([lambda: menv], start_method="fork")
+        venv = SubprocVecEnv([lambda: env], start_method="fork")
     else:
-        venv = DummyVecEnv([lambda: menv])
+        venv = DummyVecEnv([lambda: env])
 
     # if hasattr(algorithm, "ent_coef"):
     # algorithm.ent_coef = 0.01
@@ -91,8 +87,10 @@ def train(hostname, params):
         seed=np.random.randint(0, 2**32 - 1),
     )
 
-    logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
-    model.set_logger(logger)
+    if params["log_experiment"]:
+        # the logger can write to stdout, progress.csv and tensorboard
+        logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
+        model.set_logger(logger)
 
     # Add some action noise for exploration if applicable
     if hasattr(model, "action_noise"):
@@ -102,7 +100,10 @@ def train(hostname, params):
         )
         model.action_noise = action_noise
 
-    callback = SaveOnBestTrainingRewardCallback(log_dir=log_dir)
+    callback = None
+    if params["log_experiment"]:
+        # the callback writes all the other .csv files and saves the model (with replay buffer) when the reward is the best
+        callback = SaveOnBestTrainingRewardCallback(log_dir=log_dir)
 
     # Train the agent
     model.learn(
