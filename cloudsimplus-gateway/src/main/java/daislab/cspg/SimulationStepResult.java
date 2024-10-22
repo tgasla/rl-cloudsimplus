@@ -7,7 +7,7 @@ import java.util.Arrays;
  */
 public class SimulationStepResult {
 
-    private final double[][] observationMatrix;
+    private final double[][] observation2dArray;
     private final int[] observationTreeArray;
     private final double reward;
     private final boolean terminated;
@@ -21,12 +21,12 @@ public class SimulationStepResult {
         this.terminated = terminated;
         this.truncated = truncated;
         this.info = info;
-        this.observationMatrix = null;
+        this.observation2dArray = null;
     }
 
     public SimulationStepResult(final double[][] obs, final double reward, final boolean terminated,
             final boolean truncated, final SimulationStepInfo info) {
-        this.observationMatrix = obs;
+        this.observation2dArray = obs;
         this.reward = reward;
         this.terminated = terminated;
         this.truncated = truncated;
@@ -38,8 +38,8 @@ public class SimulationStepResult {
         return observationTreeArray;
     }
 
-    public double[][] getObservationMatrix() {
-        return observationMatrix;
+    public double[][] getObservation2dArray() {
+        return observation2dArray;
     }
 
     public double getReward() {
@@ -60,9 +60,9 @@ public class SimulationStepResult {
 
     @Override
     public String toString() {
-        return "SimulationStepResult{" + ", observationMatrix=" + Arrays.toString(observationMatrix)
-                + ", observationTreeArray=" + Arrays.toString(observationTreeArray) + ", reward="
-                + reward + ", terminated=" + terminated + ", truncated=" + truncated + ", info="
-                + info.toString() + '}';
+        return "SimulationStepResult{" + ", observation2dArray="
+                + Arrays.toString(observation2dArray) + ", observationTreeArray="
+                + Arrays.toString(observationTreeArray) + ", reward=" + reward + ", terminated="
+                + terminated + ", truncated=" + truncated + ", info=" + info.toString() + '}';
     }
 }

@@ -48,7 +48,9 @@ class SingleDC(gym.Env):
 
         if self.vm_allocation_policy == "fromfile":
             self.vm_allocation_policy = "fromfile"
-            with open(os.path.join("mnt", params["algorithm"]), mode="r") as file:
+            with open(
+                os.path.join("mnt", "policies", params["algorithm"]), mode="r"
+            ) as file:
                 csv_reader = csv.reader(file)
                 _ = next(csv_reader)  # skip the header
                 self.action_file_data = list(csv_reader)
@@ -130,14 +132,17 @@ class SingleDC(gym.Env):
 
         result = self.simulation_environment.reset(self.simulation_id, seed)
 
-        if self.state_representation == "treearray":
-            raw_obs = result.getObservationTreeArray()
-            initial_obs = self._to_nparray(raw_obs)
-            obs = np.resize(initial_obs, self.observation_length)
-            obs[len(initial_obs) :] = 0
-        else:
-            raw_obs = result.getObservationMatrix()
-            obs = self._to_nparray(raw_obs)
+        match self.state_representation:
+            case "treearray":
+                raw_obs = result.getObservationTreeArray()
+                initial_obs = self._to_nparray(raw_obs)
+                obs = np.resize(initial_obs, self.observation_length)
+                obs[len(initial_obs) :] = 0
+            case "2darray":
+                raw_obs = result.getObservation2dArray()
+                obs = self._to_nparray(raw_obs)
+            case _:
+                raise ValueError("Invalid state representation")
 
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
@@ -168,14 +173,17 @@ class SingleDC(gym.Env):
         terminated = result.isTerminated()
         truncated = result.isTruncated()
 
-        if self.state_representation == "treearray":
-            raw_obs = result.getObservationTreeArray()
-            initial_obs = self._to_nparray(raw_obs)
-            obs = np.resize(initial_obs, self.observation_length)
-            obs[len(initial_obs) :] = 0
-        else:
-            raw_obs = result.getObservationMatrix()
-            obs = self._to_nparray(raw_obs)
+        match self.state_representation:
+            case "treearray":
+                raw_obs = result.getObservationTreeArray()
+                initial_obs = self._to_nparray(raw_obs)
+                obs = np.resize(initial_obs, self.observation_length)
+                obs[len(initial_obs) :] = 0
+            case "2darray":
+                raw_obs = result.getObservation2dArray()
+                obs = self._to_nparray(raw_obs)
+            case _:
+                raise ValueError("Invalid state representation")
 
         info = self._raw_info_to_dict(raw_info)
 

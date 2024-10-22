@@ -92,15 +92,13 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo();
 
-        // gets metric data saved into metricsStorage and concatenates all of them into
-        // a 2d array
-        if (settings.getStateRepresentation().equals("treearray")) {
-            int[] observation = getObservationAsTreeArray();
-            return new SimulationResetResult(observation, info);
-        }
+        return switch (settings.getStateRepresentation()) {
+            case "treearray" -> new SimulationResetResult(getObservationAsTreeArray(), info);
+            case "2darray" -> new SimulationResetResult(getObservationAs2dArray(), info);
+            default -> throw new IllegalArgumentException(
+                    "Unknown state representation: " + settings.getStateRepresentation());
+        };
 
-        double[][] observation = getObservationAs2dMatrix();
-        return new SimulationResetResult(observation, info);
     }
 
     public void resetEpisodeStats() {
@@ -173,20 +171,20 @@ public class WrappedSimulation {
         }
 
         updateEpisodeStats();
-
         printEpisodeStatsDebug(rewards);
 
         SimulationStepInfo info = new SimulationStepInfo(rewards, getCurrentTimestepMetrics(),
                 cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
                 getObservationAsTreeArray());
 
-        if (settings.getStateRepresentation().equals("treearray")) {
-            int[] observation = getObservationAsTreeArray();
-            return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
-        }
-
-        double[][] observation = getObservationAs2dMatrix();
-        return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
+        return switch (settings.getStateRepresentation()) {
+            case "treearray" -> new SimulationStepResult(getObservationAsTreeArray(), rewards[0],
+                    terminated, truncated, info);
+            case "2darray" -> new SimulationStepResult(getObservationAs2dArray(), rewards[0],
+                    terminated, truncated, info);
+            default -> throw new IllegalArgumentException(
+                    "Unknown state representation: " + settings.getStateRepresentation());
+        };
     }
 
     private List<double[][]> getCurrentTimestepMetrics() {
@@ -366,7 +364,7 @@ public class WrappedSimulation {
 
         final boolean isValid;
 
-        LOGGER.info("{}: timestep: {}, action: [{}, {}, {}, {}]", clock(), currentStep, action[0],
+        LOGGER.info("{}: Timestep: {}, Action: [{}, {}, {}, {}]", clock(), currentStep, action[0],
                 action[1], action[2], action[3]);
 
         // [action, hostId, vmId, type]
@@ -561,15 +559,13 @@ public class WrappedSimulation {
                 }
             }
         }
-        // System.out.print(clock() + " obsTreeArray in wrappedSimulation: ");
-        // for (int i = 0; i < treeArray.length; i++) {
-        // System.out.print(treeArray[i] + " ");
-        // }
-        // System.out.print("\n");
+        // System.out.print(clock() + " TreeArray in wrappedSimulation: ");
+        // System.out.println(Arrays.deepToString(treeArray));
+
         return treeArray;
     }
 
-    private double[][] getObservationAs2dMatrix() {
+    private double[][] getObservationAs2dArray() {
         // here we get some vertical subarrays of the metrics. The whole array of
         // metrics are only
         // used to pass the info to python and print to csv files then.
@@ -654,10 +650,9 @@ public class WrappedSimulation {
         rewards[3] = unutilizedVmCoresReward;
         rewards[4] = invalidReward;
 
-        // if (!isValid) {
-        // LOGGER.debug("Penalty given to the agent because the selected action was not
-        // possible");
-        // }
+        if (!isValid) {
+            LOGGER.debug("Penalty given to the agent because the selected action was not possible");
+        }
         return rewards;
     }
 

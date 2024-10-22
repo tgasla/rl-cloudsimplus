@@ -10,17 +10,17 @@ public class SimulationResetResult {
 
     private final Gson gson = new Gson();
     private final int[] observationTreeArray;
-    private final double[][] observationMatrix;
+    private final double[][] observation2dArray;
     private final SimulationStepInfo info;
 
     public SimulationResetResult(final int[] obs, final SimulationStepInfo info) {
         this.observationTreeArray = obs;
         this.info = info;
-        this.observationMatrix = null;
+        this.observation2dArray = null;
     }
 
     public SimulationResetResult(final double[][] obs, final SimulationStepInfo info) {
-        this.observationMatrix = obs;
+        this.observation2dArray = obs;
         this.info = info;
         this.observationTreeArray = null;
     }
@@ -29,12 +29,12 @@ public class SimulationResetResult {
         return observationTreeArray;
     }
 
-    public double[][] getObservationMatrix() {
-        return observationMatrix;
+    public double[][] getObservation2dArray() {
+        return observation2dArray;
     }
 
-    public String getObservationMatrixAsJson() {
-        return gson.toJson(observationMatrix);
+    public String getObservation2dArrayAsJson() {
+        return gson.toJson(observation2dArray);
     }
 
     public String getObservationTreeArrayAsJson() {
@@ -47,8 +47,8 @@ public class SimulationResetResult {
 
     @Override
     public String toString() {
-        return "SimulationStepResult{" + ", observationMatrix=" + Arrays.toString(observationMatrix)
-                + "observationTreeArray= " + Arrays.toString(observationTreeArray) + ", info="
-                + info.toString() + '}';
+        return "SimulationStepResult{" + ", observation2dArray="
+                + Arrays.toString(observation2dArray) + "observationTreeArray= "
+                + Arrays.toString(observationTreeArray) + ", info=" + info.toString() + '}';
     }
 }

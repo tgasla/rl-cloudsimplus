@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Iterator;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,7 +44,7 @@ public class CloudSimProxy {
     private final DatacenterBrokerFirstFitFixed broker;
     private final VmCost vmCost;
     private final List<Cloudlet> inputJobs; // all jobs to keep track of statuses
-    private final PriorityQueue<Cloudlet> jobQueue; // jobs to be scheduled
+    private final PriorityQueue<Cloudlet> jobQueue; // jobs to be submitted - sorted by arrival time
     private final Map<Long, Double> jobArrivalTimeMap; // map to keep track of arrival times
     private List<Double> jobsFinishedWaitTimeLastTimestep;
     private int vmsCreated;
@@ -68,7 +67,8 @@ public class CloudSimProxy {
                 .collect(Collectors.toMap(Cloudlet::getId, Cloudlet::getSubmissionDelay));
         cloudSimPlus = new CloudSimPlus(settings.getMinTimeBetweenEvents());
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
-        broker.setShutdownWhenIdle(false);
+        broker.setShutdownWhenIdle(false); // important to keep the broker running
+        // no need because set in createVm()
         // broker.setVmDestructionDelay(2 * settings.getMinTimeBetweenEvents());
         datacenter = createDatacenter();
         vmCost = new VmCost(settings);
@@ -380,29 +380,6 @@ public class CloudSimProxy {
         return (int) jobsToSubmitList.stream().mapToLong(Cloudlet::getPesNumber).sum();
     }
 
-    // public void runOneTimestep() {
-    // final double targetTime = clock() + settings.getTimestepInterval();
-    // ensureSimulationIsRunning();
-
-    // // this proceeds the clock to 0.1 if it is the first step
-    // initializeSimulationIfFirstStep();
-
-    // jobsFinishedWaitTimeLastTimestep.clear();
-    // List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
-    // int unableToSubmitJobCount = getUnableToSubmitJobCount(jobsToSubmitList);
-    // if (unableToSubmitJobCount > 0) {
-    // List<Vm> vmList = createVmsNeeded(targetTime, unableToSubmitJobCount);
-    // broker.submitVmList(vmList, settings.getVmStartupDelay()); // submit all VMs
-    // }
-
-    // clearListsIfNeeded();
-    // proceedClockTo(targetTime);
-    // tryToSubmitJobs(jobsToSubmitList);
-    // if (shouldPrintStats()) {
-    // printStats();
-    // }
-    // }
-
     /**
      * Ensures that the simulation is currently running. If the simulation is not running, it throws
      * an IllegalStateException.
@@ -467,8 +444,6 @@ public class CloudSimProxy {
         }
 
         LOGGER.info("[{} - {}]: Jobs arrived: {}", startTime, clock(), getArrivedJobsCount());
-        // LOGGER.info("{}: Arrived, but not yet running: {}", clock(),
-        // getNotYetRunningJobsCount());
     }
 
     private List<Vm> createSingleVm(final double targetTime, final int coresNeeded) {
@@ -604,7 +579,6 @@ public class CloudSimProxy {
     }
 
     private int getTotalFreeVmCores() {
-
         // return (int) hosts.stream().flatMap(host -> host.getVmList().stream())
         // .mapToLong(vm -> vm.getPesNumber() - vm.getFreePesNumber()).sum();
         // List<Vm> waitingVms = broker.getVmWaitingList();
