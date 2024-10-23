@@ -54,8 +54,12 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
 - For MacOS
 
 ```bash
-export JAVA_HOME=/usr/libexec/java_home
+echo 'export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"' >> ~/.zshrc
 ```
+
+<!--
+export JAVA_HOME=/usr/libexec/java_home
+-->
 
 <!--
 ### 1.5 Select the correct Gradle version
