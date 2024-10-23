@@ -52,7 +52,7 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
 ```
 
 - For MacOS
-- Follow brew instructions or visit [here](https://medium.com/@manvendrapsingh/installing-many-jdk-versions-on-macos-dfc177bc8c2b) for more details.
+  - Follow brew instructions or visit [here](https://medium.com/@manvendrapsingh/installing-many-jdk-versions-on-macos-dfc177bc8c2b) for more details.
 
 <!--
 ```bash
