@@ -23,16 +23,16 @@ run-tensorboard:
 	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 80:6006 tensorboard
 
 run-cpu:
-	scripts/run_docker_cpu.sh
+	scripts/run_docker.sh
 
 run-gpu:
-	scripts/run_docker_gpu.sh
+	GPU=true scripts/run_docker.sh
 
 run-cpu-attached:
-	ATTACHED=true scripts/run_docker_cpu.sh
+	ATTACHED=true scripts/run_docker.sh
 
 run-gpu-attached:
-	ATTACHED=true scripts/run_docker_gpu.sh
+	GPU=true ATTACHED=true scripts/run_docker.sh
 
 clean-gateway:
 	cd cloudsimplus-gateway && ./gradlew clean
