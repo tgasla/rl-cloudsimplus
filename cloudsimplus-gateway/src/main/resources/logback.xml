@@ -28,7 +28,5 @@
  
 <!-- By default, the level of the root level is set to INFO -->
 <root level="INFO">
-    <!-- <appender-ref ref="STDOUT" /> -->
-    <!-- <appender-ref ref="FILE" /> -->
 </root>
 </configuration>

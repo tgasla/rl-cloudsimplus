@@ -1,5 +1,15 @@
 # train_model_dir: applicable only if mode == [transfer|test]
 # vm_allocation_policy: [random, roundrobin, worstfit, bestfit, firstfit]
+# globals.log_output: [none, stdout, file, stdout-file]
+# globals.junit_output: [true, false]
+# globals.log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
+globals:
+    attached: false
+    gpu: true
+    log_level: INFO
+    log_output: none
+    junit_output: false
+
 common:
     timestep_interval: 1.0
     initial_s_vm_count: 0
@@ -135,7 +145,7 @@ experiment_7:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: hill_max30
+    job_trace_filename: three_peaks_max30
     timesteps: 1000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
@@ -152,7 +162,7 @@ experiment_8:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: hill_max30
+    job_trace_filename: two_peaks_max30
     timesteps: 1000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
@@ -186,7 +196,7 @@ experiment_10:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: hill_max30
+    job_trace_filename: valley_max30
     timesteps: 1000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
@@ -203,7 +213,7 @@ experiment_11:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: hill_max30
+    job_trace_filename: ascending_max30
     timesteps: 1000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
@@ -220,7 +230,7 @@ experiment_12:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: hill_max30
+    job_trace_filename: descending_max30
     timesteps: 1000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25

@@ -22,8 +22,8 @@ tasks.withType(JavaCompile) {
 
 task configureLogging {
     doLast {
-        def logLevel = System.getProperty('log.level')?.trim() ?: 'INFO'
-        def logOutput = System.getProperty('log.output')?.trim()?.toLowerCase() ?: 'stdout'
+        def logLevel = System.getProperty('log.level')?.trim().toUpperCase() ?: 'INFO'
+        def logOutput = System.getProperty('log.output')?.trim()?.toLowerCase() ?: 'none'
 
         def logbackFile = file('src/main/resources/logback.xml')
         if (!logbackFile.exists()) {
@@ -35,7 +35,7 @@ task configureLogging {
         def logbackConfig = logbackFile.text
 
         // Update the log level
-        logbackConfig = logbackConfig.replaceAll('<root level="\\w*">', '<root level=\"$logLevel\">')
+        logbackConfig = logbackConfig.replaceAll('<root level="\\w*">', "<root level=\"$logLevel\">")
 
         // Remove everything between <root level="INFO"> and </root>
         logbackConfig = logbackConfig.replaceAll(/<root level="\w*">[\s\S]*<\/root>/, "<root level=\"$logLevel\">\n</root>")
@@ -66,8 +66,8 @@ build.dependsOn configureLogging
 test {
     useJUnitPlatform()
     // enable/disable system out messages on junit tests
-    // enable testLogging if log.level == 'DEBUG'
-    testLogging.showStandardStreams = System.getProperty('log.level', 'INFO') == 'DEBUG'
+    testLogging.showStandardStreams = System.getProperty('junit.output')?.trim()?.toBoolean() ?: false
+    logger.lifecycle "showStandardStreams set to $testLogging.showStandardStreams"
 }
 
 // In this section you declare where to find the dependencies of your project

@@ -22,10 +22,11 @@ if [ $NUM_REPLICAS -gt 0 ]; then
     
     # Run the docker compose command based on ATTACHED flag
     if [ "$ATTACHED" = true ]; then
-        docker compose $PROFILE_OPTION up --scale $SCALE_OPTION --build --remove-orphans
+        DETACHED_OPTION=""
     else
-        docker compose $PROFILE_OPTION up --scale $SCALE_OPTION -d --build --remove-orphans
+        DETACHED_OPTION="-d"
     fi
+        docker compose $PROFILE_OPTION up --scale $SCALE_OPTION $DETACHED_OPTION --build --remove-orphans
 else
     echo "No replicas found in the YAML file."
 fi
