@@ -60,7 +60,7 @@ echo 'export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"' >> ~/.zshrc
 ```
 -->
 
-> [!IMPORTANT]
+> [!NOTE]
 > This command will make your default Java version 21.
 
 <!--
