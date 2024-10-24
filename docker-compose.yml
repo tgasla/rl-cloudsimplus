@@ -15,6 +15,7 @@ services:
     depends_on:
       - gateway
     volumes:
+      - ./config.yml:/mgr/config.yml
       - ./rl-manager/mnt:/mgr/mnt
       - ./logs:/mgr/logs
       - /run/docker.sock:/run/docker.sock:ro

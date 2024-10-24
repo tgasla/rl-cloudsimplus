@@ -99,6 +99,7 @@ def transfer(hostname, params):
         # This way, the learning restarts
         # The only problem is that tensorboard recognizes
         # it as a new model, but that's not a critical issue for now
+        # see: https://stable-baselines3.readthedocs.io/en/master/guide/examples.html
         reset_num_timesteps=True,
         log_interval=1,
         callback=callback,

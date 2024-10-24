@@ -96,21 +96,26 @@ class SingleDC(gym.Env):
             )
         )
 
-        if self.state_representation == "treearray":
-            self.observation_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
-            self.max_cores_per_node = 101
-            self.observation_space = spaces.MultiDiscrete(
-                self.max_cores_per_node * np.ones(self.observation_length)
-            )
-        else:
-            self.observation_rows = 1 + self.max_hosts + self.max_vms + self.max_jobs
-            self.observation_cols = 4
-            self.observation_space = spaces.Box(
-                low=0,
-                high=1,
-                shape=(self.observation_rows, self.observation_cols),
-                dtype=np.float32,
-            )
+        match self.state_representation:
+            case "treearray":
+                self.observation_length = (
+                    1 + self.max_hosts + self.max_vms + self.max_jobs
+                )
+                self.max_cores_per_node = 101
+                self.observation_space = spaces.MultiDiscrete(
+                    self.max_cores_per_node * np.ones(self.observation_length)
+                )
+            case "2darray":
+                self.observation_rows = (
+                    1 + self.max_hosts + self.max_vms + self.max_jobs
+                )
+                self.observation_cols = 4
+                self.observation_space = spaces.Box(
+                    low=0,
+                    high=1,
+                    shape=(self.observation_rows, self.observation_cols),
+                    dtype=np.float32,
+                )
 
         if render_mode is not None and render_mode not in self.metadata["render_modes"]:
             gym.logger.warn(

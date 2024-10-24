@@ -151,7 +151,7 @@ public class WrappedSimulation {
         // final String dotString = treeArray.toDot();
 
         // gets telemetry data and saves it into metricsStorage
-        collectMetrics();
+        updateMetrics();
 
         boolean terminated = !cloudSimProxy.isRunning();
         boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
@@ -448,7 +448,7 @@ public class WrappedSimulation {
         return true;
     }
 
-    private void collectMetrics() {
+    private void updateMetrics() {
         metricsStorage.setDatacenterMetrics(collectDatacenterMetrics());
         metricsStorage.setHostMetrics(collectHostMetrics());
         metricsStorage.setVmMetrics(collectVmMetrics());
