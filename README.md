@@ -145,15 +145,7 @@ There are three experiment modes: train, transfer, and test. When transfer or te
 After editing the configuration file, run the following command to start the experiment(s).
 
 ```bash
-make run-cpu
-```
-
-> [!NOTE]
-> This command runs all the docker containers in detached mode
-> If you want to use the attached mode, try the following command:
-
-```bash
-make run-cpu-attached
+make run
 ```
 
 ## CUDA GPU support
@@ -161,21 +153,6 @@ make run-cpu-attached
 There is also support to run the experiments in CUDA GPUs.
   - You need to have [CUDA](https://developer.nvidia.com/cuda-downloads) and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your system.
   - Restart the docker daemon if you just downloaded the cuda-container-toolkit.
-
-Run using all available CUDA devices by running the following command:
-
-```bash
-make run-gpu
-```
-for detached
-
-or
-
-```bash
-make run-gpu-attached
-```
-
-for attached mode.
 
 <!--
 - The `--build` flag also builds the manager image
