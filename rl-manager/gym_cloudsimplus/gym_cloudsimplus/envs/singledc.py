@@ -67,7 +67,7 @@ class SingleDC(gym.Env):
         self.max_hosts = 10
         self.vm_types_count = 3
 
-        # it makes sense to assume that the minimum amount of cores per job will be 1
+        # we assume that the minimum amount of cores per job will be 1
         self.min_job_pes = 1
         self.max_vms = self.max_hosts * int(host_pes) // int(small_vm_pes)
         self.max_jobs = self.max_vms * int(small_vm_pes) // self.min_job_pes

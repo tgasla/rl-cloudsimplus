@@ -9,12 +9,9 @@ public class VmAllocationPolicyCustom extends VmAllocationPolicySimple {
 
     @Override
     public HostSuitability allocateHostForVm(final Vm vm) {
-        // The vm description except the vm type contains also the hostId that is supposed to be
-        // allocated
-        // vm desctiption example: "S-13"
-        // We parse the description getting the number after the '-' symbol and after the allocation
-        // is done
-        // we set the description back to the vm type only (i.e. "S")
+        // The vm description except the vm type contains also the hostId that is supposed to be allocated
+        // vm desctiption example: "S-13". We parse the description getting the number after the '-' symbol
+        // and after the allocation is done we set the description back to the vm type only (i.e. "S")
         final String vmDescription = vm.getDescription();
         final int index = vmDescription.indexOf('-');
         final HostSuitability suitability;
