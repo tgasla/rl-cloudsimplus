@@ -96,14 +96,15 @@ public class SimulationSettings {
                 + smallVmPes + ",\nsmallVmStorage=" + smallVmStorage + ",\nsmallVmBw=" + smallVmBw
                 + ",\nmediumVmMultiplier=" + mediumVmMultiplier + ",\nlargeVmMultiplier="
                 + largeVmMultiplier + ",\nvmStartupDelay=" + vmStartupDelay + ",\nvmShutdownDelay="
-                + vmShutdownDelay + ",\nvmHourlyCost=" + vmHourlyCost + ",\npayingForTheFullHour="
-                + payingForTheFullHour + ",\n" + "clearCreatedLists=" + clearCreatedLists
-                + ",\nrewardJobWaitCoef=" + rewardJobWaitCoef + ",\nrewardRunningVmCoresCoef="
-                + rewardRunningVmCoresCoef + ",\nrewardUnutilizedVmCoresCoef="
-                + rewardUnutilizedVmCoresCoef + ",\nrewardInvalidCoef=" + rewardInvalidCoef
-                + ",\nmaxEpisodeLength=" + maxEpisodeLength + ",\nvmAllocationPolicy="
-                + vmAllocationPolicy + ",\nstateRepresentation= " + stateRepresentation
-                + vmAllocationPolicy + "\nalgorithm= " + algorithm + ",\n}";
+                + vmShutdownDelay + ",\nsmallVmHourlyCost=" + smallVmHourlyCost
+                + ",\npayingForTheFullHour=" + payingForTheFullHour + ",\n" + "clearCreatedLists="
+                + clearCreatedLists + ",\nrewardJobWaitCoef=" + rewardJobWaitCoef
+                + ",\nrewardRunningVmCoresCoef=" + rewardRunningVmCoresCoef
+                + ",\nrewardUnutilizedVmCoresCoef=" + rewardUnutilizedVmCoresCoef
+                + ",\nrewardInvalidCoef=" + rewardInvalidCoef + ",\nmaxEpisodeLength="
+                + maxEpisodeLength + ",\nvmAllocationPolicy=" + vmAllocationPolicy
+                + ",\nstateRepresentation= " + stateRepresentation + vmAllocationPolicy
+                + "\nalgorithm= " + algorithm + ",\n}";
 
     }
 
@@ -135,8 +136,8 @@ public class SimulationSettings {
         return timestepInterval;
     }
 
-    public double getVmHourlyCost() {
-        return vmHourlyCost;
+    public double getSmallVmHourlyCost() {
+        return smallVmHourlyCost;
     }
 
     public long getHostPeMips() {

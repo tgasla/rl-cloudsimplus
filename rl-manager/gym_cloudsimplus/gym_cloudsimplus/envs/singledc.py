@@ -102,8 +102,12 @@ class SingleDC(gym.Env):
                     1 + self.max_hosts + self.max_vms + self.max_jobs
                 )
                 self.max_cores_per_node = 101
-                self.observation_space = spaces.MultiDiscrete(
-                    self.max_cores_per_node * np.ones(self.observation_length)
+                self.observation_space = spaces.Dict(
+                    {
+                        "system_tree": spaces.MultiDiscrete(
+                            self.max_cores_per_node * np.ones(self.observation_length)
+                        )
+                    }
                 )
             case "2darray":
                 self.observation_rows = (

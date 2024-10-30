@@ -22,11 +22,10 @@ public class VmCost {
     public VmCost(final SimulationSettings settings) {
         this.settings = settings;
 
+        final double perSecondVMCost = settings.getSmallVmHourlyCost() / 3600;
+
         // timestepInterval is the time in seconds between each iteration
-
         iterationsInHour = 3600 / settings.getTimestepInterval();
-
-        final double perSecondVMCost = settings.getVmHourlyCost() / 3600;
         perIterationSmallVmCost = perSecondVMCost * settings.getTimestepInterval();
     }
 
