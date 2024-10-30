@@ -4,7 +4,7 @@
 # globals.junit_output: [true, false]
 # globals.log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
 globals:
-    attached: true
+    attached: false
     gpu: true
     log_level: TRACE
     log_output: none
