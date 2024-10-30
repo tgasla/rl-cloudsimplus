@@ -14,7 +14,7 @@ def test(hostname, params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     jobs = csv_to_cloudlet_descriptor(
-        os.path.join("mnt", "traces", f"{params["job_trace_filename"]}.csv")
+        os.path.join("mnt", "traces", f"{params['job_trace_filename']}.csv")
     )
 
     # Create and wrap the environment
@@ -31,7 +31,7 @@ def test(hostname, params):
         algorithm = getattr(sb3, params["algorithm"])
     else:
         raise AttributeError(
-            f"Algorithm '{params["algorithm"]}' not found in sb3 module."
+            f"Algorithm {params['algorithm']} not found in sb3 module."
         )
 
     # filename_id = generate_filename(params, hostname)
@@ -40,13 +40,7 @@ def test(hostname, params):
     os.makedirs(params["log_dir"], exist_ok=True)
 
     # Load the trained agent
-    model = algorithm.load(
-        best_model_path,
-        device=device,
-        env=env,
-        seed=params["seed"],
-        # seed=np.random.randint(0, 2**32 - 1),
-    )
+    model = algorithm.load(best_model_path, device=device, env=env, seed=params["seed"])
 
     progress_file = os.path.join(params["log_dir"], "evaluation.csv")
 

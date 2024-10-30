@@ -1,6 +1,5 @@
 import os
 import json
-from random import seed
 import numpy as np
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
@@ -37,11 +36,11 @@ def train(params):
         algorithm = getattr(sb3, params["algorithm"])
         policy = "MlpPolicy"
     else:
-        raise AttributeError(f"Algorithm '{params["algorithm"]}' not found.")
+        raise AttributeError(f"Algorithm {params['algorithm']} not found.")
 
     # Read jobs
     job_trace_path = os.path.join(
-        "mnt", "traces", f"{params["job_trace_filename"]}.csv"
+        "mnt", "traces", f"{params['job_trace_filename']}.csv"
     )
     jobs = csv_to_cloudlet_descriptor(job_trace_path)
 
@@ -74,13 +73,7 @@ def train(params):
     # algorithm.n_steps=1024
 
     # Instantiate the agent
-    model = algorithm(
-        policy=policy,
-        env=venv,
-        device=device,
-        seed=params["seed"],
-        # seed=np.random.randint(0, 2**32 - 1),
-    )
+    model = algorithm(policy=policy, env=venv, device=device, seed=params["seed"])
 
     if params["log_experiment"]:
         # the logger can write to stdout, progress.csv and tensorboard
@@ -101,11 +94,7 @@ def train(params):
         callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
 
     # Train the agent
-    model.learn(
-        total_timesteps=int(params["timesteps"]),
-        log_interval=1,
-        callback=callback,
-    )
+    model.learn(total_timesteps=params["timesteps"], log_interval=1, callback=callback)
 
     # Close the environment and free the resources
     env.close()

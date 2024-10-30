@@ -1,12 +1,14 @@
 import os
 import json
 import pycurl
+import numpy as np
 from io import BytesIO
 
 import importlib
 from utils.parse_config import dict_from_config
 
 CONFIG_FILE = "config.yml"
+MAX_INT = 2**32 - 1
 
 
 def _find_replica_id(hostname):
@@ -36,6 +38,9 @@ def main():
     params = dict_from_config(replica_id, CONFIG_FILE)
     params["log_dir"] = os.path.join(
         params["base_log_dir"], params["experiment_type_dir"], params["experiment_name"]
+    )
+    params["seed"] = (
+        np.random.randint(0, MAX_INT) if params["seed"] == "random" else params["seed"]
     )
 
     try:
