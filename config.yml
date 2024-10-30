@@ -6,7 +6,7 @@
 globals:
     attached: false
     gpu: true
-    log_level: TRACE
+    log_level: DEBUG
     log_output: none
     junit_output: false
 
