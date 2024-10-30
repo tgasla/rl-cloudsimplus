@@ -1,5 +1,6 @@
 import os
 import json
+from random import seed
 import numpy as np
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
@@ -77,7 +78,8 @@ def train(params):
         policy=policy,
         env=venv,
         device=device,
-        seed=np.random.randint(0, 2**32 - 1),
+        seed=params["seed"],
+        # seed=np.random.randint(0, 2**32 - 1),
     )
 
     if params["log_experiment"]:

@@ -33,6 +33,7 @@ common:
     log_experiment: true
     base_log_dir: logs
     experiment_type_dir: valley_window_evaluate_reward
+    seed: 25519
 
 experiment_1:
     state_representation: treearray
@@ -51,7 +52,7 @@ experiment_1:
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
     experiment_dir: valley_window_50
-    train_model_dir: 10M
+    train_model_dir: valley_window_evaluate_reward/10M
 
 # experiment_2:
 #     state_representation: treearray

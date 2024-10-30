@@ -44,10 +44,11 @@ def test(hostname, params):
         best_model_path,
         device=device,
         env=env,
-        seed=np.random.randint(0, 2**32 - 1),
+        seed=params["seed"],
+        # seed=np.random.randint(0, 2**32 - 1),
     )
 
-    progress_file = os.path.join(params["log_dir"], "progress.csv")
+    progress_file = os.path.join(params["log_dir"], "evaluation.csv")
 
     # Load the replay buffer if the algorithm has one
     if hasattr(model, "replay_buffer"):
@@ -62,7 +63,7 @@ def test(hostname, params):
     current_step = 0
 
     obs, info = env.reset()
-    print(f"Environment reset. Obs: {obs} Info: {info}")
+    # print(f"Environment reset. Obs: {obs} Info: {info}")
     episode_reward = 0
     ep_inv_rew = 0
     ep_host_alloc_cores_rew = 0
@@ -79,18 +80,22 @@ def test(hostname, params):
         # f"Step: {current_length}, obs: {obs}, reward: {reward}, terminated: {terminated}, truncated: {truncated}, info: {info}"
         # )
         episode_reward += reward
-        ep_inv_rew += info["inv"]
+        ep_inv_rew += info["invalid_reward"]
+        ep_host_alloc_cores_rew += info["running_vm_cores_reward"]
+        ep_vm_unutil_cores_rew += info["unutilized_vm_cores_reward"]
+        ep_job_wait_rew += info["job_wait_reward"]
         done = terminated or truncated
 
     # print(
     # f"Episode ended. Episode length: {current_length}, episode reward: {episode_reward}"
     # )
 
-    # TODO: this may cause OOM because I append the info for every episode
-    # and I write it to CSV at the end of all episodes.
-    # If I get OOM consider writing one line at a time in the csv, after each episode.
     episodes_info["r"].append(episode_reward)
     episodes_info["l"].append(current_length)
+    episodes_info["inv"].append(ep_inv_rew)
+    episodes_info["h_a"].append(ep_host_alloc_cores_rew)
+    episodes_info["v_u"].append(ep_vm_unutil_cores_rew)
+    episodes_info["j_w"].append(ep_job_wait_rew)
 
     episode_info_df = pd.DataFrame(episodes_info)
     episode_info_df.to_csv(progress_file, index=False)

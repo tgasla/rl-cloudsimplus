@@ -67,7 +67,8 @@ def transfer(params):
         best_model_path,
         device=device,
         env=venv,
-        seed=np.random.randint(0, 2**32 - 1),
+        seed=params["seed"],
+        # seed=np.random.randint(0, 2**32 - 1),
     )
 
     logger = configure(params["log_dir"], ["stdout", "csv", "tensorboard"])
