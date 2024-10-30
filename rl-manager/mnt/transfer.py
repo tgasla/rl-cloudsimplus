@@ -10,13 +10,12 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.logger import configure
 from utils.trace_utils import csv_to_cloudlet_descriptor
-from utils.filename_generator import generate_filename
 from callbacks.save_on_best_training_reward_callback import (
     SaveOnBestTrainingRewardCallback,
 )
 
 
-def transfer(hostname, params):
+def transfer(params):
     learning_rate_dict = {
         "DQN": "0.00005",
         "DDPG": "0.0001",
@@ -30,12 +29,10 @@ def transfer(hostname, params):
         os.path.join("mnt", "traces", f"{params["job_trace_filename"]}.csv")
     )
 
-    filename_id = generate_filename(params, hostname)
-
-    base_log_dir = "logs"
+    # filename_id = generate_filename(params, hostname)
 
     best_model_path = os.path.join(
-        base_log_dir,
+        params["base_log_dir"],
         f"{params["train_model_dir"]}",
         "best_model",
     )
@@ -48,15 +45,15 @@ def transfer(hostname, params):
             f"Algorithm '{params["algorithm"]}' not found in sb3 module."
         )
 
-    log_dir = os.path.join(base_log_dir, f"{filename_id}")
+    # log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
     # Create folder if needed
-    os.makedirs(log_dir, exist_ok=True)
+    os.makedirs(params["log_dir"], exist_ok=True)
 
     # Create and wrap the environment
     env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
 
-    menv = Monitor(env, log_dir)
+    menv = Monitor(env, params["log_dir"])
 
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
     if params["algorithm"] == "A2C":
@@ -73,7 +70,7 @@ def transfer(hostname, params):
         seed=np.random.randint(0, 2**32 - 1),
     )
 
-    logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
+    logger = configure(params["log_dir"], ["stdout", "csv", "tensorboard"])
     model.set_logger(logger)
 
     # Load the replay buffer if the algorithm has one
@@ -89,7 +86,7 @@ def transfer(hostname, params):
     model.learning_rate = learning_rate_dict.get(params["algorithm"])
 
     callback = SaveOnBestTrainingRewardCallback(
-        log_dir=log_dir,
+        log_dir=params["log_dir"],
     )
 
     # Retrain the agent initializing the weights from the saved agent

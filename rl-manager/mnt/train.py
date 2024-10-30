@@ -14,16 +14,13 @@ from callbacks.save_on_best_training_reward_callback import (
     SaveOnBestTrainingRewardCallback,
 )
 
-from utils.filename_generator import generate_filename
 from utils.trace_utils import csv_to_cloudlet_descriptor
 
 
-def train(hostname, params):
+def train(params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # print(params)
-    filename_id = generate_filename(params, hostname)
-
-    base_log_dir = "logs"
+    # filename_id = generate_filename(params)
 
     # Select the appropriate algorithm
     if (
@@ -39,11 +36,7 @@ def train(hostname, params):
         algorithm = getattr(sb3, params["algorithm"])
         policy = "MlpPolicy"
     else:
-        raise AttributeError(
-            f"Algorithm '{params["algorithm"]}' not found in sb3 module."
-        )
-
-    log_dir = os.path.join(base_log_dir, f"{filename_id}")
+        raise AttributeError(f"Algorithm '{params["algorithm"]}' not found.")
 
     # Read jobs
     job_trace_path = os.path.join(
@@ -55,7 +48,7 @@ def train(hostname, params):
 
     # Create folder if needed
     if params["log_experiment"]:
-        os.makedirs(log_dir, exist_ok=True)
+        os.makedirs(params["log_dir"], exist_ok=True)
 
     # Create and wrap the environment
     env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
@@ -64,7 +57,7 @@ def train(hostname, params):
     # If render_mode is None, it will give a warning.
     # add info_keywords if needed
     if params["log_experiment"]:
-        env = Monitor(env, log_dir)
+        env = Monitor(env, params["log_dir"])
 
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
     if params["algorithm"] == "A2C":
@@ -89,7 +82,7 @@ def train(hostname, params):
 
     if params["log_experiment"]:
         # the logger can write to stdout, progress.csv and tensorboard
-        logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
+        logger = configure(params["log_dir"], ["stdout", "csv", "tensorboard"])
         model.set_logger(logger)
 
     # Add some action noise for exploration if applicable
@@ -103,7 +96,7 @@ def train(hostname, params):
     callback = None
     if params["log_experiment"]:
         # the callback writes all the other .csv files and saves the model (with replay buffer) when the reward is the best
-        callback = SaveOnBestTrainingRewardCallback(log_dir=log_dir)
+        callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
 
     # Train the agent
     model.learn(

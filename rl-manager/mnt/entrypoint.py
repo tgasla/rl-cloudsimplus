@@ -2,10 +2,10 @@ import os
 import json
 import pycurl
 from io import BytesIO
+
+import importlib
 from utils.parse_config import dict_from_config
-from train import train
-from test import test
-from transfer import transfer
+
 
 CONFIG_FILE = "config.yml"
 
@@ -35,16 +35,20 @@ def main():
     hostname = os.getenv("HOSTNAME")
     replica_id = _find_replica_id(hostname)
     params = dict_from_config(replica_id, CONFIG_FILE)
-    mode = params["mode"]
+    params["log_dir"] = os.path.join(
+        params["base_log_dir"], params["experiment_type_dir"], params["experiment_dir"]
+    )
 
-    if mode == "train":
-        train(hostname, params)
-    elif mode == "transfer":
-        transfer(hostname, params)
-    elif mode == "test":
-        test(hostname, params)
-    else:
-        ValueError("Unsupported mode. Supported modes are: [train, transter, test]")
+    try:
+        module = importlib.import_module(params["mode"])
+        func = getattr(module, params["mode"])
+        func(hostname, params)
+    except ModuleNotFoundError:
+        print(f"Module '{params['mode']}' could not be imported.")
+    except AttributeError:
+        print(
+            f"The function '{params['mode']}' does not exist in the module '{params['mode']}'."
+        )
 
 
 if __name__ == "__main__":
