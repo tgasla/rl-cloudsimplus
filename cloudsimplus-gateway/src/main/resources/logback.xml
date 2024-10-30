@@ -27,6 +27,6 @@
   <!-- <logger name="CloudletSchedulerAbstract" level="INFO" /> -->
  
 <!-- By default, the level of the root level is set to INFO -->
-<root level="TRACE">
+<root level="INFO">
 </root>
 </configuration>

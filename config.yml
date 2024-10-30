@@ -1,6 +1,6 @@
 # train_model_dir: applicable only if mode == [transfer|test]
-# globals.log_output: [none, stdout, file, stdout-file] - if file, logs are written to a file, if stdout-file, logs are written to both stdout and a file
-# globals.junit_output: [true, false] - if true, junit test results are printed to stdout
+# globals.log_destination: [none, stdout, file, stdout-file] - if file, logs are written to a file, if stdout-file, logs are written to both stdout and a file
+# globals.junit_output_show: [true, false] - if true, junit test results are printed to stdout
 # globals.log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
 # seed: random or any integer
 # base_log_dir: parent directory for all logs
@@ -10,12 +10,13 @@
 # vm_allocation_policy: [rl, heuristic]
 # algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, bestfit|firstfit|worstfit|roundrobin|random if vm_allocation_policy == heuristic]
 
+# if you make any changes here, you need to do make build-gateway for the changes to take effect
 globals:
     attached: true
     gpu: true
-    log_level: DEBUG
-    log_output: none
-    junit_output: false
+    log_level: INFO
+    log_destination: none
+    junit_output_show: false
 
 common:
     timestep_interval: 1.0
@@ -37,7 +38,7 @@ common:
     small_vm_bw: 1000
     paying_for_the_full_hour: false
     small_vm_hourly_cost: 0.086
-    log_experiment: false
+    save_experiment: true
     base_log_dir: logs
     experiment_type_dir: valley_window_evaluate_reward
     seed: random
@@ -58,8 +59,8 @@ experiment_1:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    experiment_name: valley_window_50
-    train_model_dir: valley_window_evaluate_reward/10M
+    experiment_name: debugging
+    # train_model_dir: valley_window_evaluate_reward/10M
 
 # experiment_2:
 #     state_representation: treearray

@@ -174,17 +174,16 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         df_dict["episode_details"].to_csv(path_dict["episode_details"], index=False)
 
     def _maybe_save_best_episode_details(self) -> None:
-        if self.log_dir:
-            self._delete_previous_best()
-            self.previous_best_episode_num = self.current_episode_num
+        self._delete_previous_best()
+        self.previous_best_episode_num = self.current_episode_num
 
-            path_dict = self._create_csv_paths()
+        path_dict = self._create_csv_paths()
 
-            if self.verbose >= 1:
-                print((f"Saving simulation details to" f"{path_dict}"))
+        if self.verbose >= 1:
+            print((f"Saving simulation details to" f"{path_dict}"))
 
-            df_dict = self._create_dataframes()
-            self._write_dataframes_to_csvs(df_dict, path_dict)
+        df_dict = self._create_dataframes()
+        self._write_dataframes_to_csvs(df_dict, path_dict)
 
     def _maybe_print_current_episode_info(self, current_reward) -> None:
         if self.verbose >= 1:

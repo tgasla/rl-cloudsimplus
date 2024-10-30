@@ -23,7 +23,7 @@ tasks.withType(JavaCompile) {
 task configureLogging {
     doLast {
         def logLevel = System.getProperty('log.level')?.trim().toUpperCase() ?: 'INFO'
-        def logOutput = System.getProperty('log.output')?.trim()?.toLowerCase() ?: 'none'
+        def logDestination = System.getProperty('log.destination')?.trim()?.toLowerCase() ?: 'none'
 
         def logbackFile = file('src/main/resources/logback.xml')
         if (!logbackFile.exists()) {
@@ -41,11 +41,11 @@ task configureLogging {
         logbackConfig = logbackConfig.replaceAll(/<root level="\w*">[\s\S]*<\/root>/, "<root level=\"$logLevel\">\n</root>")
 
         def newAppenderRefs = ""
-        if (logOutput == "stdout") {
+        if (logDestination == "stdout") {
             newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n'
-        } else if (logOutput == "file") {
+        } else if (logDestination == "file") {
             newAppenderRefs = '\t<appender-ref ref="FILE" />\n'
-        } else if (logOutput == "stdout-file") {
+        } else if (logDestination == "stdout-file") {
             newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n\t<appender-ref ref="FILE" />\n'
         }
         // Note: If "none" is selected, we leave the <root> section empty
@@ -56,7 +56,7 @@ task configureLogging {
         // Write the modified configuration back to the file
         logbackFile.write(logbackConfig)
 
-        logger.lifecycle "Logging level set to $logLevel, output set to $logOutput"
+        logger.lifecycle "Logging level set to $logLevel, output set to $logDestination"
     
     }
 }
@@ -66,7 +66,7 @@ build.dependsOn configureLogging
 test {
     useJUnitPlatform()
     // enable/disable system out messages on junit tests
-    testLogging.showStandardStreams = System.getProperty('junit.output')?.trim()?.toBoolean() ?: false
+    testLogging.showStandardStreams = System.getProperty('junit.output.show')?.trim()?.toBoolean() ?: false
     logger.lifecycle "showStandardStreams set to $testLogging.showStandardStreams"
 }
 

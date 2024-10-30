@@ -9,7 +9,7 @@ import stable_baselines3 as sb3
 from utils.trace_utils import csv_to_cloudlet_descriptor
 
 
-def test(hostname, params):
+def test(params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     jobs = csv_to_cloudlet_descriptor(
@@ -85,7 +85,7 @@ def test(hostname, params):
     episodes_info["v_u"].append(ep_vm_unutil_cores_rew)
     episodes_info["j_w"].append(ep_job_wait_rew)
 
-    if params["log_experiment"]:
+    if params["save_experiment"]:
         # Create folder if needed
         os.makedirs(params["log_dir"], exist_ok=True)
         progress_file = os.path.join(params["log_dir"], "evaluation.csv")
