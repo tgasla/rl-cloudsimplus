@@ -1,8 +1,15 @@
 # train_model_dir: applicable only if mode == [transfer|test]
-# vm_allocation_policy: [random, roundrobin, worstfit, bestfit, firstfit]
 # globals.log_output: [none, stdout, file, stdout-file]
 # globals.junit_output: [true, false]
 # globals.log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
+# seed: random or any integer
+# base_log_dir: parent directory for all logs
+# experiment_type_dir: parent directory for a set of experiments
+# experiment_name: name of the experiment
+# mode: [train, test, transfer]
+# vm_allocation_policy: [rl, heuristic]
+# algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, bestfit|firstfit|worstfit|roundrobin|random if vm_allocation_policy == heuristic]
+
 globals:
     attached: false
     gpu: true
@@ -29,11 +36,11 @@ common:
     small_vm_storage: 4000
     small_vm_bw: 1000
     paying_for_the_full_hour: false
-    vm_hourly_cost: 0.086 #unused
+    small_vm_hourly_cost: 0.086
     log_experiment: true
     base_log_dir: logs
     experiment_type_dir: valley_window_evaluate_reward
-    seed: 25519
+    seed: random
 
 experiment_1:
     state_representation: treearray
@@ -51,7 +58,7 @@ experiment_1:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    experiment_dir: valley_window_50
+    experiment_name: valley_window_50
     train_model_dir: valley_window_evaluate_reward/10M
 
 # experiment_2:

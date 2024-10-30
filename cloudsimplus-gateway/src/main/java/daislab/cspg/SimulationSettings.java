@@ -25,7 +25,7 @@ public class SimulationSettings {
     private final int[] initialVmCounts;
     private final boolean splitLargeJobs;
     private final int maxJobPes;
-    private final double vmHourlyCost;
+    private final double smallVmHourlyCost;
     private final int hostsCount;
     private final long hostPeMips;
     private final int hostPes;
@@ -59,7 +59,7 @@ public class SimulationSettings {
         initialVmCounts = new int[] {initialSVmCount, initialMVmCount, initialLVmCount};
         splitLargeJobs = (boolean) params.get("split_large_jobs");
         maxJobPes = (int) params.get("max_job_pes");
-        vmHourlyCost = (double) params.get("vm_hourly_cost");
+        smallVmHourlyCost = (double) params.get("small_vm_hourly_cost");
         hostsCount = (int) params.get("host_count");
         hostPeMips = (int) params.get("host_pe_mips");
         hostPes = (int) params.get("host_pes");

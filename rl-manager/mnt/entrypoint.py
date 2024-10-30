@@ -6,7 +6,6 @@ from io import BytesIO
 import importlib
 from utils.parse_config import dict_from_config
 
-
 CONFIG_FILE = "config.yml"
 
 
@@ -36,7 +35,7 @@ def main():
     replica_id = _find_replica_id(hostname)
     params = dict_from_config(replica_id, CONFIG_FILE)
     params["log_dir"] = os.path.join(
-        params["base_log_dir"], params["experiment_type_dir"], params["experiment_dir"]
+        params["base_log_dir"], params["experiment_type_dir"], params["experiment_name"]
     )
 
     try:
@@ -44,10 +43,8 @@ def main():
         func = getattr(module, params["mode"])
         func(hostname, params)
     except ModuleNotFoundError:
-        print(f"Module '{params['mode']}' could not be imported.")
-    except AttributeError:
         print(
-            f"The function '{params['mode']}' does not exist in the module '{params['mode']}'."
+            f"Mode {params['mode']} was not found. Available modes are: 'train', 'transfer', 'test'."
         )
 
 
