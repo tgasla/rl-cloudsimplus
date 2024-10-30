@@ -44,27 +44,15 @@ def train(params):
     )
     jobs = csv_to_cloudlet_descriptor(job_trace_path)
 
-    # print(job_trace_filename, jobs)
-
-    # Create folder if needed
-    if params["log_experiment"]:
-        os.makedirs(params["log_dir"], exist_ok=True)
-
     # Create and wrap the environment
     env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
-
-    # Monitor needs the environment to have a render_mode set
-    # If render_mode is None, it will give a warning.
-    # add info_keywords if needed
-    if params["log_experiment"]:
-        env = Monitor(env, params["log_dir"])
 
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
     if params["algorithm"] == "A2C":
         device = "cpu"
-        venv = SubprocVecEnv([lambda: env], start_method="fork")
+        env = SubprocVecEnv([lambda: env], start_method="fork")
     else:
-        venv = DummyVecEnv([lambda: env])
+        env = DummyVecEnv([lambda: env])
 
     # if hasattr(algorithm, "ent_coef"):
     # algorithm.ent_coef = 0.01
@@ -73,12 +61,23 @@ def train(params):
     # algorithm.n_steps=1024
 
     # Instantiate the agent
-    model = algorithm(policy=policy, env=venv, device=device, seed=params["seed"])
+    model = algorithm(policy=policy, device=device, seed=params["seed"])
 
+    callback = None
     if params["log_experiment"]:
+        # Create folder if needed
+        os.makedirs(params["log_dir"], exist_ok=True)
+        # Monitor needs the environment to have a render_mode set
+        # If render_mode is None, it will give a warning.
+        # add info_keywords if needed
+        env = Monitor(env, params["log_dir"])
         # the logger can write to stdout, progress.csv and tensorboard
         logger = configure(params["log_dir"], ["stdout", "csv", "tensorboard"])
         model.set_logger(logger)
+        # the callback writes all the other .csv files and saves the model (with replay buffer) when the reward is the best
+        callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
+
+    model.set_env(env)
 
     # Add some action noise for exploration if applicable
     if hasattr(model, "action_noise"):
@@ -88,16 +87,11 @@ def train(params):
         )
         model.action_noise = action_noise
 
-    callback = None
-    if params["log_experiment"]:
-        # the callback writes all the other .csv files and saves the model (with replay buffer) when the reward is the best
-        callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
-
     # Train the agent
     model.learn(total_timesteps=params["timesteps"], log_interval=1, callback=callback)
 
     # Close the environment and free the resources
     env.close()
 
-    # Delete model
+    # Delete the model from memory
     del model

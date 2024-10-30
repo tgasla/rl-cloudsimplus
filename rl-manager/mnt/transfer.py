@@ -1,6 +1,5 @@
 import os
 import json
-import numpy as np
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 import torch
@@ -47,28 +46,28 @@ def transfer(params):
 
     # log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
-    # Create folder if needed
-    os.makedirs(params["log_dir"], exist_ok=True)
-
     # Create and wrap the environment
     env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
-
-    menv = Monitor(env, params["log_dir"])
-
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
     if params["algorithm"] == "A2C":
         device = "cpu"
-        venv = SubprocVecEnv([lambda: menv], start_method="fork")
+        env = SubprocVecEnv([lambda: env], start_method="fork")
     else:
-        venv = DummyVecEnv([lambda: menv])
+        env = DummyVecEnv([lambda: env])
 
     # Load the trained agent
-    model = algorithm.load(
-        best_model_path, device=device, env=venv, seed=params["seed"]
-    )
+    model = algorithm.load(best_model_path, device=device, seed=params["seed"])
 
-    logger = configure(params["log_dir"], ["stdout", "csv", "tensorboard"])
-    model.set_logger(logger)
+    callback = None
+    # Create folder if needed
+    if params["log_experiment"]:
+        os.makedirs(params["log_dir"], exist_ok=True)
+        env = Monitor(env, params["log_dir"])
+        logger = configure(params["log_dir"], ["stdout", "csv", "tensorboard"])
+        model.set_logger(logger)
+        callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
+
+    model.set_env(env)
 
     # Load the replay buffer if the algorithm has one
     if hasattr(model, "replay_buffer"):
@@ -81,8 +80,6 @@ def transfer(params):
 
     # Set the learning rate to a small initial value
     model.learning_rate = learning_rate_dict.get(params["algorithm"])
-
-    callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
 
     # Retrain the agent initializing the weights from the saved agent
     # The right thing to do is to set reset_num_timesteps=True

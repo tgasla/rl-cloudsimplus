@@ -104,7 +104,7 @@ class SingleDC(gym.Env):
                 self.max_cores_per_node = 101
                 self.observation_space = spaces.Dict(
                     {
-                        "system_tree": spaces.MultiDiscrete(
+                        "system_state": spaces.MultiDiscrete(
                             self.max_cores_per_node * np.ones(self.observation_length)
                         )
                     }
@@ -132,15 +132,7 @@ class SingleDC(gym.Env):
             params, jobs_as_json
         )
 
-    def reset(self, seed=None, options=None):
-        super(SingleDC, self).reset()
-        self.current_step = 0
-
-        if seed is None:
-            seed = 0
-
-        result = self.simulation_environment.reset(self.simulation_id, seed)
-
+    def _get_observation(self, result):
         match self.state_representation:
             case "treearray":
                 raw_obs = result.getObservationTreeArray()
@@ -153,6 +145,18 @@ class SingleDC(gym.Env):
             case _:
                 raise ValueError("Invalid state representation")
 
+        return {"system_state": obs}
+
+    def reset(self, seed=None, options=None):
+        super(SingleDC, self).reset()
+        self.current_step = 0
+
+        if seed is None:
+            seed = 0
+
+        result = self.simulation_environment.reset(self.simulation_id, seed)
+
+        obs = self._get_observation(result)
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
 
@@ -182,18 +186,7 @@ class SingleDC(gym.Env):
         terminated = result.isTerminated()
         truncated = result.isTruncated()
 
-        match self.state_representation:
-            case "treearray":
-                raw_obs = result.getObservationTreeArray()
-                initial_obs = self._to_nparray(raw_obs)
-                obs = np.resize(initial_obs, self.observation_length)
-                obs[len(initial_obs) :] = 0
-            case "2darray":
-                raw_obs = result.getObservation2dArray()
-                obs = self._to_nparray(raw_obs)
-            case _:
-                raise ValueError("Invalid state representation")
-
+        obs = self._get_observation(result)
         info = self._raw_info_to_dict(raw_info)
 
         if self.render_mode == "human":

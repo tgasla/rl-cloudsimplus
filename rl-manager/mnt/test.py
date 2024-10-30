@@ -1,6 +1,5 @@
 import os
 import json
-import numpy as np
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 import torch
@@ -36,13 +35,8 @@ def test(hostname, params):
 
     # filename_id = generate_filename(params, hostname)
 
-    # Create folder if needed
-    os.makedirs(params["log_dir"], exist_ok=True)
-
     # Load the trained agent
     model = algorithm.load(best_model_path, device=device, env=env, seed=params["seed"])
-
-    progress_file = os.path.join(params["log_dir"], "evaluation.csv")
 
     # Load the replay buffer if the algorithm has one
     if hasattr(model, "replay_buffer"):
@@ -91,6 +85,11 @@ def test(hostname, params):
     episodes_info["v_u"].append(ep_vm_unutil_cores_rew)
     episodes_info["j_w"].append(ep_job_wait_rew)
 
-    episode_info_df = pd.DataFrame(episodes_info)
-    episode_info_df.to_csv(progress_file, index=False)
+    if params["log_experiment"]:
+        # Create folder if needed
+        os.makedirs(params["log_dir"], exist_ok=True)
+        progress_file = os.path.join(params["log_dir"], "evaluation.csv")
+        episode_info_df = pd.DataFrame(episodes_info)
+        episode_info_df.to_csv(progress_file, index=False)
+
     env.close()
