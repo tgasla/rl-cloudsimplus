@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import pandas as pd
-from typing import Any, Dict
+from typing import Any, Dict, Union
+import torch
 
 # from stable_baselines3.common import results_plotter
 # from stable_baselines3.common.results_plotter import plot_results
@@ -85,18 +86,29 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             )
             os.remove(log_file)
 
+    def _extract_observation_from_locals(self, obs) -> Union[list, dict]:
+        if isinstance(self.locals[obs], dict):
+            obs_dict = self.locals[obs]
+            processed_obs = {}
+            for key, value in obs_dict.items():
+                value = value[0].cpu() if isinstance(value, torch.Tensor) else value[0]
+                processed_obs[key] = value
+        elif isinstance(self.locals[obs], torch.Tensor):
+            processed_obs = self.locals[obs][0].cpu().numpy()
+            print(processed_obs)
+        elif isinstance(self.locals[obs], np.ndarray):
+            processed_obs = self.locals[obs][0]
+            print(processed_obs)
+        else:
+            raise TypeError(f"Unknown observation type: {type(self.locals[obs])}")
+        return processed_obs
+
     def _save_timestep_details(self) -> None:
         # print(self.locals)
-        if isinstance(self.locals["obs_tensor"], dict):
-            # If obs_tensor is a dictionary, access "system_state" key
-            self.observations.append(self.locals["obs_tensor"]["system_state"][0].cpu())
-        elif isinstance(self.locals["obs_tensor"], list):
-            # If obs_tensor is a list, access the first element directly
-            self.observations.append(self.locals["obs_tensor"][0].cpu())
+        self.observations.append(self._extract_observation_from_locals("obs_tensor"))
         self.actions.append(self.locals["actions"][0])
         self.rewards.append(self.locals["rewards"][0])
-        # self.new_observations.append(self.locals["new_obs"][0])
-        self.new_observations.append(self.locals["new_obs"]["system_state"][0])
+        self.new_observations.append(self._extract_observation_from_locals("new_obs"))
         self.host_metrics.append(self.locals["infos"][0]["host_metrics"])
         self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
         self.job_metrics.append(self.locals["infos"][0]["job_metrics"])

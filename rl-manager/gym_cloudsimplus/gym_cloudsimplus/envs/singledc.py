@@ -45,6 +45,7 @@ class SingleDC(gym.Env):
         self.simulation_environment = self.gateway.entry_point
         self.state_representation = params["state_representation"]
         self.vm_allocation_policy = params["vm_allocation_policy"]
+        self.state_as_dict = params["state_as_dict"]
 
         if self.vm_allocation_policy == "fromfile":
             self.vm_allocation_policy = "fromfile"
@@ -102,12 +103,8 @@ class SingleDC(gym.Env):
                     1 + self.max_hosts + self.max_vms + self.max_jobs
                 )
                 self.max_cores_per_node = 101
-                self.observation_space = spaces.Dict(
-                    {
-                        "system_state": spaces.MultiDiscrete(
-                            self.max_cores_per_node * np.ones(self.observation_length)
-                        )
-                    }
+                self.observation_space = spaces.MultiDiscrete(
+                    self.max_cores_per_node * np.ones(self.observation_length)
                 )
             case "2darray":
                 self.observation_rows = (
@@ -120,6 +117,13 @@ class SingleDC(gym.Env):
                     shape=(self.observation_rows, self.observation_cols),
                     dtype=np.float32,
                 )
+
+        if self.state_as_dict:
+            self.observation_space = spaces.Dict(
+                {
+                    "system_state": self.observation_space,
+                }
+            )
 
         if render_mode is not None and render_mode not in self.metadata["render_modes"]:
             gym.logger.warn(
@@ -147,7 +151,9 @@ class SingleDC(gym.Env):
                     "Invalid requested state representation. Available options: treearray, 2darray"
                 )
 
-        return {"system_state": obs}
+        if self.state_as_dict:
+            return {"system_state": obs}
+        return obs
 
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()

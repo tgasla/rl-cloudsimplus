@@ -1,3 +1,4 @@
+from ast import match_case
 import os
 import json
 import numpy as np
@@ -31,12 +32,15 @@ def train(params):
         # so the code triggers the simulation environment creation
         # NOTE: the algorithm decision through learning is not used at all in this case
         algorithm = getattr(sb3, "PPO")
-        policy = "MlpPolicy"
     elif params["vm_allocation_policy"] == "rl" and hasattr(sb3, params["algorithm"]):
         algorithm = getattr(sb3, params["algorithm"])
-        policy = "MultiInputPolicy"
     else:
         raise AttributeError(f"Algorithm {params['algorithm']} not found.")
+
+    if params["state_as_dict"]:
+        policy = "MultiInputPolicy"
+    else:
+        policy = "MlpPolicy"
 
     # if hasattr(algorithm, "ent_coef"):
     # algorithm.ent_coef = 0.01

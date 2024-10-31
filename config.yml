@@ -12,7 +12,7 @@
 
 # if you make any changes here, you need to do make build-gateway for the changes to take effect
 globals:
-    attached: false
+    attached: true
     gpu: true
     java_log_level: INFO
     java_log_destination: none
@@ -40,11 +40,12 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    experiment_type_dir: test_if_state_dict_affects_learning
+    experiment_type_dir: test_if_state_dict_is_correct
     seed: random
 
 experiment_1:
     state_representation: treearray
+    state_as_dict: false
     mode: train
     vm_allocation_policy: rl
     algorithm: PPO
@@ -59,7 +60,7 @@ experiment_1:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    experiment_name: three_peaks_max30_treearray_PPO
+    experiment_name: test
     # train_model_dir: valley_window_evaluate_reward/10M
 
 # experiment_2:
