@@ -1,6 +1,7 @@
 import os
 import json
 import pycurl
+import shutil
 import numpy as np
 from io import BytesIO
 
@@ -48,6 +49,10 @@ def main():
             params["experiment_type_dir"],
             params["experiment_name"],
         )
+        # Create folder if needed
+        os.makedirs(params["log_dir"], exist_ok=True)
+        # Make a copy of the config file in the log directory
+        shutil.copy(CONFIG_FILE, params["log_dir"])
 
     try:
         module = importlib.import_module(params["mode"])

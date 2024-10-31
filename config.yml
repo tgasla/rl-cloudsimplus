@@ -12,10 +12,10 @@
 
 # if you make any changes here, you need to do make build-gateway for the changes to take effect
 globals:
-    attached: true
+    attached: false
     gpu: true
-    log_level: INFO
-    log_destination: none
+    java_log_level: INFO
+    java_log_destination: none
     junit_output_show: false
 
 common:
@@ -40,7 +40,7 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    experiment_type_dir: valley_window_evaluate_reward
+    experiment_type_dir: test_if_state_dict_affects_learning
     seed: random
 
 experiment_1:
@@ -53,13 +53,13 @@ experiment_1:
     host_pe_mips: 10
     max_job_pes: 1
     small_vm_pes: 2
-    job_trace_filename: valley_max30_window_50
+    job_trace_filename: three_peaks_max30
     timesteps: 1000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    experiment_name: debugging
+    experiment_name: three_peaks_max30_treearray_PPO
     # train_model_dir: valley_window_evaluate_reward/10M
 
 # experiment_2:

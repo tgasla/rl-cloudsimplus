@@ -1,4 +1,3 @@
-from math import log
 import os
 import json
 import numpy as np
@@ -35,7 +34,7 @@ def train(params):
         policy = "MlpPolicy"
     elif params["vm_allocation_policy"] == "rl" and hasattr(sb3, params["algorithm"]):
         algorithm = getattr(sb3, params["algorithm"])
-        policy = "MlpPolicy"
+        policy = "MultiInputPolicy"
     else:
         raise AttributeError(f"Algorithm {params['algorithm']} not found.")
 
@@ -56,10 +55,7 @@ def train(params):
 
     log_destination = ["stdout"]
     callback = None
-
     if params["save_experiment"]:
-        # Create folder if needed
-        os.makedirs(params["log_dir"], exist_ok=True)
         log_destination.extend(["csv", "tensorboard"])
         # the callback writes all the other .csv files and saves the model (with replay buffer) when the reward is the best
         callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
@@ -67,6 +63,7 @@ def train(params):
     # Monitor needs the environment to have a render_mode set
     # If render_mode is None, it will give a warning.
     #   add info_keywords if needed
+    # If log_dir is None, it will not log anything
     env = Monitor(env, params["log_dir"])
 
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note

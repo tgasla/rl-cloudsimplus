@@ -102,8 +102,12 @@ class SingleDC(gym.Env):
                     1 + self.max_hosts + self.max_vms + self.max_jobs
                 )
                 self.max_cores_per_node = 101
-                self.observation_space = spaces.MultiDiscrete(
-                    self.max_cores_per_node * np.ones(self.observation_length)
+                self.observation_space = spaces.Dict(
+                    {
+                        "system_state": spaces.MultiDiscrete(
+                            self.max_cores_per_node * np.ones(self.observation_length)
+                        )
+                    }
                 )
             case "2darray":
                 self.observation_rows = (
@@ -143,7 +147,7 @@ class SingleDC(gym.Env):
                     "Invalid requested state representation. Available options: treearray, 2darray"
                 )
 
-        return obs
+        return {"system_state": obs}
 
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()

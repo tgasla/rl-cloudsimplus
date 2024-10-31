@@ -86,10 +86,17 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             os.remove(log_file)
 
     def _save_timestep_details(self) -> None:
-        self.observations.append(self.locals["obs_tensor"][0].cpu())
+        # print(self.locals)
+        if isinstance(self.locals["obs_tensor"], dict):
+            # If obs_tensor is a dictionary, access "system_state" key
+            self.observations.append(self.locals["obs_tensor"]["system_state"][0].cpu())
+        elif isinstance(self.locals["obs_tensor"], list):
+            # If obs_tensor is a list, access the first element directly
+            self.observations.append(self.locals["obs_tensor"][0].cpu())
         self.actions.append(self.locals["actions"][0])
         self.rewards.append(self.locals["rewards"][0])
-        self.new_observations.append(self.locals["new_obs"][0])
+        # self.new_observations.append(self.locals["new_obs"][0])
+        self.new_observations.append(self.locals["new_obs"]["system_state"][0])
         self.host_metrics.append(self.locals["infos"][0]["host_metrics"])
         self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
         self.job_metrics.append(self.locals["infos"][0]["job_metrics"])

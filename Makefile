@@ -11,7 +11,7 @@ build-tensorboard:
 	docker build -t tensorboard tensorboard
 
 build-gateway:
-	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=$(call get_yaml_value,log_level) -Dlog.destination=$(call get_yaml_value,log_destination) -Djunit.output.show=$(call get_yaml_value,junit_output_show)
+	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=$(call get_yaml_value,java_log_level) -Dlog.destination=$(call get_yaml_value,java_log_destination) -Djunit.output.show=$(call get_yaml_value,junit_output_show)
 	cd cloudsimplus-gateway && ./gradlew dockerBuildImage
 
 run-tensorboard:
