@@ -44,8 +44,9 @@ common:
     seed: random
 
 experiment_1:
-    state_representation: treearray
-    state_as_dict: false
+    state_as_tree_array: true
+    state_as_dict: true
+    job_queue_visible: true
     mode: train
     vm_allocation_policy: rl
     algorithm: PPO

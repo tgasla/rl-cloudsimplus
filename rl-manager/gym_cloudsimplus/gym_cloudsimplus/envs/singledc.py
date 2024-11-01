@@ -43,7 +43,7 @@ class SingleDC(gym.Env):
 
         self.gateway = JavaGateway(gateway_parameters=self.gateway_parameters)
         self.simulation_environment = self.gateway.entry_point
-        self.state_representation = params["state_representation"]
+        self.state_as_tree_array = params["state_as_tree_array"]
         self.vm_allocation_policy = params["vm_allocation_policy"]
         self.state_as_dict = params["state_as_dict"]
 
@@ -97,26 +97,21 @@ class SingleDC(gym.Env):
             )
         )
 
-        match self.state_representation:
-            case "treearray":
-                self.observation_length = (
-                    1 + self.max_hosts + self.max_vms + self.max_jobs
-                )
-                self.max_cores_per_node = 101
-                self.observation_space = spaces.MultiDiscrete(
-                    self.max_cores_per_node * np.ones(self.observation_length)
-                )
-            case "2darray":
-                self.observation_rows = (
-                    1 + self.max_hosts + self.max_vms + self.max_jobs
-                )
-                self.observation_cols = 4
-                self.observation_space = spaces.Box(
-                    low=0,
-                    high=1,
-                    shape=(self.observation_rows, self.observation_cols),
-                    dtype=np.float32,
-                )
+        if self.state_as_tree_array:
+            self.observation_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
+            self.max_cores_per_node = 101
+            self.observation_space = spaces.MultiDiscrete(
+                self.max_cores_per_node * np.ones(self.observation_length)
+            )
+        else:
+            self.observation_rows = 1 + self.max_hosts + self.max_vms + self.max_jobs
+            self.observation_cols = 4
+            self.observation_space = spaces.Box(
+                low=0,
+                high=1,
+                shape=(self.observation_rows, self.observation_cols),
+                dtype=np.float32,
+            )
 
         if self.state_as_dict:
             self.observation_space = spaces.Dict(
@@ -137,19 +132,14 @@ class SingleDC(gym.Env):
         )
 
     def _get_observation(self, result):
-        match self.state_representation:
-            case "treearray":
-                raw_obs = result.getObservationTreeArray()
-                initial_obs = self._to_nparray(raw_obs)
-                obs = np.resize(initial_obs, self.observation_length)
-                obs[len(initial_obs) :] = 0
-            case "2darray":
-                raw_obs = result.getObservation2dArray()
-                obs = self._to_nparray(raw_obs)
-            case _:
-                raise ValueError(
-                    "Invalid requested state representation. Available options: treearray, 2darray"
-                )
+        if self.state_as_tree_array:
+            raw_obs = result.getObservationTreeArray()
+            initial_obs = self._to_nparray(raw_obs)
+            obs = np.resize(initial_obs, self.observation_length)
+            obs[len(initial_obs) :] = 0
+        else:
+            raw_obs = result.getObservation2dArray()
+            obs = self._to_nparray(raw_obs)
 
         if self.state_as_dict:
             return {"system_state": obs}

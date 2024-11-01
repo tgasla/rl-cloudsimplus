@@ -19,7 +19,7 @@ def generate_filename(
         "mode": params.get("mode"),
         # "vm_allocation_policy": params.get("vm_allocation_policy"),
         "algorithm": params.get("algorithm"),
-        "state_representation": "ta" if params.get("state_representation") else "2d",
+        "state_as_tree_array": params.get("state_as_tree_array"),
         "hostname": hostname,
     }
 

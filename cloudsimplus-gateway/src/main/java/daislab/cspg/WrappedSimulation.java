@@ -92,44 +92,18 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo();
 
-        return switch (settings.getStateRepresentation()) {
-            case "treearray" -> new SimulationResetResult(getObservationAsTreeArray(), info);
-            case "2darray" -> new SimulationResetResult(getObservationAs2dArray(), info);
-            default -> throw new IllegalArgumentException(
-                    "Unknown state representation: " + settings.getStateRepresentation());
-        };
+        Object infrastructureObservation = getInfrastructureObservation();
+        Observation observation;
 
-    }
-
-    public void resetEpisodeStats() {
-        resetEpWaitingJobsCountMax();
-        resetEpRunningVmsCountMax();
-    }
-
-    public void close() {
-        LOGGER.info("Terminating simulation...");
-        if (cloudSimProxy.isRunning()) {
-            cloudSimProxy.terminate();
+        if (settings.isJobQueueVisible()) {
+            final int[] jobQueueObservation = getJobObservation();
+            observation = new Observation(infrastructureObservation, jobQueueObservation);
+            new Observation(infrastructureObservation, jobQueueObservation);
+        } else {
+            observation = new Observation(infrastructureObservation);
         }
-    }
 
-    public String render() {
-        // Map<String, double[]> renderedEnv = new HashMap<>();
-        // for (int i = 0; i < metricsNames.size(); i++) {
-        // renderedEnv.put(
-        // metricsNames.get(i),
-        // metricsStorage.metricValuesAsPrimitives(metricsNames.get(i))
-        // );
-        // }
-        // return gson.toJson(renderedEnv);
-        return "";
-    }
-
-    public void validateSimulationReset() {
-        if (cloudSimProxy == null) {
-            throw new IllegalStateException(
-                    "Simulation not reset! Please call the reset() function before calling step!");
-        }
+        return new SimulationResetResult(observation, info);
     }
 
     public SimulationStepResult step(final int[] action) {
@@ -175,16 +149,60 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo(rewards, getCurrentTimestepMetrics(),
                 cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
-                getObservationAsTreeArray());
+                getInfrastructureObservationAsTreeArray());
 
-        return switch (settings.getStateRepresentation()) {
-            case "treearray" -> new SimulationStepResult(getObservationAsTreeArray(), rewards[0],
-                    terminated, truncated, info);
-            case "2darray" -> new SimulationStepResult(getObservationAs2dArray(), rewards[0],
-                    terminated, truncated, info);
-            default -> throw new IllegalArgumentException(
-                    "Unknown state representation: " + settings.getStateRepresentation());
-        };
+        Object infrastructureObservation = getInfrastructureObservation();
+        Observation observation;
+
+        if (settings.isJobQueueVisible()) {
+            final int[] jobQueueObservation = getJobObservation();
+            observation = new Observation(infrastructureObservation, jobQueueObservation);
+            new Observation(infrastructureObservation, jobQueueObservation);
+        } else {
+            observation = new Observation(infrastructureObservation);
+        }
+
+        return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
+    }
+
+    private int[] getJobObservation() {
+        final int[] jobObservation = new int[2];
+        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final List<Cloudlet> cloudletList = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        jobObservation[0] = cloudletList.size();
+        jobObservation[1] = cloudSimProxy.coresRequiredToSubmitJobs(cloudletList);
+        return jobObservation;
+    }
+
+    public void resetEpisodeStats() {
+        resetEpWaitingJobsCountMax();
+        resetEpRunningVmsCountMax();
+    }
+
+    public void close() {
+        LOGGER.info("Terminating simulation...");
+        if (cloudSimProxy.isRunning()) {
+            cloudSimProxy.terminate();
+        }
+    }
+
+    public String render() {
+        // Map<String, double[]> renderedEnv = new HashMap<>();
+        // for (int i = 0; i < metricsNames.size(); i++) {
+        // renderedEnv.put(
+        // metricsNames.get(i),
+        // metricsStorage.metricValuesAsPrimitives(metricsNames.get(i))
+        // );
+        // }
+        // return gson.toJson(renderedEnv);
+        return "";
+    }
+
+    public void validateSimulationReset() {
+        if (cloudSimProxy == null) {
+            throw new IllegalStateException(
+                    "Simulation not reset! Please call the reset() function before calling step!");
+        }
     }
 
     private List<double[][]> getCurrentTimestepMetrics() {
@@ -531,7 +549,14 @@ public class WrappedSimulation {
         return result;
     }
 
-    private int[] getObservationAsTreeArray() {
+    private Object getInfrastructureObservation() {
+        if (settings.isStateAsTreeArray()) {
+            return getInfrastructureObservationAsTreeArray();
+        }
+        return getInfrastructureObservationAs2dArray();
+    }
+
+    private int[] getInfrastructureObservationAsTreeArray() {
         final int hostsNum = settings.getHostsCount();
         final int vmsNum = getRunningVmsCount().intValue();
         final int jobsNum = getRunningCloudletsCount().intValue();
@@ -565,7 +590,7 @@ public class WrappedSimulation {
         return treeArray;
     }
 
-    private double[][] getObservationAs2dArray() {
+    private double[][] getInfrastructureObservationAs2dArray() {
         // here we get some vertical subarrays of the metrics. The whole array of
         // metrics are only
         // used to pass the info to python and print to csv files then.

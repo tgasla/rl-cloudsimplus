@@ -49,7 +49,8 @@ public class SimulationSettings {
     private final int maxEpisodeLength;
     private final String vmAllocationPolicy;
     private final String algorithm;
-    private final String stateRepresentation;
+    private final boolean stateAsTreeArray;
+    private final boolean jobQueueVisible;
 
     public SimulationSettings(final Map<String, Object> params) {
         timestepInterval = (double) params.get("timestep_interval");
@@ -83,7 +84,8 @@ public class SimulationSettings {
         maxEpisodeLength = (int) params.get("max_episode_length");
         vmAllocationPolicy = (String) params.get("vm_allocation_policy");
         algorithm = (String) params.get("algorithm");
-        stateRepresentation = (String) params.get("state_representation");
+        stateAsTreeArray = (boolean) params.get("state_as_tree_array");
+        jobQueueVisible = (boolean) params.get("job_queue_visible");
     }
 
     public String printSettings() {
@@ -103,8 +105,8 @@ public class SimulationSettings {
                 + ",\nrewardUnutilizedVmCoresCoef=" + rewardUnutilizedVmCoresCoef
                 + ",\nrewardInvalidCoef=" + rewardInvalidCoef + ",\nmaxEpisodeLength="
                 + maxEpisodeLength + ",\nvmAllocationPolicy=" + vmAllocationPolicy
-                + ",\nstateRepresentation= " + stateRepresentation + vmAllocationPolicy
-                + "\nalgorithm= " + algorithm + ",\n}";
+                + ",\nstateAsTreearray= " + stateAsTreeArray + "\njobQueueVisible= "
+                + jobQueueVisible + "\nalgorithm= " + algorithm + ",\n}";
 
     }
 
@@ -244,8 +246,12 @@ public class SimulationSettings {
         return algorithm;
     }
 
-    public String getStateRepresentation() {
-        return stateRepresentation;
+    public boolean isStateAsTreeArray() {
+        return stateAsTreeArray;
+    }
+
+    public boolean isJobQueueVisible() {
+        return jobQueueVisible;
     }
 
     public int getSizeMultiplier(final String type) {

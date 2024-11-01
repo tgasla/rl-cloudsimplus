@@ -95,10 +95,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                 processed_obs[key] = value
         elif isinstance(self.locals[obs], torch.Tensor):
             processed_obs = self.locals[obs][0].cpu().numpy()
-            print(processed_obs)
         elif isinstance(self.locals[obs], np.ndarray):
             processed_obs = self.locals[obs][0]
-            print(processed_obs)
         else:
             raise TypeError(f"Unknown observation type: {type(self.locals[obs])}")
         return processed_obs

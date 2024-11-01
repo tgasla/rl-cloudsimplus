@@ -320,7 +320,7 @@ public class CloudSimProxy {
         return true;
     }
 
-    private double calculateTargetTime() {
+    double calculateTargetTime() {
         // if first step we have already done 0.1 and we need to finish the first step at 1
         // else, just add 1 to the current time
         final double targetTime;
@@ -376,7 +376,7 @@ public class CloudSimProxy {
     // }
     // }
 
-    private int coresRequiredToSubmitJobs(List<Cloudlet> jobsToSubmitList) {
+    int coresRequiredToSubmitJobs(List<Cloudlet> jobsToSubmitList) {
         return (int) jobsToSubmitList.stream().mapToLong(Cloudlet::getPesNumber).sum();
     }
 
@@ -571,7 +571,7 @@ public class CloudSimProxy {
      * @param targetTime The target time to retrieve Cloudlets for submission.
      * @return A list of Cloudlets that are ready to be submitted at the specified target time.
      */
-    private List<Cloudlet> getJobsToSubmitAtThisTimestep(final double targetTime) {
+    List<Cloudlet> getJobsToSubmitAtThisTimestep(final double targetTime) {
         final List<Cloudlet> jobsToSubmit =
                 jobQueue.stream().takeWhile(cloudlet -> cloudlet.getSubmissionDelay() <= targetTime)
                         .collect(Collectors.toList());
