@@ -1,7 +1,7 @@
 # train_model_dir: applicable only if mode == [transfer|test]
-# globals.log_destination: [none, stdout, file, stdout-file] - if file, logs are written to a file, if stdout-file, logs are written to both stdout and a file
+# globals.java_log_destination: [none, stdout, file, stdout-file] - if file, logs are written to a file, if stdout-file, logs are written to both stdout and a file
 # globals.junit_output_show: [true, false] - if true, junit test results are printed to stdout
-# globals.log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
+# globals.java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
 # seed: random or any integer
 # base_log_dir: parent directory for all logs
 # experiment_type_dir: parent directory for a set of experiments
@@ -10,9 +10,10 @@
 # vm_allocation_policy: [rl, heuristic]
 # algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, bestfit|firstfit|worstfit|roundrobin|random if vm_allocation_policy == heuristic]
 
-# if you make any changes here, you need to do make build-gateway for the changes to take effect
+# if you make any changes in java_log_leve, java_log_destination or java_output_show, 
+#  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: true
+    attached: false
     gpu: true
     java_log_level: INFO
     java_log_destination: none
@@ -44,9 +45,6 @@ common:
     seed: random
 
 experiment_1:
-    state_as_tree_array: true
-    state_as_dict: true
-    job_queue_visible: true
     mode: train
     vm_allocation_policy: rl
     algorithm: PPO
@@ -61,7 +59,7 @@ experiment_1:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    experiment_name: test
+    experiment_name: testing
     # train_model_dir: valley_window_evaluate_reward/10M
 
 # experiment_2:

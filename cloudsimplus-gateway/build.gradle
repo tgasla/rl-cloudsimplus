@@ -78,32 +78,20 @@ repositories {
 // In this section you declare the dependencies for your production and test code
 dependencies {
     // The production code uses the SLF4J logging API at compile time
-    implementation 'org.cloudsimplus:cloudsimplus:8.5.2'
+    implementation 'org.cloudsimplus:cloudsimplus:8.5.5'
     implementation 'org.slf4j:slf4j-api:2.0.16'
     implementation 'net.sf.py4j:py4j:0.10.9.7'
-    implementation 'ch.qos.logback:logback-classic:1.5.8'
+    implementation 'ch.qos.logback:logback-classic:1.5.12'
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
     implementation 'com.google.code.gson:gson:2.11.0'
 
-    testImplementation 'commons-io:commons-io:2.16.1'
+    testImplementation 'commons-io:commons-io:2.18.1'
     testImplementation 'org.hamcrest:hamcrest:3.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.3'
 }
 
 def dockerImageTag = 'gateway:2.0.0'
-// def os = System.getProperty('os.name').toLowerCase()
-// def totalMemorySizeInGigabytes
-
-// if (os.contains('linux')) {
-//     def totalMemorySizeInBytes = "cat /proc/meminfo | grep MemTotal".execute().text.split(":")[1].trim().split()[0].toLong() * 1024
-//     totalMemorySizeInGigabytes = Math.round(totalMemorySizeInBytes / (1024 * 1024 * 1024))
-// } else if (os.contains('mac')) {
-//     def totalMemorySizeInBytes = "sysctl -n hw.memsize".execute().text.trim().toLong()
-//     totalMemorySizeInGigabytes = Math.round(totalMemorySizeInBytes / (1024 * 1024 * 1024))
-// } else {
-//     throw new IllegalStateException("Unsupported operating system: $os")
-// }
 
 application {
     mainClass.set('daislab.cspg.Main')
@@ -115,7 +103,7 @@ docker {
         baseImage = 'amazoncorretto:21-alpine'
         images = [dockerImageTag]
         ports = []
-        // jvmArgs = ["-Xms1G", "-Xmx${totalMemorySizeInGigabytes}G"]
+        // jvmArgs = ["-Xms1G", "-Xmx4G"]
     }
 }
 

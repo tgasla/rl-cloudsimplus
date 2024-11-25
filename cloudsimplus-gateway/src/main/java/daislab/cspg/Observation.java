@@ -1,31 +1,20 @@
 package daislab.cspg;
 
 public class Observation {
-    // infrastructureState may be double[][] (if state == 2darray ) or int[] (if state == tree)
-    private final Object infrastructureState;
-    private final Object jobQueueState;
-    private final boolean isJobQueueVisible;
+    private final int[] infrastructureObservation;
+    private final int jobCoresWaitingObservation;
 
-    public Observation(final Object infrastructureState, final Object jobQueueState) {
-        this.infrastructureState = infrastructureState;
-        this.jobQueueState = jobQueueState;
-        this.isJobQueueVisible = true;
+    public Observation(final int[] infrastructureObservation,
+            final int jobCoresWaitingObservation) {
+        this.infrastructureObservation = infrastructureObservation;
+        this.jobCoresWaitingObservation = jobCoresWaitingObservation;
     }
 
-    public Observation(final Object infrastructureState) {
-        this.infrastructureState = infrastructureState;
-        this.jobQueueState = null;
-        this.isJobQueueVisible = false;
+    public int[] getInfrastructureObservation() {
+        return infrastructureObservation;
     }
 
-    public Object getInfrastructureState() {
-        return infrastructureState;
-    }
-
-    public Object getJobQueueState() {
-        if (!isJobQueueVisible) {
-            throw new IllegalStateException("Job queue is not visible");
-        }
-        return jobQueueState;
+    public int getJobCoresWaitingObservation() {
+        return jobCoresWaitingObservation;
     }
 }

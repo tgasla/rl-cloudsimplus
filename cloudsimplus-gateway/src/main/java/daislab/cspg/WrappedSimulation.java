@@ -76,6 +76,44 @@ public class WrappedSimulation {
         LOGGER.info("Creating simulation: {}", identifier);
     }
 
+    private int getJobCoresWaitingObservation() {
+        final int jobCoresWaiting = cloudSimProxy.calculateJobCoresWaiting();
+        final int largeVmPes = settings.getSmallVmPes() * settings.getLargeVmMultiplier();
+        // Do not allow the observation to be larger than the number of cores in the large VM
+        return Math.min(jobCoresWaiting, largeVmPes);
+    }
+
+    public void resetEpisodeStats() {
+        resetEpWaitingJobsCountMax();
+        resetEpRunningVmsCountMax();
+    }
+
+    public void close() {
+        LOGGER.info("Terminating simulation...");
+        if (cloudSimProxy.isRunning()) {
+            cloudSimProxy.terminate();
+        }
+    }
+
+    public String render() {
+        // Map<String, double[]> renderedEnv = new HashMap<>();
+        // for (int i = 0; i < metricsNames.size(); i++) {
+        // renderedEnv.put(
+        // metricsNames.get(i),
+        // metricsStorage.metricValuesAsPrimitives(metricsNames.get(i))
+        // );
+        // }
+        // return gson.toJson(renderedEnv);
+        return "";
+    }
+
+    public void validateSimulationReset() {
+        if (cloudSimProxy == null) {
+            throw new IllegalStateException(
+                    "Simulation not reset! Please call the reset() function before calling step!");
+        }
+    }
+
     public SimulationResetResult reset(final long seed) {
         // ignoring seed for now
         LOGGER.info("Reset initiated");
@@ -92,16 +130,8 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo();
 
-        Object infrastructureObservation = getInfrastructureObservation();
-        Observation observation;
-
-        if (settings.isJobQueueVisible()) {
-            final int[] jobQueueObservation = getJobObservation();
-            observation = new Observation(infrastructureObservation, jobQueueObservation);
-            new Observation(infrastructureObservation, jobQueueObservation);
-        } else {
-            observation = new Observation(infrastructureObservation);
-        }
+        Observation observation =
+                new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
 
         return new SimulationResetResult(observation, info);
     }
@@ -149,60 +179,12 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo(rewards, getCurrentTimestepMetrics(),
                 cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
-                getInfrastructureObservationAsTreeArray());
+                getInfrastructureObservation());
 
-        Object infrastructureObservation = getInfrastructureObservation();
-        Observation observation;
-
-        if (settings.isJobQueueVisible()) {
-            final int[] jobQueueObservation = getJobObservation();
-            observation = new Observation(infrastructureObservation, jobQueueObservation);
-            new Observation(infrastructureObservation, jobQueueObservation);
-        } else {
-            observation = new Observation(infrastructureObservation);
-        }
+        Observation observation =
+                new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
 
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
-    }
-
-    private int[] getJobObservation() {
-        final int[] jobObservation = new int[2];
-        final double targetTime = cloudSimProxy.calculateTargetTime();
-        final List<Cloudlet> cloudletList = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
-        jobObservation[0] = cloudletList.size();
-        jobObservation[1] = cloudSimProxy.coresRequiredToSubmitJobs(cloudletList);
-        return jobObservation;
-    }
-
-    public void resetEpisodeStats() {
-        resetEpWaitingJobsCountMax();
-        resetEpRunningVmsCountMax();
-    }
-
-    public void close() {
-        LOGGER.info("Terminating simulation...");
-        if (cloudSimProxy.isRunning()) {
-            cloudSimProxy.terminate();
-        }
-    }
-
-    public String render() {
-        // Map<String, double[]> renderedEnv = new HashMap<>();
-        // for (int i = 0; i < metricsNames.size(); i++) {
-        // renderedEnv.put(
-        // metricsNames.get(i),
-        // metricsStorage.metricValuesAsPrimitives(metricsNames.get(i))
-        // );
-        // }
-        // return gson.toJson(renderedEnv);
-        return "";
-    }
-
-    public void validateSimulationReset() {
-        if (cloudSimProxy == null) {
-            throw new IllegalStateException(
-                    "Simulation not reset! Please call the reset() function before calling step!");
-        }
     }
 
     private List<double[][]> getCurrentTimestepMetrics() {
@@ -375,7 +357,7 @@ public class WrappedSimulation {
         simulationHistory.record("unutilizedVmCoresReward", reward[3]);
         simulationHistory.record("invalidReward", reward[4]);
         simulationHistory.record("vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
-        // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost());
+        // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost()); # TODO: NEEDS FIX
     }
 
     private boolean executeCustomAction(final int[] action) {
@@ -549,14 +531,7 @@ public class WrappedSimulation {
         return result;
     }
 
-    private Object getInfrastructureObservation() {
-        if (settings.isStateAsTreeArray()) {
-            return getInfrastructureObservationAsTreeArray();
-        }
-        return getInfrastructureObservationAs2dArray();
-    }
-
-    private int[] getInfrastructureObservationAsTreeArray() {
+    private int[] getInfrastructureObservation() {
         final int hostsNum = settings.getHostsCount();
         final int vmsNum = getRunningVmsCount().intValue();
         final int jobsNum = getRunningCloudletsCount().intValue();
@@ -595,8 +570,7 @@ public class WrappedSimulation {
         // metrics are only
         // used to pass the info to python and print to csv files then.
         // Vertical because rows in the arrays represent the hosts, vms, jobs etc. So,
-        // we take a
-        // specific subset of features (columns) for every host, vm or job.
+        // we take a specific subset of features (columns) for every host, vm or job.
 
         final double[] datacenterMetrics = new double[] {metricsStorage.getDatacenterMetrics()[2]};
         final double[][] hostMetrics =

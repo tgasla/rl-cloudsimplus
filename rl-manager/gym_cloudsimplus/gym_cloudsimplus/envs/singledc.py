@@ -1,3 +1,4 @@
+from math import inf
 import gymnasium as gym
 import json
 import os
@@ -43,9 +44,7 @@ class SingleDC(gym.Env):
 
         self.gateway = JavaGateway(gateway_parameters=self.gateway_parameters)
         self.simulation_environment = self.gateway.entry_point
-        self.state_as_tree_array = params["state_as_tree_array"]
         self.vm_allocation_policy = params["vm_allocation_policy"]
-        self.state_as_dict = params["state_as_dict"]
 
         if self.vm_allocation_policy == "fromfile":
             self.vm_allocation_policy = "fromfile"
@@ -59,6 +58,7 @@ class SingleDC(gym.Env):
         # host_count = params["host_count"]
         host_pes = params["host_pes"]
         small_vm_pes = params["small_vm_pes"]
+        large_vm_multiplier = params["large_vm_multiplier"]
 
         # if you want to support 1-10 hosts then when calculating max_vms_count and
         # observation rows, put self.max_hosts instead of host_count
@@ -97,28 +97,38 @@ class SingleDC(gym.Env):
             )
         )
 
-        if self.state_as_tree_array:
-            self.observation_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
-            self.max_cores_per_node = 101
-            self.observation_space = spaces.MultiDiscrete(
-                self.max_cores_per_node * np.ones(self.observation_length)
-            )
-        else:
-            self.observation_rows = 1 + self.max_hosts + self.max_vms + self.max_jobs
-            self.observation_cols = 4
-            self.observation_space = spaces.Box(
-                low=0,
-                high=1,
-                shape=(self.observation_rows, self.observation_cols),
-                dtype=np.float32,
-            )
+        self.infr_obs_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
+        self.max_cores_per_node = 100
+        # +1 because it starts from 0 and we need to include the last element (which is 100)
+        self.infr_obs_space = spaces.MultiDiscrete(
+            (self.max_cores_per_node + 1) * np.ones(self.infr_obs_length),
+            dtype=np.int32,
+        )
 
-        if self.state_as_dict:
-            self.observation_space = spaces.Dict(
-                {
-                    "system_state": self.observation_space,
-                }
-            )
+        # print(f"INIT: infr_obs_shape={self.infr_obs_length}")
+
+        large_vm_pes = small_vm_pes * large_vm_multiplier
+        # we set the maximum number of cores waiting in total to be the number of cores in the largest VM
+        # because even if there are more cores waiting, we cannot do anything more than creating a large VM
+        # again +1 because it starts from 0 and we need to include the last element (which is large_vm_pes)
+        self.job_cores_waiting_obs_space = spaces.Discrete(large_vm_pes + 1)
+
+        # else:
+        #     self.observation_rows = 1 + self.max_hosts + self.max_vms + self.max_jobs
+        #     self.observation_cols = 4
+        #     self.observation_space = spaces.Box(
+        #         low=0,
+        #         high=1,
+        #         shape=(self.observation_rows, self.observation_cols),
+        #         dtype=np.float32,
+        #     )
+
+        self.observation_space = spaces.Dict(
+            {
+                "infr_state": self.infr_obs_space,
+                "job_cores_waiting_state": self.job_cores_waiting_obs_space,
+            }
+        )
 
         if render_mode is not None and render_mode not in self.metadata["render_modes"]:
             gym.logger.warn(
@@ -132,18 +142,17 @@ class SingleDC(gym.Env):
         )
 
     def _get_observation(self, result):
-        if self.state_as_tree_array:
-            raw_obs = result.getObservationTreeArray()
-            initial_obs = self._to_nparray(raw_obs)
-            obs = np.resize(initial_obs, self.observation_length)
-            obs[len(initial_obs) :] = 0
-        else:
-            raw_obs = result.getObservation2dArray()
-            obs = self._to_nparray(raw_obs)
-
-        if self.state_as_dict:
-            return {"system_state": obs}
-        return obs
+        raw_obs = result.getObservation()
+        initial_infr_obs = self._to_nparray(
+            raw_obs.getInfrastructureObservation(), dtype=np.int32
+        )
+        infr_obs = np.resize(initial_infr_obs, self.infr_obs_length)
+        infr_obs[len(initial_infr_obs) :] = 0
+        job_cores_waiting_obs = raw_obs.getJobCoresWaitingObservation()
+        return {
+            "infr_state": infr_obs,
+            "job_cores_waiting_state": job_cores_waiting_obs,
+        }
 
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()
@@ -239,6 +248,6 @@ class SingleDC(gym.Env):
         }
         return info
 
-    def _to_nparray(self, raw_obs):
+    def _to_nparray(self, raw_obs, dtype=np.float32):
         obs = list(raw_obs)
-        return np.array(obs, dtype=np.float32)
+        return np.array(obs, dtype=dtype)

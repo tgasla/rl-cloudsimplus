@@ -1,4 +1,3 @@
-from ast import match_case
 import os
 import json
 import numpy as np
@@ -20,8 +19,6 @@ from utils.trace_utils import csv_to_cloudlet_descriptor
 
 def train(params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # print(params)
-    # filename_id = generate_filename(params)
 
     # Select the appropriate algorithm
     if (
@@ -37,10 +34,8 @@ def train(params):
     else:
         raise AttributeError(f"Algorithm {params['algorithm']} not found.")
 
-    if params["state_as_dict"]:
-        policy = "MultiInputPolicy"
-    else:
-        policy = "MlpPolicy"
+    policy = "MultiInputPolicy"  # when state is Spaces.Dict()
+    # policy = "MlpPolicy" # when state is not Spaces.Dict()
 
     # if hasattr(algorithm, "ent_coef"):
     # algorithm.ent_coef = 0.01
