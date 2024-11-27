@@ -4,6 +4,7 @@ import pycurl
 import shutil
 import numpy as np
 from io import BytesIO
+import torch
 
 import importlib
 from utils.parse_config import dict_from_config
@@ -33,14 +34,23 @@ def _find_replica_id(hostname):
     return replica_id
 
 
+def set_seed_for_all(seed):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
 def main():
     hostname = os.getenv("HOSTNAME")
     replica_id = _find_replica_id(hostname)
     params = dict_from_config(replica_id, CONFIG_FILE)
 
-    params["seed"] = (
-        np.random.randint(0, MAX_INT) if params["seed"] == "random" else params["seed"]
-    )
+    if params["seed"] == "random":
+        params["seed"] = np.random.randint(0, MAX_INT)
+    else:
+        set_seed_for_all(params["seed"])
 
     params["log_dir"] = None
     if params["save_experiment"]:

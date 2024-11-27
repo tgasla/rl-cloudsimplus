@@ -30,7 +30,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.save_replay_buffer = save_replay_buffer
         self.model_save_path = os.path.join(log_dir, "best_model")
         self.best_reward = -np.inf
-        self.previous_best_episode_num = None
+        self.previous_best_episode_num = None  # to delete the previous best
         self.isValid = None
         self.current_episode_num = 0
         self.best_episode_filename_prefix = "best_episode"
@@ -239,9 +239,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.logger.record(
             "train/ep_total_rew", np.sum(self.rewards), exclude="tensorboard"
         )
-        # self.logger.record(
-        #     "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
-        # )
+        self.logger.record(
+            "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
+        )
         self.logger.record("train/ep_job_wait_rew", np.sum(self.job_wait_rewards))
         self.logger.record(
             "train/ep_running_vm_cores_rew", np.sum(self.running_vm_cores_rewards)
@@ -252,9 +252,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.logger.record("train/ep_inv_rew", np.sum(self.invalid_rewards))
         self.logger.dump()
 
-    def _write_observation_tree_arrays_to_file(self) -> None:
-        filepath = os.path.join(self.log_dir, "observation_tree_arrays.csv")
-        with open(filepath, "a") as file:
+    def _write_observation_tree_arrays_to_file(self, filename, mode="a") -> None:
+        filepath = os.path.join(self.log_dir, filename)
+        with open(filepath, mode) as file:
             for array in self.observation_tree_arrays:
                 file.write(f"{array}\n")
             file.write("\n")
@@ -279,7 +279,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             if self.verbose >= 1:
                 print("Episode terminated")
             self._write_progress_log_row()
-            self._write_observation_tree_arrays_to_file()
+            self._write_observation_tree_arrays_to_file(
+                "observation_tree_arrays.csv", "a"
+            )
             # self._write_dot_strings_to_file()
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), "timesteps")
@@ -293,6 +295,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             if current_reward > self.best_reward:
                 self.best_reward = current_reward
                 self._save_new_best()
+                self._write_observation_tree_arrays_to_file(
+                    "best_obs_tree_arrays.csv", "w"
+                )
 
             self._clear_episode_details()
         return True

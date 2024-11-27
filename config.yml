@@ -41,7 +41,7 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    experiment_type_dir: test_if_state_dict_is_correct
+    experiment_type_dir: autoencoder
     seed: random
 
 experiment_1:
@@ -59,11 +59,10 @@ experiment_1:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    experiment_name: testing
+    experiment_name: AE_16_BN
     # train_model_dir: valley_window_evaluate_reward/10M
 
 # experiment_2:
-#     state_representation: treearray
 #     mode: train
 #     vm_allocation_policy: rl
 #     algorithm: PPO
@@ -72,15 +71,15 @@ experiment_1:
 #     host_pe_mips: 10
 #     max_job_pes: 1
 #     small_vm_pes: 2
-#     job_trace_filename: valley_max30_window_10
+#     job_trace_filename: three_peaks_max30
 #     timesteps: 1000000
 #     reward_job_wait_coef: 0.25
 #     reward_running_vm_cores_coef: 0.25
 #     reward_unutilized_vm_cores_coef: 0.25
 #     reward_invalid_coef: 0.25
+#     experiment_name: AE_16_BN
 
 # experiment_3:
-#     state_representation: treearray
 #     mode: train
 #     vm_allocation_policy: rl
 #     algorithm: PPO
@@ -95,6 +94,7 @@ experiment_1:
 #     reward_running_vm_cores_coef: 0.25
 #     reward_unutilized_vm_cores_coef: 0.25
 #     reward_invalid_coef: 0.25
+#     experiment_name: AE_64_BN
 
 # experiment_4:
 #     state_representation: treearray

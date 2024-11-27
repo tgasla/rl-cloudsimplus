@@ -1,14 +1,71 @@
+from enum import auto
 from math import inf
 import gymnasium as gym
 import json
 import os
 import csv
+import torch
+import torch.nn as nn
+
+# from sklearn.preprocessing import StandardScaler
 from gymnasium import spaces
 from py4j.java_gateway import JavaGateway, GatewayParameters
 import numpy as np
 
 # TODO: the two environments should support both continuous and
 # discrete action spaces
+
+
+class SimpleAutoencoder(nn.Module):
+    def __init__(self, input_dim, latent_dim):
+        super(SimpleAutoencoder, self).__init__()
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, 128), nn.ReLU(), nn.Linear(128, latent_dim), nn.ReLU()
+        )
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, input_dim),
+            nn.Sigmoid(),  # Assuming input values are normalized to [0, 1]
+        )
+
+    def forward(self, x):
+        latent = self.encoder(x)
+        reconstructed = self.decoder(latent)
+        return latent, reconstructed
+
+
+# Define Autoencoder Model
+class Autoencoder(nn.Module):
+    def __init__(self, input_dim, latent_dim, dropout=0.0, use_batch_norm=True):
+        super(Autoencoder, self).__init__()
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, 128),
+            nn.ReLU(),
+            nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
+            nn.Dropout(dropout),
+            nn.Linear(128, latent_dim),
+            nn.ReLU(),
+            nn.BatchNorm1d(latent_dim) if use_batch_norm else nn.Identity(),
+            nn.Sigmoid(),
+        )
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 128),
+            nn.ReLU(),
+            nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
+            nn.Dropout(dropout),
+            nn.Linear(128, input_dim),
+            nn.Sigmoid(),  # Assuming input values are normalized to [0, 1]
+        )
+
+    def forward(self, x):
+        latent = self.encoder(x)
+        reconstructed = self.decoder(latent)
+        return latent, reconstructed
 
 
 # Based on https://gymnasium.farama.org/api/env/
@@ -97,15 +154,23 @@ class SingleDC(gym.Env):
             )
         )
 
-        self.infr_obs_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
-        self.max_cores_per_node = 100
-        # +1 because it starts from 0 and we need to include the last element (which is 100)
-        self.infr_obs_space = spaces.MultiDiscrete(
-            (self.max_cores_per_node + 1) * np.ones(self.infr_obs_length),
-            dtype=np.int32,
+        # self.infr_obs_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
+        self.input_dim = 1 + self.max_hosts + self.max_vms + self.max_jobs
+        self.autoencoder_latent_dim = 16
+        # self.infr_obs_length = self.autoencoder_latent_dim
+        self.infr_obs_space = spaces.Box(
+            low=0.0,
+            high=1.0,
+            shape=(self.autoencoder_latent_dim,),
+            dtype=np.float32,
         )
 
-        # print(f"INIT: infr_obs_shape={self.infr_obs_length}")
+        # self.max_cores_per_node = 100
+        # +1 because it starts from 0 and we need to include the last element (which is 100)
+        # self.infr_obs_space = spaces.MultiDiscrete(
+        #     (self.max_cores_per_node + 1) * np.ones(self.infr_obs_length),
+        #     dtype=np.int32,
+        # )
 
         large_vm_pes = small_vm_pes * large_vm_multiplier
         # we set the maximum number of cores waiting in total to be the number of cores in the largest VM
@@ -141,14 +206,34 @@ class SingleDC(gym.Env):
             params, jobs_as_json
         )
 
+    def _pad_observation(self, obs, target_dim):
+        return np.pad(obs, (0, target_dim - len(obs)), "constant", constant_values=0)
+
+    def _min_max_normalize(self, array, min_val=0, max_val=100):
+        """
+        Normalize array to the range [0, 1] based on given min_val and max_val.
+        """
+        array = np.array(array, dtype=np.float32)
+        return (array - min_val) / (max_val - min_val)
+
     def _get_observation(self, result):
         raw_obs = result.getObservation()
-        initial_infr_obs = self._to_nparray(
+        infr_obs = self._to_nparray(
             raw_obs.getInfrastructureObservation(), dtype=np.int32
         )
-        infr_obs = np.resize(initial_infr_obs, self.infr_obs_length)
-        infr_obs[len(initial_infr_obs) :] = 0
+        infr_obs = self._pad_observation(infr_obs, self.input_dim)
+
+        # Pass the infrastructure observation through the trained autoencoder
+        infr_obs = self._min_max_normalize(infr_obs)
+        infr_obs = torch.tensor(infr_obs, dtype=torch.float32).unsqueeze(0)
+        autoencoder_out = self.autoencoder(infr_obs)
+        infr_obs = autoencoder_out[0].squeeze().detach().numpy()  # latent space
+        print(infr_obs)
+
+        ############################################################
+
         job_cores_waiting_obs = raw_obs.getJobCoresWaitingObservation()
+
         return {
             "infr_state": infr_obs,
             "job_cores_waiting_state": job_cores_waiting_obs,
@@ -157,6 +242,11 @@ class SingleDC(gym.Env):
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()
         self.current_step = 0
+        self.autoencoder = Autoencoder(self.input_dim, self.autoencoder_latent_dim)
+        self.autoencoder.load_state_dict(
+            torch.load("mnt/autoencoders/AE_16_BN.pth", weights_only=True)
+        )
+        self.autoencoder.eval()
 
         if seed is None:
             seed = 0
@@ -194,6 +284,14 @@ class SingleDC(gym.Env):
         truncated = result.isTruncated()
 
         obs = self._get_observation(result)
+
+        # zero obs for testing
+        # obs = {
+        #     "infr_state": np.zeros(self.autoencoder_latent_dim),
+        #     "job_cores_waiting_state": 0,
+        # }
+        ############################################################
+
         info = self._raw_info_to_dict(raw_info)
 
         if self.render_mode == "human":
