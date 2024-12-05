@@ -44,9 +44,7 @@ def train(params):
     # algorithm.n_steps=1024
 
     # Read jobs
-    job_trace_path = os.path.join(
-        "mnt", "traces", f"{params['job_trace_filename']}.csv"
-    )
+    job_trace_path = os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
     jobs = csv_to_cloudlet_descriptor(job_trace_path)
 
     # Create and wrap the environment

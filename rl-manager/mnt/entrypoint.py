@@ -1,16 +1,17 @@
 import os
 import json
 import pycurl
+import random
 import shutil
 import numpy as np
 from io import BytesIO
 import torch
+import sys
 
 import importlib
 from utils.parse_config import dict_from_config
 
 CONFIG_FILE = "config.yml"
-MAX_INT = 2**32 - 1
 
 
 def _find_replica_id(hostname):
@@ -35,11 +36,32 @@ def _find_replica_id(hostname):
 
 
 def set_seed_for_all(seed):
+    random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["PYTHONHASHSEED"] = str(seed)
+
+
+def write_seed_to_file(seed, log_dir, filename="seed.txt"):
+    """
+    Creates a text file and writes the given seed number to it.
+
+    Parameters:
+        seed (int): The seed number to write.
+        filename (str): The name of the file to create or overwrite. Default is 'seed.txt'.
+    """
+    filepath = os.path.join(log_dir, filename)
+    try:
+        with open(filepath, "w") as file:
+            file.write(str(seed))
+    except Exception as e:
+        print(f"An error occurred while writing to the file: {e}")
 
 
 def main():
@@ -48,7 +70,7 @@ def main():
     params = dict_from_config(replica_id, CONFIG_FILE)
 
     if params["seed"] == "random":
-        params["seed"] = np.random.randint(0, MAX_INT)
+        params["seed"] = np.random.randint(0, sys.maxsize)
     else:
         set_seed_for_all(params["seed"])
 
@@ -63,6 +85,7 @@ def main():
         os.makedirs(params["log_dir"], exist_ok=True)
         # Make a copy of the config file in the log directory
         shutil.copy(CONFIG_FILE, params["log_dir"])
+        write_seed_to_file(params["seed"], params["log_dir"])
 
     try:
         module = importlib.import_module(params["mode"])

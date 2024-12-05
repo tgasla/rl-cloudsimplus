@@ -13,7 +13,7 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: false
+    attached: true
     gpu: true
     java_log_level: INFO
     java_log_destination: none
@@ -41,8 +41,8 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    experiment_type_dir: autoencoder
-    seed: random
+    experiment_type_dir: max30_multicores_10mi_noise
+    seed: 1234
 
 experiment_1:
     mode: train
@@ -51,15 +51,15 @@ experiment_1:
     host_count: 10
     host_pes: 10
     host_pe_mips: 10
-    max_job_pes: 1
+    max_job_pes: 4
     small_vm_pes: 2
-    job_trace_filename: three_peaks_max30
-    timesteps: 1000000
+    job_trace_filename: three_peaks_max30_multicores_noise
+    timesteps: 2000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    experiment_name: AE_16_BN
+    experiment_name: treearray_2M
     # train_model_dir: valley_window_evaluate_reward/10M
 
 # experiment_2:

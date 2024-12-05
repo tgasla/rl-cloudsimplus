@@ -1,11 +1,10 @@
-from enum import auto
-from math import inf
 import gymnasium as gym
 import json
 import os
 import csv
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 # from sklearn.preprocessing import StandardScaler
 from gymnasium import spaces
@@ -14,6 +13,77 @@ import numpy as np
 
 # TODO: the two environments should support both continuous and
 # discrete action spaces
+
+
+class VectorQuantizer(nn.Module):
+    def __init__(self, num_embeddings, embedding_dim, commitment_cost=0.25):
+        super(VectorQuantizer, self).__init__()
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+        self.commitment_cost = commitment_cost
+
+        # Initialize the codebook (embedding vectors)
+        self.embedding = nn.Embedding(num_embeddings, embedding_dim)
+        self.embedding.weight.data.uniform_(-1 / num_embeddings, 1 / num_embeddings)
+
+    def forward(self, x):
+        # Flatten input to (batch_size * num_features, embedding_dim)
+        flat_x = x.view(-1, self.embedding_dim)
+
+        # Compute distances between input and embedding vectors
+        distances = torch.cdist(flat_x, self.embedding.weight, p=2)  # L2 distance
+        indices = torch.argmin(distances, dim=1)  # Closest embedding index
+
+        # Get quantized vectors
+        quantized = self.embedding(indices).view(x.shape)
+
+        # Compute commitment loss
+        e_latent_loss = F.mse_loss(quantized.detach(), x)
+        q_latent_loss = F.mse_loss(quantized, x.detach())
+        loss = q_latent_loss + self.commitment_cost * e_latent_loss
+
+        # Add quantization noise during backward pass
+        quantized = x + (quantized - x).detach()
+        return quantized, indices, loss
+
+
+class VQVAE(nn.Module):
+    def __init__(
+        self,
+        input_dim,
+        latent_dim,
+        num_embeddings,
+        dropout=0.0,
+        use_batch_norm=False,
+        commitment_cost=0.25,
+    ):
+        super(VQVAE, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, 128),
+            nn.ReLU(),
+            nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
+            nn.Dropout(dropout),
+            nn.Linear(128, latent_dim),
+            nn.ReLU(),
+        )
+        self.quantizer = VectorQuantizer(num_embeddings, latent_dim, commitment_cost)
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 128),
+            nn.ReLU(),
+            nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
+            nn.Dropout(dropout),
+            nn.Linear(128, input_dim),
+            nn.Sigmoid(),  # Assuming input values are normalized to [0, 1]
+        )
+
+    def forward(self, x):
+        # Encode
+        latent = self.encoder(x)
+        # Quantize
+        quantized, indices, quantization_loss = self.quantizer(latent)
+        # Decode
+        reconstructed = self.decoder(quantized)
+        return latent, quantized, reconstructed, quantization_loss
 
 
 class SimpleAutoencoder(nn.Module):
@@ -39,7 +109,7 @@ class SimpleAutoencoder(nn.Module):
 
 # Define Autoencoder Model
 class Autoencoder(nn.Module):
-    def __init__(self, input_dim, latent_dim, dropout=0.0, use_batch_norm=True):
+    def __init__(self, input_dim, latent_dim, dropout=0.0, use_batch_norm=False):
         super(Autoencoder, self).__init__()
         # Encoder
         self.encoder = nn.Sequential(
@@ -154,23 +224,29 @@ class SingleDC(gym.Env):
             )
         )
 
-        # self.infr_obs_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
-        self.input_dim = 1 + self.max_hosts + self.max_vms + self.max_jobs
-        self.autoencoder_latent_dim = 16
-        # self.infr_obs_length = self.autoencoder_latent_dim
-        self.infr_obs_space = spaces.Box(
-            low=0.0,
-            high=1.0,
-            shape=(self.autoencoder_latent_dim,),
-            dtype=np.float32,
-        )
+        self.infr_obs_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
 
-        # self.max_cores_per_node = 100
-        # +1 because it starts from 0 and we need to include the last element (which is 100)
-        # self.infr_obs_space = spaces.MultiDiscrete(
-        #     (self.max_cores_per_node + 1) * np.ones(self.infr_obs_length),
-        #     dtype=np.int32,
+        ############################################################
+        # ENABLE FOR AUTOENCODER OBSERVATION
+        # self.input_dim = 1 + self.max_hosts + self.max_vms + self.max_jobs
+        # self.autoencoder_latent_dim = 64
+        # self.infr_obs_space = spaces.Box(
+        #     low=0.0,
+        #     high=1.0,
+        #     shape=(self.autoencoder_latent_dim,),
+        #     dtype=np.float32,
         # )
+        ############################################################
+
+        ############################################################
+        # ENABLE FOR TREE OBSERVATION
+        max_cores_per_node = 100
+        # +1 because it starts from 0 and we need to include the last element (which is 100)
+        self.infr_obs_space = spaces.MultiDiscrete(
+            (max_cores_per_node + 1) * np.ones(self.infr_obs_length),
+            dtype=np.int32,
+        )
+        ############################################################
 
         large_vm_pes = small_vm_pes * large_vm_multiplier
         # we set the maximum number of cores waiting in total to be the number of cores in the largest VM
@@ -221,15 +297,16 @@ class SingleDC(gym.Env):
         infr_obs = self._to_nparray(
             raw_obs.getInfrastructureObservation(), dtype=np.int32
         )
-        infr_obs = self._pad_observation(infr_obs, self.input_dim)
+        infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
 
+        ############################################################
+        # ENABLE FOR AUTOENCODER OBSERVATION
+        # infr_obs = self._pad_observation(infr_obs, self.input_dim)
         # Pass the infrastructure observation through the trained autoencoder
-        infr_obs = self._min_max_normalize(infr_obs)
-        infr_obs = torch.tensor(infr_obs, dtype=torch.float32).unsqueeze(0)
-        autoencoder_out = self.autoencoder(infr_obs)
-        infr_obs = autoencoder_out[0].squeeze().detach().numpy()  # latent space
-        print(infr_obs)
-
+        # infr_obs = self._min_max_normalize(infr_obs)
+        # infr_obs = torch.tensor(infr_obs, dtype=torch.float32).unsqueeze(0)
+        # autoencoder_out = self.autoencoder(infr_obs)
+        # infr_obs = autoencoder_out[0].squeeze().detach().numpy()  # latent space
         ############################################################
 
         job_cores_waiting_obs = raw_obs.getJobCoresWaitingObservation()
@@ -242,11 +319,20 @@ class SingleDC(gym.Env):
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()
         self.current_step = 0
-        self.autoencoder = Autoencoder(self.input_dim, self.autoencoder_latent_dim)
-        self.autoencoder.load_state_dict(
-            torch.load("mnt/autoencoders/AE_16_BN.pth", weights_only=True)
-        )
-        self.autoencoder.eval()
+
+        ########################################################################################
+        # ENABLE FOR AUTOENCODER OBSERVATION
+        # choose the correct autoencoder model path, class and
+        # self.autoencoder = Autoencoder(
+        #     self.input_dim, self.autoencoder_latent_dim, use_batch_norm=True
+        # )
+        # # self.autoencoder = VQVAE(
+        # #     self.input_dim, self.autoencoder_latent_dim, 64, 0, True
+        # # )
+        # self.autoencoder.load_state_dict(
+        #     torch.load("mnt/autoencoders/AE_64_BN.pth", weights_only=True)
+        # )
+        # self.autoencoder.eval()
 
         if seed is None:
             seed = 0
@@ -285,9 +371,10 @@ class SingleDC(gym.Env):
 
         obs = self._get_observation(result)
 
-        # zero obs for testing
+        ############################################################
+        # ENABLE FOR ZERO OBSERVATION TESTING
         # obs = {
-        #     "infr_state": np.zeros(self.autoencoder_latent_dim),
+        #     "infr_state": np.zeros(self.infr_obs_length),
         #     "job_cores_waiting_state": 0,
         # }
         ############################################################

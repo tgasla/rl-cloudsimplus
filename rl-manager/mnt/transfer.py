@@ -26,7 +26,7 @@ def transfer(params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     jobs = csv_to_cloudlet_descriptor(
-        os.path.join("mnt", "traces", f"{params['job_trace_filename']}.csv")
+        os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
     )
 
     # filename_id = generate_filename(params, hostname)
