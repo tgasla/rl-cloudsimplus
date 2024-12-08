@@ -13,7 +13,7 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: true
+    attached: false
     gpu: true
     java_log_level: INFO
     java_log_destination: none
@@ -41,26 +41,27 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    experiment_type_dir: max30_multicores_10mi_noise
+    experiment_type_dir: transfer_infrastructure
     seed: 1234
 
 experiment_1:
-    mode: train
+    mode: transfer
     vm_allocation_policy: rl
+    enable_autoencoder_observation: false
     algorithm: PPO
-    host_count: 10
+    host_count: 5
     host_pes: 10
     host_pe_mips: 10
     max_job_pes: 4
     small_vm_pes: 2
-    job_trace_filename: three_peaks_max30_multicores_noise
+    job_trace_filename: three_peaks_max30_multicores_10mi_noise_4maxcores.csv
     timesteps: 2000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    experiment_name: treearray_2M
-    # train_model_dir: valley_window_evaluate_reward/10M
+    experiment_name: tree_1234_4maxcores_from_10hosts_to_5hosts
+    train_model_dir: 30maxentropy_4maxcores_10mi_10hosts_noise_2M/tree
 
 # experiment_2:
 #     mode: train

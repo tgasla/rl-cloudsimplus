@@ -165,9 +165,11 @@ class SingleDC(gym.Env):
     metadata = {"render_modes": ["human", "ansi"]}
     # default port = 25333
     gateway_parameters = GatewayParameters(address="gateway", auto_convert=True)
+    params = {}
 
     def __init__(self, params, jobs_as_json="[]", render_mode="ansi"):
         super(SingleDC, self).__init__()
+        self.params = params
 
         self.gateway = JavaGateway(gateway_parameters=self.gateway_parameters)
         self.simulation_environment = self.gateway.entry_point
@@ -226,27 +228,40 @@ class SingleDC(gym.Env):
 
         self.infr_obs_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
 
-        ############################################################
-        # ENABLE FOR AUTOENCODER OBSERVATION
-        # self.input_dim = 1 + self.max_hosts + self.max_vms + self.max_jobs
-        # self.autoencoder_latent_dim = 64
-        # self.infr_obs_space = spaces.Box(
-        #     low=0.0,
-        #     high=1.0,
-        #     shape=(self.autoencoder_latent_dim,),
-        #     dtype=np.float32,
-        # )
-        ############################################################
+        if params["enable_autoencoder_observation"]:
+            self.input_dim = 1 + self.max_hosts + self.max_vms + self.max_jobs
+            self.autoencoder_latent_dim = 64
+            self.infr_obs_space = spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(self.autoencoder_latent_dim,),
+                dtype=np.float32,
+            )
 
-        ############################################################
-        # ENABLE FOR TREE OBSERVATION
-        max_cores_per_node = 100
-        # +1 because it starts from 0 and we need to include the last element (which is 100)
-        self.infr_obs_space = spaces.MultiDiscrete(
-            (max_cores_per_node + 1) * np.ones(self.infr_obs_length),
-            dtype=np.int32,
-        )
-        ############################################################
+            self.autoencoder = Autoencoder(
+                self.input_dim, self.autoencoder_latent_dim, use_batch_norm=True
+            )
+            self.autoencoder.load_state_dict(
+                torch.load("mnt/autoencoders/AE_64_BN.pth", weights_only=True)
+            )
+            self.autoencoder.eval()
+        # # self.autoencoder = VQVAE(
+        # #     self.input_dim, self.autoencoder_latent_dim, 64, 0, True
+        # # )
+        else:
+            # if tree data are scaled to [0, 1]
+            # self.infr_obs_space = spaces.Box(
+            #     low=0,
+            #     high=1,
+            #     shape=(self.infr_obs_length,),
+            #     dtype=np.float32,
+            # )
+            max_cores_per_node = 100
+            # if tree data are not scaled
+            self.infr_obs_space = spaces.MultiDiscrete(
+                (max_cores_per_node + 1) * np.ones(self.infr_obs_length),
+                dtype=np.int32,
+            )
 
         large_vm_pes = small_vm_pes * large_vm_multiplier
         # we set the maximum number of cores waiting in total to be the number of cores in the largest VM
@@ -254,6 +269,7 @@ class SingleDC(gym.Env):
         # again +1 because it starts from 0 and we need to include the last element (which is large_vm_pes)
         self.job_cores_waiting_obs_space = spaces.Discrete(large_vm_pes + 1)
 
+        # 2d array
         # else:
         #     self.observation_rows = 1 + self.max_hosts + self.max_vms + self.max_jobs
         #     self.observation_cols = 4
@@ -299,15 +315,12 @@ class SingleDC(gym.Env):
         )
         infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
 
-        ############################################################
-        # ENABLE FOR AUTOENCODER OBSERVATION
-        # infr_obs = self._pad_observation(infr_obs, self.input_dim)
-        # Pass the infrastructure observation through the trained autoencoder
-        # infr_obs = self._min_max_normalize(infr_obs)
-        # infr_obs = torch.tensor(infr_obs, dtype=torch.float32).unsqueeze(0)
-        # autoencoder_out = self.autoencoder(infr_obs)
-        # infr_obs = autoencoder_out[0].squeeze().detach().numpy()  # latent space
-        ############################################################
+        if self.params["enable_autoencoder_observation"]:
+            infr_obs = self._pad_observation(infr_obs, self.input_dim)
+            infr_obs = self._min_max_normalize(infr_obs)
+            infr_obs = torch.tensor(infr_obs, dtype=torch.float32).unsqueeze(0)
+            autoencoder_out = self.autoencoder(infr_obs)
+            infr_obs = autoencoder_out[0].squeeze().detach().numpy()  # latent space
 
         job_cores_waiting_obs = raw_obs.getJobCoresWaitingObservation()
 
@@ -319,20 +332,6 @@ class SingleDC(gym.Env):
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()
         self.current_step = 0
-
-        ########################################################################################
-        # ENABLE FOR AUTOENCODER OBSERVATION
-        # choose the correct autoencoder model path, class and
-        # self.autoencoder = Autoencoder(
-        #     self.input_dim, self.autoencoder_latent_dim, use_batch_norm=True
-        # )
-        # # self.autoencoder = VQVAE(
-        # #     self.input_dim, self.autoencoder_latent_dim, 64, 0, True
-        # # )
-        # self.autoencoder.load_state_dict(
-        #     torch.load("mnt/autoencoders/AE_64_BN.pth", weights_only=True)
-        # )
-        # self.autoencoder.eval()
 
         if seed is None:
             seed = 0
