@@ -10,6 +10,8 @@
 # vm_allocation_policy: [rl, heuristic]
 # algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, bestfit|firstfit|worstfit|roundrobin|random if vm_allocation_policy == heuristic]
 
+# globals.run_mode: [batch, serial]
+
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
@@ -18,6 +20,7 @@ globals:
     java_log_level: INFO
     java_log_destination: none
     junit_output_show: false
+    # run_mode: 
 
 common:
     timestep_interval: 1.0
@@ -41,13 +44,13 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    experiment_type_dir: transfer_infrastructure
+    experiment_type_dir: 30maxentropy_4maxcores_10mi_5hosts_noise_4M
     seed: 1234
 
 experiment_1:
-    mode: transfer
+    mode: train
     vm_allocation_policy: rl
-    enable_autoencoder_observation: false
+    enable_autoencoder_observation: true
     algorithm: PPO
     host_count: 5
     host_pes: 10
@@ -55,13 +58,13 @@ experiment_1:
     max_job_pes: 4
     small_vm_pes: 2
     job_trace_filename: three_peaks_max30_multicores_10mi_noise_4maxcores.csv
-    timesteps: 2000000
+    timesteps: 4000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    experiment_name: tree_1234_4maxcores_from_10hosts_to_5hosts
-    train_model_dir: 30maxentropy_4maxcores_10mi_10hosts_noise_2M/tree
+    experiment_name: autoencoder_5hosts_64_BN_1234
+    # train_model_dir: 30maxentropy_4maxcores_10mi_5hosts_noise_2M/autoencoder_5hosts_64_BN_1234
 
 # experiment_2:
 #     mode: train

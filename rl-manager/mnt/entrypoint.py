@@ -43,6 +43,9 @@ def set_seed_for_all(seed):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True, warn_only=True)
+    # torch.cuda.synchronize()
+    # torch.backends.cudnn.enabled = False
     os.environ["OMP_NUM_THREADS"] = "1"
     os.environ["MKL_NUM_THREADS"] = "1"
     os.environ["PYTHONHASHSEED"] = str(seed)

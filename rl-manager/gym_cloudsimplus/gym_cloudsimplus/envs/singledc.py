@@ -197,7 +197,7 @@ class SingleDC(gym.Env):
         self.max_hosts = 10
         self.vm_types_count = 3
 
-        # we assume that the minimum amount of cores per job will be 1
+        # it is reasonable to assume that the minimum amount of cores per job will be 1
         self.min_job_pes = 1
         self.max_vms = self.max_hosts * int(host_pes) // int(small_vm_pes)
         self.max_jobs = self.max_vms * int(small_vm_pes) // self.min_job_pes
@@ -230,6 +230,7 @@ class SingleDC(gym.Env):
 
         if params["enable_autoencoder_observation"]:
             self.input_dim = 1 + self.max_hosts + self.max_vms + self.max_jobs
+            print(self.input_dim)
             self.autoencoder_latent_dim = 64
             self.infr_obs_space = spaces.Box(
                 low=0.0,
@@ -242,7 +243,10 @@ class SingleDC(gym.Env):
                 self.input_dim, self.autoencoder_latent_dim, use_batch_norm=True
             )
             self.autoencoder.load_state_dict(
-                torch.load("mnt/autoencoders/AE_64_BN.pth", weights_only=True)
+                torch.load(
+                    "mnt/autoencoders/AE_5hosts_64_BN.pth",
+                    weights_only=True,
+                )
             )
             self.autoencoder.eval()
         # # self.autoencoder = VQVAE(
@@ -256,10 +260,10 @@ class SingleDC(gym.Env):
             #     shape=(self.infr_obs_length,),
             #     dtype=np.float32,
             # )
-            max_cores_per_node = 100
             # if tree data are not scaled
+            max_pes_per_node = self.max_hosts * params["host_pes"]
             self.infr_obs_space = spaces.MultiDiscrete(
-                (max_cores_per_node + 1) * np.ones(self.infr_obs_length),
+                (max_pes_per_node + 1) * np.ones(self.infr_obs_length),
                 dtype=np.int32,
             )
 
