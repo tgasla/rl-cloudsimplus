@@ -68,8 +68,19 @@ def transfer(params):
     else:
         env = DummyVecEnv([lambda: env])
 
+    # Change any model parameters you want here
+    custom_objects = {
+        # "learning_rate": float(learning_rate_dict[params["algorithm"]]),
+    }
+
     # Load the trained agent
-    model = algorithm.load(best_model_path, device=device, env=env, seed=params["seed"])
+    model = algorithm.load(
+        best_model_path,
+        device=device,
+        env=env,
+        custom_objects=custom_objects,
+        seed=params["seed"],
+    )
 
     logger = configure(params["log_dir"], ["stdout", "csv", "tensorboard"])
     model.set_logger(logger)
@@ -82,9 +93,6 @@ def transfer(params):
             "best_model_replay_buffer",
         )
         model.load_replay_buffer(best_replay_buffer_path)
-
-    # Set the learning rate to a small initial value
-    model.learning_rate = learning_rate_dict.get(params["algorithm"])
 
     # Retrain the agent initializing the weights from the saved agent
     # The right thing to do is to set reset_num_timesteps=True

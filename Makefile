@@ -18,7 +18,7 @@ run-tensorboard:
 	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 80:6006 tensorboard
 
 run:
-	ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) scripts/run_docker.sh
+	ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) RUN_MODE=$(call get_yaml_value,run_mode) scripts/run_docker.sh
 
 clean-gateway:
 	cd cloudsimplus-gateway && ./gradlew clean

@@ -1,3 +1,4 @@
+from math import exp
 import os
 import json
 import pycurl
@@ -68,9 +69,13 @@ def write_seed_to_file(seed, log_dir, filename="seed.txt"):
 
 
 def main():
-    hostname = os.getenv("HOSTNAME")
-    replica_id = _find_replica_id(hostname)
-    params = dict_from_config(replica_id, CONFIG_FILE)
+    if os.getenv("RUN_MODE") == "batch":
+        hostname = os.getenv("HOSTNAME")
+        replica_id = _find_replica_id(hostname)
+        params = dict_from_config(replica_id, CONFIG_FILE)
+    elif os.getenv("RUN_MODE") == "serial":
+        experiment_id = os.getenv("EXPERIMENT_ID")
+        params = dict_from_config(experiment_id, CONFIG_FILE)
 
     if params["seed"] == "random":
         params["seed"] = np.random.randint(0, sys.maxsize)

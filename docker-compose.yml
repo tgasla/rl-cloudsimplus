@@ -9,6 +9,9 @@ services:
     profiles: [ "" ]
     image: manager:0.10
     # container_name: manager # disabled to allow multiple instances
+    environment: # passing defaults to avoid warnings
+      - EXPERIMENT_ID=${EXPERIMENT_ID:-""}
+      - RUN_MODE=${RUN_MODE:-""}
     build:
       context: .
       dockerfile: rl-manager/Dockerfile

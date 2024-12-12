@@ -230,7 +230,7 @@ class SingleDC(gym.Env):
 
         if params["enable_autoencoder_observation"]:
             self.input_dim = 1 + self.max_hosts + self.max_vms + self.max_jobs
-            print(self.input_dim)
+            # print(self.input_dim)
             self.autoencoder_latent_dim = 64
             self.infr_obs_space = spaces.Box(
                 low=0.0,
@@ -244,7 +244,7 @@ class SingleDC(gym.Env):
             )
             self.autoencoder.load_state_dict(
                 torch.load(
-                    "mnt/autoencoders/AE_5hosts_64_BN.pth",
+                    "mnt/autoencoders/AE_5hosts_and_10hosts_64_BN.pth",
                     weights_only=True,
                 )
             )
