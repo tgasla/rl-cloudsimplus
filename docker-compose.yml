@@ -12,6 +12,7 @@ services:
     environment: # passing defaults to avoid warnings
       - EXPERIMENT_ID=${EXPERIMENT_ID:-""}
       - RUN_MODE=${RUN_MODE:-""}
+      - CUBLAS_WORKSPACE_CONFIG=:4096:8
     build:
       context: .
       dockerfile: rl-manager/Dockerfile

@@ -28,6 +28,15 @@ cleanup_experiment() {
     echo "Cleanup completed for experiment containers."
 }
 
+wait_for_experiment_to_complete() {
+    echo "Waiting for experiment to complete..."
+
+    # Replace 'experiment_name' with your container name pattern or ID
+    while docker ps --filter "name=manager" --filter "status=running" | grep -q "manager"; do
+        sleep 5  # Check every 5 seconds
+    done
+}
+
 # Check if there are replicas
 if [ $NUM_EXPERIMENTS -gt 0 ]; then
     # Determine the Docker command based on the GPU flag
@@ -55,7 +64,8 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
             else
                 DETACHED_OPTION="-d"
             fi
-            RUN_MODE="serial" EXPERIMENT_ID="$i" docker compose $PROFILE_OPTION up --build --remove-orphans
+            RUN_MODE="serial" EXPERIMENT_ID="$i" docker compose $PROFILE_OPTION up $DETACHED_OPTION --build --remove-orphans
+            wait_for_experiment_to_complete
             cleanup_experiment
         done
     else

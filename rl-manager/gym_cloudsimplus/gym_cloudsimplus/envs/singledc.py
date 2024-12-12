@@ -244,7 +244,7 @@ class SingleDC(gym.Env):
             )
             self.autoencoder.load_state_dict(
                 torch.load(
-                    "mnt/autoencoders/AE_5hosts_and_10hosts_64_BN.pth",
+                    "mnt/autoencoders/AE_10hosts_64_BN.pth",
                     weights_only=True,
                 )
             )
