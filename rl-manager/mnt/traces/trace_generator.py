@@ -53,7 +53,7 @@ def generate_trace(
 
     # Generate job data (mi and allocated_cores)
     mi_values = (
-        np.random.randint(1, 6, size=num_jobs) * 10
+        np.random.randint(1, 6, size=num_jobs) * 50000
     )  # Random values from the set {10, 20, 30, 40, 50}
 
     if max_entropy_type == "jobs":
@@ -62,9 +62,7 @@ def generate_trace(
         )  # Random values from the set {1, 2, 4, 8}
     elif max_entropy_type == "cores":
         # For cores, we scale the core assignment using a Gaussian distribution
-        allocated_cores = np.clip(
-            np.round(np.random.normal(loc=4, scale=2, size=num_jobs)), 1, 8
-        )  # Mean of 4, scale of 2
+        allocated_cores = np.random.choice([1, 2, 4, 8], size=num_jobs)
         allocated_cores = allocated_cores.astype(int)
         allocated_cores[allocated_cores == 0] = 1  # Ensure there are no zero cores
     else:
@@ -140,13 +138,13 @@ def main():
         help="Path to save the generated CSV file.",
     )
     parser.add_argument(
-        "--num_jobs", type=int, default=100, help="Number of jobs to generate."
+        "--num_jobs", type=int, default=5000, help="Number of jobs to generate."
     )
     parser.add_argument(
         "--distribution",
         type=str,
         choices=["random", "uniform", "gaussian"],
-        required=True,
+        default="gaussian",
         help="Distribution to use for job arrival times.",
     )
     parser.add_argument(
@@ -170,7 +168,7 @@ def main():
     parser.add_argument(
         "--max_entropy",
         type=int,
-        default=30,
+        default=2000,
         help="Maximum number of cores that can arrive at the same time.",
     )
     parser.add_argument(

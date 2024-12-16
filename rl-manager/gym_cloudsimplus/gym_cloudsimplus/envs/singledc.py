@@ -193,9 +193,9 @@ class SingleDC(gym.Env):
         # observation rows, put self.max_hosts instead of host_count
         # and in action_space put self.max_hosts instead of host_count
 
-        self.action_types_count = 3
-        self.max_hosts = 10
-        self.vm_types_count = 3
+        self.max_hosts = params["max_hosts"]
+        self.action_types_count = 3  # do nothing, create vm, destroy vm
+        self.vm_types_count = 3  # small, medium, large
 
         # it is reasonable to assume that the minimum amount of cores per job will be 1
         self.min_job_pes = 1
