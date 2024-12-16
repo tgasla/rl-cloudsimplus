@@ -85,8 +85,8 @@ def train(params):
         )
         model.action_noise = action_noise
 
-    if hasattr(model, "ent_coef") and params.get("ent_coef"):
-        model.ent_coef = params["ent_coef"]
+    if hasattr(model, "ppo_ent_coef") and params.get("ppo_ent_coef"):
+        model.ent_coef = params["ppo_ent_coef"]
 
     # Train the agent
     model.learn(total_timesteps=params["timesteps"], log_interval=1, callback=callback)
