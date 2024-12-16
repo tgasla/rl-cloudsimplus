@@ -226,3 +226,5 @@ logs/
 old-logs/
 
 notebooks/data/
+
+nohup.out
