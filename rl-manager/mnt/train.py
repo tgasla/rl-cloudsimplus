@@ -1,6 +1,7 @@
 import os
 import json
 import numpy as np
+from zmq import has
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 import torch
@@ -84,6 +85,9 @@ def train(params):
             mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
         )
         model.action_noise = action_noise
+
+    if hasattr(model, "ent_coef") and params.get("ent_coef"):
+        model.ent_coef = params["ent_coef"]
 
     # Train the agent
     model.learn(total_timesteps=params["timesteps"], log_interval=1, callback=callback)

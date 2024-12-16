@@ -47,3 +47,1620 @@ ATTACHED=false GPU=true RUN_MODE=serial scripts/run_docker.sh
  Container rl-cloudsimplus-manager-cuda-1  Starting
  Container rl-cloudsimplus-manager-cuda-1  Started
 Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 2/6] WORKDIR /mgr
+#6 CACHED
+
+#7 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#8 CACHED
+
+#9 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 2/6] WORKDIR /mgr
+#6 CACHED
+
+#7 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#8 CACHED
+
+#9 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#6 CACHED
+
+#7 [manager-cuda 2/6] WORKDIR /mgr
+#7 CACHED
+
+#8 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#8 CACHED
+
+#9 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+ATTACHED=false GPU=true RUN_MODE=serial scripts/run_docker.sh
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 37.52kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 2/6] WORKDIR /mgr
+#6 CACHED
+
+#7 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Creating
+ Container rl-cloudsimplus-manager-cuda-1  Created
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 2/6] WORKDIR /mgr
+#6 CACHED
+
+#7 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.8s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 2/6] WORKDIR /mgr
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 2/6] WORKDIR /mgr
+#6 CACHED
+
+#7 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#8 CACHED
+
+#9 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+ATTACHED=false GPU=true RUN_MODE=serial scripts/run_docker.sh
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.3s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 37.52kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#6 CACHED
+
+#7 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 2/6] WORKDIR /mgr
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Creating
+ Container rl-cloudsimplus-manager-cuda-1  Created
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.8s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 2/6] WORKDIR /mgr
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#6 CACHED
+
+#7 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#7 CACHED
+
+#8 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 2/6] WORKDIR /mgr
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 2/6] WORKDIR /mgr
+#8 CACHED
+
+#9 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+ATTACHED=false GPU=true RUN_MODE=serial scripts/run_docker.sh
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 37.52kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#6 CACHED
+
+#7 [manager-cuda 2/6] WORKDIR /mgr
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Creating
+ Container rl-cloudsimplus-manager-cuda-1  Created
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 2/6] WORKDIR /mgr
+#6 CACHED
+
+#7 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 2/6] WORKDIR /mgr
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#6 CACHED
+
+#7 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 2/6] WORKDIR /mgr
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+ATTACHED=false GPU=true RUN_MODE=serial scripts/run_docker.sh
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.8s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 2/6] WORKDIR /mgr
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 2/6] WORKDIR /mgr
+#8 CACHED
+
+#9 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 2/6] WORKDIR /mgr
+#6 CACHED
+
+#7 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#7 CACHED
+
+#8 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 2/6] WORKDIR /mgr
+#7 CACHED
+
+#8 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#6 CACHED
+
+#7 [manager-cuda 2/6] WORKDIR /mgr
+#7 CACHED
+
+#8 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#8 CACHED
+
+#9 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#6 CACHED
+
+#7 [manager-cuda 2/6] WORKDIR /mgr
+#7 CACHED
+
+#8 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#8 CACHED
+
+#9 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+ATTACHED=false GPU=true RUN_MODE=serial scripts/run_docker.sh
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 37.52kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 2/6] WORKDIR /mgr
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Creating
+ Container rl-cloudsimplus-manager-cuda-1  Created
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.8s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 2/6] WORKDIR /mgr
+#6 CACHED
+
+#7 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 2/6] WORKDIR /mgr
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 2/6] WORKDIR /mgr
+#6 CACHED
+
+#7 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#7 CACHED
+
+#8 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
+ Container gateway  Stopping
+ Container gateway  Stopped
+ Container gateway  Removing
+ Container gateway  Removed
+ Network rl-cloudsimplus_default  Removing
+ Network rl-cloudsimplus_default  Removed
+Total reclaimed space: 0B
+Cleanup completed for experiment containers.
+#0 building with "default" instance using docker driver
+
+#1 [manager-cuda internal] load build definition from Dockerfile
+#1 transferring dockerfile: 595B done
+#1 DONE 0.0s
+
+#2 [manager-cuda internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.7s
+
+#3 [manager-cuda internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [manager-cuda 1/6] FROM docker.io/library/python:3.12-slim@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8
+#4 DONE 0.0s
+
+#5 [manager-cuda internal] load build context
+#5 transferring context: 1.27kB done
+#5 DONE 0.0s
+
+#6 [manager-cuda 3/6] RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.0     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2
+#6 CACHED
+
+#7 [manager-cuda 2/6] WORKDIR /mgr
+#7 CACHED
+
+#8 [manager-cuda 4/6] COPY rl-manager/gym_cloudsimplus gym_cloudsimplus
+#8 CACHED
+
+#9 [manager-cuda 5/6] RUN pip3 install -e gym_cloudsimplus
+#9 CACHED
+
+#10 [manager-cuda 6/6] RUN apt update     && apt purge --auto-remove -yqq     && apt autoremove -yqq --purge     && apt clean     && rm -rf     /var/lib/apt/lists/*     /tmp/*     /var/tmp/*     /usr/share/man     /usr/share/doc     /usr/share/doc-base
+#10 CACHED
+
+#11 [manager-cuda] exporting to image
+#11 exporting layers done
+#11 writing image sha256:f029be4d6a9c717adf5702f082245d9dd02b9e27ec48aac2c891becc94c81ad5 done
+#11 naming to docker.io/library/manager:0.10 done
+#11 DONE 0.0s
+
+#12 [manager-cuda] resolving provenance for metadata file
+#12 DONE 0.0s
+ Network rl-cloudsimplus_default  Creating
+ Network rl-cloudsimplus_default  Created
+ Container gateway  Creating
+ Container gateway  Created
+ Container rl-cloudsimplus-manager-cuda-1  Recreate
+ Container rl-cloudsimplus-manager-cuda-1  Recreated
+ Container gateway  Starting
+ Container gateway  Started
+ Container rl-cloudsimplus-manager-cuda-1  Starting
+ Container rl-cloudsimplus-manager-cuda-1  Started
+Waiting for experiment to complete...
