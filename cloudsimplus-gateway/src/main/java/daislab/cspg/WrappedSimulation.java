@@ -635,7 +635,8 @@ public class WrappedSimulation {
         final double unutilizedVmCoresReward = -unutilizedVmCoresCoef * getUnutilizedVmCoreRatio();
         final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
 
-        final double totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
+        final double totalReward =
+                jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
 
         LOGGER.debug("totalReward: " + totalReward);
         LOGGER.debug("jobWaitReward: " + jobWaitReward);
