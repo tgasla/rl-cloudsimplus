@@ -21,7 +21,7 @@ def main():
     parser.add_argument(
         "--count-cores",
         type=bool,
-        required=True,
+        default=True,
         help="Count the number of cores instead of jobs",
     )
     args = parser.parse_args()

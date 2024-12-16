@@ -15,7 +15,7 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: true
+    attached: false
     gpu: true
     java_log_level: INFO
     java_log_destination: none
@@ -42,20 +42,20 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    experiment_type_dir: train_50_hosts_8maxcores
+    experiment_type_dir: train_50hosts_8maxcores
     mode: train
     vm_allocation_policy: rl
     enable_autoencoder_observation: false
     algorithm: PPO
     max_hosts: 100
     host_count: 50
-    host_pes: 64
+    host_pes: 16
     host_pe_mips: 50000
     max_job_pes: 4
     medium_vm_multiplier: 2
     large_vm_multiplier: 4
     small_vm_pes: 2
-    job_trace_filename: gaussian_max1600_8maxcores.csv
+    job_trace_filename: three_60max_8maxcores.csv
     timesteps: 2000000
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25

@@ -303,7 +303,13 @@ class SingleDC(gym.Env):
         )
 
     def _pad_observation(self, obs, target_dim):
-        return np.pad(obs, (0, target_dim - len(obs)), "constant", constant_values=0)
+        obs_len = len(obs)
+        if obs_len >= target_dim:
+            return obs[:target_dim]  # Truncate if necessary
+        # Create a zero array of target_dim and copy obs into it
+        padded_obs = np.zeros(target_dim, dtype=obs.dtype)
+        padded_obs[:obs_len] = obs
+        return padded_obs
 
     def _min_max_normalize(self, array, min_val=0, max_val=100):
         """

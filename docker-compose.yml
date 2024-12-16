@@ -13,6 +13,7 @@ services:
       - EXPERIMENT_ID=${EXPERIMENT_ID:-""}
       - RUN_MODE=${RUN_MODE:-""}
       - CUBLAS_WORKSPACE_CONFIG=:4096:8
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
     build:
       context: .
       dockerfile: rl-manager/Dockerfile

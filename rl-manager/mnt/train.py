@@ -1,7 +1,6 @@
 import os
 import json
 import numpy as np
-from sklearn.multioutput import has_fit_parameter
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 import torch

@@ -103,7 +103,7 @@ docker {
         baseImage = 'amazoncorretto:21-alpine'
         images = [dockerImageTag]
         ports = []
-        // jvmArgs = ["-Xms1G", "-Xmx4G"]
+        jvmArgs = ["-Xms1G", "-Xmx8G"]
     }
 }
 

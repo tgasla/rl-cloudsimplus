@@ -138,7 +138,7 @@ def main():
         help="Path to save the generated CSV file.",
     )
     parser.add_argument(
-        "--num_jobs", type=int, default=5000, help="Number of jobs to generate."
+        "--num_jobs", type=int, default=2000, help="Number of jobs to generate."
     )
     parser.add_argument(
         "--distribution",
@@ -168,7 +168,7 @@ def main():
     parser.add_argument(
         "--max_entropy",
         type=int,
-        default=2000,
+        default=500,
         help="Maximum number of cores that can arrive at the same time.",
     )
     parser.add_argument(

@@ -1,3 +1,4 @@
+from csv import Error
 from math import exp
 import os
 import json
@@ -97,12 +98,12 @@ def main():
 
     try:
         module = importlib.import_module(params["mode"])
-        func = getattr(module, params["mode"])
-        func(params)
     except ModuleNotFoundError:
         print(
             f"Mode {params['mode']} was not found. Available modes are: 'train', 'transfer', 'test'."
         )
+    func = getattr(module, params["mode"])
+    func(params)
 
 
 if __name__ == "__main__":
