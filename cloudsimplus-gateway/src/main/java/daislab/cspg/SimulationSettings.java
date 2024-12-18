@@ -26,6 +26,7 @@ public class SimulationSettings {
     private final boolean splitLargeJobs;
     private final int maxJobPes;
     private final double smallVmHourlyCost;
+    private final int maxHosts;
     private final int hostsCount;
     private final long hostPeMips;
     private final int hostPes;
@@ -59,6 +60,7 @@ public class SimulationSettings {
         splitLargeJobs = (boolean) params.get("split_large_jobs");
         maxJobPes = (int) params.get("max_job_pes");
         smallVmHourlyCost = (double) params.get("small_vm_hourly_cost");
+        maxHosts = (int) params.get("max_hosts");
         hostsCount = (int) params.get("host_count");
         hostPeMips = (int) params.get("host_pe_mips");
         hostPes = (int) params.get("host_pes");
@@ -90,14 +92,14 @@ public class SimulationSettings {
                 + splitLargeJobs + ",\nmaxJobPes=" + maxJobPes + ",\ntimestepInterval="
                 + timestepInterval + ",\nhostPeMips=" + hostPeMips + ",\nhostBw=" + hostBw + ",\n"
                 + "hostRam=" + hostRam + ",\nhostStorage=" + hostStorage + ",\nhostPes=" + hostPes
-                + ",\nhostsCount=" + hostsCount + ",\nsmallVmRam=" + smallVmRam + ",\nsmallVmPes="
-                + smallVmPes + ",\nsmallVmStorage=" + smallVmStorage + ",\nsmallVmBw=" + smallVmBw
-                + ",\nmediumVmMultiplier=" + mediumVmMultiplier + ",\nlargeVmMultiplier="
-                + largeVmMultiplier + ",\nvmStartupDelay=" + vmStartupDelay + ",\nvmShutdownDelay="
-                + vmShutdownDelay + ",\nsmallVmHourlyCost=" + smallVmHourlyCost
-                + ",\npayingForTheFullHour=" + payingForTheFullHour + ",\n" + "clearCreatedLists="
-                + clearCreatedLists + ",\nrewardJobWaitCoef=" + rewardJobWaitCoef
-                + ",\nrewardRunningVmCoresCoef=" + rewardRunningVmCoresCoef
+                + "maxHosts=" + maxHosts + ",\nhostsCount=" + hostsCount + ",\nsmallVmRam="
+                + smallVmRam + ",\nsmallVmPes=" + smallVmPes + ",\nsmallVmStorage=" + smallVmStorage
+                + ",\nsmallVmBw=" + smallVmBw + ",\nmediumVmMultiplier=" + mediumVmMultiplier
+                + ",\nlargeVmMultiplier=" + largeVmMultiplier + ",\nvmStartupDelay="
+                + vmStartupDelay + ",\nvmShutdownDelay=" + vmShutdownDelay + ",\nsmallVmHourlyCost="
+                + smallVmHourlyCost + ",\npayingForTheFullHour=" + payingForTheFullHour + ",\n"
+                + "clearCreatedLists=" + clearCreatedLists + ",\nrewardJobWaitCoef="
+                + rewardJobWaitCoef + ",\nrewardRunningVmCoresCoef=" + rewardRunningVmCoresCoef
                 + ",\nrewardUnutilizedVmCoresCoef=" + rewardUnutilizedVmCoresCoef
                 + ",\nrewardInvalidCoef=" + rewardInvalidCoef + ",\nmaxEpisodeLength="
                 + maxEpisodeLength + ",\nvmAllocationPolicy=" + vmAllocationPolicy + "\nalgorithm= "
@@ -155,6 +157,10 @@ public class SimulationSettings {
 
     public int getHostPes() {
         return hostPes;
+    }
+
+    public int getMaxHosts() {
+        return maxHosts;
     }
 
     public int getHostsCount() {

@@ -53,7 +53,7 @@ def train(params):
     log_destination = ["stdout"]
     callback = None
     if params["save_experiment"]:
-        log_destination.extend(["csv", "tensorboard"])
+        log_destination.extend(["tensorboard"])
         # the callback writes all the other .csv files and saves the model (with replay buffer) when the reward is the best
         callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
 

@@ -430,9 +430,9 @@ class SingleDC(gym.Env):
             "unutilized_vm_cores_reward": raw_info.getUnutilizedVmCoresReward(),
             "invalid_reward": raw_info.getInvalidReward(),
             "isValid": raw_info.isValid(),
-            "host_metrics": json.loads(raw_info.getHostMetricsAsJson()),
-            "vm_metrics": json.loads(raw_info.getVmMetricsAsJson()),
-            "job_metrics": json.loads(raw_info.getJobMetricsAsJson()),
+            # "host_metrics": json.loads(raw_info.getHostMetricsAsJson()),
+            # "vm_metrics": json.loads(raw_info.getVmMetricsAsJson()),
+            # "job_metrics": json.loads(raw_info.getJobMetricsAsJson()),
             "job_wait_time": json.loads(raw_info.getJobWaitTimeAsJson()),
             "unutilized_vm_core_ratio": raw_info.getUnutilizedVmCoreRatio(),
             "observation_tree_array": json.loads(

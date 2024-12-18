@@ -42,16 +42,16 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    experiment_type_dir: train_50hosts_8maxcores
+    experiment_type_dir: train_16hosts_32maxhosts_8maxcores
     mode: train
     vm_allocation_policy: rl
     enable_autoencoder_observation: false
     algorithm: PPO
-    max_hosts: 100
-    host_count: 50
+    max_hosts: 32
+    host_count: 16
     host_pes: 16
     host_pe_mips: 50000
-    max_job_pes: 4
+    max_job_pes: 8
     medium_vm_multiplier: 2
     large_vm_multiplier: 4
     small_vm_pes: 2
@@ -63,52 +63,48 @@ common:
     reward_invalid_coef: 0.25
 
 experiment_1:
-    seed: 42
-    experiment_name: tree_42
-    # train_model_dir: 30maxentropy_4maxcores_10mi_10hosts_noise_2M/autoencoder_10hosts_64_BN_2345
-
-experiment_2:
     seed: 1234
     experiment_name: tree_1234
-#     # train_model_dir: 30maxentropy_4maxcores_10mi_10hosts_noise_2M/autoencoder_10hosts_64_BN_3456
 
-experiment_3:
+experiment_2:
     seed: 2345
     experiment_name: tree_2345
-#     # train_model_dir: 30maxentropy_4maxcores_10mi_10hosts_noise_2M/autoencoder_10hosts_64_BN_4567
 
-experiment_4:
+experiment_3:
     seed: 3456
     experiment_name: tree_3456
-#     # train_model_dir: 30maxentropy_4maxcores_10mi_10hosts_noise_2M/autoencoder_10hosts_64_BN_5678
 
-experiment_5:
+experiment_4:
     seed: 4567
     experiment_name: tree_4567
 
-experiment_6:
+experiment_5:
     seed: 5678
     experiment_name: tree_5678
 
-experiment_7:
-    seed: 6789
-    experiment_name: tree_6789
+# experiment_6:
+#     seed: 5678
+#     experiment_name: tree_5678
 
-experiment_8:
-    seed: 7890
-    experiment_name: tree_7890
+# experiment_7:
+#     seed: 6789
+#     experiment_name: tree_6789
 
-experiment_9:
-    seed: 8901
-    experiment_name: tree_8901
+# experiment_8:
+#     seed: 7890
+#     experiment_name: tree_7890
 
-experiment_10:
-    seed: 9012
-    experiment_name: tree_9012
+# experiment_9:
+#     seed: 8901
+#     experiment_name: tree_8901
 
-experiment_11:
-    seed: 3210
-    experiment_name: tree_3210
+# experiment_10:
+#     seed: 9012
+#     experiment_name: tree_9012
+
+# experiment_11:
+#     seed: 3210
+#     experiment_name: tree_3210
     
 # experiment_5:
 #     state_representation: treearray

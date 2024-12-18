@@ -36,42 +36,41 @@ public class WrappedSimulation {
     // lengths at
     // first.
     // TODO: I should not have it hardcoded here.
-    private static final int datacenterMetricsCount = 6;
-    private static final int hostMetricsCount = 9;
-    private static final int vmMetricsCount = 6;
-    private static final int jobMetricsCount = 6;
+    // private static final int datacenterMetricsCount = 6;
+    // private static final int hostMetricsCount = 9;
+    // private static final int vmMetricsCount = 6;
+    // private static final int jobMetricsCount = 6;
 
     // private final Gson gson = new Gson();
     private final String identifier;
     private final SimulationSettings settings;
-    private final MetricsStorage metricsStorage;
-    private final SimulationHistory simulationHistory;
-    private final int hostsCount;
+    // private final MetricsStorage metricsStorage;
+    // private final SimulationHistory simulationHistory;
     private final int maxVms;
+    private final int maxHosts;
     private final int observationArrayRows;
     private final int observationArrayColumns;
     private final int minJobPes = 1;
-    private final int maxHosts = 10;
     private CloudSimProxy cloudSimProxy;
     private int currentStep;
-    private long epWaitingJobsCountMax = 0;
-    private long epRunningVmsCountMax = 0;
+    // private long epWaitingJobsCountMax = 0;
+    // private long epRunningVmsCountMax = 0;
 
     public WrappedSimulation(final String identifier, final SimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
         this.identifier = identifier;
         this.settings = settings;
         initialJobsDescriptors = jobs;
-        simulationHistory = new SimulationHistory();
-        hostsCount = settings.getHostsCount();
+        // simulationHistory = new SimulationHistory();
+        maxHosts = settings.getMaxHosts();
         maxVms = maxHosts * settings.getHostPes() / settings.getSmallVmPes();
         final int maxJobsCount = maxVms * settings.getSmallVmPes() / minJobPes;
         observationArrayRows = 1 + maxHosts + maxVms + maxJobsCount;
         observationArrayColumns = 4;
         // Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
 
-        metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
-                vmMetricsCount, jobMetricsCount, maxHosts, maxVms, maxJobsCount);
+        // metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
+        // vmMetricsCount, jobMetricsCount, maxHosts, maxVms, maxJobsCount);
 
         LOGGER.info("Creating simulation: {}", identifier);
     }
@@ -83,10 +82,10 @@ public class WrappedSimulation {
         return Math.min(jobCoresWaiting, largeVmPes);
     }
 
-    public void resetEpisodeStats() {
-        resetEpWaitingJobsCountMax();
-        resetEpRunningVmsCountMax();
-    }
+    // public void resetEpisodeStats() {
+    // resetEpWaitingJobsCountMax();
+    // resetEpRunningVmsCountMax();
+    // }
 
     public void close() {
         LOGGER.info("Terminating simulation...");
@@ -120,9 +119,9 @@ public class WrappedSimulation {
         LOGGER.info("job count: " + initialJobsDescriptors.size());
 
         resetCurrentStep();
-        resetEpisodeStats();
-        metricsStorage.clear();
-        simulationHistory.reset();
+        // resetEpisodeStats(); // TEMPORARILY DISABLED FOR OPTIMIZATION
+        // metricsStorage.clear();
+        // simulationHistory.reset();
 
         List<Cloudlet> cloudlets = initialJobsDescriptors.stream()
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
@@ -150,19 +149,22 @@ public class WrappedSimulation {
 
         cloudSimProxy.runOneTimestep();
 
-        // Temporarily disabled
+        // Temporarily disabled for optimization. Do not create the dot string from the tree array
+        // for every timestep!
         // final TreeArray treeArray = new TreeArray(getObservationAsTreeArray());
         // final String dotString = treeArray.toDot();
 
         // gets telemetry data and saves it into metricsStorage
-        updateMetrics();
+        // TEMPORARILY DISABLED FOR OPTIMIZATION
+        // updateMetrics();
+        /////////////////////////////////////////////////
 
         boolean terminated = !cloudSimProxy.isRunning();
         boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
 
         double[] rewards = calculateReward(isValid);
 
-        recordSimulationData(action, rewards);
+        // recordSimulationData(action, rewards);
 
         LOGGER.info("Step {} finished", currentStep);
         LOGGER.debug("Terminated: {}, Truncated: {}", terminated, truncated);
@@ -171,15 +173,21 @@ public class WrappedSimulation {
             LOGGER.info("Simulation ended. Jobs finished: {}/{}",
                     cloudSimProxy.getBroker().getCloudletFinishedList().size(),
                     initialJobsDescriptors.size());
-            simulationHistory.logHistory();
+            // simulationHistory.logHistory();
         }
 
-        updateEpisodeStats();
-        printEpisodeStatsDebug(rewards);
+        // DISABLED FOR OPTIMIZATION
+        // updateEpisodeStats();
+        // printEpisodeStatsDebug(rewards);
 
-        SimulationStepInfo info = new SimulationStepInfo(rewards, getCurrentTimestepMetrics(),
-                cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
-                getInfrastructureObservation());
+        // OLD INFO, SIMPLIFIED FOR OPTIMIZATION
+        // SimulationStepInfo info = new SimulationStepInfo(rewards, getCurrentTimestepMetrics(),
+        // cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
+        // getInfrastructureObservation());
+
+        SimulationStepInfo info =
+                new SimulationStepInfo(rewards, cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(),
+                        getUnutilizedVmCoreRatio(), getInfrastructureObservation());
 
         Observation observation =
                 new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
@@ -187,15 +195,15 @@ public class WrappedSimulation {
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
     }
 
-    private List<double[][]> getCurrentTimestepMetrics() {
-        List<double[][]> metrics = new ArrayList<>();
+    // private List<double[][]> getCurrentTimestepMetrics() {
+    // List<double[][]> metrics = new ArrayList<>();
 
-        metrics.add(metricsStorage.getHostMetrics());
-        metrics.add(metricsStorage.getVmMetrics());
-        metrics.add(metricsStorage.getJobMetrics());
+    // metrics.add(metricsStorage.getHostMetrics());
+    // metrics.add(metricsStorage.getVmMetrics());
+    // metrics.add(metricsStorage.getJobMetrics());
 
-        return metrics;
-    }
+    // return metrics;
+    // }
 
     private List<Cloudlet> getCloudletList() {
         List<Cloudlet> cloudletList = cloudSimProxy.getBroker().getVmExecList().parallelStream()
@@ -313,21 +321,21 @@ public class WrappedSimulation {
         return jobMetrics;
     }
 
-    private void printEpisodeStatsDebug(double[] reward) {
-        LOGGER.debug("Printing Episode stats:"
-                + "\n==================== Episode stats so far ===================="
-                + "\nEpisode Statistics:\nMax waiting jobs count: " + getEpWaitingJobsCountMax()
-                + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
-                + "\n=============================================================="
-                + "\nTimestep statistics:\nJob wait reward: " + reward[1]
-                + "\nRunning VM cores reward: " + reward[2] + "\nUnutilized VM cores reward: "
-                + reward[3] + "\n==============================================================");
-    }
+    // private void printEpisodeStatsDebug(double[] reward) {
+    // LOGGER.debug("Printing Episode stats:"
+    // + "\n==================== Episode stats so far ===================="
+    // + "\nEpisode Statistics:\nMax waiting jobs count: " + getEpWaitingJobsCountMax()
+    // + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
+    // + "\n=============================================================="
+    // + "\nTimestep statistics:\nJob wait reward: " + reward[1]
+    // + "\nRunning VM cores reward: " + reward[2] + "\nUnutilized VM cores reward: "
+    // + reward[3] + "\n==============================================================");
+    // }
 
-    private void updateEpisodeStats() {
-        updateEpWaitingJobsCountMax(cloudSimProxy.getNotYetRunningJobsCount());
-        updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
-    }
+    // private void updateEpisodeStats() {
+    // updateEpWaitingJobsCountMax(cloudSimProxy.getNotYetRunningJobsCount());
+    // updateEpRunningVmsCountMax(cloudSimProxy.getBroker().getVmExecList().size());
+    // }
 
     // private long continuousToDiscrete(final double continuous, final long
     // bucketsNum) {
@@ -346,19 +354,19 @@ public class WrappedSimulation {
     // return discrete;
     // }
 
-    private void recordSimulationData(int[] action, double[] reward) {
-        simulationHistory.record("action[0]", action[0]);
-        simulationHistory.record("action[1]", action[1]);
-        simulationHistory.record("action[2]", action[2]);
-        simulationHistory.record("action[3]", action[3]);
-        simulationHistory.record("totalReward", reward[0]);
-        simulationHistory.record("jobWaitReward", reward[1]);
-        simulationHistory.record("runningVmCoresReward", reward[2]);
-        simulationHistory.record("unutilizedVmCoresReward", reward[3]);
-        simulationHistory.record("invalidReward", reward[4]);
-        simulationHistory.record("vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
-        // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost()); # TODO: NEEDS FIX
-    }
+    // private void recordSimulationData(int[] action, double[] reward) {
+    // simulationHistory.record("action[0]", action[0]);
+    // simulationHistory.record("action[1]", action[1]);
+    // simulationHistory.record("action[2]", action[2]);
+    // simulationHistory.record("action[3]", action[3]);
+    // simulationHistory.record("totalReward", reward[0]);
+    // simulationHistory.record("jobWaitReward", reward[1]);
+    // simulationHistory.record("runningVmCoresReward", reward[2]);
+    // simulationHistory.record("unutilizedVmCoresReward", reward[3]);
+    // simulationHistory.record("invalidReward", reward[4]);
+    // simulationHistory.record("vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
+    // // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost()); # TODO: NEEDS FIX
+    // }
 
     private boolean executeCustomAction(final int[] action) {
 
@@ -448,12 +456,12 @@ public class WrappedSimulation {
         return true;
     }
 
-    private void updateMetrics() {
-        metricsStorage.setDatacenterMetrics(collectDatacenterMetrics());
-        metricsStorage.setHostMetrics(collectHostMetrics());
-        metricsStorage.setVmMetrics(collectVmMetrics());
-        metricsStorage.setJobMetrics(collectJobMetrics());
-    }
+    // private void updateMetrics() {
+    // metricsStorage.setDatacenterMetrics(collectDatacenterMetrics());
+    // metricsStorage.setHostMetrics(collectHostMetrics());
+    // metricsStorage.setVmMetrics(collectVmMetrics());
+    // metricsStorage.setJobMetrics(collectJobMetrics());
+    // }
 
     // private void collectMetrics() {
     // double[] cpuPercentUsage = cloudSimProxy.getVmCpuUsage();
@@ -565,58 +573,58 @@ public class WrappedSimulation {
         return treeArray;
     }
 
-    private double[][] getInfrastructureObservationAs2dArray() {
-        // here we get some vertical subarrays of the metrics. The whole array of
-        // metrics are only
-        // used to pass the info to python and print to csv files then.
-        // Vertical because rows in the arrays represent the hosts, vms, jobs etc. So,
-        // we take a specific subset of features (columns) for every host, vm or job.
+    // private double[][] getInfrastructureObservationAs2dArray() {
+    // // here we get some vertical subarrays of the metrics. The whole array of
+    // // metrics are only
+    // // used to pass the info to python and print to csv files then.
+    // // Vertical because rows in the arrays represent the hosts, vms, jobs etc. So,
+    // // we take a specific subset of features (columns) for every host, vm or job.
 
-        final double[] datacenterMetrics = new double[] {metricsStorage.getDatacenterMetrics()[2]};
-        final double[][] hostMetrics =
-                getVertSubarray(metricsStorage.getHostMetrics(), new int[] {3, 5, 7, 8});
-        final double[][] vmMetrics = getVertSubarray(metricsStorage.getVmMetrics(), new int[] {5});
-        final double[][] jobMetrics =
-                getVertSubarray(metricsStorage.getJobMetrics(), new int[] {5});
-        final double[][] observation = new double[observationArrayRows][observationArrayColumns];
-        /*
-         * if you want to support 1-10 hosts, then below when assigning new values after loops for
-         * currentRow put maxHosts instead of hostsCount
-         */
-        int currentRow = 0;
+    // final double[] datacenterMetrics = new double[] {metricsStorage.getDatacenterMetrics()[2]};
+    // final double[][] hostMetrics =
+    // getVertSubarray(metricsStorage.getHostMetrics(), new int[] {3, 5, 7, 8});
+    // final double[][] vmMetrics = getVertSubarray(metricsStorage.getVmMetrics(), new int[] {5});
+    // final double[][] jobMetrics =
+    // getVertSubarray(metricsStorage.getJobMetrics(), new int[] {5});
+    // final double[][] observation = new double[observationArrayRows][observationArrayColumns];
+    // /*
+    // * if you want to support 1-10 hosts, then below when assigning new values after loops for
+    // * currentRow put maxHosts instead of hostsCount
+    // */
+    // int currentRow = 0;
 
-        for (int j = 0; j < datacenterMetrics.length; j++) {
-            observation[currentRow][j] = datacenterMetrics[j];
-        }
-        currentRow++;
+    // for (int j = 0; j < datacenterMetrics.length; j++) {
+    // observation[currentRow][j] = datacenterMetrics[j];
+    // }
+    // currentRow++;
 
-        for (int i = 0; i < hostMetrics.length; i++) {
-            for (int j = 0; j < hostMetrics[i].length; j++) {
-                observation[currentRow][j] = hostMetrics[i][j];
-            }
-            currentRow++;
-        }
+    // for (int i = 0; i < hostMetrics.length; i++) {
+    // for (int j = 0; j < hostMetrics[i].length; j++) {
+    // observation[currentRow][j] = hostMetrics[i][j];
+    // }
+    // currentRow++;
+    // }
 
-        currentRow = 1 + maxHosts;
+    // currentRow = 1 + maxHosts;
 
-        for (int i = 0; i < vmMetrics.length; i++) {
-            for (int j = 0; j < vmMetrics[i].length; j++) {
-                observation[currentRow][j] = vmMetrics[i][j];
-            }
-            currentRow++;
-        }
+    // for (int i = 0; i < vmMetrics.length; i++) {
+    // for (int j = 0; j < vmMetrics[i].length; j++) {
+    // observation[currentRow][j] = vmMetrics[i][j];
+    // }
+    // currentRow++;
+    // }
 
-        currentRow = 1 + maxHosts + maxVms;
+    // currentRow = 1 + maxHosts + maxVms;
 
-        for (int i = 0; i < jobMetrics.length; i++) {
-            for (int j = 0; j < jobMetrics[i].length; j++) {
-                observation[currentRow][j] = jobMetrics[i][j];
-            }
-            currentRow++;
-        }
+    // for (int i = 0; i < jobMetrics.length; i++) {
+    // for (int j = 0; j < jobMetrics[i].length; j++) {
+    // observation[currentRow][j] = jobMetrics[i][j];
+    // }
+    // currentRow++;
+    // }
 
-        return observation;
-    }
+    // return observation;
+    // }
 
     private double[] calculateReward(final boolean isValid) {
         double[] rewards = new double[5];
@@ -638,11 +646,11 @@ public class WrappedSimulation {
         final double totalReward =
                 jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
 
-        LOGGER.debug("totalReward: " + totalReward);
-        LOGGER.debug("jobWaitReward: " + jobWaitReward);
-        LOGGER.debug("runningVmCoresReward: " + runningVmCoresReward);
-        LOGGER.debug("unutilizedVmCoresReward: " + unutilizedVmCoresReward);
-        LOGGER.debug("invalidReward: " + invalidReward);
+        LOGGER.info("totalReward: " + totalReward);
+        LOGGER.info("jobWaitReward: " + jobWaitReward);
+        LOGGER.info("runningVmCoresReward: " + runningVmCoresReward);
+        LOGGER.info("unutilizedVmCoresReward: " + unutilizedVmCoresReward);
+        LOGGER.info("invalidReward: " + invalidReward);
 
         rewards[0] = totalReward;
         rewards[1] = jobWaitReward;
@@ -664,33 +672,33 @@ public class WrappedSimulation {
         currentStep = 0;
     }
 
-    private void resetEpRunningVmsCountMax() {
-        epRunningVmsCountMax = 0;
-    }
+    // private void resetEpRunningVmsCountMax() {
+    // epRunningVmsCountMax = 0;
+    // }
 
-    private void resetEpWaitingJobsCountMax() {
-        epWaitingJobsCountMax = 0;
-    }
+    // private void resetEpWaitingJobsCountMax() {
+    // epWaitingJobsCountMax = 0;
+    // }
 
-    private long getEpRunningVmsCountMax() {
-        return epRunningVmsCountMax;
-    }
+    // private long getEpRunningVmsCountMax() {
+    // return epRunningVmsCountMax;
+    // }
 
-    private long getEpWaitingJobsCountMax() {
-        return epWaitingJobsCountMax;
-    }
+    // private long getEpWaitingJobsCountMax() {
+    // return epWaitingJobsCountMax;
+    // }
 
-    private void updateEpWaitingJobsCountMax(long waitingJobsCount) {
-        if (waitingJobsCount > epWaitingJobsCountMax) {
-            epWaitingJobsCountMax = waitingJobsCount;
-        }
-    }
+    // private void updateEpWaitingJobsCountMax(long waitingJobsCount) {
+    // if (waitingJobsCount > epWaitingJobsCountMax) {
+    // epWaitingJobsCountMax = waitingJobsCount;
+    // }
+    // }
 
-    private void updateEpRunningVmsCountMax(long runningVms) {
-        if (runningVms > epRunningVmsCountMax) {
-            epRunningVmsCountMax = runningVms;
-        }
-    }
+    // private void updateEpRunningVmsCountMax(long runningVms) {
+    // if (runningVms > epRunningVmsCountMax) {
+    // epRunningVmsCountMax = runningVms;
+    // }
+    // }
 
     public String getIdentifier() {
         return identifier;

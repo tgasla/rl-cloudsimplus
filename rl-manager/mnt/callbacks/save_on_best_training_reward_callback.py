@@ -45,17 +45,18 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         timesteps = np.arange(
             self.num_timesteps - self.current_episode_length + 1, self.num_timesteps + 1
         )
+        # will be written to best_episode_{episode_num}.csv
         episode_details = {
             "timestep": timesteps,
-            "obs": self.observations,
-            "action": self.actions,
+            # "obs": self.observations,
+            # "action": self.actions,
             "job_wait_reward": self.job_wait_rewards,
             "running_vm_cores_reward": self.running_vm_cores_rewards,
             "unutilized_vm_cores_reward": self.unutilized_vm_cores_rewards,
             "invalid_reward": self.invalid_rewards,
             "reward": self.rewards,
             "isValid": self.isValid,
-            "next_obs": self.new_observations,
+            # "next_obs": self.new_observations,
         }
         return episode_details
 
@@ -64,9 +65,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.actions = []
         self.rewards = []
         self.new_observations = []
-        self.host_metrics = []
-        self.vm_metrics = []
-        self.job_metrics = []
+        # self.host_metrics = []
+        # self.vm_metrics = []
+        # self.job_metrics = []
         self.job_wait_time = []
         self.job_wait_rewards = []
         self.running_vm_cores_rewards = []
@@ -107,9 +108,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.actions.append(self.locals["actions"][0])
         self.rewards.append(self.locals["rewards"][0])
         self.new_observations.append(self._extract_observation_from_locals("new_obs"))
-        self.host_metrics.append(self.locals["infos"][0]["host_metrics"])
-        self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
-        self.job_metrics.append(self.locals["infos"][0]["job_metrics"])
+        # self.host_metrics.append(self.locals["infos"][0]["host_metrics"])
+        # self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
+        # self.job_metrics.append(self.locals["infos"][0]["job_metrics"])
         self.job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
         self.job_wait_rewards.append(self.locals["infos"][0]["job_wait_reward"])
         self.running_vm_cores_rewards.append(
@@ -140,9 +141,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             self.model.save_replay_buffer(replay_buffer_path)
 
     def _create_csv_paths(self) -> Dict:
-        host_metrics_path = os.path.join(self.log_dir, "host_metrics.csv")
-        vm_metrics_path = os.path.join(self.log_dir, "vm_metrics.csv")
-        job_metrics_path = os.path.join(self.log_dir, "job_metrics.csv")
+        # host_metrics_path = os.path.join(self.log_dir, "host_metrics.csv")
+        # vm_metrics_path = os.path.join(self.log_dir, "vm_metrics.csv")
+        # job_metrics_path = os.path.join(self.log_dir, "job_metrics.csv")
         job_wait_time_path = os.path.join(self.log_dir, "job_wait_time.csv")
         episode_actions_path = os.path.join(self.log_dir, "actions.csv")
         unutilized_vm_core_ratio_path = os.path.join(
@@ -153,9 +154,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             f"{self.best_episode_filename_prefix}_{self.current_episode_num}.csv",
         )
         paths = {
-            "host_metrics": host_metrics_path,
-            "vm_metrics": vm_metrics_path,
-            "job_metrics": job_metrics_path,
+            # "host_metrics": host_metrics_path,
+            # "vm_metrics": vm_metrics_path,
+            # "job_metrics": job_metrics_path,
             "job_wait_time": job_wait_time_path,
             "actions": episode_actions_path,
             "unutilized_vm_core_ratio": unutilized_vm_core_ratio_path,
@@ -165,9 +166,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _create_dataframes(self) -> Dict:
         df_dict = {
-            "host_metrics": pd.DataFrame(self.host_metrics),
-            "vm_metrics": pd.DataFrame(self.vm_metrics),
-            "job_metrics": pd.DataFrame(self.job_metrics),
+            # "host_metrics": pd.DataFrame(self.host_metrics),
+            # "vm_metrics": pd.DataFrame(self.vm_metrics),
+            # "job_metrics": pd.DataFrame(self.job_metrics),
             "job_wait_time": pd.DataFrame(self.job_wait_time),
             "unutilized_vm_core_ratio": pd.DataFrame(self.unutilized_vm_core_ratio),
             "episode_actions": pd.DataFrame(self.actions),
@@ -176,9 +177,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         return df_dict
 
     def _write_dataframes_to_csvs(self, df_dict, path_dict) -> None:
-        df_dict["host_metrics"].to_csv(path_dict["host_metrics"], header=False)
-        df_dict["vm_metrics"].to_csv(path_dict["vm_metrics"], header=False)
-        df_dict["job_metrics"].to_csv(path_dict["job_metrics"], header=False)
+        # df_dict["host_metrics"].to_csv(path_dict["host_metrics"], header=False)
+        # df_dict["vm_metrics"].to_csv(path_dict["vm_metrics"], header=False)
+        # df_dict["job_metrics"].to_csv(path_dict["job_metrics"], header=False)
         df_dict["job_wait_time"].to_csv(path_dict["job_wait_time"], header=False)
         df_dict["unutilized_vm_core_ratio"].to_csv(
             path_dict["unutilized_vm_core_ratio"], header=False
@@ -222,26 +223,14 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     # Write episode info in a row in the log progress.csv
     def _write_progress_log_row(self) -> None:
-        first_ep_timestep = self.num_timesteps - self.current_episode_length + 1
-        last_ep_timestep = self.num_timesteps
-        self.logger.record(
-            "train/episode_num", self.current_episode_num, exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/episode_length", self.current_episode_length, exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/first_ep_timestep", first_ep_timestep, exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/last_ep_timestep", last_ep_timestep, exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/ep_total_rew", np.sum(self.rewards), exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
-        )
+        ep_first_timestep = self.num_timesteps - self.current_episode_length + 1
+        ep_last_timestep = self.num_timesteps
+        self.logger.record("train/episode_num", self.current_episode_num)
+        self.logger.record("train/episode_length", self.current_episode_length)
+        self.logger.record("train/ep_first_timestep", ep_first_timestep)
+        self.logger.record("train/ep_last_timestep", ep_last_timestep)
+        self.logger.record("train/ep_total_rew", np.sum(self.rewards))
+        self.logger.record("train/ep_valid_count", np.sum(self.isValid))
         self.logger.record("train/ep_job_wait_rew", np.sum(self.job_wait_rewards))
         self.logger.record(
             "train/ep_running_vm_cores_rew", np.sum(self.running_vm_cores_rewards)

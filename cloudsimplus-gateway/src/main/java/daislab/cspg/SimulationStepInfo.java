@@ -17,9 +17,9 @@ public class SimulationStepInfo {
     private final boolean valid;
 
     // Metrics for all entities
-    private final double[][] hostMetrics;
-    private final double[][] vmMetrics;
-    private final double[][] jobMetrics;
+    // private final double[][] hostMetrics;
+    // private final double[][] vmMetrics;
+    // private final double[][] jobMetrics;
     private final List<Double> jobWaitTime;
     private final double unutilizedVmCoreRatio;
     private final int[] observationTreeArray;
@@ -31,25 +31,24 @@ public class SimulationStepInfo {
         this.unutilizedVmCoresReward = 0;
         this.invalidReward = 0;
         this.unutilizedVmCoreRatio = 0;
-        this.hostMetrics = new double[1][1];
-        this.vmMetrics = new double[1][1];
-        this.jobMetrics = new double[1][1];
+        // this.hostMetrics = new double[1][1];
+        // this.vmMetrics = new double[1][1];
+        // this.jobMetrics = new double[1][1];
         this.jobWaitTime = new ArrayList<>();
         this.valid = true;
         // this.dotString = "";
         this.observationTreeArray = new int[1];
     }
 
-    public SimulationStepInfo(final double[] rewards, final List<double[][]> timestepMetrics,
-            final List<Double> jobWaitTime, final double unutilizedVmCoreRatio,
-            final int[] observationTreeArray) {
+    public SimulationStepInfo(final double[] rewards, final List<Double> jobWaitTime,
+            final double unutilizedVmCoreRatio, final int[] observationTreeArray) {
         this.jobWaitReward = rewards[1];
         this.runningVmCoresReward = rewards[2];
         this.unutilizedVmCoresReward = rewards[3];
         this.invalidReward = rewards[4];
-        this.hostMetrics = timestepMetrics.get(0);
-        this.vmMetrics = timestepMetrics.get(1);
-        this.jobMetrics = timestepMetrics.get(2);
+        // this.hostMetrics = timestepMetrics.get(0);
+        // this.vmMetrics = timestepMetrics.get(1);
+        // this.jobMetrics = timestepMetrics.get(2);
         this.jobWaitTime = jobWaitTime;
         this.unutilizedVmCoreRatio = unutilizedVmCoreRatio;
         this.valid = this.invalidReward == 0 ? true : false;
@@ -77,29 +76,29 @@ public class SimulationStepInfo {
         return valid;
     }
 
-    public double[][] getHostMetrics() {
-        return hostMetrics;
-    }
+    // public double[][] getHostMetrics() {
+    // return hostMetrics;
+    // }
 
-    public double[][] getVmMetrics() {
-        return vmMetrics;
-    }
+    // public double[][] getVmMetrics() {
+    // return vmMetrics;
+    // }
 
-    public double[][] getJobMetrics() {
-        return jobMetrics;
-    }
+    // public double[][] getJobMetrics() {
+    // return jobMetrics;
+    // }
 
-    public String getHostMetricsAsJson() {
-        return gson.toJson(hostMetrics);
-    }
+    // public String getHostMetricsAsJson() {
+    // return gson.toJson(hostMetrics);
+    // }
 
-    public String getVmMetricsAsJson() {
-        return gson.toJson(vmMetrics);
-    }
+    // public String getVmMetricsAsJson() {
+    // return gson.toJson(vmMetrics);
+    // }
 
-    public String getJobMetricsAsJson() {
-        return gson.toJson(jobMetrics);
-    }
+    // public String getJobMetricsAsJson() {
+    // return gson.toJson(jobMetrics);
+    // }
 
     public String getJobWaitTimeAsJson() {
         return gson.toJson(jobWaitTime);
@@ -119,6 +118,7 @@ public class SimulationStepInfo {
     @Override
     public String toString() {
         return "SimulationStepInfo { jobWaitReward=" + jobWaitReward + ", runningVmCoresReward="
-                + runningVmCoresReward + "unutilizedVmCoresReward=" + unutilizedVmCoresReward + '}';
+                + runningVmCoresReward + "unutilizedVmCoresReward=" + unutilizedVmCoresReward
+                + "invalidReward=" + invalidReward + '}';
     }
 }
