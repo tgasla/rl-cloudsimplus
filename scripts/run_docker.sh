@@ -2,8 +2,18 @@
 
 CONFIG_FILE="config.yml"
 
+# Detect the correct grep flag based on OS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    GREP_FLAG="-E" # macOS
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    GREP_FLAG="-P" # Linux
+else
+    echo "Unsupported OS: $OSTYPE"
+    exit 1
+fi
+
 # Detect the number of replicas
-NUM_EXPERIMENTS=$(ggrep -o -P '^experiment_\d+' "$CONFIG_FILE" | wc -l)
+NUM_EXPERIMENTS=$(grep -o "$GREP_FLAG" '^experiment_\d+' "$CONFIG_FILE" | wc -l)
 
 # Set ATTACHED and GPU flags with default values if not provided
 ATTACHED=${ATTACHED:-false}
