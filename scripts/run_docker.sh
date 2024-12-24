@@ -3,7 +3,7 @@
 CONFIG_FILE="config.yml"
 
 # Detect the number of replicas
-NUM_EXPERIMENTS=$(grep -o -P '^experiment_\d+' "$CONFIG_FILE" | wc -l)
+NUM_EXPERIMENTS=$(ggrep -o -P '^experiment_\d+' "$CONFIG_FILE" | wc -l)
 
 # Set ATTACHED and GPU flags with default values if not provided
 ATTACHED=${ATTACHED:-false}
