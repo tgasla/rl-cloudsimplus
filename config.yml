@@ -8,7 +8,7 @@
 # experiment_name: name of the experiment
 # mode: [train, test, transfer]
 # vm_allocation_policy: [rl, heuristic]
-# algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, bestfit|firstfit|worstfit|roundrobin|random if vm_allocation_policy == heuristic]
+# algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-makespan, minimize-unutilization, minimize-energy if vm_allocation_policy == heuristic]
 
 # globals.run_mode: [batch, serial]
 
@@ -18,7 +18,7 @@ globals:
     attached: true
     gpu: false
     java_log_level: INFO
-    java_log_destination: stdout
+    java_log_destination: file
     junit_output_show: false
     run_mode: serial
 
@@ -56,11 +56,12 @@ common:
     large_vm_multiplier: 4
     small_vm_pes: 2
     job_trace_filename: three_60max_8maxcores.csv
-    timesteps: 10000
+    timesteps: 2048
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
+    seed: 1234
 
 experiment_1:
     seed: 42

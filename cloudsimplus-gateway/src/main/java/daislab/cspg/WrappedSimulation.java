@@ -78,7 +78,8 @@ public class WrappedSimulation {
     private int getJobCoresWaitingObservation() {
         final int jobCoresWaiting = cloudSimProxy.calculateJobCoresWaiting();
         final int largeVmPes = settings.getSmallVmPes() * settings.getLargeVmMultiplier();
-        // Do not allow the observation to be larger than the number of cores in the large VM
+        // Do not allow the observation to be larger than the number of cores in the
+        // large VM
         return Math.min(jobCoresWaiting, largeVmPes);
     }
 
@@ -149,7 +150,8 @@ public class WrappedSimulation {
 
         cloudSimProxy.runOneTimestep();
 
-        // Temporarily disabled for optimization. Do not create the dot string from the tree array
+        // Temporarily disabled for optimization. Do not create the dot string from the
+        // tree array
         // for every timestep!
         // final TreeArray treeArray = new TreeArray(getObservationAsTreeArray());
         // final String dotString = treeArray.toDot();
@@ -164,6 +166,7 @@ public class WrappedSimulation {
 
         double[] rewards = calculateReward(isValid);
 
+        // TEMPORARILY DISABLED FOR OPTIMIZATION
         // recordSimulationData(action, rewards);
 
         LOGGER.info("Step {} finished", currentStep);
@@ -173,6 +176,9 @@ public class WrappedSimulation {
             LOGGER.info("Simulation ended. Jobs finished: {}/{}",
                     cloudSimProxy.getBroker().getCloudletFinishedList().size(),
                     initialJobsDescriptors.size());
+            // for (double jobWaitTime : cloudSimProxy.getJobsFinishedWaitTimes()) {
+            // LOGGER.info("{}", jobWaitTime);
+            // }
             // simulationHistory.logHistory();
         }
 
@@ -181,8 +187,10 @@ public class WrappedSimulation {
         // printEpisodeStatsDebug(rewards);
 
         // OLD INFO, SIMPLIFIED FOR OPTIMIZATION
-        // SimulationStepInfo info = new SimulationStepInfo(rewards, getCurrentTimestepMetrics(),
-        // cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
+        // SimulationStepInfo info = new SimulationStepInfo(rewards,
+        // getCurrentTimestepMetrics(),
+        // cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(),
+        // getUnutilizedVmCoreRatio(),
         // getInfrastructureObservation());
 
         SimulationStepInfo info =
@@ -324,12 +332,15 @@ public class WrappedSimulation {
     // private void printEpisodeStatsDebug(double[] reward) {
     // LOGGER.debug("Printing Episode stats:"
     // + "\n==================== Episode stats so far ===================="
-    // + "\nEpisode Statistics:\nMax waiting jobs count: " + getEpWaitingJobsCountMax()
+    // + "\nEpisode Statistics:\nMax waiting jobs count: " +
+    // getEpWaitingJobsCountMax()
     // + "\nMax running vms count in the episode: " + getEpRunningVmsCountMax()
     // + "\n=============================================================="
     // + "\nTimestep statistics:\nJob wait reward: " + reward[1]
-    // + "\nRunning VM cores reward: " + reward[2] + "\nUnutilized VM cores reward: "
-    // + reward[3] + "\n==============================================================");
+    // + "\nRunning VM cores reward: " + reward[2] + "\nUnutilized VM cores reward:
+    // "
+    // + reward[3] +
+    // "\n==============================================================");
     // }
 
     // private void updateEpisodeStats() {
@@ -364,8 +375,10 @@ public class WrappedSimulation {
     // simulationHistory.record("runningVmCoresReward", reward[2]);
     // simulationHistory.record("unutilizedVmCoresReward", reward[3]);
     // simulationHistory.record("invalidReward", reward[4]);
-    // simulationHistory.record("vmExecCount", cloudSimProxy.getBroker().getVmExecList().size());
-    // // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost()); # TODO: NEEDS FIX
+    // simulationHistory.record("vmExecCount",
+    // cloudSimProxy.getBroker().getVmExecList().size());
+    // // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost()); #
+    // TODO: NEEDS FIX
     // }
 
     private boolean executeCustomAction(final int[] action) {
@@ -577,18 +590,23 @@ public class WrappedSimulation {
     // // here we get some vertical subarrays of the metrics. The whole array of
     // // metrics are only
     // // used to pass the info to python and print to csv files then.
-    // // Vertical because rows in the arrays represent the hosts, vms, jobs etc. So,
+    // // Vertical because rows in the arrays represent the hosts, vms, jobs etc.
+    // So,
     // // we take a specific subset of features (columns) for every host, vm or job.
 
-    // final double[] datacenterMetrics = new double[] {metricsStorage.getDatacenterMetrics()[2]};
+    // final double[] datacenterMetrics = new double[]
+    // {metricsStorage.getDatacenterMetrics()[2]};
     // final double[][] hostMetrics =
     // getVertSubarray(metricsStorage.getHostMetrics(), new int[] {3, 5, 7, 8});
-    // final double[][] vmMetrics = getVertSubarray(metricsStorage.getVmMetrics(), new int[] {5});
+    // final double[][] vmMetrics = getVertSubarray(metricsStorage.getVmMetrics(),
+    // new int[] {5});
     // final double[][] jobMetrics =
     // getVertSubarray(metricsStorage.getJobMetrics(), new int[] {5});
-    // final double[][] observation = new double[observationArrayRows][observationArrayColumns];
+    // final double[][] observation = new
+    // double[observationArrayRows][observationArrayColumns];
     // /*
-    // * if you want to support 1-10 hosts, then below when assigning new values after loops for
+    // * if you want to support 1-10 hosts, then below when assigning new values
+    // after loops for
     // * currentRow put maxHosts instead of hostsCount
     // */
     // int currentRow = 0;
@@ -643,8 +661,15 @@ public class WrappedSimulation {
         final double unutilizedVmCoresReward = -unutilizedVmCoresCoef * getUnutilizedVmCoreRatio();
         final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
 
-        final double totalReward =
-                jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
+        double totalReward = 0;
+        if (settings.getVmAllocationPolicy().equals("heuristic")) {
+            totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
+        } else if (settings.getVmAllocationPolicy().equals("rl")) {
+            totalReward =
+                    jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
+        } else {
+            LOGGER.error(identifier + ": Invalid VM allocation policy");
+        }
 
         LOGGER.info("totalReward: " + totalReward);
         LOGGER.info("jobWaitReward: " + jobWaitReward);

@@ -31,6 +31,7 @@ cleanup_experiment() {
     # Remove volumes and networks
     docker volume prune -f
     docker network prune -f
+    docker system prune --volumes -f
 
     # Sleep for a short duration to ensure resources are released
     sleep 5

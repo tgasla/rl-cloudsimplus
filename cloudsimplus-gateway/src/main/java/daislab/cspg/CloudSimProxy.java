@@ -12,12 +12,7 @@ import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
 import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
-import org.cloudsimplus.allocationpolicies.VmAllocationPolicyRandom;
-import org.cloudsimplus.allocationpolicies.VmAllocationPolicyRoundRobin;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicyBestFit;
-import org.cloudsimplus.allocationpolicies.VmAllocationPolicyFirstFit;
-import org.cloudsimplus.allocationpolicies.VmAllocationPolicySimple;
-import org.cloudsimplus.distributions.UniformDistr;
 import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
@@ -47,6 +42,7 @@ public class CloudSimProxy {
     private final PriorityQueue<Cloudlet> jobQueue; // jobs to be submitted - sorted by arrival time
     private final Map<Long, Double> jobArrivalTimeMap; // map to keep track of arrival times
     private List<Double> jobsFinishedWaitTimeLastTimestep;
+    // private List<Double> jobsFinishedWaitTimes;
     private int vmsCreated;
     private boolean firstStep;
 
@@ -73,6 +69,7 @@ public class CloudSimProxy {
         datacenter = createDatacenter();
         vmCost = new VmCost(settings);
         jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
+        // jobsFinishedWaitTimes = new ArrayList<>();
         vmsCreated = 0;
         firstStep = true;
 
@@ -165,11 +162,7 @@ public class CloudSimProxy {
 
     private VmAllocationPolicy defineHeuristicVmAllocationPolicy() {
         return switch (settings.getAlgorithm()) {
-            case "random" -> new VmAllocationPolicyRandom(new UniformDistr());
-            case "roundrobin" -> new VmAllocationPolicyRoundRobin();
-            case "firstfit" -> new VmAllocationPolicyFirstFit();
-            case "bestfit" -> new VmAllocationPolicyBestFit();
-            case "worstfit" -> new VmAllocationPolicySimple();
+            case "minimize-makespan", "minimize-unutilization", "minimize-energy" -> new VmAllocationPolicyBestFit();
             default -> throw new IllegalArgumentException(
                     "Unknown VM allocation policy: " + settings.getVmAllocationPolicy());
         };
@@ -304,29 +297,122 @@ public class CloudSimProxy {
         return totalCoresRequired;
     }
 
-    public boolean executeHeuristicAction() {
-        final int totalCoresRequired = calculateJobCoresWaiting();
-        if (totalCoresRequired == 0) {
-            destroyLargestIdleVm();
-            return true;
-        }
-        int totalFreeVmCores = getTotalFreeVmCores();
-        LOGGER.info("{}: Cores required by next batch of arriving jobs: {}", clock(),
-                totalCoresRequired);
-        LOGGER.info("{}: Total free VM cores: {}", clock(), totalFreeVmCores);
-        int coresNeeded = totalCoresRequired - totalFreeVmCores;
-        if (coresNeeded > 0) {
-            // List<Vm> vmList = createRequiredVms(targetTime, coresNeeded);
-            List<Vm> vmList = createSingleVm(calculateTargetTime(), coresNeeded);
-            // can also add a submission delay here: settings.getVmStartupDelay()
-            // not needed because it is done in the createVm() function
+    long calculateMaxJobCoresNeeded() {
+        final double targetTime = calculateTargetTime();
+        List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
+        // Find the maximum cores required by any single job
+        return jobsToSubmitList.stream().mapToLong(Cloudlet::getPesNumber).max().orElse(0);
+    }
+
+    private int coresRequiredForJobs(List<Cloudlet> jobsToSubmitList) {
+        return (int) jobsToSubmitList.stream().mapToLong(Cloudlet::getPesNumber).sum();
+    }
+
+    private boolean isJobWithCoresWaiting(final long cores) {
+        final double targetTime = calculateTargetTime();
+        List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
+        return jobsToSubmitList.stream().anyMatch(job -> job.getPesNumber() == cores);
+    }
+
+    private boolean isVmWithCoresRunning(final long cores) {
+        return broker.getVmExecList().stream().anyMatch(vm -> vm.getPesNumber() == cores);
+    }
+
+    private void executeMinimizeMakespanAction() {
+        long maxCoresNeeded = calculateMaxJobCoresNeeded();
+        long maxfreeCoresOnSameVm = getMaxFreeVmCores();
+
+        // Check if any VM has at least the required cores
+        boolean vmAvailable = maxfreeCoresOnSameVm >= maxCoresNeeded;
+
+        if (!vmAvailable && maxCoresNeeded > 0) {
+            // Create a new VM with the required number of cores
+            List<Vm> vmList = createSingleVm(calculateTargetTime(), maxCoresNeeded);
             broker.submitVmList(vmList);
+        } else {
+            destroyLargestIdleVm(); // Optionally handle idle VMs
+        }
+    }
+
+    private void executeMinimizeUnutilizationAction() {
+        List<Vm> vmList = new ArrayList<>();
+        if (isJobWithCoresWaiting(2) && !isVmWithCoresRunning(2)) {
+            vmList = createSingleVm(calculateTargetTime(), 2);
+            broker.submitVmList(vmList);
+        } else if (isJobWithCoresWaiting(4) && !isVmWithCoresRunning(4)) {
+            vmList = createSingleVm(calculateTargetTime(), 4);
+            broker.submitVmList(vmList);
+        } else if (isJobWithCoresWaiting(8) && !isVmWithCoresRunning(8)) {
+            vmList = createSingleVm(calculateTargetTime(), 8);
+            broker.submitVmList(vmList);
+        } else {
+            destroyLargestIdleVm();
+        }
+    }
+
+    private void executeMinimizeEnergyAction() {
+        // have only one VM running in total
+        int coresNeeded = calculateJobCoresWaiting();
+        final long smallVmCores = getVmCoreCountByType(settings.VM_TYPES[0]);
+        final long mediumVmCores = getVmCoreCountByType(settings.VM_TYPES[1]);
+        final long largeVmCores =
+                getVmCoreCountByType(settings.VM_TYPES[settings.VM_TYPES.length - 1]);
+        if (coresNeeded >= largeVmCores && !isVmWithCoresRunning(largeVmCores)) {
+            List<Vm> vmList = createSingleVm(calculateTargetTime(), largeVmCores);
+            broker.submitVmList(vmList);
+        } else if (coresNeeded >= largeVmCores && isVmWithCoresRunning(largeVmCores)) {
+        } else if (coresNeeded >= mediumVmCores && isVmWithCoresRunning(largeVmCores)) {
+            destroyLargestIdleVm();
+        } else if (coresNeeded >= mediumVmCores && !isVmWithCoresRunning(mediumVmCores)) {
+            List<Vm> vmList = createSingleVm(calculateTargetTime(), mediumVmCores);
+            broker.submitVmList(vmList);
+        } else if (coresNeeded >= mediumVmCores && isVmWithCoresRunning(mediumVmCores)) {
+        } else if (coresNeeded >= smallVmCores && isVmWithCoresRunning(mediumVmCores)) {
+            destroyLargestIdleVm();
+        } else if (coresNeeded >= smallVmCores && !isVmWithCoresRunning(smallVmCores)) {
+            List<Vm> vmList = createSingleVm(calculateTargetTime(), smallVmCores);
+            broker.submitVmList(vmList);
+        } else if (coresNeeded >= smallVmCores && isVmWithCoresRunning(smallVmCores)) {
+        } else {
+            destroyLargestIdleVm();
+        }
+    }
+
+    public boolean executeHeuristicAction() {
+        if (settings.getAlgorithm().equals("minimize-makespan")) {
+            executeMinimizeMakespanAction();
+        } else if (settings.getAlgorithm().equals("minimize-unutilization")) {
+            executeMinimizeUnutilizationAction();
+        } else if (settings.getAlgorithm().equals("minimize-energy")) {
+            executeMinimizeEnergyAction();
         }
         return true;
+
+        // final int totalCoresRequired = calculateJobCoresWaiting();
+        // if (totalCoresRequired == 0) {
+        // destroyLargestIdleVm();
+        // return true;
+        // }
+        // int totalFreeVmCores = getTotalFreeVmCores();
+        // LOGGER.info("{}: Cores required by next batch of arriving jobs: {}", clock(),
+        // totalCoresRequired);
+        // LOGGER.info("{}: Total free VM cores: {}", clock(), totalFreeVmCores);
+        // int coresNeeded = totalCoresRequired - totalFreeVmCores;
+        // if (coresNeeded > 0) {
+        // // List<Vm> vmList = createRequiredVms(targetTime, coresNeeded);
+        // List<Vm> vmList = createSingleVm(calculateTargetTime(), coresNeeded);
+        // // can also add a submission delay here: settings.getVmStartupDelay()
+        // // not needed because it is done in the createVm() function
+        // broker.submitVmList(vmList);
+        // } else {
+        // destroyLargestIdleVm();
+        // }
+        // return true;
     }
 
     double calculateTargetTime() {
-        // if first step we have already done 0.1 and we need to finish the first step at 1
+        // if first step we have already done 0.1 and we need to finish the first step
+        // at 1
         // else, just add 1 to the current time
         final double targetTime;
         if (firstStep) {
@@ -367,10 +453,6 @@ public class CloudSimProxy {
         if (idleVms.isEmpty()) {
             LOGGER.info("No idle VMs available for destruction.");
         }
-    }
-
-    private int coresRequiredForJobs(List<Cloudlet> jobsToSubmitList) {
-        return (int) jobsToSubmitList.stream().mapToLong(Cloudlet::getPesNumber).sum();
     }
 
     /**
@@ -416,11 +498,16 @@ public class CloudSimProxy {
      * </ul>
      */
     public void printStats() {
-        // Contradictory to the previous functions which are called before the clock is procceded,
-        // this function is called after the clock is procceded. So, we need to calculate the start
-        // time of the timestep (instead of the target time) to get the correct statistics. This is
-        // done because this function also calls getArrivedJobsCount() which is also called in
-        // WrappedSimulation.java:calculateReward() function after the clock is procceded.
+        // Contradictory to the previous functions which are called before the clock is
+        // procceded,
+        // this function is called after the clock is procceded. So, we need to
+        // calculate the start
+        // time of the timestep (instead of the target time) to get the correct
+        // statistics. This is
+        // done because this function also calls getArrivedJobsCount() which is also
+        // called in
+        // WrappedSimulation.java:calculateReward() function after the clock is
+        // procceded.
         final double startTime = clock() - settings.getTimestepInterval();
 
         LOGGER.info("[{} - {}]: All jobs: {} ", startTime, clock(), inputJobs.size());
@@ -439,18 +526,26 @@ public class CloudSimProxy {
         LOGGER.info("[{} - {}]: Jobs arrived: {}", startTime, clock(), getArrivedJobsCount());
     }
 
-    private List<Vm> createSingleVm(final double targetTime, final int coresNeeded) {
+    private List<Vm> createSingleVm(final double targetTime, final long coresNeeded) {
         final int vmTypesCount = settings.VM_TYPES.length;
         final List<Vm> vmList = new ArrayList<>();
         final double startTime = targetTime - settings.getTimestepInterval();
-        int vmTypeIndex = vmTypesCount - 1;
 
+        int vmTypeIndex = vmTypesCount - 1;
+        // generous - creates the smallest VM type that can fulfill the cores needed
         for (int i = 0; i < vmTypesCount; i++) {
             if (coresNeeded <= getVmCoreCountByType(settings.VM_TYPES[i])) {
                 vmTypeIndex = i;
                 break;
             }
         }
+
+        if (vmTypeIndex == -1) {
+            LOGGER.error("[{} - {}]: No VM type can fulfill {} cores needed", startTime, targetTime,
+                    coresNeeded);
+            return vmList; // Return empty list if no VM type is suitable
+        }
+
         final String vmType = settings.VM_TYPES[vmTypeIndex];
         LOGGER.info("[{} - {}]: {} VM cores are needed, will create 1 {} VM", startTime, targetTime,
                 coresNeeded, vmType);
@@ -508,6 +603,7 @@ public class CloudSimProxy {
                 final double waitTime =
                         cloudlet.getStartTime() - jobArrivalTimeMap.get(cloudlet.getId());
                 jobsFinishedWaitTimeLastTimestep.add(waitTime);
+                // jobsFinishedWaitTimes.add(waitTime);
                 LOGGER.debug("{}: cloudletWaitTime: {}", clock(), waitTime);
             }
         });
@@ -534,8 +630,12 @@ public class CloudSimProxy {
                 .mapToLong(vm -> vm.getExpectedFreePesNumber()).sum()
                 - (int) broker.getCloudletWaitingList().stream().mapToLong(Cloudlet::getPesNumber)
                         .sum();
-
         return Math.max(totalFreeCores, 0);
+    }
+
+    private long getMaxFreeVmCores() {
+        return broker.getVmExecList().stream().mapToLong(vm -> vm.getExpectedFreePesNumber()).max()
+                .orElse(0);
     }
 
     /**
@@ -790,4 +890,8 @@ public class CloudSimProxy {
     public double getRunningCost() {
         return vmCost.getVMCostPerIteration(clock());
     }
+
+    // public List<Double> getJobsFinishedWaitTimes() {
+    // return jobsFinishedWaitTimes;
+    // }
 }

@@ -3,6 +3,8 @@ package daislab.cspg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import py4j.GatewayServer;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +14,8 @@ public class MultiSimulationEnvironment {
     private Map<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
 
     private SimulationFactory simulationFactory = new SimulationFactory();
+
+    private GatewayServer gatewayServer;
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
@@ -47,6 +51,8 @@ public class MultiSimulationEnvironment {
                 simulationIdentifier, simulations.size());
         if (simulations.isEmpty()) {
             LOGGER.debug("All experiments finished running.");
+            // Schedule the shutdown after sending the response
+            Main.initiateShutdown(gatewayServer);
         }
     }
 
@@ -75,7 +81,7 @@ public class MultiSimulationEnvironment {
         return simulations.get(simulationIdentifier);
     }
 
-    int getActiveConnections() {
-        return simulations.size();
+    void setGatewayServer(final GatewayServer gatewayServer) {
+        this.gatewayServer = gatewayServer;
     }
 }
