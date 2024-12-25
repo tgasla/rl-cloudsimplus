@@ -11,18 +11,20 @@ import java.util.Map;
 
 public class MultiSimulationEnvironment {
 
-    private Map<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
+    private final Map<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
 
-    private SimulationFactory simulationFactory = new SimulationFactory();
+    private final SimulationFactory simulationFactory = new SimulationFactory();
 
     private GatewayServer gatewayServer;
 
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
+    private String runMode;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
 
     public String createSimulation(final Map<String, Object> params, final String jobsAsJson) {
         WrappedSimulation simulation = simulationFactory.create(params, jobsAsJson);
         String identifier = simulation.getIdentifier();
+        runMode = params.get("run_mode").toString();
 
         simulations.put(identifier, simulation);
 
@@ -49,7 +51,16 @@ public class MultiSimulationEnvironment {
         simulation.close();
         LOGGER.debug("Simulation {} terminated. {} simulations still running.",
                 simulationIdentifier, simulations.size());
-        if (simulations.isEmpty()) {
+        if (runMode.equals("batch") && simulations.isEmpty()) {
+            LOGGER.debug("All experiments finished running.");
+            // Schedule the shutdown after sending the response
+            Main.initiateShutdown(gatewayServer);
+        } else if (runMode.equals("serial") && simulations.isEmpty()) {
+            try {
+                Thread.sleep(10000); // Wait for 10 seconds to make sure all experiments are finished
+            } catch (InterruptedException e) {
+                LOGGER.error("Gateway interrupted", e);
+            }
             LOGGER.debug("All experiments finished running.");
             // Schedule the shutdown after sending the response
             Main.initiateShutdown(gatewayServer);

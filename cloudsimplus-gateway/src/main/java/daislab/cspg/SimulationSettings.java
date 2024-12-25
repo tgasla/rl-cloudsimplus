@@ -16,7 +16,7 @@ public class SimulationSettings {
     public final String SMALL = "S";
     public final String MEDIUM = "M";
     public final String LARGE = "L";
-    public final String[] VM_TYPES = {SMALL, MEDIUM, LARGE};
+    public final String[] VM_TYPES = { SMALL, MEDIUM, LARGE };
     private final double minTimeBetweenEvents = 0.1;
     private final double timestepInterval;
     private final int initialSVmCount;
@@ -56,7 +56,7 @@ public class SimulationSettings {
         initialSVmCount = (int) params.get("initial_s_vm_count");
         initialMVmCount = (int) params.get("initial_m_vm_count");
         initialLVmCount = (int) params.get("initial_l_vm_count");
-        initialVmCounts = new int[] {initialSVmCount, initialMVmCount, initialLVmCount};
+        initialVmCounts = new int[] { initialSVmCount, initialMVmCount, initialLVmCount };
         splitLargeJobs = (boolean) params.get("split_large_jobs");
         maxJobPes = (int) params.get("max_job_pes");
         smallVmHourlyCost = (double) params.get("small_vm_hourly_cost");

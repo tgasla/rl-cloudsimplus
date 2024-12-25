@@ -58,7 +58,7 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
         SCALE_OPTION="manager=$NUM_EXPERIMENTS"
         PROFILE_OPTION=""
     fi
-    
+
     # Run the docker compose command based on ATTACHED flag
     if [ "$RUN_MODE" = "batch" ]; then
         if [ "$ATTACHED" = true ]; then

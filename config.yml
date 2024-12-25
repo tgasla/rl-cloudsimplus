@@ -15,10 +15,10 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: true
-    gpu: false
+    attached: false
+    gpu: true
     java_log_level: INFO
-    java_log_destination: file
+    java_log_destination: none
     junit_output_show: false
     run_mode: serial
 
@@ -47,8 +47,7 @@ common:
     vm_allocation_policy: rl
     enable_autoencoder_observation: false
     algorithm: PPO
-    max_hosts: 10
-    host_count: 10
+    max_hosts: 32
     host_pes: 16
     host_pe_mips: 50000
     max_job_pes: 8
@@ -61,8 +60,16 @@ common:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    seed: 1234
+    seed: 4567
 
 experiment_1:
-    seed: 42
-    experiment_name: tree_42
+    host_count: 8
+    experiment_name: tree_8hosts_4567
+
+experiment_2:
+    host_count: 16
+    experiment_name: tree_16hosts_4567
+
+experiment_3:
+    host_count: 32
+    experiment_name: tree_32hosts_4567
