@@ -39,15 +39,6 @@ cleanup_experiment() {
     echo "Cleanup completed for experiment containers."
 }
 
-wait_for_experiment_to_complete() {
-    echo "Waiting for experiment to complete..."
-
-    # Replace 'experiment_name' with your container name pattern or ID
-    while docker ps --filter "name=manager" --filter "status=running" | grep -q "manager"; do
-        sleep 5  # Check every 5 seconds
-    done
-}
-
 # Check if there are replicas
 if [ $NUM_EXPERIMENTS -gt 0 ]; then
     # Determine the Docker command based on the GPU flag
@@ -70,13 +61,28 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
     elif [ "$RUN_MODE" = "serial" ]; then
         for i in $(seq 1 $NUM_EXPERIMENTS); do
-            if [ "$ATTACHED" = true ]; then
-                DETACHED_OPTION=""
-            else
-                DETACHED_OPTION="-d"
+            # Start all containers
+            RUN_MODE="serial" EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" docker compose $PROFILE_OPTION up --build --remove-orphans -d
+
+            # Get the container ID for the manager container
+            MANAGER_CONTAINER_ID=$(docker ps --filter "name=manager" --filter "status=running" -q)
+
+            if [ -z "$MANAGER_CONTAINER_ID" ]; then
+                echo "Error: No running manager container found for experiment $i."
+                exit 1
             fi
-            RUN_MODE="serial" EXPERIMENT_ID="$i" docker compose $PROFILE_OPTION up $DETACHED_OPTION --build --remove-orphans
-            wait_for_experiment_to_complete
+
+            if [ "$ATTACHED" = true ]; then
+                # Attach only to the manager container logs
+                echo "Attaching to logs of manager container (ID: $MANAGER_CONTAINER_ID) for experiment $i..."
+                docker logs -f "$MANAGER_CONTAINER_ID"
+            fi
+
+            # Wait for the manager container to stop
+            echo "Waiting for the manager container (ID: $MANAGER_CONTAINER_ID) to complete..."
+            docker wait "$MANAGER_CONTAINER_ID"
+
+            # Cleanup after the experiment
             cleanup_experiment
         done
     else

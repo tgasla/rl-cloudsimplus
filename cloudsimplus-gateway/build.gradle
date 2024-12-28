@@ -41,13 +41,16 @@ task configureLogging {
         logbackConfig = logbackConfig.replaceAll(/<root level="\w*">[\s\S]*<\/root>/, "<root level=\"$logLevel\">\n</root>")
 
         def newAppenderRefs = ""
-        if (logDestination == "stdout") {
-            newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n'
-        } else if (logDestination == "file") {
+        if (logDestination == "file") {
             newAppenderRefs = '\t<appender-ref ref="FILE" />\n'
-        } else if (logDestination == "stdout-file") {
-            newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n\t<appender-ref ref="FILE" />\n'
         }
+        // if (logDestination == "stdout") {
+        //     newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n'
+        // } else if (logDestination == "file") {
+        //     newAppenderRefs = '\t<appender-ref ref="FILE" />\n'
+        // } else if (logDestination == "stdout-file") {
+        //     newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n\t<appender-ref ref="FILE" />\n'
+        // }
         // Note: If "none" is selected, we leave the <root> section empty
 
         // Insert the new appender-refs between <root> and </root>

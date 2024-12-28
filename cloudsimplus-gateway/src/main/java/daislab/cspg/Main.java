@@ -26,9 +26,14 @@ public class Main {
     }
 
     public static void initiateShutdown(final GatewayServer gatewayServer) {
+        try {
+            Thread.sleep(2000); // wait for 2 seconds
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("Interrupted", e);
+        }
         Executors.newSingleThreadExecutor().execute(() -> {
             try {
-
                 // Shutdown the Py4J gateway
                 gatewayServer.shutdown();
                 LOGGER.info("Gateway server shut down.");

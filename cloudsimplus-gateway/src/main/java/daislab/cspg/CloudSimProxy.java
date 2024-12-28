@@ -660,7 +660,7 @@ public class CloudSimProxy {
 
             // Do not schedule cloudlet if there are no suitable vms to run it
             if (!isAnyVmSuitableForCloudlet(cloudlet)) {
-                LOGGER.info("[{} - {}]: Could not submit job {}, no suitable vm found", startTime,
+                LOGGER.debug("[{} - {}]: Could not submit job {}, no suitable vm found", startTime,
                         clock(), cloudlet.getId());
                 continue;
             }

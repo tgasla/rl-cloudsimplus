@@ -1,5 +1,3 @@
-from csv import Error
-from math import exp
 import os
 import json
 import pycurl
@@ -77,8 +75,10 @@ def main():
         params.update(run_mode="batch")
     elif os.getenv("RUN_MODE") == "serial":
         experiment_id = os.getenv("EXPERIMENT_ID")
+        num_experiments = int(os.getenv("NUM_EXPERIMENTS"))
         params = dict_from_config(experiment_id, CONFIG_FILE)
         params.update(run_mode="serial")
+        params.update(num_experiments=num_experiments)
     if params["seed"] == "random":
         params["seed"] = np.random.randint(0, sys.maxsize)
     else:
