@@ -74,10 +74,11 @@ def main():
         hostname = os.getenv("HOSTNAME")
         replica_id = _find_replica_id(hostname)
         params = dict_from_config(replica_id, CONFIG_FILE)
+        params.update(run_mode="batch")
     elif os.getenv("RUN_MODE") == "serial":
         experiment_id = os.getenv("EXPERIMENT_ID")
         params = dict_from_config(experiment_id, CONFIG_FILE)
-
+        params.update(run_mode="serial")
     if params["seed"] == "random":
         params["seed"] = np.random.randint(0, sys.maxsize)
     else:
