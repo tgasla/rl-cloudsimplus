@@ -187,7 +187,7 @@ class SingleDC(gym.Env):
         self.host_count = params["host_count"]
         self.host_pes = params["host_pes"]
         self.small_vm_pes = params["small_vm_pes"]
-        large_vm_multiplier = params["large_vm_multiplier"]
+        self.large_vm_multiplier = params["large_vm_multiplier"]
 
         # if you want to support 1-10 hosts then when calculating max_vms_count and
         # observation rows, put self.max_hosts instead of host_count
@@ -199,8 +199,8 @@ class SingleDC(gym.Env):
 
         # it is reasonable to assume that the minimum amount of cores per job will be 1
         self.min_job_pes = 1
+        self.large_vm_pes = self.small_vm_pes * self.large_vm_multiplier
         self.max_vms = self.max_hosts * int(self.host_pes) // int(self.small_vm_pes)
-        # TODO: the maximum number of jobs that can be created is the number of cores in the largest VM
         self.max_jobs = self.max_vms * int(self.small_vm_pes) // self.min_job_pes
 
         # Old for continuous action space
@@ -269,11 +269,10 @@ class SingleDC(gym.Env):
                 dtype=np.int32,
             )
 
-        large_vm_pes = self.small_vm_pes * large_vm_multiplier
         # we set the maximum number of cores waiting in total to be the number of cores in the largest VM
         # because even if there are more cores waiting, we cannot do anything more than creating a large VM
         # again +1 because it starts from 0 and we need to include the last element (which is large_vm_pes)
-        self.job_cores_waiting_obs_space = spaces.Discrete(large_vm_pes + 1)
+        self.job_cores_waiting_obs_space = spaces.Discrete(self.large_vm_pes + 1)
 
         # 2d array
         # else:
