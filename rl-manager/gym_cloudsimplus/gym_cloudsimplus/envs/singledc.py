@@ -201,7 +201,8 @@ class SingleDC(gym.Env):
         self.min_job_pes = 1
         self.large_vm_pes = self.small_vm_pes * self.large_vm_multiplier
         self.max_vms = self.max_hosts * int(self.host_pes) // int(self.small_vm_pes)
-        self.max_jobs = self.max_vms * int(self.small_vm_pes) // self.min_job_pes
+        # self.max_jobs = self.max_vms * int(self.small_vm_pes) // self.min_job_pes
+        self.max_jobs = self.max_hosts * int(self.host_pes) // self.min_job_pes
 
         # Old for continuous action space
         # self.action_space = spaces.Box(
