@@ -141,12 +141,17 @@ public class WrappedSimulation {
         currentStep++;
 
         LOGGER.info("Step {} starting", currentStep);
-        boolean isValid = switch (settings.getVmAllocationPolicy()) {
+        int[] actionResult = switch (settings.getVmAllocationPolicy()) {
             case "rl", "fromfile" -> executeCustomAction(action);
-            case "heuristic" -> cloudSimProxy.executeHeuristicAction();
+            case "heuristic" -> {
+                cloudSimProxy.executeHeuristicAction();
+                yield new int[] {0, 0}; // does not matter
+            }
             default -> throw new IllegalArgumentException(
                     "Unexpected value: " + settings.getVmAllocationPolicy());
         };
+
+        final boolean isValid = actionResult[0] != -1;
 
         cloudSimProxy.runOneTimestep();
 
@@ -193,9 +198,9 @@ public class WrappedSimulation {
         // getUnutilizedVmCoreRatio(),
         // getInfrastructureObservation());
 
-        SimulationStepInfo info =
-                new SimulationStepInfo(rewards, cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(),
-                        getUnutilizedVmCoreRatio(), getInfrastructureObservation());
+        SimulationStepInfo info = new SimulationStepInfo(rewards,
+                cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
+                getInfrastructureObservation(), actionResult[0], actionResult[1]);
 
         Observation observation =
                 new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
@@ -381,7 +386,8 @@ public class WrappedSimulation {
     // TODO: NEEDS FIX
     // }
 
-    private boolean executeCustomAction(final int[] action) {
+    private int[] executeCustomAction(final int[] action) {
+        // returns [hostId, coresChanged]
 
         final boolean isValid;
 
@@ -397,17 +403,28 @@ public class WrappedSimulation {
         if (action[0] == 1) {
             final int hostId = action[1];
             final int vmTypeIndex = action[3];
+            final int vmCores = cloudSimProxy.getVmCoreCountByType(settings.VM_TYPES[vmTypeIndex]);
             isValid = addNewVm(settings.VM_TYPES[vmTypeIndex], hostId);
-            return isValid;
+            if (!isValid) {
+                return new int[] {-1, 0};
+            }
+            return new int[] {hostId, vmCores};
         }
 
         else if (action[0] == 2) {
             final int vmIndex = action[2];
+            List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+            Vm vm = vmList.get(vmIndex);
+            int hostId = (int) vm.getHost().getId();
+            int vmCores = (int) vm.getPesNumber();
             isValid = removeVm(vmIndex);
-            return isValid;
+            if (!isValid) {
+                return new int[] {-1, 0};
+            }
+            return new int[] {hostId, vmCores};
         }
 
-        return true;
+        return new int[] {0, 0};
     }
 
     // final long id;

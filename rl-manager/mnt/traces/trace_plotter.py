@@ -3,18 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-# def main():
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--trace", type=str, help="The trace data to print")
-#     args = parser.parse_args()
-#     df = pd.read_csv(args.trace)
-#     plt.figure(figsize=(10, 5))
-#     plt.bar(df.arrival_time, df.allocated_cores)
-#     plt.xlabel("Job Arrival Time")
-#     plt.ylabel("Job Cores")
-#     plt.savefig(args.trace.split(".")[0] + ".png")
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--trace", type=str, help="The trace data to print")
@@ -36,18 +24,24 @@ def main():
         grouped = df.groupby("arrival_time")["allocated_cores"].sum()
 
     # Plot the bar chart
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(10, 6))
+    # Add grid
+    plt.grid(axis="y", linestyle="--", alpha=0.7)
     plt.bar(grouped.index, grouped.values, color="skyblue", edgecolor="black")
-    plt.xlabel("Job Arrival Time")
-    plt.title("Job Arrival Distribution")
-    if not args.count_cores:
-        plt.ylabel("Number of Jobs")
-    else:
-        plt.ylabel("Number of Cores")
+
+    # Add labels and title with increased font size
+    plt.xlabel("Arrival Time (s)", fontsize=19)
+    plt.ylabel(
+        "# Jobs" if not args.count_cores else "# Requested Cores",
+        fontsize=19,
+    )
+    # plt.title("Job Arrival Distribution", fontsize=16)
+    plt.xticks(fontsize=17)
+    plt.yticks(fontsize=17)
 
     # Save the plot
-    output_filename = args.trace.split(".")[0] + ".png"
-    plt.savefig(output_filename)
+    output_filename = args.trace.split(".")[0] + ".pdf"
+    plt.savefig(output_filename, bbox_inches="tight", pad_inches=0)
     print(f"Plot saved as {output_filename}")
 
 

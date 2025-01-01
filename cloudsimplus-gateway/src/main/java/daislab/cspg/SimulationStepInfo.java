@@ -23,6 +23,8 @@ public class SimulationStepInfo {
     private final List<Double> jobWaitTime;
     private final double unutilizedVmCoreRatio;
     private final int[] observationTreeArray;
+    private final int hostAffected;
+    private final int coresChanged;
     // private final String dotString;
 
     public SimulationStepInfo() {
@@ -38,10 +40,13 @@ public class SimulationStepInfo {
         this.valid = true;
         // this.dotString = "";
         this.observationTreeArray = new int[1];
+        this.hostAffected = 0;
+        this.coresChanged = 0;
     }
 
     public SimulationStepInfo(final double[] rewards, final List<Double> jobWaitTime,
-            final double unutilizedVmCoreRatio, final int[] observationTreeArray) {
+            final double unutilizedVmCoreRatio, final int[] observationTreeArray,
+            final int hostAffected, final int coresChanged) {
         this.jobWaitReward = rewards[1];
         this.runningVmCoresReward = rewards[2];
         this.unutilizedVmCoresReward = rewards[3];
@@ -53,6 +58,8 @@ public class SimulationStepInfo {
         this.unutilizedVmCoreRatio = unutilizedVmCoreRatio;
         this.valid = this.invalidReward == 0 ? true : false;
         this.observationTreeArray = observationTreeArray;
+        this.hostAffected = hostAffected;
+        this.coresChanged = coresChanged;
         // this.dotString = dotString;
     }
 
@@ -74,6 +81,14 @@ public class SimulationStepInfo {
 
     public boolean isValid() {
         return valid;
+    }
+
+    public int getHostAffected() {
+        return hostAffected;
+    }
+
+    public int getCoresChanged() {
+        return coresChanged;
     }
 
     // public double[][] getHostMetrics() {

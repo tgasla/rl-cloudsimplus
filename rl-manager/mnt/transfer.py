@@ -5,6 +5,7 @@ import gym_cloudsimplus  # noqa: F401
 import torch
 
 import stable_baselines3 as sb3
+import sb3_contrib
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.logger import configure
@@ -39,6 +40,8 @@ def transfer(params):
     # Select the appropriate algorithm
     if hasattr(sb3, params["algorithm"]):
         algorithm = getattr(sb3, params["algorithm"])
+    elif hasattr(sb3_contrib, params["algorithm"]):
+        algorithm = getattr(sb3_contrib, params["algorithm"])
     else:
         raise AttributeError(
             f"Algorithm {params['algorithm']} not found in sb3 module."

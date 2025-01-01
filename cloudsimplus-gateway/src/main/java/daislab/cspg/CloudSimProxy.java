@@ -5,6 +5,7 @@ import org.cloudsimplus.cloudlets.CloudletExecution;
 import org.cloudsimplus.core.CloudSimPlus;
 import org.cloudsimplus.core.CloudSimTag;
 import org.cloudsimplus.datacenters.Datacenter;
+import org.cloudsimplus.brokers.DatacenterBroker;
 import org.cloudsimplus.datacenters.DatacenterSimple;
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.provisioners.PeProvisionerSimple;
@@ -871,7 +872,7 @@ public class CloudSimProxy {
         return cloudSimPlus;
     }
 
-    public DatacenterBrokerFirstFitFixed getBroker() {
+    public DatacenterBroker getBroker() {
         return broker;
     }
 

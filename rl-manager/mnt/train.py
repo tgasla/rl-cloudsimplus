@@ -6,6 +6,7 @@ import gym_cloudsimplus  # noqa: F401
 import torch
 
 import stable_baselines3 as sb3
+import sb3_contrib
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.logger import configure
@@ -29,10 +30,17 @@ def train(params):
         # so the code triggers the simulation environment creation
         # NOTE: the algorithm decision through learning is not used at all in this case
         algorithm = getattr(sb3, "PPO")
-    elif params["vm_allocation_policy"] == "rl" and hasattr(sb3, params["algorithm"]):
-        algorithm = getattr(sb3, params["algorithm"])
+    elif params["vm_allocation_policy"] == "rl":
+        if hasattr(sb3, params["algorithm"]):
+            algorithm = getattr(sb3, params["algorithm"])
+        elif hasattr(sb3_contrib, params["algorithm"]):
+            algorithm = getattr(sb3_contrib, params["algorithm"])
+        else:
+            raise AttributeError(f"Algorithm {params['algorithm']} not found.")
     else:
-        raise AttributeError(f"Algorithm {params['algorithm']} not found.")
+        raise AttributeError(
+            f"vm_allocation_policy {params['vm_allocation_policy']} not found."
+        )
 
     policy = "MultiInputPolicy"  # when state is Spaces.Dict()
     # policy = "MlpPolicy" # when state is not Spaces.Dict()
@@ -73,6 +81,9 @@ def train(params):
     # Instantiate the agent
     model = algorithm(policy=policy, device=device, env=env, seed=params["seed"])
 
+    # policy = model.policy # Access the policy network
+    # print(policy) # Print the policy network architecture
+
     # the logger can write to stdout, progress.csv and tensorboard
     logger = configure(params["log_dir"], log_destination)
     model.set_logger(logger)
@@ -85,8 +96,8 @@ def train(params):
         )
         model.action_noise = action_noise
 
-    if hasattr(model, "ppo_ent_coef") and params.get("ppo_ent_coef"):
-        model.ent_coef = params["ppo_ent_coef"]
+    if hasattr(model, "ent_coef") and params.get("ent_coef"):
+        model.ent_coef = params["ent_coef"]
 
     # Train the agent
     model.learn(total_timesteps=params["timesteps"], log_interval=1, callback=callback)
