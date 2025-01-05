@@ -3,6 +3,7 @@ import json
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 import torch
+import numpy as np
 
 import stable_baselines3 as sb3
 import sb3_contrib
@@ -13,6 +14,7 @@ from utils.trace_utils import csv_to_cloudlet_descriptor
 from callbacks.save_on_best_training_reward_callback import (
     SaveOnBestTrainingRewardCallback,
 )
+from stable_baselines3.common.noise import NormalActionNoise
 
 
 def transfer(params):
@@ -43,9 +45,7 @@ def transfer(params):
     elif hasattr(sb3_contrib, params["algorithm"]):
         algorithm = getattr(sb3_contrib, params["algorithm"])
     else:
-        raise AttributeError(
-            f"Algorithm {params['algorithm']} not found in sb3 module."
-        )
+        raise AttributeError(f"Algorithm {params['algorithm']} not found.")
 
     # log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
@@ -72,9 +72,19 @@ def transfer(params):
         env = DummyVecEnv([lambda: env])
 
     # Change any model parameters you want here
-    custom_objects = {
-        # "learning_rate": float(learning_rate_dict[params["algorithm"]]),
-    }
+    custom_objects = {}
+
+    if params.get("learning_rate"):
+        custom_objects["learning_rate"] = float(params["learning_rate"])
+    if params.get("ent_coef"):
+        custom_objects["ent_coef"] = float(params["ent_coef"])
+    if params["algorithm"] == "PPO" or params["algorithm"] == "MaskablePPO":
+        print("Setting action noise for PPO...")
+        n_actions = env.action_space.shape[-1]
+        action_noise = NormalActionNoise(
+            mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
+        )
+        custom_objects["action_noise"] = action_noise
 
     # Load the trained agent
     model = algorithm.load(
@@ -85,7 +95,10 @@ def transfer(params):
         seed=params["seed"],
     )
 
-    logger = configure(params["log_dir"], ["stdout", "csv", "tensorboard"])
+    if hasattr(model, "action_noise"):
+        print(f"action_noise: {model.action_noise}")
+
+    logger = configure(params["log_dir"], log_destination)
     model.set_logger(logger)
 
     # Load the replay buffer if the algorithm has one

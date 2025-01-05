@@ -270,6 +270,8 @@ class SingleDC(gym.Env):
                 dtype=np.int32,
             )
 
+            # print(self.infr_obs_space)
+
         # we set the maximum number of cores waiting in total to be the number of cores in the largest VM
         # because even if there are more cores waiting, we cannot do anything more than creating a large VM
         # again +1 because it starts from 0 and we need to include the last element (which is large_vm_pes)
