@@ -17,6 +17,7 @@ from callbacks.save_on_best_training_reward_callback import (
 )
 from stable_baselines3.common.noise import NormalActionNoise
 
+
 def get_host_count_from_train_dir(train_model_dir):
     # Regular expression to match the number before "hosts"
     match = re.search(r"(\d+)hosts", train_model_dir)
@@ -24,6 +25,7 @@ def get_host_count_from_train_dir(train_model_dir):
         number = match.group(1)  # Extract the matched number
         return int(number)
     return None
+
 
 def transfer(params):
     learning_rate_dict = {
@@ -110,7 +112,7 @@ def transfer(params):
     weights = model.policy.mlp_extractor.policy_net[0].weight
 
     max_hosts = params["max_hosts"]
-    host_count = get_host_count_from_train_dir(params["train_model_dir"])    
+    host_count = get_host_count_from_train_dir(params["train_model_dir"])
     host_pes = params["host_pes"]
     small_vm_pes = params["small_vm_pes"]
     min_job_pes = 1
@@ -123,15 +125,22 @@ def transfer(params):
 
     # Calculate the start and end indices for the last 700 elements of Part 1
     start_idx = (1 + host_count + cur_max_vms + cur_max_jobs) * (max_pes_per_node + 1)
-    end_idx = (1 + max_hosts + max_vms + max_jobs) * (max_pes_per_node + 1)  # Exclusive
+    end_idx = infr_obs_length * (max_pes_per_node + 1)  # Exclusive
 
-    # print(f"start_idx: {start_idx}, end_idx: {end_idx}")
+    with torch.no_grad():
+        # Copy the weights of the input layer
+        weights[:, start_idx:end_idx] = 0
+        weights[:, start_idx:end_idx].requires_grad = False
+        model.policy.mlp_extractor.policy_net[0].weight[:, start_idx:end_idx].copy_(
+            weights[:, start_idx:end_idx]
+        )  # copy only the part of the weights that we want to zero out and freeze
+        # model.policy.mlp_extractor.policy_net[0].weight.copy_(weights)
 
-    # Zero out the corresponding weights
-    weights[:, start_idx:end_idx].data.zero_()
+    # weights[:, start_idx:end_idx].data.zero_()  # Zero out the weights
+    # weights[:, start_idx:end_idx].data.requires_grad = False  # Freeze the weights
 
     # Optionally, update the model's weights (if using PyTorch-like behavior)
-    model.policy.mlp_extractor.policy_net[0].weight.data = weights
+    # model.policy.mlp_extractor.policy_net[0].weight.data = weights
     # print(model.policy.mlp_extractor.policy_net[0].weight[:, start_idx:end_idx])
 
     if hasattr(model, "action_noise"):
