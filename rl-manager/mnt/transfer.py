@@ -4,6 +4,7 @@ import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 import torch
 import numpy as np
+import re
 
 import stable_baselines3 as sb3
 import sb3_contrib
@@ -16,6 +17,13 @@ from callbacks.save_on_best_training_reward_callback import (
 )
 from stable_baselines3.common.noise import NormalActionNoise
 
+def get_host_count_from_train_dir(train_model_dir):
+    # Regular expression to match the number before "hosts"
+    match = re.search(r"(\d+)hosts", train_model_dir)
+    if match:
+        number = match.group(1)  # Extract the matched number
+        return int(number)
+    return None
 
 def transfer(params):
     learning_rate_dict = {
@@ -94,6 +102,37 @@ def transfer(params):
         custom_objects=custom_objects,
         seed=params["seed"],
     )
+
+    # Access the policy network
+    policy = model.policy
+
+    # Access the weights of the input layer
+    weights = model.policy.mlp_extractor.policy_net[0].weight
+
+    max_hosts = params["max_hosts"]
+    host_count = get_host_count_from_train_dir(params["train_model_dir"])    
+    host_pes = params["host_pes"]
+    small_vm_pes = params["small_vm_pes"]
+    min_job_pes = 1
+    cur_max_vms = host_count * host_pes // small_vm_pes
+    cur_max_jobs = host_count * host_pes // min_job_pes
+    max_vms = max_hosts * host_pes // small_vm_pes
+    max_jobs = max_hosts * host_pes // min_job_pes
+    infr_obs_length = 1 + max_hosts + max_vms + max_jobs
+    max_pes_per_node = max_hosts * host_pes
+
+    # Calculate the start and end indices for the last 700 elements of Part 1
+    start_idx = (1 + host_count + cur_max_vms + cur_max_jobs) * (max_pes_per_node + 1)
+    end_idx = (1 + max_hosts + max_vms + max_jobs) * (max_pes_per_node + 1)  # Exclusive
+
+    # print(f"start_idx: {start_idx}, end_idx: {end_idx}")
+
+    # Zero out the corresponding weights
+    weights[:, start_idx:end_idx].data.zero_()
+
+    # Optionally, update the model's weights (if using PyTorch-like behavior)
+    model.policy.mlp_extractor.policy_net[0].weight.data = weights
+    # print(model.policy.mlp_extractor.policy_net[0].weight[:, start_idx:end_idx])
 
     if hasattr(model, "action_noise"):
         print(f"action_noise: {model.action_noise}")
