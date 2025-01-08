@@ -121,9 +121,6 @@ def transfer(params):
     start_idx = (1 + host_count + cur_max_vms + cur_max_jobs) * (max_pes_per_node + 1)
     end_idx = infr_obs_length * (max_pes_per_node + 1)  # Exclusive
 
-    # Access the policy network
-    policy = model.policy
-
     # Access the weights of the input layer
     weights = model.policy.mlp_extractor.policy_net[0].weight
 
