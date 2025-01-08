@@ -105,12 +105,6 @@ def transfer(params):
         seed=params["seed"],
     )
 
-    # Access the policy network
-    policy = model.policy
-
-    # Access the weights of the input layer
-    weights = model.policy.mlp_extractor.policy_net[0].weight
-
     max_hosts = params["max_hosts"]
     host_count = get_host_count_from_train_dir(params["train_model_dir"])
     host_pes = params["host_pes"]
@@ -127,13 +121,19 @@ def transfer(params):
     start_idx = (1 + host_count + cur_max_vms + cur_max_jobs) * (max_pes_per_node + 1)
     end_idx = infr_obs_length * (max_pes_per_node + 1)  # Exclusive
 
+    # Access the policy network
+    policy = model.policy
+
+    # Access the weights of the input layer
+    weights = model.policy.mlp_extractor.policy_net[0].weight
+
     with torch.no_grad():
         # Copy the weights of the input layer
         weights[:, start_idx:end_idx] = 0
         weights[:, start_idx:end_idx].requires_grad = False
-        model.policy.mlp_extractor.policy_net[0].weight[:, start_idx:end_idx].copy_(
-            weights[:, start_idx:end_idx]
-        )  # copy only the part of the weights that we want to zero out and freeze
+        # model.policy.mlp_extractor.policy_net[0].weight[:, start_idx:end_idx].copy_(
+        #     weights[:, start_idx:end_idx]
+        # )  # copy only the part of the weights that we want to zero out and freeze
         # model.policy.mlp_extractor.policy_net[0].weight.copy_(weights)
 
     # weights[:, start_idx:end_idx].data.zero_()  # Zero out the weights
