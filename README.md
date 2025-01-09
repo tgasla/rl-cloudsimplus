@@ -10,7 +10,7 @@
 
 ### 1. Install Docker
 
-<https://docs.docker.com/get-docker/>
+<https://docs.docker.com/get-docker/> 
 
  > [!WARNING]
  > If you install Docker Desktop for MacOS, make sure you are giving enough memory in your containers by going to <b> Settings... > Resources </b> and increasing the Memory Limit
