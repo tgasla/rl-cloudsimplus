@@ -154,6 +154,12 @@ There is also support to run the experiments in CUDA GPUs.
   - You need to have [CUDA](https://developer.nvidia.com/cuda-downloads) and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your system.
   - Restart the docker daemon if you just downloaded the cuda-container-toolkit.
 
+> [!WARNING]
+> If after installing nvidia-container-toolkit you still cannot access GPU in the container, follow the steps below:
+> 1) Edit the /etc/Nvidia-container-runtime/config.toml file changing the no-cgroups to false.
+> 2) Restart the docker daemon using: sudo systemctl restart docker
+> 3) Test by running sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
+
 <!--
 - The `--build` flag also builds the manager image
 - The `-d` flag runs the app in detached mode (runs in the background)
