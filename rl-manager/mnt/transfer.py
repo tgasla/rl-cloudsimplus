@@ -106,28 +106,37 @@ def transfer(params):
     )
 
     max_hosts = params["max_hosts"]
-    host_count = get_host_count_from_train_dir(params["train_model_dir"])
     host_pes = params["host_pes"]
     small_vm_pes = params["small_vm_pes"]
     min_job_pes = 1
-    cur_max_vms = host_count * host_pes // small_vm_pes
-    cur_max_jobs = host_count * host_pes // min_job_pes
+    prev_host_count = get_host_count_from_train_dir(params["train_model_dir"])
+    prev_max_vms = prev_host_count * host_pes // small_vm_pes
+    prev_max_jobs = prev_host_count * host_pes // min_job_pes
+    cur_host_count = params["host_count"]
+    cur_max_vms = cur_host_count * host_pes // small_vm_pes
+    cur_max_jobs = cur_host_count * host_pes // min_job_pes
     max_vms = max_hosts * host_pes // small_vm_pes
     max_jobs = max_hosts * host_pes // min_job_pes
     infr_obs_length = 1 + max_hosts + max_vms + max_jobs
     max_pes_per_node = max_hosts * host_pes
 
     # Calculate the start and end indices for the last 700 elements of Part 1
-    start_idx = (1 + host_count + cur_max_vms + cur_max_jobs) * (max_pes_per_node + 1)
+    prev_start_idx = (1 + prev_host_count + prev_max_vms + prev_max_jobs) * (
+        max_pes_per_node + 1
+    )
+    cur_start_idx = (1 + cur_host_count + cur_max_vms + cur_max_jobs) * (
+        max_pes_per_node + 1
+    )
     end_idx = infr_obs_length * (max_pes_per_node + 1)  # Exclusive
 
     # Access the weights of the input layer
     weights = model.policy.mlp_extractor.policy_net[0].weight
 
     with torch.no_grad():
-        # Copy the weights of the input layer
-        weights[:, start_idx:end_idx] = 0
-        weights[:, start_idx:end_idx].requires_grad = False
+        weights[:, cur_start_idx:end_idx].requires_grad = False
+        weights[:, :cur_start_idx].requires_grad = True
+        min_start_idx = min(cur_start_idx, prev_start_idx)
+        weights[:, min_start_idx:end_idx] = 0
         # model.policy.mlp_extractor.policy_net[0].weight[:, start_idx:end_idx].copy_(
         #     weights[:, start_idx:end_idx]
         # )  # copy only the part of the weights that we want to zero out and freeze
