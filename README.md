@@ -1,10 +1,3 @@
-# RL-CloudSimPlus
-
-<div align="center">
-<a href="https://app.codacy.com/gh/tgasla/rl-cloudsimplus/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img src="https://app.codacy.com/project/badge/Grade/e22788c9fc3c488598520c7fa35840cc" alt="Codacy Badge"></a>
-<a href="https://github.com/tgasla/rl-cloudsimplus/blob/main/LICENSE"><img src="https://img.shields.io/github/license/tgasla/rl-cloudsimplus?" alt="GPLv3 License"></a>
-</div>
-
 ## Installation
 
 
@@ -130,7 +123,7 @@ make run-tensorboard
 
 ## Editing the experiment configuration file
 
-To run an experiment, first edit the configuration file [config.yml](https://github.com/tgasla/rl-cloudsimplus/blob/main/config.yml).
+To run an experiment, first edit the configuration file config.yml.
 
 The configuration file contains two sections: the 'common' section and the 'experiment' section. This is because we may run multiple different experiments in parallel.
 - The parameters that all experiments have in common are specified under the common section, and those that are unique among the experiments are defined under the experiment_{id} section
