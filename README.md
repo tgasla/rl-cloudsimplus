@@ -129,7 +129,7 @@ The configuration file contains two sections: the 'common' section and the 'expe
 - The parameters that all experiments have in common are specified under the common section, and those that are unique among the experiments are defined under the experiment_{id} section
   - If a parameter is specified in both the common and experiment sections, the common one is ignored, and the experiment one takes effect.
 - To run multiple experiments in parallel, add as many experiment areas as you want, specifying the corresponding parameters for each experiment.
-- Each experiment should have a unique experiment id, and each section should be written as experiment_{id}. For simplicity, use ids starting by 1 and increment by 1.
+- Each experiment should have a unique experiment id, and each section should be written as experiment_{id}. Use ids starting by 1 and increment by 1.
 
 There are three experiment modes: train, transfer, and test. When transfer or test modes are specified, an additional 'train_model_dir' key for an experiment should be defined, with the directory name in which the trained agent model should be used.
 
