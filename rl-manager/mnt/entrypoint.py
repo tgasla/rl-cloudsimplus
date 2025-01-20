@@ -68,17 +68,16 @@ def write_seed_to_file(seed, log_dir, filename="seed.txt"):
 
 
 def main():
-    if os.getenv("RUN_MODE") == "batch":
+    num_experiments = int(os.getenv("NUM_EXPERIMENTS"))
+    run_mode = os.getenv("RUN_MODE")
+    if run_mode == "batch":
         hostname = os.getenv("HOSTNAME")
-        replica_id = _find_replica_id(hostname)
-        params = dict_from_config(replica_id, CONFIG_FILE)
-        params.update(run_mode="batch")
-    elif os.getenv("RUN_MODE") == "serial":
+        experiment_id = _find_replica_id(hostname)
+    elif run_mode == "serial":
         experiment_id = os.getenv("EXPERIMENT_ID")
-        num_experiments = int(os.getenv("NUM_EXPERIMENTS"))
-        params = dict_from_config(experiment_id, CONFIG_FILE)
-        params.update(run_mode="serial")
-        params.update(num_experiments=num_experiments)
+    params = dict_from_config(experiment_id, CONFIG_FILE)
+    params.update(run_mode=run_mode)
+    params.update(num_experiments=num_experiments)
     if params["seed"] == "random":
         params["seed"] = np.random.randint(0, sys.maxsize)
     else:

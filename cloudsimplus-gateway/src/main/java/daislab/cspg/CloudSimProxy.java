@@ -155,17 +155,17 @@ public class CloudSimProxy {
     private VmAllocationPolicy defineVmAllocationPolicy() {
         return switch (settings.getVmAllocationPolicy()) {
             case "rl", "fromfile" -> new VmAllocationPolicyCustom();
-            case "heuristic" -> defineHeuristicVmAllocationPolicy();
+            case "rule-based" -> defineRuleBasedVmAllocationPolicy();
             default -> throw new IllegalArgumentException(
                     "Unknown VM allocation policy: " + settings.getVmAllocationPolicy());
         };
     }
 
-    private VmAllocationPolicy defineHeuristicVmAllocationPolicy() {
+    private VmAllocationPolicy defineRuleBasedVmAllocationPolicy() {
         return switch (settings.getAlgorithm()) {
-            case "minimize-makespan", "minimize-unutilization", "minimize-energy" -> new VmAllocationPolicyBestFit();
+            case "minimize-queue", "minimize-allocated", "minimize-unutilized" -> new VmAllocationPolicyBestFit();
             default -> throw new IllegalArgumentException(
-                    "Unknown VM allocation policy: " + settings.getVmAllocationPolicy());
+                    "Unknown VM allocation policy: " + settings.getAlgorithm());
         };
     }
 
@@ -319,7 +319,7 @@ public class CloudSimProxy {
         return broker.getVmExecList().stream().anyMatch(vm -> vm.getPesNumber() == cores);
     }
 
-    private void executeMinimizeMakespanAction() {
+    private void executeMinimizeQueueAction() {
         long maxCoresNeeded = calculateMaxJobCoresNeeded();
         long maxfreeCoresOnSameVm = getMaxFreeVmCores();
 
@@ -335,23 +335,7 @@ public class CloudSimProxy {
         }
     }
 
-    private void executeMinimizeUnutilizationAction() {
-        List<Vm> vmList = new ArrayList<>();
-        if (isJobWithCoresWaiting(2) && !isVmWithCoresRunning(2)) {
-            vmList = createSingleVm(calculateTargetTime(), 2);
-            broker.submitVmList(vmList);
-        } else if (isJobWithCoresWaiting(4) && !isVmWithCoresRunning(4)) {
-            vmList = createSingleVm(calculateTargetTime(), 4);
-            broker.submitVmList(vmList);
-        } else if (isJobWithCoresWaiting(8) && !isVmWithCoresRunning(8)) {
-            vmList = createSingleVm(calculateTargetTime(), 8);
-            broker.submitVmList(vmList);
-        } else {
-            destroyLargestIdleVm();
-        }
-    }
-
-    private void executeMinimizeEnergyAction() {
+    private void executeMinimizeAllocatedAction() {
         // have only one VM running in total
         int coresNeeded = calculateJobCoresWaiting();
         final long smallVmCores = getVmCoreCountByType(settings.VM_TYPES[0]);
@@ -379,13 +363,29 @@ public class CloudSimProxy {
         }
     }
 
-    public boolean executeHeuristicAction() {
-        if (settings.getAlgorithm().equals("minimize-makespan")) {
-            executeMinimizeMakespanAction();
-        } else if (settings.getAlgorithm().equals("minimize-unutilization")) {
-            executeMinimizeUnutilizationAction();
-        } else if (settings.getAlgorithm().equals("minimize-energy")) {
-            executeMinimizeEnergyAction();
+    private void executeMinimizeUnutilizedAction() {
+        List<Vm> vmList = new ArrayList<>();
+        if (isJobWithCoresWaiting(2) && !isVmWithCoresRunning(2)) {
+            vmList = createSingleVm(calculateTargetTime(), 2);
+            broker.submitVmList(vmList);
+        } else if (isJobWithCoresWaiting(4) && !isVmWithCoresRunning(4)) {
+            vmList = createSingleVm(calculateTargetTime(), 4);
+            broker.submitVmList(vmList);
+        } else if (isJobWithCoresWaiting(8) && !isVmWithCoresRunning(8)) {
+            vmList = createSingleVm(calculateTargetTime(), 8);
+            broker.submitVmList(vmList);
+        } else {
+            destroyLargestIdleVm();
+        }
+    }
+
+    public boolean executeRuleBasedAction() {
+        if (settings.getAlgorithm().equals("minimize-queue")) {
+            executeMinimizeQueueAction();
+        } else if (settings.getAlgorithm().equals("minimize-allocated")) {
+            executeMinimizeAllocatedAction();
+        } else if (settings.getAlgorithm().equals("minimize-unutilized")) {
+            executeMinimizeUnutilizedAction();
         }
         return true;
 

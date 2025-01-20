@@ -184,6 +184,11 @@ class SingleDC(gym.Env):
                 _ = next(csv_reader)  # skip the header
                 self.action_file_data = list(csv_reader)
 
+        self.reward_job_wait_coef = params["reward_job_wait_coef"]
+        self.reward_running_vm_cores_coef = params["reward_running_vm_cores_coef"]
+        self.reward_unutilized_vm_cores_coef = params["reward_unutilized_vm_cores_coef"]
+        self.reward_invalid_coef = params["reward_invalid_coef"]
+
         self.host_count = params["host_count"]
         self.host_pes = params["host_pes"]
         self.small_vm_pes = params["small_vm_pes"]
@@ -297,7 +302,7 @@ class SingleDC(gym.Env):
 
         if render_mode is not None and render_mode not in self.metadata["render_modes"]:
             gym.logger.warn(
-                "Invalid render mode" 'Render modes allowed: ["human" | "ansi"]'
+                'Invalid render modeRender modes allowed: ["human" | "ansi"]'
             )
 
         self.render_mode = render_mode

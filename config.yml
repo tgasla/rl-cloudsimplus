@@ -7,15 +7,15 @@
 # experiment_type_dir: parent directory for a set of experiments
 # experiment_name: name of the experiment
 # mode: [train, test, transfer]
-# vm_allocation_policy: [rl, heuristic]
-# algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-makespan, minimize-unutilization, minimize-energy if vm_allocation_policy == heuristic]
+# vm_allocation_policy: [rl, rule-based]
+# algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
 
 # globals.run_mode: [batch, serial]
 
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: false
+    attached: true
     gpu: true
     java_log_level: INFO
     java_log_destination: none
@@ -23,6 +23,7 @@ globals:
     run_mode: serial
 
 common:
+    seed: 1234
     timestep_interval: 1.0
     initial_s_vm_count: 0
     initial_m_vm_count: 0
@@ -42,13 +43,14 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    experiment_type_dir: testing
     mode: train
     vm_allocation_policy: rl
     enable_autoencoder_observation: false
-    algorithm: PPO
+    freeze_inactive_input_layer_weights: true
+    algorithm: MaskablePPO
     max_hosts: 32
     host_pes: 16
+    host_count: 16
     host_pe_mips: 50000
     max_job_pes: 8
     medium_vm_multiplier: 2
@@ -56,20 +58,26 @@ common:
     small_vm_pes: 2
     job_trace_filename: three_60max_8maxcores.csv
     timesteps: 2048
+    n_rollout_steps: 2048
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    seed: 4567
 
 experiment_1:
-    host_count: 8
-    experiment_name: tree_8hosts_4567
+    experiment_type_dir: testing
+    experiment_name: test1
+    vm_allocation_policy: rule-based
+    algorithm: minimize-queue
 
 experiment_2:
-    host_count: 16
-    experiment_name: tree_16hosts_4567
+    experiment_type_dir: testing
+    experiment_name: test2
+    vm_allocation_policy: rule-based
+    algorithm: minimize-allocated
 
 experiment_3:
-    host_count: 32
-    experiment_name: tree_32hosts_4567
+    experiment_type_dir: testing
+    experiment_name: test3
+    vm_allocation_policy: rule-based
+    algorithm: minimize-unutilized

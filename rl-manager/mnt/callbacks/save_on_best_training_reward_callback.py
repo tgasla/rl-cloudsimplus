@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from typing import Any, Dict, Union
 import torch
+from collections import deque
 
 # from stable_baselines3.common import results_plotter
 # from stable_baselines3.common.results_plotter import plot_results
@@ -34,8 +35,18 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.isValid = None
         self.current_episode_num = 0
         self.best_episode_filename_prefix = "best_episode"
+        self.job_wait_time_deque = deque(maxlen=100)
+        self.job_queue_ratio_rew_deque = deque(maxlen=100)
+        self.allocated_vm_cores_rew_deque = deque(maxlen=100)
+        self.unutilized_vm_cores_rew_deque = deque(maxlen=100)
 
         self._clear_episode_details()
+
+    def mean_of_non_empty_sublists(self, arr):
+        # Flatten the list while excluding empty sublists
+        non_empty_values = [value for sublist in arr if sublist for value in sublist]
+        # Return the mean
+        return np.mean(non_empty_values)
 
     def get(self, attr) -> Any:
         return self.training_env.env_method("get_wrapper_attr", attr)[0]
@@ -48,7 +59,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # will be written to best_episode_{episode_num}.csv
         episode_details = {
             "timestep": timesteps,
-            # "obs": self.observations,
+            # "obs": self.observations, # obs and actions are saved in independent files
             # "action": self.actions,
             "job_wait_reward": self.job_wait_rewards,
             "running_vm_cores_reward": self.running_vm_cores_rewards,
@@ -137,7 +148,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         ):
             replay_buffer_path = os.path.join(self.log_dir, "best_model_replay_buffer")
             if self.verbose >= 1:
-                print((f"Saving replay buffer to" f"{replay_buffer_path}"))
+                print((f"Saving replay buffer to{replay_buffer_path}"))
             self.model.save_replay_buffer(replay_buffer_path)
 
     def _create_csv_paths(self) -> Dict:
@@ -198,7 +209,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         path_dict = self._create_csv_paths()
 
         if self.verbose >= 1:
-            print((f"Saving simulation details to" f"{path_dict}"))
+            print((f"Saving simulation details to{path_dict}"))
 
         df_dict = self._create_dataframes()
         self._write_dataframes_to_csvs(df_dict, path_dict)
@@ -225,20 +236,57 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
     def _write_progress_log_row(self) -> None:
         ep_first_timestep = self.num_timesteps - self.current_episode_length + 1
         ep_last_timestep = self.num_timesteps
-        self.logger.record("train/episode_num", self.current_episode_num)
-        self.logger.record("train/episode_length", self.current_episode_length)
-        self.logger.record("train/ep_first_timestep", ep_first_timestep)
-        self.logger.record("train/ep_last_timestep", ep_last_timestep)
-        self.logger.record("train/ep_total_rew", np.sum(self.rewards))
-        self.logger.record("train/ep_valid_count", np.sum(self.isValid))
-        self.logger.record("train/ep_job_wait_rew", np.sum(self.job_wait_rewards))
         self.logger.record(
-            "train/ep_running_vm_cores_rew", np.sum(self.running_vm_cores_rewards)
+            "train/episode_num", self.current_episode_num, exclude="tensorboard"
         )
         self.logger.record(
-            "train/ep_unutil_vm_cores_rew", np.sum(self.unutilized_vm_cores_rewards)
+            "train/episode_length", self.current_episode_length, exclude="tensorboard"
         )
-        self.logger.record("train/ep_inv_rew", np.sum(self.invalid_rewards))
+        self.logger.record(
+            "train/ep_first_timestep", ep_first_timestep, exclude="tensorboard"
+        )
+        self.logger.record(
+            "train/ep_last_timestep", ep_last_timestep, exclude="tensorboard"
+        )
+        self.logger.record(
+            "train/ep_total_rew", np.sum(self.rewards), exclude="tensorboard"
+        )
+        self.logger.record(
+            "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
+        )
+        self.logger.record(
+            "train/ep_job_wait_rew",
+            np.sum(self.job_wait_rewards),
+            exclude="tensorboard",
+        )
+        self.logger.record(
+            "train/ep_running_vm_cores_rew",
+            np.sum(self.running_vm_cores_rewards),
+            exclude="tensorboard",
+        )
+        self.logger.record(
+            "train/ep_unutil_vm_cores_rew",
+            np.sum(self.unutilized_vm_cores_rewards),
+            exclude="tensorboard",
+        )
+        self.logger.record(
+            "train/ep_inv_rew", np.sum(self.invalid_rewards), exclude="tensorboard"
+        )
+
+        self.job_wait_time_deque.append(
+            self.mean_of_non_empty_sublists(self.job_wait_time)
+        )
+        self.job_queue_ratio_rew_deque.append(
+            np.mean(self.job_wait_rewards) / self.reward_job_wait_coef
+        )
+        self.allocated_vm_cores_rew_deque.append(
+            np.mean(self.running_vm_cores_rewards) / self.reward_running_vm_cores_coef
+        )
+        self.unutilized_vm_cores_rew_deque.append(
+            np.mean(self.unutilized_vm_cores_rewards)
+            / self.reward_unutilized_vm_cores_coef
+        )
+
         self.logger.dump()
 
     def _write_observation_tree_arrays_to_file(self, filename, mode="a") -> None:
@@ -290,3 +338,30 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
             self._clear_episode_details()
         return True
+
+    def _on_training_start(self):
+        super()._on_training_start()
+        self.reward_job_wait_coef = self.get("reward_job_wait_coef")
+        self.reward_running_vm_cores_coef = self.get("reward_running_vm_cores_coef")
+        self.reward_unutilized_vm_cores_coef = self.get(
+            "reward_unutilized_vm_cores_coef"
+        )
+
+    def _on_rollout_end(self):
+        super()._on_rollout_end()
+        self.logger.record(
+            "rollout/ep_job_wait_time_mean", np.mean(self.job_wait_time_deque)
+        )
+        self.logger.record(
+            "rollout/ep_job_wait_rew_mean", np.mean(self.job_queue_ratio_rew_deque)
+        )
+        self.logger.record(
+            "rollout/ep_allocated_vm_cores_rew_mean",
+            np.mean(self.allocated_vm_cores_rew_deque),
+        )
+        self.logger.record(
+            "rollout/ep_unutilized_vm_cores_rew_mean",
+            np.mean(self.unutilized_vm_cores_rew_deque),
+        )
+
+        self.logger.dump(step=self.num_timesteps)

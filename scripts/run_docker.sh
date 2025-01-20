@@ -29,9 +29,9 @@ cleanup_experiment() {
     fi
 
     # Remove volumes and networks
-    docker volume prune -f
-    docker network prune -f
-    docker system prune --volumes -f
+    # docker volume prune -f
+    # docker network prune -f
+    # docker system prune --volumes -f
 
     # Sleep for a short duration to ensure resources are released
     sleep 5
@@ -52,12 +52,11 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
     # Run the docker compose command based on ATTACHED flag
     if [ "$RUN_MODE" = "batch" ]; then
+        RUN_MODE="batch" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" docker compose $PROFILE_OPTION up --scale $SCALE_OPTION --build --remove-orphans -d
         if [ "$ATTACHED" = true ]; then
-            DETACHED_OPTION=""
-        else
-            DETACHED_OPTION="-d"
+            echo "Attaching to logs of all containers for batch mode..."
+            docker-compose logs -f
         fi
-            docker compose $PROFILE_OPTION up --scale $SCALE_OPTION $DETACHED_OPTION --build --remove-orphans
 
     elif [ "$RUN_MODE" = "serial" ]; then
         for i in $(seq 1 $NUM_EXPERIMENTS); do
@@ -80,7 +79,7 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
             # Wait for the manager container to stop
             echo "Waiting for the manager container (ID: $MANAGER_CONTAINER_ID) to complete..."
-            docker wait "$MANAGER_CONTAINER_ID"
+            docker compose wait "$MANAGER_CONTAINER_ID"
 
             # Cleanup after the experiment
             cleanup_experiment
