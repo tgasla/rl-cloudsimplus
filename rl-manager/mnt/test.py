@@ -2,16 +2,19 @@ import os
 import json
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
-import torch
 import pandas as pd
 
 import stable_baselines3 as sb3
+from sb3_contrib.common.maskable.utils import get_action_masks
 from utils.trace_utils import csv_to_cloudlet_descriptor
+from utils.misc import (
+    get_algorithm,
+    get_suitable_device,
+    maybe_load_replay_buffer,
+)
 
 
 def test(params):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     jobs = csv_to_cloudlet_descriptor(
         os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
     )
@@ -25,27 +28,18 @@ def test(params):
         "best_model",
     )
 
-    # Select the appropriate algorithm
-    if hasattr(sb3, params["algorithm"]):
-        algorithm = getattr(sb3, params["algorithm"])
-    else:
-        raise AttributeError(
-            f"Algorithm {params['algorithm']} not found in sb3 module."
-        )
+    algorithm = get_algorithm(params["algorithm"], params["vm_allocation_policy"])
 
-    # filename_id = generate_filename(params, hostname)
+    device = get_suitable_device(params["algorithm"])
 
     # Load the trained agent
-    model = algorithm.load(best_model_path, device=device, env=env, seed=params["seed"])
+    model = algorithm.load(best_model_path, env=env, device=device, seed=params["seed"])
 
-    # Load the replay buffer if the algorithm has one
-    if hasattr(model, "replay_buffer"):
-        best_replay_buffer_path = os.path.join(
-            "logs",
-            params["train_model_dir"],
-            "best_model_replay_buffer",
-        )
-        model.load_replay_buffer(best_replay_buffer_path)
+    maybe_load_replay_buffer(model, params["train_model_dir"])
+
+    predict_kwargs = {}
+    if params["algorithm"] == "MaskablePPO":
+        predict_kwargs["get_action_masks"] = get_action_masks(env)
 
     episodes_info = {"r": [], "inv": [], "h_a": [], "v_u": [], "j_w": [], "l": []}
     current_step = 0
@@ -62,7 +56,7 @@ def test(params):
     while not done:
         current_length += 1
         current_step += 1
-        action, _ = model.predict(obs)
+        action, _ = model.predict(obs, **predict_kwargs)
         obs, reward, terminated, truncated, info = env.step(action)
         # print(
         # f"Step: {current_length}, obs: {obs}, reward: {reward}, terminated: {terminated}, truncated: {truncated}, info: {info}"
