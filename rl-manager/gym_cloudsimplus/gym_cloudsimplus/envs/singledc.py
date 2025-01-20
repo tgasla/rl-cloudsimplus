@@ -55,6 +55,10 @@ class SingleDC(gym.Env):
         # observation rows, put self.max_hosts instead of host_count
         # and in action_space put self.max_hosts instead of host_count
 
+        self.reward_job_wait_coef = params["reward_job_wait_coef"]
+        self.reward_running_vm_cores_coef = params["reward_running_vm_cores_coef"]
+        self.reward_unutilized_vm_cores_coef = params["reward_unutilized_vm_cores_coef"]
+
         self.max_hosts = params["max_hosts"]
         self.action_types_count = 3  # do nothing, create vm, destroy vm
         self.vm_types_count = 3  # small, medium, large
