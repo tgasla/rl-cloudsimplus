@@ -143,8 +143,8 @@ public class WrappedSimulation {
         LOGGER.info("Step {} starting", currentStep);
         int[] actionResult = switch (settings.getVmAllocationPolicy()) {
             case "rl", "fromfile" -> executeCustomAction(action);
-            case "heuristic" -> {
-                cloudSimProxy.executeHeuristicAction();
+            case "rule-based" -> {
+                cloudSimProxy.executeRuleBasedAction();
                 yield new int[] {0, 0}; // does not matter
             }
             default -> throw new IllegalArgumentException(
@@ -679,7 +679,7 @@ public class WrappedSimulation {
         final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
 
         double totalReward = 0;
-        if (settings.getVmAllocationPolicy().equals("heuristic")) {
+        if (settings.getVmAllocationPolicy().equals("rule-based")) {
             totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
         } else if (settings.getVmAllocationPolicy().equals("rl")) {
             totalReward =

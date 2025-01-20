@@ -60,18 +60,13 @@ public class MultiSimulationEnvironment {
         if (runMode.equals("batch")) {
             LOGGER.debug("Simulation {} terminated. {} simulations still running.",
                     simulationIdentifier, simulations.size());
-            if (simulations.isEmpty()) {
-                LOGGER.debug("All experiments finished running.");
-                // Schedule the shutdown after sending the response
-                Main.initiateShutdown(gatewayServer);
-            }
         } else if (runMode.equals("serial")) {
             LOGGER.debug("Simulation {}/{} terminated", simulationIdentifier, numExperiments);
-            if (simulations.isEmpty() && experimentsFinishedCount == numExperiments) {
-                LOGGER.debug("All experiments finished running.");
-                // Schedule the shutdown after sending the response
-                Main.initiateShutdown(gatewayServer);
-            }
+        }
+        if (simulations.isEmpty() && experimentsFinishedCount == numExperiments) {
+            LOGGER.debug("All experiments finished running. Initiating shutdown...");
+            // Schedule the shutdown after sending the response
+            Main.initiateShutdown(gatewayServer);
         }
 
     }

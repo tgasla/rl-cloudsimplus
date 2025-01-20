@@ -17,70 +17,28 @@ from callbacks.save_on_best_training_reward_callback import (
 
 from utils.trace_utils import csv_to_cloudlet_descriptor
 
+ALGORITHMS_WITH_ENT_COEF = [
+    "PPO",
+    "MaskablePPO",
+    "RecurrentPPO",
+    "A2C",
+    "SAC",
+    "CrossQ",
+    "TQC",
+]
+ALGORITHMS_WITH_ACTION_NOISE = ["TD3", "DDPG", "DQN", "QR-DQN", "SAC", "CrossQ", "TQC"]
+ALGORITHMS_WITH_N_STEPS = ["PPO", "MaskablePPO", "RecurrentPPO", "A2C", "TRPO"]
 
-def train(params):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# hyperparameters to tune
+# algorithm.batch_size = 64
+# algorithm.action_noise
+# algorithm.ent_coef = 0.01
+# algorithm.learning_rate=0.1,
+# algorithm.clip_range=0.7,
+# algorithm.n_steps=1024=
 
-    # Select the appropriate algorithm
-    if (
-        params["vm_allocation_policy"] == "fromfile"
-        or params["vm_allocation_policy"] == "heuristic"
-    ):
-        # If the vm_allocation_policy is fromfile or heuristic, pick a default algorithm
-        # so the code triggers the simulation environment creation
-        # NOTE: the algorithm decision through learning is not used at all in this case
-        algorithm = getattr(sb3, "PPO")
-    elif params["vm_allocation_policy"] == "rl":
-        if hasattr(sb3, params["algorithm"]):
-            algorithm = getattr(sb3, params["algorithm"])
-        elif hasattr(sb3_contrib, params["algorithm"]):
-            algorithm = getattr(sb3_contrib, params["algorithm"])
-        else:
-            raise AttributeError(f"Algorithm {params['algorithm']} not found.")
-    else:
-        raise AttributeError(
-            f"vm_allocation_policy {params['vm_allocation_policy']} not found."
-        )
 
-    policy = "MultiInputPolicy"  # when state is Spaces.Dict()
-    # policy = "MlpPolicy" # when state is not Spaces.Dict()
-
-    # if hasattr(algorithm, "ent_coef"):
-    # algorithm.ent_coef = 0.01
-    # algorithm.learning_rate=0.1,
-    # algorithm.clip_range=0.7,
-    # algorithm.n_steps=1024
-
-    # Read jobs
-    job_trace_path = os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
-    jobs = csv_to_cloudlet_descriptor(job_trace_path)
-
-    # Create and wrap the environment
-    env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
-
-    log_destination = ["stdout"]
-    callback = None
-    if params["save_experiment"]:
-        log_destination.extend(["tensorboard"])
-        # the callback writes all the other .csv files and saves the model (with replay buffer) when the reward is the best
-        callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
-
-    # Monitor needs the environment to have a render_mode set
-    # If render_mode is None, it will give a warning.
-    #   add info_keywords if needed
-    # If log_dir is None, it will not log anything
-    env = Monitor(env, params["log_dir"])
-
-    # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
-    if params["algorithm"] == "A2C":
-        device = "cpu"
-        env = SubprocVecEnv([lambda: env], start_method="fork")
-    else:
-        env = DummyVecEnv([lambda: env])
-
-    # Instantiate the agent
-    model = algorithm(policy=policy, device=device, env=env, seed=params["seed"])
-
+def freeze_inactive_input_layer_weights(model, params):
     max_hosts = params["max_hosts"]
     host_count = params["host_count"]
     host_pes = params["host_pes"]
@@ -104,21 +62,103 @@ def train(params):
     with torch.no_grad():
         weights[:, start_idx:end_idx] = 0
         weights[:, start_idx:end_idx].requires_grad = False
+    ########################################################################################
+
+
+def create_logger(save_experiment, log_dir):
+    log_destination = ["stdout"]
+    if save_experiment:
+        log_destination.extend(["tensorboard"])
 
     # the logger can write to stdout, progress.csv and tensorboard
-    logger = configure(params["log_dir"], log_destination)
-    model.set_logger(logger)
+    return configure(log_dir, log_destination)
 
-    # Add some action noise for exploration if applicable
-    if hasattr(model, "action_noise"):
+
+def create_callback(save_experiment, log_dir):
+    if save_experiment:
+        return SaveOnBestTrainingRewardCallback(log_dir)
+    # the callback writes all the .csv files and saves the model (with replay buffer) when the reward is the best
+    return None
+
+
+def train(params):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Select the appropriate algorithm
+    if (
+        params["vm_allocation_policy"] == "fromfile"
+        or params["vm_allocation_policy"] == "rule-based"
+    ):
+        # If the vm_allocation_policy is fromfile or rule-based, pick a default algorithm
+        # so the code triggers the simulation environment creation
+        # NOTE: the algorithm decision through learning is not used at all in this case
+        algorithm = getattr(sb3, "PPO")
+    elif params["vm_allocation_policy"] == "rl":
+        if hasattr(sb3, params["algorithm"]):
+            algorithm = getattr(sb3, params["algorithm"])
+        elif hasattr(sb3_contrib, params["algorithm"]):
+            algorithm = getattr(sb3_contrib, params["algorithm"])
+        else:
+            raise AttributeError(f"Algorithm {params['algorithm']} not found.")
+    else:
+        raise AttributeError(
+            f"vm_allocation_policy {params['vm_allocation_policy']} not found."
+        )
+
+    # Read jobs
+    job_trace_path = os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
+    jobs = csv_to_cloudlet_descriptor(job_trace_path)
+
+    # Create and wrap the environment
+    env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
+
+    if isinstance(env.observation_space, gym.spaces.Dict):
+        policy = "MultiInputPolicy"  # when state is Spaces.Dict()
+    else:
+        policy = "MlpPolicy"  # when state is not Spaces.Dict()
+
+    # Monitor needs the environment to have a render_mode set
+    # If render_mode is None, it will give a warning.
+    #   add info_keywords if needed
+    # If log_dir is None, it will not log anything
+    env = Monitor(env, params["log_dir"])
+
+    # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
+    if params["algorithm"] == "A2C":
+        device = "cpu"
+        env = SubprocVecEnv([lambda: env], start_method="fork")
+    else:
+        env = DummyVecEnv([lambda: env])
+
+    algorithm_kwargs = {"device": device}
+    if params.get("ent_coef") and params["algorithm"] in ALGORITHMS_WITH_ENT_COEF:
+        algorithm_kwargs["ent_coef"] = params["ent_coef"]
+    if params.get("learning_rate") and params["algorithm"] != "HER":
+        algorithm_kwargs["learning_rate"] = params["learning_rate"]
+    if params.get("n_rollout_steps") and params["algorithm"] in ALGORITHMS_WITH_N_STEPS:
+        algorithm_kwargs["n_steps"] = params["n_rollout_steps"]
+    if params.get("seed") and params["algorithm"] != "HER":
+        algorithm_kwargs["seed"] = params["seed"]
+    if (
+        params.get("action_noise")
+        and params["algorithm"] in ALGORITHMS_WITH_ACTION_NOISE
+    ):
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(
-            mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
+            mean=np.zeros(n_actions), sigma=params["action_noise"] * np.ones(n_actions)
         )
-        model.action_noise = action_noise
+        algorithm_kwargs["action_noise"] = action_noise
 
-    if hasattr(model, "ent_coef") and params.get("ent_coef"):
-        model.ent_coef = params["ent_coef"]
+    # Instantiate the agent
+    model = algorithm(policy=policy, env=env, **algorithm_kwargs)
+
+    if params["freeze_inactive_input_layer_weights"]:
+        freeze_inactive_input_layer_weights(model, params)
+
+    callback = create_callback(params["save_experiment"], params["log_dir"])
+    logger = create_logger(params["save_experiment"], params["log_dir"])
+
+    model.set_logger(logger)
 
     # Train the agent
     model.learn(total_timesteps=params["timesteps"], log_interval=1, callback=callback)
