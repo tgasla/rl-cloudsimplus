@@ -85,10 +85,7 @@ def train(params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Select the appropriate algorithm
-    if (
-        params["vm_allocation_policy"] == "fromfile"
-        or params["vm_allocation_policy"] == "rule-based"
-    ):
+    if params["vm_allocation_policy"] == "rule-based":
         # If the vm_allocation_policy is fromfile or rule-based, pick a default algorithm
         # so the code triggers the simulation environment creation
         # NOTE: the algorithm decision through learning is not used at all in this case

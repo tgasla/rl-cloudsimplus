@@ -222,9 +222,3 @@ gradle-app.setting
 
 # Log directories
 logs/
-
-old-logs/
-
-notebooks/data/
-
-nohup.out

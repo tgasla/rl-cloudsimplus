@@ -9,11 +9,22 @@
     "style": "asterisk"
   },
   "fenced-code-language": {
-    "allowed_languages": [ "bash", "HTML", "markdown", "text" ],
+    "allowed_languages": [
+      "bash",
+      "HTML",
+      "markdown",
+      "text"
+    ],
     "language_only": true
   },
   "html": {
-    "allowed_elements": [ "a", "b", "div", "details", "p" ]
+    "allowed_elements": [
+      "a",
+      "b",
+      "div",
+      "details",
+      "p"
+    ]
   },
   "line-length": {
     "line_length": 250,
