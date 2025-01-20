@@ -16,18 +16,11 @@ from callbacks.save_on_best_training_reward_callback import (
 )
 
 from utils.trace_utils import csv_to_cloudlet_descriptor
-
-ALGORITHMS_WITH_ENT_COEF = [
-    "PPO",
-    "MaskablePPO",
-    "RecurrentPPO",
-    "A2C",
-    "SAC",
-    "CrossQ",
-    "TQC",
-]
-ALGORITHMS_WITH_ACTION_NOISE = ["TD3", "DDPG", "DQN", "QR-DQN", "SAC", "CrossQ", "TQC"]
-ALGORITHMS_WITH_N_STEPS = ["PPO", "MaskablePPO", "RecurrentPPO", "A2C", "TRPO"]
+from utils.rl_algorithm_support_flags import (
+    ALGORITHMS_WITH_ENT_COEF,
+    ALGORITHMS_WITH_ACTION_NOISE,
+    ALGORITHMS_WITH_N_STEPS,
+)
 
 # hyperparameters to tune
 # algorithm.batch_size = 64
@@ -62,7 +55,6 @@ def freeze_inactive_input_layer_weights(model, params):
     with torch.no_grad():
         weights[:, start_idx:end_idx] = 0
         weights[:, start_idx:end_idx].requires_grad = False
-    ########################################################################################
 
 
 def create_logger(save_experiment, log_dir):

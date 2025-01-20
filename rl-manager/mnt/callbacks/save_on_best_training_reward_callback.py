@@ -5,8 +5,6 @@ from typing import Any, Dict, Union
 import torch
 from collections import deque
 
-# from stable_baselines3.common import results_plotter
-# from stable_baselines3.common.results_plotter import plot_results
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.callbacks import BaseCallback
 
@@ -59,15 +57,12 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # will be written to best_episode_{episode_num}.csv
         episode_details = {
             "timestep": timesteps,
-            # "obs": self.observations, # obs and actions are saved in independent files
-            # "action": self.actions,
             "job_wait_reward": self.job_wait_rewards,
             "running_vm_cores_reward": self.running_vm_cores_rewards,
             "unutilized_vm_cores_reward": self.unutilized_vm_cores_rewards,
             "invalid_reward": self.invalid_rewards,
             "reward": self.rewards,
             "isValid": self.isValid,
-            # "next_obs": self.new_observations,
         }
         return episode_details
 
@@ -76,9 +71,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.actions = []
         self.rewards = []
         self.new_observations = []
-        # self.host_metrics = []
-        # self.vm_metrics = []
-        # self.job_metrics = []
         self.job_wait_time = []
         self.job_wait_rewards = []
         self.running_vm_cores_rewards = []
@@ -88,7 +80,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.isValid = []
         self.current_episode_length = 0
         self.observation_tree_arrays = []
-        # self.episode_dot_strings = []
 
     def _delete_previous_best(self) -> None:
         if self.previous_best_episode_num:
@@ -114,14 +105,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         return processed_obs
 
     def _save_timestep_details(self) -> None:
-        # print(self.locals)
         self.observations.append(self._extract_observation_from_locals("obs_tensor"))
         self.actions.append(self.locals["actions"][0])
         self.rewards.append(self.locals["rewards"][0])
         self.new_observations.append(self._extract_observation_from_locals("new_obs"))
-        # self.host_metrics.append(self.locals["infos"][0]["host_metrics"])
-        # self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
-        # self.job_metrics.append(self.locals["infos"][0]["job_metrics"])
         self.job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
         self.job_wait_rewards.append(self.locals["infos"][0]["job_wait_reward"])
         self.running_vm_cores_rewards.append(
@@ -138,7 +125,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.observation_tree_arrays.append(
             self.locals["infos"][0]["observation_tree_array"]
         )
-        # self.episode_dot_strings.append(self.locals["infos"][0]["dot_string"])
 
     def _maybe_save_replay_buffer(self) -> None:
         if (
@@ -152,9 +138,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             self.model.save_replay_buffer(replay_buffer_path)
 
     def _create_csv_paths(self) -> Dict:
-        # host_metrics_path = os.path.join(self.log_dir, "host_metrics.csv")
-        # vm_metrics_path = os.path.join(self.log_dir, "vm_metrics.csv")
-        # job_metrics_path = os.path.join(self.log_dir, "job_metrics.csv")
         job_wait_time_path = os.path.join(self.log_dir, "job_wait_time.csv")
         episode_actions_path = os.path.join(self.log_dir, "actions.csv")
         unutilized_vm_core_ratio_path = os.path.join(
@@ -165,9 +148,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             f"{self.best_episode_filename_prefix}_{self.current_episode_num}.csv",
         )
         paths = {
-            # "host_metrics": host_metrics_path,
-            # "vm_metrics": vm_metrics_path,
-            # "job_metrics": job_metrics_path,
             "job_wait_time": job_wait_time_path,
             "actions": episode_actions_path,
             "unutilized_vm_core_ratio": unutilized_vm_core_ratio_path,
@@ -177,9 +157,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _create_dataframes(self) -> Dict:
         df_dict = {
-            # "host_metrics": pd.DataFrame(self.host_metrics),
-            # "vm_metrics": pd.DataFrame(self.vm_metrics),
-            # "job_metrics": pd.DataFrame(self.job_metrics),
             "job_wait_time": pd.DataFrame(self.job_wait_time),
             "unutilized_vm_core_ratio": pd.DataFrame(self.unutilized_vm_core_ratio),
             "episode_actions": pd.DataFrame(self.actions),
@@ -188,9 +165,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         return df_dict
 
     def _write_dataframes_to_csvs(self, df_dict, path_dict) -> None:
-        # df_dict["host_metrics"].to_csv(path_dict["host_metrics"], header=False)
-        # df_dict["vm_metrics"].to_csv(path_dict["vm_metrics"], header=False)
-        # df_dict["job_metrics"].to_csv(path_dict["job_metrics"], header=False)
         df_dict["job_wait_time"].to_csv(path_dict["job_wait_time"], header=False)
         df_dict["unutilized_vm_core_ratio"].to_csv(
             path_dict["unutilized_vm_core_ratio"], header=False
@@ -296,12 +270,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                 file.write(f"{array}\n")
             file.write("\n")
 
-    # def _write_dot_strings_to_file(self) -> None:
-    #     dot_path = os.path.join(self.log_dir, "dot_graphs.txt")
-    #     with open(dot_path, "w") as file:
-    #         for s in self.episode_dot_strings:
-    #             file.write(f"{s}\n")
-
     def _on_step(self) -> bool:
         # because the environment is a VecEnv environment, the variables are dones
         # and infos instead of done and info. Also, the variables are tuples that
@@ -319,7 +287,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             self._write_observation_tree_arrays_to_file(
                 "observation_tree_arrays.csv", "a"
             )
-            # self._write_dot_strings_to_file()
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), "timesteps")
             if len(x) == 0:
@@ -341,6 +308,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _on_training_start(self):
         super()._on_training_start()
+        # get the reward coefficients from the environment to calculate the metrics from the rewards
+        # used in _write_progress_log_row()
         self.reward_job_wait_coef = self.get("reward_job_wait_coef")
         self.reward_running_vm_cores_coef = self.get("reward_running_vm_cores_coef")
         self.reward_unutilized_vm_cores_coef = self.get(

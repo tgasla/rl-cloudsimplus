@@ -11,11 +11,17 @@ import sb3_contrib
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.logger import configure
+from stable_baselines3.common.noise import NormalActionNoise
+
 from utils.trace_utils import csv_to_cloudlet_descriptor
+from utils.rl_algorithm_support_flags import (
+    ALGORITHMS_WITH_ENT_COEF,
+    ALGORITHMS_WITH_ACTION_NOISE,
+    ALGORITHMS_WITH_N_STEPS,
+)
 from callbacks.save_on_best_training_reward_callback import (
     SaveOnBestTrainingRewardCallback,
 )
-from stable_baselines3.common.noise import NormalActionNoise
 
 
 def get_host_count_from_train_dir(train_model_dir):
@@ -28,20 +34,11 @@ def get_host_count_from_train_dir(train_model_dir):
 
 
 def transfer(params):
-    learning_rate_dict = {
-        "DQN": "0.00005",
-        "DDPG": "0.0001",
-        "A2C": "0.0002",
-        "PPO": "0.0001",
-    }
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     jobs = csv_to_cloudlet_descriptor(
         os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
     )
-
-    # filename_id = generate_filename(params, hostname)
 
     best_model_path = os.path.join(
         params["base_log_dir"],
@@ -56,8 +53,6 @@ def transfer(params):
         algorithm = getattr(sb3_contrib, params["algorithm"])
     else:
         raise AttributeError(f"Algorithm {params['algorithm']} not found.")
-
-    # log_dir = os.path.join(base_log_dir, f"{filename_id}")
 
     # Create and wrap the environment
     env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
@@ -85,16 +80,20 @@ def transfer(params):
     custom_objects = {}
 
     if params.get("learning_rate"):
-        custom_objects["learning_rate"] = float(params["learning_rate"])
-    if params.get("ent_coef"):
-        custom_objects["ent_coef"] = float(params["ent_coef"])
-    if params["algorithm"] == "PPO" or params["algorithm"] == "MaskablePPO":
-        print("Setting action noise for PPO...")
+        custom_objects["learning_rate"] = params["learning_rate"]
+    if params.get("ent_coef") and params["algorithm"] in ALGORITHMS_WITH_ENT_COEF:
+        custom_objects["ent_coef"] = params["ent_coef"]
+    if (
+        params.get("action_noise")
+        and params["algorithm"] in ALGORITHMS_WITH_ACTION_NOISE
+    ):
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(
             mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
         )
         custom_objects["action_noise"] = action_noise
+    if params.get("n_rollout_steps") and params["algorithm"] in ALGORITHMS_WITH_N_STEPS:
+        custom_objects["n_steps"] = params["n_steps"]
 
     # Load the trained agent
     model = algorithm.load(
