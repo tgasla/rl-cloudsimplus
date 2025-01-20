@@ -1,3 +1,4 @@
+from gc import freeze
 import os
 import json
 import gymnasium as gym
@@ -22,6 +23,55 @@ from utils.rl_algorithm_support_flags import (
 from callbacks.save_on_best_training_reward_callback import (
     SaveOnBestTrainingRewardCallback,
 )
+
+
+def freeze_inactive_input_layer_weights(model, params):
+    max_hosts = params["max_hosts"]
+    host_pes = params["host_pes"]
+    small_vm_pes = params["small_vm_pes"]
+    min_job_pes = 1
+    prev_host_count = get_host_count_from_train_dir(params["train_model_dir"])
+    prev_max_vms = prev_host_count * host_pes // small_vm_pes
+    prev_max_jobs = prev_host_count * host_pes // min_job_pes
+    cur_host_count = params["host_count"]
+    cur_max_vms = cur_host_count * host_pes // small_vm_pes
+    cur_max_jobs = cur_host_count * host_pes // min_job_pes
+    max_vms = max_hosts * host_pes // small_vm_pes
+    max_jobs = max_hosts * host_pes // min_job_pes
+    infr_obs_length = 1 + max_hosts + max_vms + max_jobs
+    max_pes_per_node = max_hosts * host_pes
+
+    # Calculate the start and end indices for the last 700 elements of Part 1
+    prev_start_idx = (1 + prev_host_count + prev_max_vms + prev_max_jobs) * (
+        max_pes_per_node + 1
+    )
+    cur_start_idx = (1 + cur_host_count + cur_max_vms + cur_max_jobs) * (
+        max_pes_per_node + 1
+    )
+    end_idx = infr_obs_length * (max_pes_per_node + 1)  # Exclusive
+
+    # Access the weights of the input layer
+    weights = model.policy.mlp_extractor.policy_net[0].weight
+
+    with torch.no_grad():
+        weights[:, cur_start_idx:end_idx].requires_grad = False
+        weights[:, :cur_start_idx].requires_grad = True
+        min_start_idx = min(cur_start_idx, prev_start_idx)
+        weights[:, min_start_idx:end_idx] = 0
+
+
+def create_logger(save_experiment, log_dir):
+    log_destination = ["stdout"]
+    if save_experiment:
+        os.makedirs(log_dir, exist_ok=True)
+        log_destination.extend(["csv", "tensorboard"])
+    return configure(log_dir, log_destination)
+
+
+def create_callback(save_experiment, log_dir):
+    if save_experiment:
+        return SaveOnBestTrainingRewardCallback(log_dir)
+    return None
 
 
 def get_host_count_from_train_dir(train_model_dir):
@@ -59,16 +109,6 @@ def transfer(params):
     # Create and wrap the environment
     env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
 
-    log_destination = ["stdout"]
-    callback = None
-
-    if params["save_experiment"]:
-        # Create folder if needed
-        os.makedirs(params["log_dir"], exist_ok=True)
-        log_destination.extend(["csv", "tensorboard"])
-        # the callback writes all the other .csv files and saves the model (with replay buffer) when the reward is the best
-        callback = SaveOnBestTrainingRewardCallback(log_dir=params["log_dir"])
-
     env = Monitor(env, params["log_dir"])
 
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
@@ -91,11 +131,13 @@ def transfer(params):
     ):
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(
-            mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
+            mean=np.zeros(n_actions), sigma=params["action_noise"] * np.ones(n_actions)
         )
         custom_objects["action_noise"] = action_noise
     if params.get("n_rollout_steps") and params["algorithm"] in ALGORITHMS_WITH_N_STEPS:
         custom_objects["n_steps"] = params["n_rollout_steps"]
+    if params.get("seed") and params["algorithm"] != "HER":
+        custom_objects["seed"] = params["seed"]
 
     # Load the trained agent
     model = algorithm.load(
@@ -103,54 +145,13 @@ def transfer(params):
         device=device,
         env=env,
         custom_objects=custom_objects,
-        seed=params["seed"],
     )
 
-    max_hosts = params["max_hosts"]
-    host_pes = params["host_pes"]
-    small_vm_pes = params["small_vm_pes"]
-    min_job_pes = 1
-    prev_host_count = get_host_count_from_train_dir(params["train_model_dir"])
-    prev_max_vms = prev_host_count * host_pes // small_vm_pes
-    prev_max_jobs = prev_host_count * host_pes // min_job_pes
-    cur_host_count = params["host_count"]
-    cur_max_vms = cur_host_count * host_pes // small_vm_pes
-    cur_max_jobs = cur_host_count * host_pes // min_job_pes
-    max_vms = max_hosts * host_pes // small_vm_pes
-    max_jobs = max_hosts * host_pes // min_job_pes
-    infr_obs_length = 1 + max_hosts + max_vms + max_jobs
-    max_pes_per_node = max_hosts * host_pes
+    freeze_inactive_input_layer_weights(model, params)
 
-    # Calculate the start and end indices for the last 700 elements of Part 1
-    prev_start_idx = (1 + prev_host_count + prev_max_vms + prev_max_jobs) * (
-        max_pes_per_node + 1
-    )
-    cur_start_idx = (1 + cur_host_count + cur_max_vms + cur_max_jobs) * (
-        max_pes_per_node + 1
-    )
-    end_idx = infr_obs_length * (max_pes_per_node + 1)  # Exclusive
+    logger = create_logger(params["save_experiment"], params["log_dir"])
+    callback = create_callback(params["save_experiment"], params["log_dir"])
 
-    # Access the weights of the input layer
-    weights = model.policy.mlp_extractor.policy_net[0].weight
-
-    with torch.no_grad():
-        weights[:, cur_start_idx:end_idx].requires_grad = False
-        weights[:, :cur_start_idx].requires_grad = True
-        min_start_idx = min(cur_start_idx, prev_start_idx)
-        weights[:, min_start_idx:end_idx] = 0
-        # model.policy.mlp_extractor.policy_net[0].weight[:, start_idx:end_idx].copy_(
-        #     weights[:, start_idx:end_idx]
-        # )  # copy only the part of the weights that we want to zero out and freeze
-        # model.policy.mlp_extractor.policy_net[0].weight.copy_(weights)
-
-    # weights[:, start_idx:end_idx].data.zero_()  # Zero out the weights
-    # weights[:, start_idx:end_idx].data.requires_grad = False  # Freeze the weights
-
-    # Optionally, update the model's weights (if using PyTorch-like behavior)
-    # model.policy.mlp_extractor.policy_net[0].weight.data = weights
-    # print(model.policy.mlp_extractor.policy_net[0].weight[:, start_idx:end_idx])
-
-    logger = configure(params["log_dir"], log_destination)
     model.set_logger(logger)
 
     # Load the replay buffer if the algorithm has one
