@@ -4,7 +4,6 @@ import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 import pandas as pd
 
-import stable_baselines3 as sb3
 from sb3_contrib.common.maskable.utils import get_action_masks
 from utils.trace_utils import csv_to_cloudlet_descriptor
 from utils.misc import (
@@ -87,3 +86,4 @@ def test(params):
         episode_info_df.to_csv(progress_file, index=False)
 
     env.close()
+    del model
