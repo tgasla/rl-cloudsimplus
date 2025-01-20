@@ -27,10 +27,12 @@ from callbacks.save_on_best_training_reward_callback import (
 def get_host_count_from_train_dir(train_model_dir):
     # Regular expression to match the number before "hosts"
     match = re.search(r"(\d+)hosts", train_model_dir)
-    if match:
-        number = match.group(1)  # Extract the matched number
-        return int(number)
-    return None
+    if not match:
+        match = re.search(r"(\d+)nodes", train_model_dir)
+    if not match:
+        return None
+    number = match.group(1)  # Extract the matched number
+    return int(number)
 
 
 def transfer(params):
@@ -93,7 +95,7 @@ def transfer(params):
         )
         custom_objects["action_noise"] = action_noise
     if params.get("n_rollout_steps") and params["algorithm"] in ALGORITHMS_WITH_N_STEPS:
-        custom_objects["n_steps"] = params["n_steps"]
+        custom_objects["n_steps"] = params["n_rollout_steps"]
 
     # Load the trained agent
     model = algorithm.load(
@@ -147,9 +149,6 @@ def transfer(params):
     # Optionally, update the model's weights (if using PyTorch-like behavior)
     # model.policy.mlp_extractor.policy_net[0].weight.data = weights
     # print(model.policy.mlp_extractor.policy_net[0].weight[:, start_idx:end_idx])
-
-    if hasattr(model, "action_noise"):
-        print(f"action_noise: {model.action_noise}")
 
     logger = configure(params["log_dir"], log_destination)
     model.set_logger(logger)

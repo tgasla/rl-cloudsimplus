@@ -34,9 +34,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.current_episode_num = 0
         self.best_episode_filename_prefix = "best_episode"
         self.job_wait_time_deque = deque(maxlen=100)
-        self.job_queue_ratio_rew_deque = deque(maxlen=100)
-        self.allocated_vm_cores_rew_deque = deque(maxlen=100)
-        self.unutilized_vm_cores_rew_deque = deque(maxlen=100)
+        self.job_queue_ratio_deque = deque(maxlen=100)
+        self.allocated_vm_cores_ratio_deque = deque(maxlen=100)
+        self.unutilized_vm_cores_ratio_deque = deque(maxlen=100)
 
         self._clear_episode_details()
 
@@ -250,15 +250,20 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.job_wait_time_deque.append(
             self.mean_of_non_empty_sublists(self.job_wait_time)
         )
-        self.job_queue_ratio_rew_deque.append(
-            np.mean(self.job_wait_rewards) / self.reward_job_wait_coef
+        self.job_queue_ratio_deque.append(
+            np.abs(np.mean(self.job_wait_rewards) / self.reward_job_wait_coef)
         )
-        self.allocated_vm_cores_rew_deque.append(
-            np.mean(self.running_vm_cores_rewards) / self.reward_running_vm_cores_coef
+        self.allocated_vm_cores_ratio_deque.append(
+            np.abs(
+                np.mean(self.running_vm_cores_rewards)
+                / self.reward_running_vm_cores_coef
+            )
         )
-        self.unutilized_vm_cores_rew_deque.append(
-            np.mean(self.unutilized_vm_cores_rewards)
-            / self.reward_unutilized_vm_cores_coef
+        self.unutilized_vm_cores_ratio_deque.append(
+            np.abs(
+                np.mean(self.unutilized_vm_cores_rewards)
+                / self.reward_unutilized_vm_cores_coef
+            )
         )
 
         self.logger.dump()
@@ -322,15 +327,15 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             "rollout/ep_job_wait_time_mean", np.mean(self.job_wait_time_deque)
         )
         self.logger.record(
-            "rollout/ep_job_wait_rew_mean", np.mean(self.job_queue_ratio_rew_deque)
+            "rollout/ep_job_queue_ratio_mean", np.mean(self.job_queue_ratio_deque)
         )
         self.logger.record(
-            "rollout/ep_allocated_vm_cores_rew_mean",
-            np.mean(self.allocated_vm_cores_rew_deque),
+            "rollout/ep_allocated_vm_cores_ratio_mean",
+            np.mean(self.allocated_vm_cores_ratio_deque),
         )
         self.logger.record(
-            "rollout/ep_unutilized_vm_cores_rew_mean",
-            np.mean(self.unutilized_vm_cores_rew_deque),
+            "rollout/ep_unutilized_vm_cores_ratio_mean",
+            np.mean(self.unutilized_vm_cores_ratio_deque),
         )
 
         self.logger.dump(step=self.num_timesteps)
