@@ -45,73 +45,8 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
             LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
                     cloudlet.getId(), vm.getId());
             requestDatacentersToCreateWaitingCloudlets();
-            // if (vm.getCloudletScheduler().isEmpty()) {
-            // LOGGER.info("VM {} is empty, destroying...", vm.getId());
-            // getDatacenter(vm).getVmAllocationPolicy().deallocateHostForVm(vm);
-            // // schedule(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
-            // // send(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
-            // }
         }
-
-        // Clean the vm created list because over an episode we may create/destroy
-        // many vms so we do not want to cause OOM.
-        // if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
-        // LOGGER.debug("Cleaning the vmCreatedList");
-        // getVmCreatedList().clear();
-        // }
     }
-
-    /*
-     * This function triggers immediately the cloudlet to vm mapping and this behaviour leads to 0
-     * waitingTime for all cloudlets, which is not realistic, that's why we have commented out this
-     * part.
-     */
-    // @Override
-    // protected void requestDatacentersToCreateWaitingCloudlets() {
-    // final List<Cloudlet> scheduled = new LinkedList<>();
-    // final List<Cloudlet> cloudletWaitingList = getCloudletWaitingList();
-    // for (final Iterator<Cloudlet> it = cloudletWaitingList.iterator(); it.hasNext();) {
-    // final CloudletSimple cloudlet = (CloudletSimple) it.next();
-    // if (!cloudlet.getLastTriedDatacenter().equals(Datacenter.NULL)) {
-    // continue;
-    // }
-
-    // // selects a VM for the given Cloudlet
-    // Vm selectedVm = defaultVmMapper(cloudlet);
-    // if (selectedVm == Vm.NULL) {
-    // break;
-    // }
-
-    // ((VmSimple) selectedVm).removeExpectedFreePesNumber(cloudlet.getPesNumber());
-
-    // cloudlet.setVm(selectedVm);
-    // send(getDatacenter(selectedVm), cloudlet.getSubmissionDelay(),
-    // CloudSimTag.CLOUDLET_SUBMIT, cloudlet);
-    // cloudlet.setLastTriedDatacenter(getDatacenter(selectedVm));
-    // getCloudletCreatedList().add(cloudlet);
-    // scheduled.add(cloudlet);
-    // it.remove();
-    // }
-
-    // LOGGER.debug("requestDatacentersToCreateWaitingCloudlets scheduled: " + scheduled.size()
-    // + "/" + cloudletWaitingList.size());
-    // LOGGER.debug(
-    // "Events cnt before: " + getSimulation().getNumberOfFutureEvents(simEvent -> true));
-    // for (Cloudlet cloudlet : scheduled) {
-    // final long totalLengthInMips = cloudlet.getTotalLength();
-    // final double peMips = cloudlet.getVm().getProcessor().getMips();
-    // final double lengthInSeconds = totalLengthInMips / peMips;
-    // final Datacenter datacenter = getDatacenter(cloudlet.getVm());
-    // final double eventDelay = lengthInSeconds + 1.0;
-
-    // LOGGER.debug("Cloudlet " + cloudlet.getId() + " scheduled. Updating in: " + eventDelay);
-
-    // getSimulation().send(datacenter, datacenter, eventDelay,
-    // CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING, null);
-    // }
-    // LOGGER.debug(
-    // "Events cnt after: " + getSimulation().getNumberOfFutureEvents(simEvent -> true));
-    // }
 
     /**
      * Here, we override the original function which tries to find a vm from the created list to

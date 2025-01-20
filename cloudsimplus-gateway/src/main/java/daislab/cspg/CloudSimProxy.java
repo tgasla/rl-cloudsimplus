@@ -70,7 +70,6 @@ public class CloudSimProxy {
         datacenter = createDatacenter();
         vmCost = new VmCost(settings);
         jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
-        // jobsFinishedWaitTimes = new ArrayList<>();
         vmsCreated = 0;
         firstStep = true;
 
@@ -236,8 +235,6 @@ public class CloudSimProxy {
                 .setCloudletScheduler(new OptimizedCloudletScheduler())
                 .setShutDownDelay(settings.getVmShutdownDelay());
 
-        // assuming average startup delay is 56s as in 10.48550/arXiv.2107.03467
-        // submissiondelay or vm boot up delay
         vm.setSubmissionDelay(settings.getVmStartupDelay());
         vmCost.addNewVmToList(vm);
         return vm;
@@ -331,7 +328,7 @@ public class CloudSimProxy {
             List<Vm> vmList = createSingleVm(calculateTargetTime(), maxCoresNeeded);
             broker.submitVmList(vmList);
         } else {
-            destroyLargestIdleVm(); // Optionally handle idle VMs
+            destroyLargestIdleVm(); // handle idle VMs
         }
     }
 
@@ -388,32 +385,10 @@ public class CloudSimProxy {
             executeMinimizeUnutilizedAction();
         }
         return true;
-
-        // final int totalCoresRequired = calculateJobCoresWaiting();
-        // if (totalCoresRequired == 0) {
-        // destroyLargestIdleVm();
-        // return true;
-        // }
-        // int totalFreeVmCores = getTotalFreeVmCores();
-        // LOGGER.info("{}: Cores required by next batch of arriving jobs: {}", clock(),
-        // totalCoresRequired);
-        // LOGGER.info("{}: Total free VM cores: {}", clock(), totalFreeVmCores);
-        // int coresNeeded = totalCoresRequired - totalFreeVmCores;
-        // if (coresNeeded > 0) {
-        // // List<Vm> vmList = createRequiredVms(targetTime, coresNeeded);
-        // List<Vm> vmList = createSingleVm(calculateTargetTime(), coresNeeded);
-        // // can also add a submission delay here: settings.getVmStartupDelay()
-        // // not needed because it is done in the createVm() function
-        // broker.submitVmList(vmList);
-        // } else {
-        // destroyLargestIdleVm();
-        // }
-        // return true;
     }
 
     double calculateTargetTime() {
-        // if first step we have already done 0.1 and we need to finish the first step
-        // at 1
+        // if first step we have already done 0.1 and we need to finish the first step at 1
         // else, just add 1 to the current time
         final double targetTime;
         if (firstStep) {
@@ -625,15 +600,6 @@ public class CloudSimProxy {
         return jobsToSubmit;
     }
 
-    private int getTotalFreeVmCores() {
-        int totalFreeCores = (int) Stream
-                .concat(broker.getVmExecList().stream(), broker.getVmWaitingList().stream())
-                .mapToLong(vm -> vm.getExpectedFreePesNumber()).sum()
-                - (int) broker.getCloudletWaitingList().stream().mapToLong(Cloudlet::getPesNumber)
-                        .sum();
-        return Math.max(totalFreeCores, 0);
-    }
-
     private long getMaxFreeVmCores() {
         return broker.getVmExecList().stream().mapToLong(vm -> vm.getExpectedFreePesNumber()).max()
                 .orElse(0);
@@ -720,28 +686,9 @@ public class CloudSimProxy {
                 .filter(entry -> entry.getValue() <= clock()).count();
     }
 
-    // public long getArrivedJobsCountLastTimestep() {
-    // double start = clock() - settings.getTimestepInterval();
-    // return inputJobs.parallelStream()
-    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) <= clock())
-    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) > start).count();
-    // }
-
     public List<Double> getFinishedJobsWaitTimeLastTimestep() {
         return jobsFinishedWaitTimeLastTimestep;
     }
-
-    // public long getScheduledJobsCountLastTimestep() {
-    // double start = clock() - settings.getTimestepInterval();
-    // return inputJobs.parallelStream()
-    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) <= clock())
-    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) > start)
-    // .filter(cloudlet -> (cloudlet.getStatus().equals(Cloudlet.Status.READY)
-    // || cloudlet.getStatus().equals(Cloudlet.Status.QUEUED)
-    // || cloudlet.getStatus().equals(Cloudlet.Status.INEXEC)
-    // || cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)))
-    // .count();
-    // }
 
     public long getNotYetRunningJobsCount() {
         return inputJobs.parallelStream()
@@ -749,20 +696,6 @@ public class CloudSimProxy {
                 .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.INEXEC))
                 .filter(cloudlet -> !cloudlet.getStatus().equals(Cloudlet.Status.SUCCESS)).count();
     }
-
-    // private long getQueuedJobsCount() {
-    // return inputJobs.parallelStream()
-    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) <= clock())
-    // .filter(cloudlet ->
-    // cloudlet.getStatus().equals(Cloudlet.Status.QUEUED)).count();
-    // }
-
-    // private long getReadyJobsCount() {
-    // return inputJobs.parallelStream()
-    // .filter(cloudlet -> jobArrivalTimeMap.get(cloudlet.getId()) <= clock())
-    // .filter(cloudlet ->
-    // cloudlet.getStatus().equals(Cloudlet.Status.READY)).count();
-    // }
 
     public long getRunningJobsCount() {
         return inputJobs.parallelStream()
@@ -891,8 +824,4 @@ public class CloudSimProxy {
     public double getRunningCost() {
         return vmCost.getVMCostPerIteration(clock());
     }
-
-    // public List<Double> getJobsFinishedWaitTimes() {
-    // return jobsFinishedWaitTimes;
-    // }
 }

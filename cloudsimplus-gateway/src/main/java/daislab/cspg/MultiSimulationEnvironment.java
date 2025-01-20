@@ -68,7 +68,6 @@ public class MultiSimulationEnvironment {
             // Schedule the shutdown after sending the response
             Main.initiateShutdown(gatewayServer);
         }
-
     }
 
     public String render(final String simulationIdentifier) {
