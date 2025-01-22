@@ -31,8 +31,8 @@ def train(params):
     # If render_mode is None, it will give a warning.
     #   add info_keywords if needed
     # If log_dir is None, it will not log anything
-    env = Monitor(env, params["log_dir"])
-    env = vectorize_env(env)
+    env = Monitor(env, params.get("log_dir"))
+    env = vectorize_env(env, params["algorithm"])
 
     device = get_suitable_device(params["algorithm"])
 
@@ -43,7 +43,7 @@ def train(params):
     # Instantiate the agent
     model = algorithm(policy=policy, env=env, device=device, **algorithm_kwargs)
 
-    maybe_freeze_weights(model, params)
+    # maybe_freeze_weights(model, params)
 
     callback = create_callback(params["save_experiment"], params["log_dir"])
     logger = create_logger(params["save_experiment"], params["log_dir"])

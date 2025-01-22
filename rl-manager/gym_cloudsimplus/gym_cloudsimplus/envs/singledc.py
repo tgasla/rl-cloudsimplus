@@ -165,7 +165,7 @@ class SingleDC(gym.Env):
     # default port = 25333
     gateway_parameters = GatewayParameters(address="gateway", auto_convert=True)
     params = {}
-    VM_CORES = [2, 4, 8]
+    # VM_CORES = [2, 4, 8]
 
     def __init__(self, params, jobs_as_json="[]", render_mode="ansi"):
         super(SingleDC, self).__init__()
@@ -174,40 +174,34 @@ class SingleDC(gym.Env):
         self.gateway = JavaGateway(gateway_parameters=self.gateway_parameters)
         self.simulation_environment = self.gateway.entry_point
         self.vm_allocation_policy = params["vm_allocation_policy"]
-
-        if self.vm_allocation_policy == "fromfile":
-            self.vm_allocation_policy = "fromfile"
-            with open(
-                os.path.join("mnt", "policies", params["algorithm"]), mode="r"
-            ) as file:
-                csv_reader = csv.reader(file)
-                _ = next(csv_reader)  # skip the header
-                self.action_file_data = list(csv_reader)
-
+        self.algorithm = params["algorithm"]
         self.reward_job_wait_coef = params["reward_job_wait_coef"]
         self.reward_running_vm_cores_coef = params["reward_running_vm_cores_coef"]
         self.reward_unutilized_vm_cores_coef = params["reward_unutilized_vm_cores_coef"]
         self.reward_invalid_coef = params["reward_invalid_coef"]
+        self.datacenters = params["datacenters"]
 
-        self.host_count = params["host_count"]
-        self.host_pes = params["host_pes"]
-        self.small_vm_pes = params["small_vm_pes"]
-        self.large_vm_multiplier = params["large_vm_multiplier"]
+        self.action_file_data = self._maybe_get_action_file_data()
+        # self.small_vm_pes = params["small_vm_pes"]
+        # self.large_vm_multiplier = params["large_vm_multiplier"]
 
         # if you want to support 1-10 hosts then when calculating max_vms_count and
         # observation rows, put self.max_hosts instead of host_count
         # and in action_space put self.max_hosts instead of host_count
 
-        self.max_hosts = params["max_hosts"]
-        self.action_types_count = 3  # do nothing, create vm, destroy vm
-        self.vm_types_count = 3  # small, medium, large
+        # disable for euromlsys
+        # self.max_hosts = params["max_hosts"]
+        # self.action_types_count = 3  # do nothing, create vm, destroy vm
+        # self.vm_types_count = 3  # small, medium, large
+        ####
 
         # it is reasonable to assume that the minimum amount of cores per job will be 1
-        self.min_job_pes = 1
-        self.large_vm_pes = self.small_vm_pes * self.large_vm_multiplier
-        self.max_vms = self.max_hosts * int(self.host_pes) // int(self.small_vm_pes)
-        # self.max_jobs = self.max_vms * int(self.small_vm_pes) // self.min_job_pes
-        self.max_jobs = self.max_hosts * int(self.host_pes) // self.min_job_pes
+        # disable for euromlsys
+        # self.min_job_pes = 1
+        # self.large_vm_pes = self.small_vm_pes * self.large_vm_multiplier
+        # self.max_vms = self.max_hosts * int(self.host_pes) // int(self.small_vm_pes)
+        # self.max_jobs = self.max_hosts * int(self.host_pes) // self.min_job_pes
+        ####
 
         # Old for continuous action space
         # self.action_space = spaces.Box(
@@ -222,19 +216,13 @@ class SingleDC(gym.Env):
         # action = {0: do nothing, 1: create vm, 2: destroy vm}
         # type = {0: small, 1: medium, 2: large}
         # ^ needed only when action = 1
-        self.action_space = spaces.MultiDiscrete(
-            np.array(
-                [
-                    self.action_types_count,
-                    self.max_hosts,
-                    self.max_vms,
-                    self.vm_types_count,
-                ]
-            )
-        )
+        self.action_space = spaces.Discrete(len(self.datacenters))
+        total_hosts = 0
+        for datacenter in self.datacenters:
+            for host_type in datacenter.hosts:
+                total_hosts += host_type.amount
 
-        # TODO: this has to bemultiplied by 2 because we need 2 values for each tree node
-        self.infr_obs_length = 1 + self.max_hosts + self.max_vms + self.max_jobs
+        self.infr_obs_length = 2 * total_hosts  # free cores, dc_id for each host
 
         if params["enable_autoencoder_observation"]:
             self.input_dim = 1 + self.max_hosts + self.max_vms + self.max_jobs
@@ -269,9 +257,14 @@ class SingleDC(gym.Env):
             #     dtype=np.float32,
             # )
             # if tree data are not scaled
-            max_pes_per_node = self.max_hosts * self.host_pes
+            # max_pes_per_node = self.max_hosts * self.host_pes
+            # self.infr_obs_space = spaces.MultiDiscrete(
+            # (max_pes_per_node + 1) * np.ones(self.infr_obs_length),
+            # dtype=np.int32,
+            # )
+            # 64 is the max pes per host
             self.infr_obs_space = spaces.MultiDiscrete(
-                (max_pes_per_node + 1) * np.ones(self.infr_obs_length),
+                64 * np.ones(self.infr_obs_length),
                 dtype=np.int32,
             )
 
@@ -280,7 +273,8 @@ class SingleDC(gym.Env):
         # we set the maximum number of cores waiting in total to be the number of cores in the largest VM
         # because even if there are more cores waiting, we cannot do anything more than creating a large VM
         # again +1 because it starts from 0 and we need to include the last element (which is large_vm_pes)
-        self.job_cores_waiting_obs_space = spaces.Discrete(self.large_vm_pes + 1)
+        # 8 is the max pes per vm
+        self.job_cores_waiting_obs_space = spaces.Discrete(8 + 1)
 
         # 2d array
         # else:
@@ -307,86 +301,99 @@ class SingleDC(gym.Env):
 
         self.render_mode = render_mode
 
+        datacenters_list = [dc.to_dict() for dc in self.datacenters]
+        params["datacenters"] = datacenters_list
+        # print(params["datacenters"])
+
         self.simulation_id = self.simulation_environment.createSimulation(
             params, jobs_as_json
         )
 
-    def action_masks(self) -> list[bool]:
-        """
-        Return a list of masks for the current environment.
-        The list should have the same length as the action space.
-        Each element should be a list of booleans, where True means that the
-        action is valid and False means that the action is invalid.
-        """
-        host_cores_utilized_sum = np.sum(self.host_cores_utilized)
+    # def action_masks(self) -> list[bool]:
+    #     """
+    #     Return a list of masks for the current environment.
+    #     The list should have the same length as the action space.
+    #     Each element should be a list of booleans, where True means that the
+    #     action is valid and False means that the action is invalid.
+    #     """
+    #     host_cores_utilized_sum = np.sum(self.host_cores_utilized)
 
-        # the max vms the current datacenter can support (based on the number of hosts)
-        current_max_vms = self.host_count * int(self.host_pes) // int(self.small_vm_pes)
-        if host_cores_utilized_sum == 0:  # no VMs running
-            action_type_mask = [True, True, False]
-            host_mask = [True] * self.host_count + [False] * (
-                self.max_hosts - self.host_count
-            )
-            vm_mask = (
-                [True] + [False] * (self.max_vms - 1)
-            )  # just allow one value to be True for the algorithm to work. It does not matter which one
-            vm_type_mask = [True, True, False]
-        elif self.vms_running == current_max_vms:  # all VMs are running
-            action_type_mask = [True, False, True]
-            host_mask = [True] + [False] * (self.max_hosts - 1)
-            vm_mask = [True] * current_max_vms + False * (
-                self.max_vms - current_max_vms
-            )
-            vm_type_mask = [True, False, False]
-        elif all(
-            self.host_pes - num < self.VM_CORES[0] for num in self.host_cores_utilized
-        ):  # all hosts are full
-            action_type_mask = [True, False, True]
-            host_mask = [True] + [False] * (self.max_hosts - 1)
-            vm_mask = [True] * self.vms_running + [False] * (
-                self.max_vms - self.vms_running
-            )
-            vm_type_mask = [True, False, False]
-        elif all(
-            self.host_pes - num < self.VM_CORES[1] for num in self.host_cores_utilized
-        ):  # can't create M, L VMs
-            action_type_mask = [True, True, True]
-            host_mask = [True] * self.host_count + [False] * (
-                self.max_hosts - self.host_count
-            )
-            vm_mask = [True] * self.vms_running + [False] * (
-                self.max_vms - self.vms_running
-            )
-            vm_type_mask = [True, False, False]
-        elif all(
-            self.host_pes - num < self.VM_CORES[2] for num in self.host_cores_utilized
-        ):  # can't create L VMs
-            action_type_mask = [True, True, True]
-            host_mask = [True] * self.host_count + [False] * (
-                self.max_hosts - self.host_count
-            )
-            vm_mask = [True] * self.vms_running + [False] * (
-                self.max_vms - self.vms_running
-            )
-            vm_type_mask = [True, True, False]
-        else:  # the most common case
-            full_host_indices = [
-                i
-                for i, num in enumerate(self.host_cores_utilized)
-                if self.host_pes - num < self.VM_CORES[0]
-            ]
-            action_type_mask = [True, True, True]
-            host_mask = [
-                False if i in full_host_indices else True
-                for i in range(self.host_count)
-            ] + [False] * (self.max_hosts - self.host_count)
-            vm_mask = [True] * self.vms_running + [False] * (
-                self.max_vms - self.vms_running
-            )
-            vm_type_mask = [True, True, True]
+    #     # the max vms the current datacenter can support (based on the number of hosts)
+    #     current_max_vms = self.host_count * int(self.host_pes) // int(self.small_vm_pes)
+    #     if host_cores_utilized_sum == 0:  # no VMs running
+    #         action_type_mask = [True, True, False]
+    #         host_mask = [True] * self.host_count + [False] * (
+    #             self.max_hosts - self.host_count
+    #         )
+    #         vm_mask = (
+    #             [True] + [False] * (self.max_vms - 1)
+    #         )  # just allow one value to be True for the algorithm to work. It does not matter which one
+    #         vm_type_mask = [True, True, False]
+    #     elif self.vms_running == current_max_vms:  # all VMs are running
+    #         action_type_mask = [True, False, True]
+    #         host_mask = [True] + [False] * (self.max_hosts - 1)
+    #         vm_mask = [True] * current_max_vms + False * (
+    #             self.max_vms - current_max_vms
+    #         )
+    #         vm_type_mask = [True, False, False]
+    #     elif all(
+    #         self.host_pes - num < self.VM_CORES[0] for num in self.host_cores_utilized
+    #     ):  # all hosts are full
+    #         action_type_mask = [True, False, True]
+    #         host_mask = [True] + [False] * (self.max_hosts - 1)
+    #         vm_mask = [True] * self.vms_running + [False] * (
+    #             self.max_vms - self.vms_running
+    #         )
+    #         vm_type_mask = [True, False, False]
+    #     elif all(
+    #         self.host_pes - num < self.VM_CORES[1] for num in self.host_cores_utilized
+    #     ):  # can't create M, L VMs
+    #         action_type_mask = [True, True, True]
+    #         host_mask = [True] * self.host_count + [False] * (
+    #             self.max_hosts - self.host_count
+    #         )
+    #         vm_mask = [True] * self.vms_running + [False] * (
+    #             self.max_vms - self.vms_running
+    #         )
+    #         vm_type_mask = [True, False, False]
+    #     elif all(
+    #         self.host_pes - num < self.VM_CORES[2] for num in self.host_cores_utilized
+    #     ):  # can't create L VMs
+    #         action_type_mask = [True, True, True]
+    #         host_mask = [True] * self.host_count + [False] * (
+    #             self.max_hosts - self.host_count
+    #         )
+    #         vm_mask = [True] * self.vms_running + [False] * (
+    #             self.max_vms - self.vms_running
+    #         )
+    #         vm_type_mask = [True, True, False]
+    #     else:  # the most common case
+    #         full_host_indices = [
+    #             i
+    #             for i, num in enumerate(self.host_cores_utilized)
+    #             if self.host_pes - num < self.VM_CORES[0]
+    #         ]
+    #         action_type_mask = [True, True, True]
+    #         host_mask = [
+    #             False if i in full_host_indices else True
+    #             for i in range(self.host_count)
+    #         ] + [False] * (self.max_hosts - self.host_count)
+    #         vm_mask = [True] * self.vms_running + [False] * (
+    #             self.max_vms - self.vms_running
+    #         )
+    #         vm_type_mask = [True, True, True]
 
-        masks = [action_type_mask, host_mask, vm_mask, vm_type_mask]
-        return [item for sublist in masks for item in sublist]
+    #     masks = [action_type_mask, host_mask, vm_mask, vm_type_mask]
+    #     return [item for sublist in masks for item in sublist]
+
+    def _maybe_get_action_file_data(self):
+        if self.vm_allocation_policy == "fromfile":
+            with open(
+                os.path.join("mnt", "policies", self.algorithm), mode="r"
+            ) as file:
+                csv_reader = csv.reader(file)
+                _ = next(csv_reader)  # skip the header
+                self.action_file_data = list(csv_reader)
 
     def _pad_observation(self, obs, target_dim):
         obs_len = len(obs)
@@ -428,8 +435,8 @@ class SingleDC(gym.Env):
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()
         self.current_step = 0
-        self.host_cores_utilized = np.zeros(self.max_hosts, dtype=np.int32)
-        self.vms_running = 0
+        # self.host_cores_utilized = np.zeros(self.max_hosts, dtype=np.int32)
+        # self.vms_running = 0
 
         if seed is None:
             seed = 0
@@ -482,17 +489,17 @@ class SingleDC(gym.Env):
             self.render()
 
         # Update the number of VMs per host
-        if info["isValid"]:
-            # print(f"action: {action} was valid")
-            if action[0] == 1:
-                host_id = action[1]
-                vm_type = action[3]
-                self.host_cores_utilized[host_id] += self.VM_CORES[vm_type]
-                self.vms_running += 1
-            elif action[0] == 2:
-                host_id = info["host_affected"]
-                self.host_cores_utilized[host_id] -= info["cores_changed"]
-                self.vms_running -= 1
+        # if info["isValid"]:
+        #     # print(f"action: {action} was valid")
+        #     if action[0] == 1:
+        #         host_id = action[1]
+        #         vm_type = action[3]
+        #         self.host_cores_utilized[host_id] += self.VM_CORES[vm_type]
+        #         self.vms_running += 1
+        #     elif action[0] == 2:
+        #         host_id = info["host_affected"]
+        #         self.host_cores_utilized[host_id] -= info["cores_changed"]
+        #         self.vms_running -= 1
         # else:
         #     print(f"action: {action} was invalid")
 

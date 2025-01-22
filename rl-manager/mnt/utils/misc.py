@@ -1,6 +1,5 @@
 import re
 import os
-import yaml
 import numpy as np
 import torch
 import gymnasium as gym
@@ -19,7 +18,7 @@ from utils.rl_algorithm_support_flags import (
 )
 
 
-def get_host_count_from_train_dir(train_model_dir):
+def get_host_count_from_train_dir(train_model_dir) -> int | None:
     # Regular expression to match the number before "hosts"
     match = re.search(r"(\d+)hosts", train_model_dir)
     if match:
@@ -28,16 +27,11 @@ def get_host_count_from_train_dir(train_model_dir):
     return None
 
 
-def dict_from_config(replica_id, config):
-    with open(config, "r") as file:
-        config = yaml.safe_load(file)
-
-    # first we read the common parameters and we overwrite them with the specific experiment parameters
-    params = {**config["common"], **config[f"experiment_{replica_id}"]}
-    return params
+def datacenter_constructor(_, node) -> dict:
+    return node.value
 
 
-def create_logger(save_experiment, log_dir):
+def create_logger(save_experiment, log_dir) -> sb3.common.logger.Logger:
     log_destination = ["stdout"]
     if save_experiment:
         log_destination.extend(["csv", "tensorboard"])
@@ -46,14 +40,16 @@ def create_logger(save_experiment, log_dir):
     return configure(log_dir, log_destination)
 
 
-def create_callback(save_experiment, log_dir):
+def create_callback(
+    save_experiment, log_dir
+) -> SaveOnBestTrainingRewardCallback | None:
     if save_experiment:
         return SaveOnBestTrainingRewardCallback(log_dir)
     # the callback writes all the .csv files and saves the model (with replay buffer) when the reward is the best
     return None
 
 
-def compute_indices(params, prev_host_count=None):
+def compute_indices(params, prev_host_count=None) -> dict:
     """
     Compute the indices and relevant parameters for freezing weights.
 
@@ -97,7 +93,7 @@ def compute_indices(params, prev_host_count=None):
     }
 
 
-def maybe_freeze_weights(model, params, prev_host_count=None):
+def maybe_freeze_weights(model, params, prev_host_count=None) -> None:
     """
     Freeze or unfreeze input layer weights based on active/inactive regions.
 
@@ -125,21 +121,22 @@ def maybe_freeze_weights(model, params, prev_host_count=None):
             weights[:, cur_start_idx:end_idx] = 0
 
 
-def vectorize_env(env, algorithm):
+def vectorize_env(env, algorithm) -> DummyVecEnv | SubprocVecEnv:
     # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
     if algorithm == "A2C":
-        env = SubprocVecEnv([lambda: env], start_method="fork")
-    else:
-        env = DummyVecEnv([lambda: env])
+        return SubprocVecEnv([lambda: env], start_method="fork")
+    return DummyVecEnv([lambda: env])
 
 
-def get_suitable_device(algorithm):
+def get_suitable_device(algorithm) -> torch.device:
     return torch.device(
         "cuda" if torch.cuda.is_available() and algorithm != "A2C" else "cpu"
     )
 
 
-def get_algorithm(algorithm_name, vm_allocation_policy):
+def get_algorithm(
+    algorithm_name, vm_allocation_policy
+) -> sb3.common.base_class.BaseAlgorithm:
     if vm_allocation_policy == "fromfile" or vm_allocation_policy == "rule-based":
         # If the vm_allocation_policy is fromfile or rule-based, pick a default algorithm
         # so the code triggers the simulation environment creation
@@ -157,7 +154,7 @@ def get_algorithm(algorithm_name, vm_allocation_policy):
     return algorithm
 
 
-def maybe_load_replay_buffer(model, train_model_dir):
+def maybe_load_replay_buffer(model, train_model_dir) -> None:
     # Load the replay buffer if the algorithm has one
     if hasattr(model, "replay_buffer"):
         best_replay_buffer_path = os.path.join(
@@ -168,7 +165,7 @@ def maybe_load_replay_buffer(model, train_model_dir):
         model.load_replay_buffer(best_replay_buffer_path)
 
 
-def create_kwargs_with_algorithm_params(env, params):
+def create_kwargs_with_algorithm_params(env, params) -> dict:
     algorithm_kwargs = {}
     if params.get("ent_coef") and params["algorithm"] in ALGORITHMS_WITH_ENT_COEF:
         algorithm_kwargs["ent_coef"] = params["ent_coef"]
@@ -187,9 +184,10 @@ def create_kwargs_with_algorithm_params(env, params):
             mean=np.zeros(n_actions), sigma=params["action_noise"] * np.ones(n_actions)
         )
         algorithm_kwargs["action_noise"] = action_noise
+    return algorithm_kwargs
 
 
-def create_policy_from_obs_space_type(observation_space):
+def create_policy_from_obs_space_type(observation_space) -> str:
     if isinstance(observation_space, gym.spaces.Dict):
         return "MultiInputPolicy"  # when state is Spaces.Dict()
     return "MlpPolicy"  # when state is not Spaces.Dict()

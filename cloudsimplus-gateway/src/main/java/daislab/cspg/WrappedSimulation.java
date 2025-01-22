@@ -46,11 +46,11 @@ public class WrappedSimulation {
     private final SimulationSettings settings;
     // private final MetricsStorage metricsStorage;
     // private final SimulationHistory simulationHistory;
-    private final int maxVms;
-    private final int maxHosts;
-    private final int observationArrayRows;
-    private final int observationArrayColumns;
-    private final int minJobPes = 1;
+    // private final int maxVms;
+    // private final int maxHosts;
+    // private final int observationArrayRows;
+    // private final int observationArrayColumns;
+    // private final int minJobPes = 1;
     private CloudSimProxy cloudSimProxy;
     private int currentStep;
     // private long epWaitingJobsCountMax = 0;
@@ -62,11 +62,11 @@ public class WrappedSimulation {
         this.settings = settings;
         initialJobsDescriptors = jobs;
         // simulationHistory = new SimulationHistory();
-        maxHosts = settings.getMaxHosts();
-        maxVms = maxHosts * settings.getHostPes() / settings.getSmallVmPes();
-        final int maxJobsCount = maxVms * settings.getSmallVmPes() / minJobPes;
-        observationArrayRows = 1 + maxHosts + maxVms + maxJobsCount;
-        observationArrayColumns = 4;
+        // maxHosts = settings.getMaxHosts();
+        // maxVms = maxHosts * settings.getHostPes() / settings.getSmallVmPes();
+        // final int maxJobsCount = maxVms * settings.getSmallVmPes() / minJobPes;
+        // observationArrayRows = 1 + maxHosts + maxVms + maxJobsCount;
+        // observationArrayColumns = 4;
         // Math.max(hostMetricsCount, Math.max(vmMetricsCount, jobMetricsCount));
 
         // metricsStorage = new MetricsStorage(datacenterMetricsCount, hostMetricsCount,
@@ -77,10 +77,11 @@ public class WrappedSimulation {
 
     private int getJobCoresWaitingObservation() {
         final int jobCoresWaiting = cloudSimProxy.calculateJobCoresWaiting();
-        final int largeVmPes = settings.getSmallVmPes() * settings.getLargeVmMultiplier();
+        // final int largeVmPes = settings.getSmallVmPes() * settings.getLargeVmMultiplier();
         // Do not allow the observation to be larger than the number of cores in the
         // large VM
-        return Math.min(jobCoresWaiting, largeVmPes);
+        return 1;
+        // return Math.min(jobCoresWaiting, largeVmPes);
     }
 
     // public void resetEpisodeStats() {
@@ -130,8 +131,9 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo();
 
-        Observation observation =
-                new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
+        // Observation observation =
+        // new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
+        Observation observation = new Observation(null, 1);
 
         return new SimulationResetResult(observation, info);
     }
@@ -198,12 +200,15 @@ public class WrappedSimulation {
         // getUnutilizedVmCoreRatio(),
         // getInfrastructureObservation());
 
-        SimulationStepInfo info = new SimulationStepInfo(rewards,
-                cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
-                getInfrastructureObservation(), actionResult[0], actionResult[1]);
+        // SimulationStepInfo info = new SimulationStepInfo(rewards,
+        // cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
+        // getInfrastructureObservation(), actionResult[0], actionResult[1]);
 
-        Observation observation =
-                new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
+        SimulationStepInfo info = new SimulationStepInfo();
+
+        // Observation observation =
+        // new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
+        Observation observation = new Observation(null, 1);
 
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
     }
@@ -218,13 +223,13 @@ public class WrappedSimulation {
     // return metrics;
     // }
 
-    private List<Cloudlet> getCloudletList() {
-        List<Cloudlet> cloudletList = cloudSimProxy.getBroker().getVmExecList().parallelStream()
-                .map(Vm::getCloudletScheduler).map(CloudletScheduler::getCloudletList)
-                .flatMap(List::stream).collect(Collectors.toList());
+    // private List<Cloudlet> getCloudletList() {
+    // List<Cloudlet> cloudletList = cloudSimProxy.getBroker().getVmExecList().parallelStream()
+    // .map(Vm::getCloudletScheduler).map(CloudletScheduler::getCloudletList)
+    // .flatMap(List::stream).collect(Collectors.toList());
 
-        return cloudletList;
-    }
+    // return cloudletList;
+    // }
 
     private double getUnutilizedVmCoreRatio() {
         List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
@@ -247,92 +252,92 @@ public class WrappedSimulation {
         return runningVmCores;
     }
 
-    private Long getRunningVmsCount() {
-        return cloudSimProxy.getBroker().getVmExecList().stream().count();
-    }
+    // private Long getRunningVmsCount() {
+    // return cloudSimProxy.getBroker().getVmExecList().stream().count();
+    // }
 
-    private Long getRunningCloudletsCount() {
-        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+    // private Long getRunningCloudletsCount() {
+    // List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
 
-        Long runningCloudletCount = vmList.parallelStream().map(Vm::getCloudletScheduler)
-                .map(CloudletScheduler::getCloudletExecList).mapToLong(List::size).sum();
-        return runningCloudletCount;
-    }
+    // Long runningCloudletCount = vmList.parallelStream().map(Vm::getCloudletScheduler)
+    // .map(CloudletScheduler::getCloudletExecList).mapToLong(List::size).sum();
+    // return runningCloudletCount;
+    // }
 
-    private long vmCountByType(List<Vm> vmList, String type) {
-        long filteredVmCount =
-                vmList.stream().filter(vm -> type.equals(vm.getDescription())).count();
+    // private long vmCountByType(List<Vm> vmList, String type) {
+    // long filteredVmCount =
+    // vmList.stream().filter(vm -> type.equals(vm.getDescription())).count();
 
-        return filteredVmCount;
-    }
+    // return filteredVmCount;
+    // }
 
-    private double[] collectDatacenterMetrics() {
-        double[] datacenterMetrics = new double[] {(double) cloudSimProxy.getAllocatedCores(),
-                (double) settings.getTotalHostCores(), getHostCoresAllocatedToVmsRatio(),
-                (double) settings.getHostsCount(), (double) getRunningVmsCount(),
-                (double) getRunningCloudletsCount()};
+    // private double[] collectDatacenterMetrics() {
+    // double[] datacenterMetrics = new double[] {(double) cloudSimProxy.getAllocatedCores(),
+    // (double) settings.getTotalHostCores(), getHostCoresAllocatedToVmsRatio(),
+    // (double) settings.getHostsCount(), (double) getRunningVmsCount(),
+    // (double) getRunningCloudletsCount()};
 
-        return datacenterMetrics;
-    }
+    // return datacenterMetrics;
+    // }
 
-    private double[][] collectHostMetrics() {
-        List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();
-        // We could also keep a Map<Host, Integer, Integer>
-        // hostId, vmsRunning, pesUtilized
-        double[][] hostMetrics = new double[hostList.size()][4];
+    // private double[][] collectHostMetrics() {
+    // List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();
+    // // We could also keep a Map<Host, Integer, Integer>
+    // // hostId, vmsRunning, pesUtilized
+    // double[][] hostMetrics = new double[hostList.size()][4];
 
-        // int[] hostVmsRunningCount = new int[hostList.size()];
-        // int[] hostPesUtilized = new int[hostList.size()];
-        for (int i = 0; i < hostList.size(); i++) {
-            Host host = hostList.get(i);
-            List<Vm> vmList = hostList.get(i).getVmList();
-            long smallVmCount = vmCountByType(vmList, "S");
-            long mediumVmCount = vmCountByType(vmList, "M");
-            long largeVmCount = vmCountByType(vmList, "L");
+    // // int[] hostVmsRunningCount = new int[hostList.size()];
+    // // int[] hostPesUtilized = new int[hostList.size()];
+    // for (int i = 0; i < hostList.size(); i++) {
+    // Host host = hostList.get(i);
+    // List<Vm> vmList = hostList.get(i).getVmList();
+    // long smallVmCount = vmCountByType(vmList, "S");
+    // long mediumVmCount = vmCountByType(vmList, "M");
+    // long largeVmCount = vmCountByType(vmList, "L");
 
-            hostMetrics[i] = new double[] {host.getId(), host.getVmList().size(), smallVmCount,
-                    smallVmCount
-                            / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("S")),
-                    mediumVmCount,
-                    mediumVmCount
-                            / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("M")),
-                    largeVmCount,
-                    largeVmCount
-                            / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("L")),
-                    host.getBusyPesNumber() / host.getPesNumber()};
-        }
-        return hostMetrics;
-    }
+    // hostMetrics[i] = new double[] {host.getId(), host.getVmList().size(), smallVmCount,
+    // smallVmCount
+    // / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("S")),
+    // mediumVmCount,
+    // mediumVmCount
+    // / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("M")),
+    // largeVmCount,
+    // largeVmCount
+    // / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("L")),
+    // host.getBusyPesNumber() / host.getPesNumber()};
+    // }
+    // return hostMetrics;
+    // }
 
-    private double[][] collectVmMetrics() {
-        // consider adding cores utilized: vm.getPesNumber() - vm.getFreePesNumber()
-        // vmId, vmPesNumber, hostId, jobsRunning
-        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
-        double[][] vmMetrics = new double[vmList.size()][1];
-        for (int i = 0; i < vmList.size(); i++) {
-            Vm vm = vmList.get(i);
-            vmMetrics[i] = new double[] {vm.getId(), vm.getHost().getId(),
-                    vm.getCloudletScheduler().getCloudletList().size(),
-                    vm.getCloudletScheduler().getCloudletExecList().size(),
-                    vm.getCloudletScheduler().getCloudletWaitingList().size(),
-                    (vm.getPesNumber() - vm.getFreePesNumber()) / vm.getPesNumber()};
-        }
-        return vmMetrics;
-    }
+    // private double[][] collectVmMetrics() {
+    // // consider adding cores utilized: vm.getPesNumber() - vm.getFreePesNumber()
+    // // vmId, vmPesNumber, hostId, jobsRunning
+    // List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+    // double[][] vmMetrics = new double[vmList.size()][1];
+    // for (int i = 0; i < vmList.size(); i++) {
+    // Vm vm = vmList.get(i);
+    // vmMetrics[i] = new double[] {vm.getId(), vm.getHost().getId(),
+    // vm.getCloudletScheduler().getCloudletList().size(),
+    // vm.getCloudletScheduler().getCloudletExecList().size(),
+    // vm.getCloudletScheduler().getCloudletWaitingList().size(),
+    // (vm.getPesNumber() - vm.getFreePesNumber()) / vm.getPesNumber()};
+    // }
+    // return vmMetrics;
+    // }
 
-    private double[][] collectJobMetrics() {
-        List<Cloudlet> cloudletList = getCloudletList();
-        // jobId, jobPes, vmId, vmType, hostId
-        double[][] jobMetrics = new double[cloudletList.size()][1];
-        for (int i = 0; i < cloudletList.size(); i++) {
-            Cloudlet cloudlet = cloudletList.get(i);
-            jobMetrics[i] = new double[] {cloudlet.getId(), cloudlet.getPesNumber(),
-                    cloudlet.getVm().getId(), cloudlet.getVm().getPesNumber(),
-                    cloudlet.getVm().getHost().getId(),
-                    cloudlet.getPesNumber() / cloudlet.getVm().getPesNumber()};
-        }
-        return jobMetrics;
-    }
+    // private double[][] collectJobMetrics() {
+    // List<Cloudlet> cloudletList = getCloudletList();
+    // // jobId, jobPes, vmId, vmType, hostId
+    // double[][] jobMetrics = new double[cloudletList.size()][1];
+    // for (int i = 0; i < cloudletList.size(); i++) {
+    // Cloudlet cloudlet = cloudletList.get(i);
+    // jobMetrics[i] = new double[] {cloudlet.getId(), cloudlet.getPesNumber(),
+    // cloudlet.getVm().getId(), cloudlet.getVm().getPesNumber(),
+    // cloudlet.getVm().getHost().getId(),
+    // cloudlet.getPesNumber() / cloudlet.getVm().getPesNumber()};
+    // }
+    // return jobMetrics;
+    // }
 
     // private void printEpisodeStatsDebug(double[] reward) {
     // LOGGER.debug("Printing Episode stats:"
@@ -400,29 +405,29 @@ public class WrappedSimulation {
         // action = 2)
         // type = {0: small, 1: medium, 2: large} (relevant only when action = 1)
 
-        if (action[0] == 1) {
-            final int hostId = action[1];
-            final int vmTypeIndex = action[3];
-            final int vmCores = cloudSimProxy.getVmCoreCountByType(settings.VM_TYPES[vmTypeIndex]);
-            isValid = addNewVm(settings.VM_TYPES[vmTypeIndex], hostId);
-            if (!isValid) {
-                return new int[] {-1, 0};
-            }
-            return new int[] {hostId, vmCores};
-        }
+        // if (action[0] == 1) {
+        // final int hostId = action[1];
+        // final int vmTypeIndex = action[3];
+        // final int vmCores = cloudSimProxy.getVmCoreCountByType(settings.VM_TYPES[vmTypeIndex]);
+        // isValid = addNewVm(settings.VM_TYPES[vmTypeIndex], hostId);
+        // if (!isValid) {
+        // return new int[] {-1, 0};
+        // }
+        // return new int[] {hostId, vmCores};
+        // }
 
-        else if (action[0] == 2) {
-            final int vmIndex = action[2];
-            List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
-            Vm vm = vmList.get(vmIndex);
-            int hostId = (int) vm.getHost().getId();
-            int vmCores = (int) vm.getPesNumber();
-            isValid = removeVm(vmIndex);
-            if (!isValid) {
-                return new int[] {-1, 0};
-            }
-            return new int[] {hostId, vmCores};
-        }
+        // else if (action[0] == 2) {
+        // final int vmIndex = action[2];
+        // List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+        // Vm vm = vmList.get(vmIndex);
+        // int hostId = (int) vm.getHost().getId();
+        // int vmCores = (int) vm.getPesNumber();
+        // isValid = removeVm(vmIndex);
+        // if (!isValid) {
+        // return new int[] {-1, 0};
+        // }
+        // return new int[] {hostId, vmCores};
+        // }
 
         return new int[] {0, 0};
     }
@@ -535,7 +540,8 @@ public class WrappedSimulation {
     }
 
     private double getHostCoresAllocatedToVmsRatio() {
-        return ((double) cloudSimProxy.getAllocatedCores()) / settings.getTotalHostCores();
+        return 0.0;
+        // return ((double) cloudSimProxy.getAllocatedCores()) / settings.getTotalHostCores();
     }
 
     // private double[] getObservation() {
@@ -557,51 +563,51 @@ public class WrappedSimulation {
      * @param columnIndices An array of column indices to be included in the subarray.
      * @return A 2D array containing the selected columns from the original matrix.
      */
-    private double[][] getVertSubarray(final double[][] matrix, final int[] columnIndices) {
-        int numRows = matrix.length;
-        int numCols = columnIndices.length;
-        double[][] result = new double[numRows][numCols];
-        for (int i = 0; i < numRows; i++) {
-            for (int j = 0; j < numCols; j++) {
-                result[i][j] = matrix[i][columnIndices[j]];
-            }
-        }
-        return result;
-    }
+    // private double[][] getVertSubarray(final double[][] matrix, final int[] columnIndices) {
+    // int numRows = matrix.length;
+    // int numCols = columnIndices.length;
+    // double[][] result = new double[numRows][numCols];
+    // for (int i = 0; i < numRows; i++) {
+    // for (int j = 0; j < numCols; j++) {
+    // result[i][j] = matrix[i][columnIndices[j]];
+    // }
+    // }
+    // return result;
+    // }
 
-    private int[] getInfrastructureObservation() {
-        final int hostsNum = settings.getHostsCount();
-        final int vmsNum = getRunningVmsCount().intValue();
-        final int jobsNum = getRunningCloudletsCount().intValue();
-        final int[] treeArray = new int[2 + 2 * hostsNum + 2 * vmsNum + 2 * jobsNum];
+    // private int[] getInfrastructureObservation() {
+    // final int hostsNum = settings.getHostsCount();
+    // final int vmsNum = getRunningVmsCount().intValue();
+    // final int jobsNum = getRunningCloudletsCount().intValue();
+    // final int[] treeArray = new int[2 + 2 * hostsNum + 2 * vmsNum + 2 * jobsNum];
 
-        final int totalDatacenterCores = (int) settings.getDatacenterCores();
-        final List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();
-        treeArray[0] = totalDatacenterCores;
-        treeArray[1] = hostsNum;
-        int currentIndex = 2;
-        for (int i = 0; i < hostsNum; i++) {
-            final Host host = hostList.get(i);
-            final List<Vm> vmList = host.getVmList();
-            treeArray[currentIndex++] = (int) host.getPesNumber();
-            treeArray[currentIndex++] = vmList.size();
-            for (int j = 0; j < vmList.size(); j++) {
-                final Vm vm = vmList.get(j);
-                final List<Cloudlet> jobList = vm.getCloudletScheduler().getCloudletList();
-                treeArray[currentIndex++] = (int) vm.getPesNumber();
-                treeArray[currentIndex++] = jobList.size();
-                for (int k = 0; k < jobList.size(); k++) {
-                    final Cloudlet cloudlet = jobList.get(k);
-                    treeArray[currentIndex++] = (int) cloudlet.getPesNumber();
-                    treeArray[currentIndex++] = 0; // jobs do not have children
-                }
-            }
-        }
-        // System.out.print(clock() + " TreeArray in wrappedSimulation: ");
-        // System.out.println(Arrays.deepToString(treeArray));
+    // final int totalDatacenterCores = (int) settings.getDatacenterCores();
+    // final List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();
+    // treeArray[0] = totalDatacenterCores;
+    // treeArray[1] = hostsNum;
+    // int currentIndex = 2;
+    // for (int i = 0; i < hostsNum; i++) {
+    // final Host host = hostList.get(i);
+    // final List<Vm> vmList = host.getVmList();
+    // treeArray[currentIndex++] = (int) host.getPesNumber();
+    // treeArray[currentIndex++] = vmList.size();
+    // for (int j = 0; j < vmList.size(); j++) {
+    // final Vm vm = vmList.get(j);
+    // final List<Cloudlet> jobList = vm.getCloudletScheduler().getCloudletList();
+    // treeArray[currentIndex++] = (int) vm.getPesNumber();
+    // treeArray[currentIndex++] = jobList.size();
+    // for (int k = 0; k < jobList.size(); k++) {
+    // final Cloudlet cloudlet = jobList.get(k);
+    // treeArray[currentIndex++] = (int) cloudlet.getPesNumber();
+    // treeArray[currentIndex++] = 0; // jobs do not have children
+    // }
+    // }
+    // }
+    // // System.out.print(clock() + " TreeArray in wrappedSimulation: ");
+    // // System.out.println(Arrays.deepToString(treeArray));
 
-        return treeArray;
-    }
+    // return treeArray;
+    // }
 
     // private double[][] getInfrastructureObservationAs2dArray() {
     // // here we get some vertical subarrays of the metrics. The whole array of

@@ -74,6 +74,11 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
             if [ "$ATTACHED" = true ]; then
                 # Attach only to the manager container logs
                 echo "Attaching to logs of manager container (ID: $MANAGER_CONTAINER_ID) for experiment $i..."
+                if [ "$NUM_EXPERIMENTS" -gt 1 ]; then
+                    docker logs -f "$MANAGER_CONTAINER_ID"
+                else
+                    docker-compose logs -f
+                fi
                 docker logs -f "$MANAGER_CONTAINER_ID"
             fi
 

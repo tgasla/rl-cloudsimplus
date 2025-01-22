@@ -12,13 +12,10 @@ import java.util.Map;
 public class MultiSimulationEnvironment {
 
     private final Map<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
-
     private final SimulationFactory simulationFactory = new SimulationFactory();
 
     private GatewayServer gatewayServer;
-
     private String runMode;
-
     private int experimentsFinishedCount = 0;
     private int numExperiments = 0;
 
@@ -29,7 +26,7 @@ public class MultiSimulationEnvironment {
         WrappedSimulation simulation = simulationFactory.create(params, jobsAsJson);
         String identifier = simulation.getIdentifier();
         for (Map.Entry<String, Object> entry : params.entrySet()) {
-            System.out.println(entry.getKey() + ":" + entry.getValue().toString());
+            LOGGER.info(entry.getKey() + ":" + entry.getValue().toString());
         }
         runMode = params.get("run_mode").toString();
         numExperiments = (int) params.get("num_experiments");

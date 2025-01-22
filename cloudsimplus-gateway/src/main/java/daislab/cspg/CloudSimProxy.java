@@ -22,6 +22,8 @@ import org.cloudsimplus.listeners.EventListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.lang.Long;
+import java.lang.Integer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,13 +38,14 @@ public class CloudSimProxy {
     private final Logger LOGGER = LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
     private final SimulationSettings settings;
     private final CloudSimPlus cloudSimPlus;
-    private final Datacenter datacenter;
+    private final List<Datacenter> datacenters;
     private final DatacenterBrokerFirstFitFixed broker;
-    private final VmCost vmCost;
+    // private final VmCost vmCost;
     private final List<Cloudlet> inputJobs; // all jobs to keep track of statuses
     private final PriorityQueue<Cloudlet> jobQueue; // jobs to be submitted - sorted by arrival time
     private final Map<Long, Double> jobArrivalTimeMap; // map to keep track of arrival times
     private List<Double> jobsFinishedWaitTimeLastTimestep;
+    private List<Vm> initialVmList;
     // private List<Double> jobsFinishedWaitTimes;
     private int vmsCreated;
     private boolean firstStep;
@@ -56,6 +59,7 @@ public class CloudSimProxy {
      */
     public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
         this.settings = settings;
+        this.initialVmList = new ArrayList<>();
         this.inputJobs = new ArrayList<>(inputJobs);
         jobQueue = new PriorityQueue<>(inputJobs.size(),
                 (c1, c2) -> Double.compare(c1.getSubmissionDelay(), c2.getSubmissionDelay()));
@@ -65,16 +69,17 @@ public class CloudSimProxy {
         cloudSimPlus = new CloudSimPlus(settings.getMinTimeBetweenEvents());
         broker = new DatacenterBrokerFirstFitFixed(cloudSimPlus);
         broker.setShutdownWhenIdle(false); // important to keep the broker running
-        // no need because set in createVm()
-        // broker.setVmDestructionDelay(2 * settings.getMinTimeBetweenEvents());
-        datacenter = createDatacenter();
-        vmCost = new VmCost(settings);
+        // broker.setVmDestructionDelay(2 * settings.getMinTimeBetweenEvents()); // no need because
+        // set in createVm()
+        datacenters = createDatacenters(settings.getDatacenterListOfMaps());
+        // vmCost = new VmCost(settings);
         jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
         // jobsFinishedWaitTimes = new ArrayList<>();
         vmsCreated = 0;
         firstStep = true;
 
-        submitInitialVmList();
+        broker.submitVmList(initialVmList);
+
         initializeJobListeners();
         ensureAllJobsCompleteBeforeSimulationEnds();
         cloudSimPlus.startSync();
@@ -91,27 +96,8 @@ public class CloudSimProxy {
      *         VM processing elements (PEs) and the size multiplier for the given type.
      */
     public int getVmCoreCountByType(final String type) {
-        return settings.getSmallVmPes() * settings.getSizeMultiplier(type);
-    }
-
-    /**
-     * Submits the initial list of VMs to the broker.
-     * <p>
-     * This method creates an initial list of VMs based on the VM types and counts specified in the
-     * settings. Each VM is assigned a description corresponding to its type. The VMs are then added
-     * to the cost tracking list and submitted to the broker.
-     * </p>
-     */
-    private void submitInitialVmList() {
-        List<Vm> initialVmList = new ArrayList<>();
-        for (int i = 0; i < settings.VM_TYPES.length; i++) {
-            String vmType = settings.VM_TYPES[i];
-            List<Vm> vmList = createVmList(settings.getInitialVmCounts()[i], vmType);
-            initialVmList.forEach(v -> v.setDescription(vmType));
-            initialVmList.addAll(vmList);
-        }
-        initialVmList.forEach(v -> vmCost.addNewVmToList(v));
-        broker.submitVmList(initialVmList);
+        // return settings.getSmallVmPes() * settings.getSizeMultiplier(type);
+        return 0;
     }
 
     /**
@@ -133,7 +119,8 @@ public class CloudSimProxy {
         cloudSimPlus.addOnEventProcessingListener(info -> {
             if (getNumberOfFutureEvents() == 1 && hasUnfinishedJobs()) {
                 LOGGER.trace("Jobs not finished. Sending empty event to keep simulation running.");
-                cloudSimPlus.send(datacenter, datacenter, interval, CloudSimTag.NONE, null);
+                cloudSimPlus.send(datacenters.get(0), datacenters.get(0), interval,
+                        CloudSimTag.NONE, null);
             }
         });
     }
@@ -144,11 +131,21 @@ public class CloudSimProxy {
      * @return a new instance of {@link DatacenterSimple} initialized with the specified hosts and
      *         VM allocation policy.
      */
-    private Datacenter createDatacenter() {
-        List<Host> hostList = createHostList();
-        LOGGER.debug("Creating datacenter");
-        final VmAllocationPolicy vmAllocationPolicy = defineVmAllocationPolicy();
+    private List<Datacenter> createDatacenters(final List<Map<String, Object>> listOfDcMaps) {
+        List<Datacenter> datacenters = new ArrayList<>();
+        for (Map<String, Object> dcMap : listOfDcMaps) {
+            for (int i = 0; i < (int) dcMap.get("amount"); i++) {
+                Datacenter dc = createDatacenter(dcMap);
+                datacenters.add(dc);
+            }
+        }
+        return datacenters;
+    }
 
+    private Datacenter createDatacenter(final Map<String, Object> dcMap) {
+        final VmAllocationPolicy vmAllocationPolicy = defineVmAllocationPolicy();
+        final List<Host> hostList = createHostList(
+                settings.castToListOfMapStringObject(dcMap.get("hosts")), vmAllocationPolicy);
         return new DatacenterSimple(cloudSimPlus, hostList, vmAllocationPolicy);
     }
 
@@ -169,6 +166,10 @@ public class CloudSimProxy {
         };
     }
 
+    private long parseLong(Object obj) {
+        return ((Number) obj).longValue();
+    }
+
     /**
      * Creates a list of hosts based on the settings provided.
      * 
@@ -180,21 +181,35 @@ public class CloudSimProxy {
      *         Each host is configured with simple resource provisioners for RAM and bandwidth. -
      *         Each host uses a time-shared VM scheduler.
      */
-    private List<Host> createHostList() {
+    private List<Host> createHostList(final List<Map<String, Object>> listOfHostMaps,
+            final VmAllocationPolicy vmAllocationPolicy) {
         List<Host> hostList = new ArrayList<>();
-        final long hostRam = settings.getHostRam();
-        final long hostBw = settings.getHostBw();
-        final long hostStorage = settings.getHostStorage();
-
-        for (int i = 0; i < settings.getHostsCount(); i++) {
-            List<Pe> peList = createPeList();
-            Host host = new HostWithoutCreatedList(hostRam, hostBw, hostStorage, peList)
-                    .setRamProvisioner(new ResourceProvisionerSimple())
-                    .setBwProvisioner(new ResourceProvisionerSimple())
-                    .setVmScheduler(new VmSchedulerTimeShared());
-            hostList.add(host);
+        for (Map<String, Object> hostMap : listOfHostMaps) {
+            final long hostRam = parseLong(hostMap.get("ram"));
+            final long hostStorage = parseLong(hostMap.get("storage"));
+            final long hostBw = parseLong(hostMap.get("bw"));
+            final List<Pe> peList =
+                    createPeList(parseLong(hostMap.get("pes")), parseLong(hostMap.get("pe_mips")));
+            for (int i = 0; i < (int) hostMap.get("amount"); i++) {
+                final Host host = new HostWithoutCreatedList(hostRam, hostBw, hostStorage, peList)
+                        .setRamProvisioner(new ResourceProvisionerSimple())
+                        .setBwProvisioner(new ResourceProvisionerSimple())
+                        .setVmScheduler(new VmSchedulerTimeShared());
+                final List<Vm> vms =
+                        createVmList(settings.castToListOfMapStringObject(hostMap.get("vms")));
+                initialVmList.addAll(vms);
+                allocateVmsForHost(host, vms, vmAllocationPolicy);
+                hostList.add(host);
+            }
         }
         return hostList;
+    }
+
+    private void allocateVmsForHost(final Host host, final List<Vm> vms,
+            final VmAllocationPolicy vmAllocationPolicy) {
+        vms.forEach(vm -> {
+            vmAllocationPolicy.allocateHostForVm(vm, host);
+        });
     }
 
     /**
@@ -204,42 +219,27 @@ public class CloudSimProxy {
      * @param type the type of VMs to create
      * @return a list of created VMs
      */
-    private List<Vm> createVmList(final int vmCount, final String type) {
-        List<Vm> vmList = new ArrayList<>(vmCount);
-        for (int i = 0; i < vmCount; i++) {
-            vmList.add(createVm(type));
+    private List<Vm> createVmList(final List<Map<String, Object>> listOfVmMaps) {
+        List<Vm> vmList = new ArrayList<>();
+        for (Map<String, Object> vmMap : listOfVmMaps) {
+            for (int i = 0; i < (int) vmMap.get("amount"); i++) {
+                final Vm vm = createVm(parseLong(vmMap.get("pes")), parseLong(vmMap.get("pe_mips")),
+                        parseLong(vmMap.get("ram")), parseLong(vmMap.get("size")),
+                        parseLong(vmMap.get("bw")));
+                vmList.add(vm);
+            }
         }
 
         return vmList;
     }
 
-    /**
-     * Creates a new virtual machine (VM) based on the specified type.
-     *
-     * @param type the type of the VM to be created, which determines the size multiplier.
-     * @return the newly created VM instance.
-     *
-     *         The VM is configured with the following properties: - Processing elements (PEs) based
-     *         on the size multiplier. - RAM, bandwidth, and storage size based on the size
-     *         multiplier. - An optimized cloudlet scheduler. - A shutdown delay as specified in the
-     *         settings. - A submission delay (startup delay) as specified in the settings.
-     *
-     *         The VM is also added to the VM cost tracking list.
-     */
-    private Vm createVm(final String type) {
-        int sizeMultiplier = settings.getSizeMultiplier(type);
-
-        Vm vm = new VmSimple(vmsCreated++, settings.getHostPeMips(),
-                settings.getSmallVmPes() * sizeMultiplier);
-        vm.setRam(settings.getSmallVmRam() * sizeMultiplier).setBw(settings.getSmallVmBw())
-                .setSize(settings.getSmallVmStorage())
-                .setCloudletScheduler(new OptimizedCloudletScheduler())
-                .setShutDownDelay(settings.getVmShutdownDelay());
-
-        // assuming average startup delay is 56s as in 10.48550/arXiv.2107.03467
-        // submissiondelay or vm boot up delay
-        vm.setSubmissionDelay(settings.getVmStartupDelay());
-        vmCost.addNewVmToList(vm);
+    private Vm createVm(final long pes, final long pe_mips, final long ram, final long size,
+            final long bw) {
+        Vm vm = new VmSimple(vmsCreated++, pe_mips, pes);
+        vm.setRam(ram).setSize(size).setBw(bw)
+                .setCloudletScheduler(new OptimizedCloudletScheduler());
+        // vm.setShutDownDelay(settings.getVmShutdownDelay());
+        // vm.setSubmissionDelay(settings.getVmStartupDelay());
         return vm;
     }
 
@@ -249,12 +249,11 @@ public class CloudSimProxy {
      *
      * @return a list of PEs configured according to the host settings.
      */
-    private List<Pe> createPeList() {
+    private List<Pe> createPeList(final long pes, final long mips) {
         List<Pe> peList = new ArrayList<>();
-        for (int i = 0; i < settings.getHostPes(); i++) {
-            peList.add(new PeSimple(settings.getHostPeMips(), new PeProvisionerSimple()));
+        for (int i = 0; i < pes; i++) {
+            peList.add(new PeSimple(mips, new PeProvisionerSimple()));
         }
-
         return peList;
     }
 
@@ -336,31 +335,31 @@ public class CloudSimProxy {
     }
 
     private void executeMinimizeAllocatedAction() {
-        // have only one VM running in total
-        int coresNeeded = calculateJobCoresWaiting();
-        final long smallVmCores = getVmCoreCountByType(settings.VM_TYPES[0]);
-        final long mediumVmCores = getVmCoreCountByType(settings.VM_TYPES[1]);
-        final long largeVmCores =
-                getVmCoreCountByType(settings.VM_TYPES[settings.VM_TYPES.length - 1]);
-        if (coresNeeded >= largeVmCores && !isVmWithCoresRunning(largeVmCores)) {
-            List<Vm> vmList = createSingleVm(calculateTargetTime(), largeVmCores);
-            broker.submitVmList(vmList);
-        } else if (coresNeeded >= largeVmCores && isVmWithCoresRunning(largeVmCores)) {
-        } else if (coresNeeded >= mediumVmCores && isVmWithCoresRunning(largeVmCores)) {
-            destroyLargestIdleVm();
-        } else if (coresNeeded >= mediumVmCores && !isVmWithCoresRunning(mediumVmCores)) {
-            List<Vm> vmList = createSingleVm(calculateTargetTime(), mediumVmCores);
-            broker.submitVmList(vmList);
-        } else if (coresNeeded >= mediumVmCores && isVmWithCoresRunning(mediumVmCores)) {
-        } else if (coresNeeded >= smallVmCores && isVmWithCoresRunning(mediumVmCores)) {
-            destroyLargestIdleVm();
-        } else if (coresNeeded >= smallVmCores && !isVmWithCoresRunning(smallVmCores)) {
-            List<Vm> vmList = createSingleVm(calculateTargetTime(), smallVmCores);
-            broker.submitVmList(vmList);
-        } else if (coresNeeded >= smallVmCores && isVmWithCoresRunning(smallVmCores)) {
-        } else {
-            destroyLargestIdleVm();
-        }
+        // // have only one VM running in total
+        // int coresNeeded = calculateJobCoresWaiting();
+        // final long smallVmCores = getVmCoreCountByType(settings.VM_TYPES[0]);
+        // final long mediumVmCores = getVmCoreCountByType(settings.VM_TYPES[1]);
+        // final long largeVmCores =
+        // getVmCoreCountByType(settings.VM_TYPES[settings.VM_TYPES.length - 1]);
+        // if (coresNeeded >= largeVmCores && !isVmWithCoresRunning(largeVmCores)) {
+        // List<Vm> vmList = createSingleVm(calculateTargetTime(), largeVmCores);
+        // broker.submitVmList(vmList);
+        // } else if (coresNeeded >= largeVmCores && isVmWithCoresRunning(largeVmCores)) {
+        // } else if (coresNeeded >= mediumVmCores && isVmWithCoresRunning(largeVmCores)) {
+        // destroyLargestIdleVm();
+        // } else if (coresNeeded >= mediumVmCores && !isVmWithCoresRunning(mediumVmCores)) {
+        // List<Vm> vmList = createSingleVm(calculateTargetTime(), mediumVmCores);
+        // broker.submitVmList(vmList);
+        // } else if (coresNeeded >= mediumVmCores && isVmWithCoresRunning(mediumVmCores)) {
+        // } else if (coresNeeded >= smallVmCores && isVmWithCoresRunning(mediumVmCores)) {
+        // destroyLargestIdleVm();
+        // } else if (coresNeeded >= smallVmCores && !isVmWithCoresRunning(smallVmCores)) {
+        // List<Vm> vmList = createSingleVm(calculateTargetTime(), smallVmCores);
+        // broker.submitVmList(vmList);
+        // } else if (coresNeeded >= smallVmCores && isVmWithCoresRunning(smallVmCores)) {
+        // } else {
+        // destroyLargestIdleVm();
+        // }
     }
 
     private void executeMinimizeUnutilizedAction() {
@@ -380,13 +379,13 @@ public class CloudSimProxy {
     }
 
     public boolean executeRuleBasedAction() {
-        if (settings.getAlgorithm().equals("minimize-queue")) {
-            executeMinimizeQueueAction();
-        } else if (settings.getAlgorithm().equals("minimize-allocated")) {
-            executeMinimizeAllocatedAction();
-        } else if (settings.getAlgorithm().equals("minimize-unutilized")) {
-            executeMinimizeUnutilizedAction();
-        }
+        // if (settings.getAlgorithm().equals("minimize-queue")) {
+        // executeMinimizeQueueAction();
+        // } else if (settings.getAlgorithm().equals("minimize-allocated")) {
+        // executeMinimizeAllocatedAction();
+        // } else if (settings.getAlgorithm().equals("minimize-unutilized")) {
+        // executeMinimizeUnutilizedAction();
+        // }
         return true;
 
         // final int totalCoresRequired = calculateJobCoresWaiting();
@@ -442,18 +441,18 @@ public class CloudSimProxy {
     }
 
     private void destroyLargestIdleVm() {
-        List<Vm> idleVms = broker.getVmExecList().stream()
-                .filter(vm -> vm.getCloudletScheduler().isEmpty()).collect(Collectors.toList());
+        // List<Vm> idleVms = broker.getVmExecList().stream()
+        // .filter(vm -> vm.getCloudletScheduler().isEmpty()).collect(Collectors.toList());
 
-        idleVms.stream().max(Comparator.comparingLong(Vm::getPesNumber)).ifPresent(largestVm -> {
-            cloudSimPlus.send(datacenter, datacenter, 0, CloudSimTag.VM_DESTROY, largestVm);
-            LOGGER.info("No jobs to submit, destroying the largest idle VM");
-            LOGGER.info("VMs running: {}", broker.getVmExecList().size());
-        });
+        // idleVms.stream().max(Comparator.comparingLong(Vm::getPesNumber)).ifPresent(largestVm -> {
+        // cloudSimPlus.send(datacenter, datacenter, 0, CloudSimTag.VM_DESTROY, largestVm);
+        // LOGGER.info("No jobs to submit, destroying the largest idle VM");
+        // LOGGER.info("VMs running: {}", broker.getVmExecList().size());
+        // });
 
-        if (idleVms.isEmpty()) {
-            LOGGER.info("No idle VMs available for destruction.");
-        }
+        // if (idleVms.isEmpty()) {
+        // LOGGER.info("No idle VMs available for destruction.");
+        // }
     }
 
     /**
@@ -528,31 +527,33 @@ public class CloudSimProxy {
     }
 
     private List<Vm> createSingleVm(final double targetTime, final long coresNeeded) {
-        final int vmTypesCount = settings.VM_TYPES.length;
-        final List<Vm> vmList = new ArrayList<>();
-        final double startTime = targetTime - settings.getTimestepInterval();
+        // final int vmTypesCount = settings.VM_TYPES.length;
+        // final List<Vm> vmList = new ArrayList<>();
+        // final double startTime = targetTime - settings.getTimestepInterval();
 
-        int vmTypeIndex = vmTypesCount - 1;
-        // generous - creates the smallest VM type that can fulfill the cores needed
-        for (int i = 0; i < vmTypesCount; i++) {
-            if (coresNeeded <= getVmCoreCountByType(settings.VM_TYPES[i])) {
-                vmTypeIndex = i;
-                break;
-            }
-        }
+        // int vmTypeIndex = vmTypesCount - 1;
+        // // generous - creates the smallest VM type that can fulfill the cores needed
+        // for (int i = 0; i < vmTypesCount; i++) {
+        // if (coresNeeded <= getVmCoreCountByType(settings.VM_TYPES[i])) {
+        // vmTypeIndex = i;
+        // break;
+        // }
+        // }
 
-        if (vmTypeIndex == -1) {
-            LOGGER.error("[{} - {}]: No VM type can fulfill {} cores needed", startTime, targetTime,
-                    coresNeeded);
-            return vmList; // Return empty list if no VM type is suitable
-        }
+        // if (vmTypeIndex == -1) {
+        // LOGGER.error("[{} - {}]: No VM type can fulfill {} cores needed", startTime, targetTime,
+        // coresNeeded);
+        // return vmList; // Return empty list if no VM type is suitable
+        // }
 
-        final String vmType = settings.VM_TYPES[vmTypeIndex];
-        LOGGER.info("[{} - {}]: {} VM cores are needed, will create 1 {} VM", startTime, targetTime,
-                coresNeeded, vmType);
-        vmList.add(createVm(vmType).setDescription(vmType));
+        // final String vmType = settings.VM_TYPES[vmTypeIndex];
+        // LOGGER.info("[{} - {}]: {} VM cores are needed, will create 1 {} VM", startTime,
+        // targetTime,
+        // coresNeeded, vmType);
+        // vmList.add(createVm(vmType).setDescription(vmType));
 
-        return vmList;
+        // return vmList;
+        return List.of(Vm.NULL);
     }
 
     /**
@@ -785,28 +786,29 @@ public class CloudSimProxy {
     }
 
     public boolean addNewVm(final String type, final long hostId) {
-        LOGGER.debug("Agent action: Create a {} VM on host {}", type, hostId);
+        // LOGGER.debug("Agent action: Create a {} VM on host {}", type, hostId);
 
-        final Host host = datacenter.getHostById(hostId);
+        // final Host host = datacenter.getHostById(hostId);
 
-        if (host == Host.NULL) {
-            LOGGER.debug("Vm creating ignored, no host with given id found");
-            return false;
-        }
+        // if (host == Host.NULL) {
+        // LOGGER.debug("Vm creating ignored, no host with given id found");
+        // return false;
+        // }
 
-        final Vm newVm = createVm(type);
-        newVm.setDescription(type + "-" + hostId);
+        // final Vm newVm = createVm(type);
+        // newVm.setDescription(type + "-" + hostId);
 
-        if (!host.isSuitableForVm(newVm)) {
-            LOGGER.debug("Vm creating ignored, host not suitable");
-            LOGGER.debug("Host Vm List Size: {}", host.getVmList().size());
-            LOGGER.debug("Total Vm Exec List Size: {}", broker.getVmExecList().size());
-            return false;
-        }
+        // if (!host.isSuitableForVm(newVm)) {
+        // LOGGER.debug("Vm creating ignored, host not suitable");
+        // LOGGER.debug("Host Vm List Size: {}", host.getVmList().size());
+        // LOGGER.debug("Total Vm Exec List Size: {}", broker.getVmExecList().size());
+        // return false;
+        // }
 
-        broker.submitVm(newVm);
-        LOGGER.debug("Requested VM of type: {} at host {}", type, hostId);
-        return true;
+        // broker.submitVm(newVm);
+        // LOGGER.debug("Requested VM of type: {} at host {}", type, hostId);
+        // return true;
+        return false;
     }
 
     // if a vm is destroyed, this method returns true, otherwise false
@@ -836,28 +838,28 @@ public class CloudSimProxy {
     }
 
     private void destroyVm(Vm vm) {
-        final String vmSize = vm.getDescription();
+        // final String vmSize = vm.getDescription();
 
-        final List<Cloudlet> execCloudlets =
-                resetCloudlets(vm.getCloudletScheduler().getCloudletExecList());
-        final List<Cloudlet> waitingCloudlets =
-                resetCloudlets(vm.getCloudletScheduler().getCloudletWaitingList());
-        final List<Cloudlet> affectedCloudlets =
-                Stream.concat(execCloudlets.stream(), waitingCloudlets.stream())
-                        .collect(Collectors.toList());
+        // final List<Cloudlet> execCloudlets =
+        // resetCloudlets(vm.getCloudletScheduler().getCloudletExecList());
+        // final List<Cloudlet> waitingCloudlets =
+        // resetCloudlets(vm.getCloudletScheduler().getCloudletWaitingList());
+        // final List<Cloudlet> affectedCloudlets =
+        // Stream.concat(execCloudlets.stream(), waitingCloudlets.stream())
+        // .collect(Collectors.toList());
 
-        // this internally calls Host.destroyVm
-        datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
-        vmCost.removeVmFromList(vm);
+        // // this internally calls Host.destroyVm
+        // datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
+        // // vmCost.removeVmFromList(vm);
 
-        // no need to clear it as it will be destroyed
-        // vm.getCloudletScheduler().clear();
+        // // no need to clear it as it will be destroyed
+        // // vm.getCloudletScheduler().clear();
 
-        LOGGER.info("{} Killing VM {} ({}), cloudlets to reschedule: {}", clock(), vm.getId(),
-                vmSize, affectedCloudlets.size());
-        if (!affectedCloudlets.isEmpty()) {
-            rescheduleCloudlets(affectedCloudlets);
-        }
+        // LOGGER.info("{} Killing VM {} ({}), cloudlets to reschedule: {}", clock(), vm.getId(),
+        // vmSize, affectedCloudlets.size());
+        // if (!affectedCloudlets.isEmpty()) {
+        // rescheduleCloudlets(affectedCloudlets);
+        // }
     }
 
     private void rescheduleCloudlets(final List<Cloudlet> affectedCloudlets) {
@@ -877,7 +879,7 @@ public class CloudSimProxy {
     }
 
     public Datacenter getDatacenter() {
-        return datacenter;
+        return Datacenter.NULL;
     }
 
     public double clock() {
@@ -889,7 +891,8 @@ public class CloudSimProxy {
     }
 
     public double getRunningCost() {
-        return vmCost.getVMCostPerIteration(clock());
+        // return vmCost.getVMCostPerIteration(clock());
+        return 0.0;
     }
 
     // public List<Double> getJobsFinishedWaitTimes() {

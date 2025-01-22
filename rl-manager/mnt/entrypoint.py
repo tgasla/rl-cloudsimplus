@@ -9,7 +9,7 @@ import torch
 import sys
 
 import importlib
-from utils.misc import dict_from_config
+from utils.parse_config import dict_from_config
 
 CONFIG_FILE = "config.yml"
 
