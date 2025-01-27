@@ -79,7 +79,6 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
                 else
                     docker-compose logs -f
                 fi
-                docker logs -f "$MANAGER_CONTAINER_ID"
             fi
 
             # Wait for the manager container to stop

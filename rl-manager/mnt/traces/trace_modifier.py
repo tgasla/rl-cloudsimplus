@@ -38,13 +38,13 @@ for t in range(31):  # From 0 to 30 seconds
     # Generate jobs for this second
     for _ in range(num_jobs):
         mi = np.random.choice([50000, 100000, 150000, 200000, 250000])
-        allocated_cores = np.random.choice([1, 2, 4, 8])
-        new_trace.append([job_id, t, mi, allocated_cores])
+        required_cores = np.random.choice([1, 2, 4, 8])
+        new_trace.append([job_id, t, mi, required_cores])
         job_id += 1
 
 # Create a DataFrame for the new trace
 new_df = pd.DataFrame(
-    new_trace, columns=["job_id", "arrival_time", "mi", "allocated_cores"]
+    new_trace, columns=["job_id", "arrival_time", "mi", "required_cores"]
 )
 
 # Save the modified trace to a CSV file (optional)

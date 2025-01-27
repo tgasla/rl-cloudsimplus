@@ -2,14 +2,21 @@ import yaml
 
 
 class Datacenter:
-    def __init__(self, name, dc_type, amount, hosts=None):
+    def __init__(self, name, dc_type, amount, hosts, connect_to):
         self.name = name
         self.dc_type = dc_type
         self.amount = amount
         self.hosts = hosts if isinstance(hosts, list) else [hosts] if hosts else []
+        self.connect_to = (
+            connect_to
+            if isinstance(connect_to, list)
+            else [connect_to]
+            if connect_to
+            else []
+        )
 
     def __repr__(self):
-        return f"Datacenter(name={self.name}, type={self.dc_type}, amount={self.amount}, hosts={self.hosts})"
+        return f"Datacenter(name={self.name}, type={self.dc_type}, amount={self.amount}, hosts={self.hosts}, connect_to={self.connect_to})"
 
     def to_dict(self):
         return {
@@ -17,11 +24,15 @@ class Datacenter:
             "type": self.dc_type,
             "amount": self.amount,
             "hosts": [host.to_dict() for host in self.hosts],
+            "connect_to": self.connect_to,
         }
+
+    def __dict__(self):
+        return self.to_dict()
 
 
 class Host:
-    def __init__(self, amount, pes, pe_mips, ram, storage, bw, vms=None):
+    def __init__(self, amount, pes, pe_mips, ram, storage, bw, vms):
         self.amount = amount
         self.pes = pes
         self.pe_mips = pe_mips
@@ -43,6 +54,9 @@ class Host:
             "bw": self.bw,
             "vms": [vm.to_dict() for vm in self.vms],
         }
+
+    def __dict__(self):
+        return self.to_dict()
 
 
 class Vm:
@@ -67,6 +81,9 @@ class Vm:
             "bw": self.bw,
         }
 
+    def __dict__(self):
+        return self.to_dict()
+
 
 # Custom constructors for YAML tags
 def datacenter_constructor(loader, node):
@@ -76,6 +93,7 @@ def datacenter_constructor(loader, node):
         dc_type=fields["type"],
         amount=fields["amount"],
         hosts=fields.get("hosts", []),
+        connect_to=fields.get("connect_to", []),
     )
 
 

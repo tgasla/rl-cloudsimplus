@@ -21,7 +21,7 @@ def main():
     if not args.count_cores:
         grouped = df.groupby("arrival_time").size()
     else:
-        grouped = df.groupby("arrival_time")["allocated_cores"].sum()
+        grouped = df.groupby("arrival_time")["required_cores"].sum()
 
     # Plot the bar chart
     plt.figure(figsize=(10, 6))

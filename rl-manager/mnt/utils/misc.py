@@ -142,15 +142,13 @@ def get_algorithm(
         # so the code triggers the simulation environment creation
         # NOTE: the algorithm decision through learning is not used at all in this case
         algorithm = getattr(sb3, "PPO")
-    if vm_allocation_policy == "rl":
+    elif vm_allocation_policy == "rl" or vm_allocation_policy == "bestfit":
         if hasattr(sb3, algorithm_name):
             algorithm = getattr(sb3, algorithm_name)
         elif hasattr(sb3_contrib, algorithm_name):
             algorithm = getattr(sb3_contrib, algorithm_name)
         else:
             raise AttributeError(f"Algorithm {algorithm_name} not found.")
-    else:
-        raise AttributeError(f"Vm allocation policy {vm_allocation_policy} not found.")
     return algorithm
 
 

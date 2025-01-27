@@ -13,7 +13,7 @@ def main():
 
     # Group the data for the stacked bar chart
     pivot_df = (
-        df.groupby(["arrival_time", "allocated_cores"]).size().unstack(fill_value=0)
+        df.groupby(["arrival_time", "required_cores"]).size().unstack(fill_value=0)
     )
 
     # Plot the stacked bar chart

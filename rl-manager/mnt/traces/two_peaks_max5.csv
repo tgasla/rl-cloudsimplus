@@ -1,4 +1,4 @@
-job_id,arrival_time,mi,allocated_cores
+job_id,arrival_time,mi,required_cores
 0,1,10,1
 1,2,10,2
 2,3,10,3

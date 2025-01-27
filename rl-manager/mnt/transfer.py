@@ -1,10 +1,8 @@
 import os
-import json
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
 
-from utils.trace_utils import csv_to_cloudlet_descriptor
 from utils.misc import (
     create_kwargs_with_algorithm_params,
     create_logger,
@@ -18,11 +16,7 @@ from utils.misc import (
 )
 
 
-def transfer(params):
-    jobs = csv_to_cloudlet_descriptor(
-        os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
-    )
-
+def transfer(params, jobs):
     best_model_path = os.path.join(
         params["base_log_dir"],
         f"{params['train_model_dir']}",
@@ -32,7 +26,7 @@ def transfer(params):
     algorithm = get_algorithm(params["algorithm"], params["vm_allocation_policy"])
 
     # Create and wrap the environment
-    env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
+    env = gym.make("SingleDC-v0", params=params, jobs=jobs)
     env = Monitor(env, params["log_dir"])
     env = vectorize_env(env, algorithm)
 

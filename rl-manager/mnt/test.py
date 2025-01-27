@@ -1,11 +1,9 @@
 import os
-import json
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 import pandas as pd
 
 from sb3_contrib.common.maskable.utils import get_action_masks
-from utils.trace_utils import csv_to_cloudlet_descriptor
 from utils.misc import (
     get_algorithm,
     get_suitable_device,
@@ -13,13 +11,9 @@ from utils.misc import (
 )
 
 
-def test(params):
-    jobs = csv_to_cloudlet_descriptor(
-        os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
-    )
-
+def test(params, jobs):
     # Create and wrap the environment
-    env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
+    env = gym.make("SingleDC-v0", params=params, jobs=jobs)
 
     best_model_path = os.path.join(
         params["base_log_dir"],

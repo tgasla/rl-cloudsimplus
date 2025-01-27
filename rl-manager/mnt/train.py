@@ -1,14 +1,11 @@
-import os
-import json
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
 
-from utils.trace_utils import csv_to_cloudlet_descriptor
 from utils.misc import (
     create_logger,
     create_callback,
-    maybe_freeze_weights,
+    # maybe_freeze_weights,
     vectorize_env,
     get_suitable_device,
     get_algorithm,
@@ -17,16 +14,12 @@ from utils.misc import (
 )
 
 
-def train(params):
+def train(params, jobs):
     # Select the appropriate algorithm
     algorithm = get_algorithm(params["algorithm"], params["vm_allocation_policy"])
 
-    # Read jobs
-    job_trace_path = os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
-    jobs = csv_to_cloudlet_descriptor(job_trace_path)
-
     # Create and wrap the environment
-    env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
+    env = gym.make("SingleDC-v0", params=params, jobs=jobs)
     # Monitor needs the environment to have a render_mode set
     # If render_mode is None, it will give a warning.
     #   add info_keywords if needed

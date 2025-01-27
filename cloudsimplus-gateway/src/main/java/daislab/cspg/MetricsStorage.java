@@ -1,7 +1,9 @@
 package daislab.cspg;
 
 import java.util.Arrays;
+import lombok.Data;
 
+@Data
 public class MetricsStorage {
     private double[] datacenterMetrics;
     private double[][] hostMetrics;
@@ -15,38 +17,6 @@ public class MetricsStorage {
         this.hostMetrics = new double[hostsCount][hostMetricsCount];
         this.vmMetrics = new double[maxVmsCount][vmMetricsCount];
         this.jobMetrics = new double[maxJobsCount][jobMetricsCount];
-    }
-
-    public void setDatacenterMetrics(double[] datacenterMetrics) {
-        this.datacenterMetrics = datacenterMetrics;
-    }
-
-    public void setHostMetrics(double[][] hostMetrics) {
-        this.hostMetrics = hostMetrics;
-    }
-
-    public void setVmMetrics(double[][] vmMetrics) {
-        this.vmMetrics = vmMetrics;
-    }
-
-    public void setJobMetrics(double[][] jobMetrics) {
-        this.jobMetrics = jobMetrics;
-    }
-
-    public double[] getDatacenterMetrics() {
-        return this.datacenterMetrics;
-    }
-
-    public double[][] getHostMetrics() {
-        return this.hostMetrics;
-    }
-
-    public double[][] getVmMetrics() {
-        return this.vmMetrics;
-    }
-
-    public double[][] getJobMetrics() {
-        return this.jobMetrics;
     }
 
     public void clear() {

@@ -1,20 +1,9 @@
 package daislab.cspg;
 
+import lombok.Data;
+
+@Data
 public class Observation {
     private final int[] infrastructureObservation;
-    private final int jobCoresWaitingObservation;
-
-    public Observation(final int[] infrastructureObservation,
-            final int jobCoresWaitingObservation) {
-        this.infrastructureObservation = infrastructureObservation;
-        this.jobCoresWaitingObservation = jobCoresWaitingObservation;
-    }
-
-    public int[] getInfrastructureObservation() {
-        return infrastructureObservation;
-    }
-
-    public int getJobCoresWaitingObservation() {
-        return jobCoresWaitingObservation;
-    }
+    private final int[] jobsWaitingObservation;
 }

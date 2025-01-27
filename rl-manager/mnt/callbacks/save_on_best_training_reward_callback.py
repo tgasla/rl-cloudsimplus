@@ -32,13 +32,13 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.model_save_path = os.path.join(log_dir, "best_model")
         self.best_reward = -np.inf
         self.previous_best_episode_num = None  # to delete the previous best
-        self.isValid = None
         self.current_episode_num = 0
         self.best_episode_filename_prefix = "best_episode"
-        self.job_wait_time_deque = deque(maxlen=100)
-        self.job_queue_ratio_rew_deque = deque(maxlen=100)
-        self.allocated_vm_cores_rew_deque = deque(maxlen=100)
-        self.unutilized_vm_cores_rew_deque = deque(maxlen=100)
+        # self.job_wait_time_deque = deque(maxlen=100)
+        # self.isValid = None
+        # self.job_queue_ratio_rew_deque = deque(maxlen=100)
+        # self.allocated_vm_cores_rew_deque = deque(maxlen=100)
+        # self.unutilized_vm_cores_rew_deque = deque(maxlen=100)
 
         self._clear_episode_details()
 
@@ -59,15 +59,15 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # will be written to best_episode_{episode_num}.csv
         episode_details = {
             "timestep": timesteps,
+            "reward": self.rewards,
+            "new_obs": self.new_observations,
             # "obs": self.observations, # obs and actions are saved in independent files
             # "action": self.actions,
-            "job_wait_reward": self.job_wait_rewards,
-            "running_vm_cores_reward": self.running_vm_cores_rewards,
-            "unutilized_vm_cores_reward": self.unutilized_vm_cores_rewards,
-            "invalid_reward": self.invalid_rewards,
-            "reward": self.rewards,
-            "isValid": self.isValid,
-            # "next_obs": self.new_observations,
+            # "job_wait_reward": self.job_wait_rewards,
+            # "running_vm_cores_reward": self.running_vm_cores_rewards,
+            # "unutilized_vm_cores_reward": self.unutilized_vm_cores_rewards,
+            # "invalid_reward": self.invalid_rewards,
+            # "isValid": self.isValid,
         }
         return episode_details
 
@@ -76,18 +76,18 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.actions = []
         self.rewards = []
         self.new_observations = []
+        self.current_episode_length = 0
+        # self.job_wait_time = []
         # self.host_metrics = []
         # self.vm_metrics = []
         # self.job_metrics = []
-        self.job_wait_time = []
-        self.job_wait_rewards = []
-        self.running_vm_cores_rewards = []
-        self.unutilized_vm_cores_rewards = []
-        self.invalid_rewards = []
-        self.unutilized_vm_core_ratio = []
-        self.isValid = []
-        self.current_episode_length = 0
-        self.observation_tree_arrays = []
+        # self.job_wait_rewards = []
+        # self.running_vm_cores_rewards = []
+        # self.unutilized_vm_cores_rewards = []
+        # self.invalid_rewards = []
+        # self.unutilized_vm_core_ratio = []
+        # self.isValid = []
+        # self.observation_tree_arrays = []
         # self.episode_dot_strings = []
 
     def _delete_previous_best(self) -> None:
@@ -98,7 +98,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             )
             os.remove(log_file)
 
-    def _extract_observation_from_locals(self, obs) -> Union[list, dict]:
+    def _get_observation_from_locals(self, obs) -> Union[list, dict]:
         if isinstance(self.locals[obs], dict):
             obs_dict = self.locals[obs]
             processed_obs = {}
@@ -114,30 +114,29 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         return processed_obs
 
     def _save_timestep_details(self) -> None:
-        # print(self.locals)
-        self.observations.append(self._extract_observation_from_locals("obs_tensor"))
+        self.observations.append(self._get_observation_from_locals("obs_tensor"))
         self.actions.append(self.locals["actions"][0])
         self.rewards.append(self.locals["rewards"][0])
-        self.new_observations.append(self._extract_observation_from_locals("new_obs"))
+        self.new_observations.append(self._get_observation_from_locals("new_obs"))
+        # self.job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
         # self.host_metrics.append(self.locals["infos"][0]["host_metrics"])
         # self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
         # self.job_metrics.append(self.locals["infos"][0]["job_metrics"])
-        self.job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
-        self.job_wait_rewards.append(self.locals["infos"][0]["job_wait_reward"])
-        self.running_vm_cores_rewards.append(
-            self.locals["infos"][0]["running_vm_cores_reward"]
-        )
-        self.unutilized_vm_cores_rewards.append(
-            self.locals["infos"][0]["unutilized_vm_cores_reward"]
-        )
-        self.invalid_rewards.append(self.locals["infos"][0]["invalid_reward"])
-        self.isValid.append(self.locals["infos"][0]["isValid"])
-        self.unutilized_vm_core_ratio.append(
-            self.locals["infos"][0]["unutilized_vm_core_ratio"]
-        )
-        self.observation_tree_arrays.append(
-            self.locals["infos"][0]["observation_tree_array"]
-        )
+        # self.job_wait_rewards.append(self.locals["infos"][0]["job_wait_reward"])
+        # self.running_vm_cores_rewards.append(
+        #     self.locals["infos"][0]["running_vm_cores_reward"]
+        # )
+        # self.unutilized_vm_cores_rewards.append(
+        #     self.locals["infos"][0]["unutilized_vm_cores_reward"]
+        # )
+        # self.invalid_rewards.append(self.locals["infos"][0]["invalid_reward"])
+        # self.isValid.append(self.locals["infos"][0]["isValid"])
+        # self.unutilized_vm_core_ratio.append(
+        #     self.locals["infos"][0]["unutilized_vm_core_ratio"]
+        # )
+        # self.observation_tree_arrays.append(
+        #     self.locals["infos"][0]["observation_tree_array"]
+        # )
         # self.episode_dot_strings.append(self.locals["infos"][0]["dot_string"])
 
     def _maybe_save_replay_buffer(self) -> None:
@@ -152,55 +151,55 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             self.model.save_replay_buffer(replay_buffer_path)
 
     def _create_csv_paths(self) -> Dict:
-        # host_metrics_path = os.path.join(self.log_dir, "host_metrics.csv")
-        # vm_metrics_path = os.path.join(self.log_dir, "vm_metrics.csv")
-        # job_metrics_path = os.path.join(self.log_dir, "job_metrics.csv")
-        job_wait_time_path = os.path.join(self.log_dir, "job_wait_time.csv")
+        # job_wait_time_path = os.path.join(self.log_dir, "job_wait_time.csv")
         episode_actions_path = os.path.join(self.log_dir, "actions.csv")
-        unutilized_vm_core_ratio_path = os.path.join(
-            self.log_dir, "unutilized_vm_core_ratio.csv"
-        )
         episode_details_path = os.path.join(
             self.log_dir,
             f"{self.best_episode_filename_prefix}_{self.current_episode_num}.csv",
         )
+        # host_metrics_path = os.path.join(self.log_dir, "host_metrics.csv")
+        # vm_metrics_path = os.path.join(self.log_dir, "vm_metrics.csv")
+        # job_metrics_path = os.path.join(self.log_dir, "job_metrics.csv")
+        # unutilized_vm_core_ratio_path = os.path.join(
+        #     self.log_dir, "unutilized_vm_core_ratio.csv"
+        # )
         paths = {
+            # "job_wait_time": job_wait_time_path,
+            "actions": episode_actions_path,
+            "episode_details": episode_details_path,
             # "host_metrics": host_metrics_path,
             # "vm_metrics": vm_metrics_path,
             # "job_metrics": job_metrics_path,
-            "job_wait_time": job_wait_time_path,
-            "actions": episode_actions_path,
-            "unutilized_vm_core_ratio": unutilized_vm_core_ratio_path,
-            "episode_details": episode_details_path,
+            # "unutilized_vm_core_ratio": unutilized_vm_core_ratio_path,
         }
         return paths
 
     def _create_dataframes(self) -> Dict:
         df_dict = {
+            # "job_wait_time": pd.DataFrame(self.job_wait_time),
+            "episode_actions": pd.DataFrame(self.actions),
+            "episode_details": pd.DataFrame(self._create_episode_details_dict()),
+            # "unutilized_vm_core_ratio": pd.DataFrame(self.unutilized_vm_core_ratio),
             # "host_metrics": pd.DataFrame(self.host_metrics),
             # "vm_metrics": pd.DataFrame(self.vm_metrics),
             # "job_metrics": pd.DataFrame(self.job_metrics),
-            "job_wait_time": pd.DataFrame(self.job_wait_time),
-            "unutilized_vm_core_ratio": pd.DataFrame(self.unutilized_vm_core_ratio),
-            "episode_actions": pd.DataFrame(self.actions),
-            "episode_details": pd.DataFrame(self._create_episode_details_dict()),
         }
         return df_dict
 
     def _write_dataframes_to_csvs(self, df_dict, path_dict) -> None:
-        # df_dict["host_metrics"].to_csv(path_dict["host_metrics"], header=False)
-        # df_dict["vm_metrics"].to_csv(path_dict["vm_metrics"], header=False)
-        # df_dict["job_metrics"].to_csv(path_dict["job_metrics"], header=False)
-        df_dict["job_wait_time"].to_csv(path_dict["job_wait_time"], header=False)
-        df_dict["unutilized_vm_core_ratio"].to_csv(
-            path_dict["unutilized_vm_core_ratio"], header=False
-        )
+        # df_dict["job_wait_time"].to_csv(path_dict["job_wait_time"], header=False)
         df_dict["episode_actions"].to_csv(
             path_dict["actions"],
             index=False,
-            header=["action", "hostId", "vmId", "vmType"],
+            # header=["action", "hostId", "vmId", "vmType"],
         )
         df_dict["episode_details"].to_csv(path_dict["episode_details"], index=False)
+        # df_dict["host_metrics"].to_csv(path_dict["host_metrics"], header=False)
+        # df_dict["vm_metrics"].to_csv(path_dict["vm_metrics"], header=False)
+        # df_dict["job_metrics"].to_csv(path_dict["job_metrics"], header=False)
+        # df_dict["unutilized_vm_core_ratio"].to_csv(
+        # path_dict["unutilized_vm_core_ratio"], header=False
+        # )
 
     def _maybe_save_best_episode_details(self) -> None:
         self._delete_previous_best()
@@ -216,7 +215,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _maybe_print_current_episode_info(self, current_reward) -> None:
         if self.verbose >= 1:
-            # -1 because it is called when reset is already done,
+            # -1 because this method is called when reset is already done,
             # so episode number is already incremented
             # you can access it also with self.locals['self'].num_timesteps
             print(f"Current timesteps: {self.num_timesteps - 1}")
@@ -251,41 +250,41 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.logger.record(
             "train/ep_total_rew", np.sum(self.rewards), exclude="tensorboard"
         )
-        self.logger.record(
-            "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/ep_job_wait_rew",
-            np.sum(self.job_wait_rewards),
-            exclude="tensorboard",
-        )
-        self.logger.record(
-            "train/ep_running_vm_cores_rew",
-            np.sum(self.running_vm_cores_rewards),
-            exclude="tensorboard",
-        )
-        self.logger.record(
-            "train/ep_unutil_vm_cores_rew",
-            np.sum(self.unutilized_vm_cores_rewards),
-            exclude="tensorboard",
-        )
-        self.logger.record(
-            "train/ep_inv_rew", np.sum(self.invalid_rewards), exclude="tensorboard"
-        )
+        # self.logger.record(
+        #     "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
+        # )
+        # self.logger.record(
+        #     "train/ep_job_wait_rew",
+        #     np.sum(self.job_wait_rewards),
+        #     exclude="tensorboard",
+        # )
+        # self.logger.record(
+        #     "train/ep_running_vm_cores_rew",
+        #     np.sum(self.running_vm_cores_rewards),
+        #     exclude="tensorboard",
+        # )
+        # self.logger.record(
+        #     "train/ep_unutil_vm_cores_rew",
+        #     np.sum(self.unutilized_vm_cores_rewards),
+        #     exclude="tensorboard",
+        # )
+        # self.logger.record(
+        #     "train/ep_inv_rew", np.sum(self.invalid_rewards), exclude="tensorboard"
+        # )
 
-        self.job_wait_time_deque.append(
-            self.mean_of_non_empty_sublists(self.job_wait_time)
-        )
-        self.job_queue_ratio_rew_deque.append(
-            np.mean(self.job_wait_rewards) / self.reward_job_wait_coef
-        )
-        self.allocated_vm_cores_rew_deque.append(
-            np.mean(self.running_vm_cores_rewards) / self.reward_running_vm_cores_coef
-        )
-        self.unutilized_vm_cores_rew_deque.append(
-            np.mean(self.unutilized_vm_cores_rewards)
-            / self.reward_unutilized_vm_cores_coef
-        )
+        # self.job_wait_time_deque.append(
+        #     self.mean_of_non_empty_sublists(self.job_wait_time)
+        # )
+        # self.job_queue_ratio_rew_deque.append(
+        #     np.mean(self.job_wait_rewards) / self.reward_job_wait_coef
+        # )
+        # self.allocated_vm_cores_rew_deque.append(
+        #     np.mean(self.running_vm_cores_rewards) / self.reward_running_vm_cores_coef
+        # )
+        # self.unutilized_vm_cores_rew_deque.append(
+        #     np.mean(self.unutilized_vm_cores_rewards)
+        #     / self.reward_unutilized_vm_cores_coef
+        # )
 
         self.logger.dump()
 
@@ -316,9 +315,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             if self.verbose >= 1:
                 print("Episode terminated")
             self._write_progress_log_row()
-            self._write_observation_tree_arrays_to_file(
-                "observation_tree_arrays.csv", "a"
-            )
+            # self._write_observation_tree_arrays_to_file(
+            #     "observation_tree_arrays.csv", "a"
+            # )
             # self._write_dot_strings_to_file()
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), "timesteps")
@@ -332,36 +331,36 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             if current_reward > self.best_reward:
                 self.best_reward = current_reward
                 self._save_new_best()
-                self._write_observation_tree_arrays_to_file(
-                    "best_obs_tree_arrays.csv", "w"
-                )
+                # self._write_observation_tree_arrays_to_file(
+                #     "best_obs_tree_arrays.csv", "w"
+                # )
 
             self._clear_episode_details()
         return True
 
     def _on_training_start(self):
         super()._on_training_start()
-        self.reward_job_wait_coef = self.get("reward_job_wait_coef")
-        self.reward_running_vm_cores_coef = self.get("reward_running_vm_cores_coef")
-        self.reward_unutilized_vm_cores_coef = self.get(
-            "reward_unutilized_vm_cores_coef"
-        )
+        # self.reward_job_wait_coef = self.get("reward_job_wait_coef")
+        # self.reward_running_vm_cores_coef = self.get("reward_running_vm_cores_coef")
+        # self.reward_unutilized_vm_cores_coef = self.get(
+        #     "reward_unutilized_vm_cores_coef"
+        # )
 
     def _on_rollout_end(self):
         super()._on_rollout_end()
-        self.logger.record(
-            "rollout/ep_job_wait_time_mean", np.mean(self.job_wait_time_deque)
-        )
-        self.logger.record(
-            "rollout/ep_job_wait_rew_mean", np.mean(self.job_queue_ratio_rew_deque)
-        )
-        self.logger.record(
-            "rollout/ep_allocated_vm_cores_rew_mean",
-            np.mean(self.allocated_vm_cores_rew_deque),
-        )
-        self.logger.record(
-            "rollout/ep_unutilized_vm_cores_rew_mean",
-            np.mean(self.unutilized_vm_cores_rew_deque),
-        )
+        # self.logger.record(
+        #     "rollout/ep_job_wait_time_mean", np.mean(self.job_wait_time_deque)
+        # )
+        # self.logger.record(
+        #     "rollout/ep_job_wait_rew_mean", np.mean(self.job_queue_ratio_rew_deque)
+        # )
+        # self.logger.record(
+        #     "rollout/ep_allocated_vm_cores_rew_mean",
+        #     np.mean(self.allocated_vm_cores_rew_deque),
+        # )
+        # self.logger.record(
+        #     "rollout/ep_unutilized_vm_cores_rew_mean",
+        #     np.mean(self.unutilized_vm_cores_rew_deque),
+        # )
 
         self.logger.dump(step=self.num_timesteps)

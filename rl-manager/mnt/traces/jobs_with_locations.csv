@@ -1,0 +1,8 @@
+job_id,arrival_time,mi,required_cores,location
+0,1,10000,32,micro_dc_dcu
+1,1,10000,32,micro_dc_ucd
+2,2,10000,16,micro_dc_eur
+3,2,10000,16,micro_dc_eur
+4,3,10000,8,micro_dc_eur
+5,3,10000,8,micro_dc_ucd
+6,4,10000,4,micro_dc_dcu

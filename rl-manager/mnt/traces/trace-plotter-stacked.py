@@ -24,12 +24,12 @@ def main():
     if not args.count_cores:
         # Count jobs with different core requests at each arrival time
         pivot_df = (
-            df.groupby(["arrival_time", "allocated_cores"]).size().unstack(fill_value=0)
+            df.groupby(["arrival_time", "required_cores"]).size().unstack(fill_value=0)
         )
     else:
         # Sum cores by arrival time for each core value
         pivot_df = (
-            df.groupby(["arrival_time", "allocated_cores"])["allocated_cores"]
+            df.groupby(["arrival_time", "required_cores"])["required_cores"]
             .sum()
             .unstack(fill_value=0)
         )

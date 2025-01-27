@@ -8,27 +8,29 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class SimulationFactory {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(SimulationFactory.class.getSimpleName());
 
-    private static final Type cloudletDescriptors =
+    private static final Type cloudletDescriptorsType =
             new TypeToken<List<CloudletDescriptor>>() {}.getType();
+
+    private static final Type simulationSettingsType =
+            new TypeToken<SimulationSettings>() {}.getType();
 
     private static final Gson gson = new Gson();
 
-    private int created = 0;
+    private int simulationsRunning = 0;
 
-    public synchronized WrappedSimulation create(final Map<String, Object> params,
+    public synchronized WrappedSimulation create(final String paramsAsJson,
             final String jobsAsJson) {
-        String identifier = "Sim" + created++;
+        String identifier = "Sim" + simulationsRunning++;
 
-        final SimulationSettings settings = new SimulationSettings(params);
+        final SimulationSettings settings = gson.fromJson(paramsAsJson, simulationSettingsType);
 
-        LOGGER.info("Simulation settings dump\n{}", settings.printSettings());
+        LOGGER.info("Simulation settings dump\n{}", settings.toString());
 
         List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
 
@@ -66,9 +68,10 @@ public class SimulationFactory {
                         cloudletDescriptor.getSubmissionDelay(),
                         // we divide by the pesNumber because cloudSimPlus do not parallelize jobs
                         // :) so we artificially do it here.
-                        miForThisSplit / pesForThisSplit, pesForThisSplit);
+                        miForThisSplit / pesForThisSplit, pesForThisSplit,
+                        cloudletDescriptor.getLocation());
 
-                splitted.add(ensureMinValues(splittedDescriptor));
+                splitted.add(splittedDescriptor);
             }
         }
 
@@ -80,22 +83,14 @@ public class SimulationFactory {
         List<CloudletDescriptor> jobList = new ArrayList<>();
         LOGGER.info(jobsAsJson);
         final List<CloudletDescriptor> deserialized =
-                gson.fromJson(jobsAsJson, cloudletDescriptors);
+                gson.fromJson(jobsAsJson, cloudletDescriptorsType);
 
         for (CloudletDescriptor cloudletDescriptor : deserialized) {
-            jobList.add(ensureMinValues(cloudletDescriptor));
+            jobList.add(cloudletDescriptor);
         }
 
         LOGGER.info("Deserialized {} jobs", jobList.size());
 
         return jobList;
-    }
-
-    private CloudletDescriptor ensureMinValues(final CloudletDescriptor cloudletDescriptor) {
-        final long mi = Math.max(1, cloudletDescriptor.getMi());
-        final long cloudletDelay = Math.max(0, cloudletDescriptor.getSubmissionDelay());
-        final int pesNumber = Math.max(1, cloudletDescriptor.getCores());
-
-        return new CloudletDescriptor(cloudletDescriptor.getJobId(), cloudletDelay, mi, pesNumber);
     }
 }

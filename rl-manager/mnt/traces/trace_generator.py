@@ -51,20 +51,20 @@ def generate_trace(
     # Ensure we don't exceed max_time with the generated arrival times
     arrival_times = np.clip(arrival_times, 1, max_time)
 
-    # Generate job data (mi and allocated_cores)
+    # Generate job data (mi and required_cores)
     mi_values = (
         np.random.randint(1, 6, size=num_jobs) * 50000
     )  # Random values from the set {10, 20, 30, 40, 50}
 
     if max_entropy_type == "jobs":
-        allocated_cores = np.random.choice(
+        required_cores = np.random.choice(
             [1, 2, 4, 8], size=num_jobs
         )  # Random values from the set {1, 2, 4, 8}
     elif max_entropy_type == "cores":
         # For cores, we scale the core assignment using a Gaussian distribution
-        allocated_cores = np.random.choice([1, 2, 4, 8], size=num_jobs)
-        allocated_cores = allocated_cores.astype(int)
-        allocated_cores[allocated_cores == 0] = 1  # Ensure there are no zero cores
+        required_cores = np.random.choice([1, 2, 4, 8], size=num_jobs)
+        required_cores = required_cores.astype(int)
+        required_cores[required_cores == 0] = 1  # Ensure there are no zero cores
     else:
         raise ValueError("Invalid max_entropy_type. Choose from 'jobs' or 'cores'.")
 
@@ -74,7 +74,7 @@ def generate_trace(
             "job_id": range(num_jobs),
             "arrival_time": arrival_times,
             "mi": mi_values,
-            "allocated_cores": allocated_cores,
+            "required_cores": required_cores,
         }
     )
 
@@ -94,9 +94,9 @@ def generate_trace(
             cumulative_cores = 0
             selected_jobs = []
             for _, job in time_jobs.iterrows():
-                if cumulative_cores + job["allocated_cores"] > max_entropy:
+                if cumulative_cores + job["required_cores"] > max_entropy:
                     break  # Stop adding jobs if total cores exceed max_entropy
-                cumulative_cores += job["allocated_cores"]
+                cumulative_cores += job["required_cores"]
                 selected_jobs.append(job)
             time_jobs = pd.DataFrame(selected_jobs)
         else:

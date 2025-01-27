@@ -22,14 +22,14 @@ public class MultiSimulationEnvironment {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MultiSimulationEnvironment.class.getSimpleName());
 
-    public String createSimulation(final Map<String, Object> params, final String jobsAsJson) {
-        WrappedSimulation simulation = simulationFactory.create(params, jobsAsJson);
+    public String createSimulation(final String paramsAsJson, final String jobsAsJson) {
+        WrappedSimulation simulation = simulationFactory.create(paramsAsJson, jobsAsJson);
         String identifier = simulation.getIdentifier();
-        for (Map.Entry<String, Object> entry : params.entrySet()) {
-            LOGGER.info(entry.getKey() + ":" + entry.getValue().toString());
+        if (identifier.equals("Sim0")) {
+            final SimulationSettings settings = simulation.getSettings();
+            runMode = settings.getRunMode();
+            numExperiments = settings.getNumExperiments();
         }
-        runMode = params.get("run_mode").toString();
-        numExperiments = (int) params.get("num_experiments");
         simulations.put(identifier, simulation);
         return identifier;
     }

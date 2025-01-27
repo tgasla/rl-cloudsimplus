@@ -18,136 +18,149 @@ globals:
     attached: true
     gpu: true
     java_log_level: INFO
-    java_log_destination: none
+    java_log_destination: stdout
     junit_output_show: false
     run_mode: serial
 
 common:
+  datacenters:
+      - !datacenter
+        name: cloud_dc
+        type: cloud
+        amount: 1
+        hosts:
+          - !host
+            amount: 16
+            pes: 64
+            pe_mips: 60
+            ram: 65536
+            storage: 4000000
+            bw: 100000
+            vms:
+              - !vm
+                amount: 1
+                pes: 64
+                pe_mips: 60
+                ram: 65536
+                size: 4000000
+                bw: 100000
+      - !datacenter
+        name: edge_dc_frankfurt
+        type: edge
+        amount: 1
+        hosts:
+          - !host
+              amount: 8
+              pes: 16
+              pe_mips: 60
+              ram: 65536
+              storage: 2000000
+              bw: 10000
+              vms:
+                !vm
+                  amount: 1
+                  pes: 16
+                  pe_mips: 60
+                  ram: 65536
+                  size: 2000000
+                  bw: 10000
+      - !datacenter
+          name: micro_dc_ucd
+          type: micro
+          connect_to:
+            - edge_dc_frankfurt
+            - cloud_dc
+          amount: 1
+          hosts:
+            - !host
+                amount: 3
+                pes: 6
+                pe_mips: 60
+                ram: 65536
+                storage: 1000000
+                bw: 1000
+                vms:
+                  - !vm
+                    amount: 1
+                    pes: 6
+                    pe_mips: 60
+                    ram: 65536
+                    size: 1000000
+                    bw: 1000
+      - !datacenter
+          name: micro_dc_dcu
+          type: micro
+          connect_to:
+            - edge_dc_frankfurt
+            - cloud_dc
+          amount: 1
+          hosts:
+            - !host
+                amount: 2
+                pes: 6
+                pe_mips: 60
+                ram: 65536
+                storage: 1000000
+                bw: 1000
+                vms:
+                  - !vm
+                    amount: 1
+                    pes: 6
+                    pe_mips: 60
+                    ram: 65536
+                    size: 1000000
+                    bw: 1000
+      - !datacenter
+          name: micro_dc_eur
+          type: micro
+          connect_to:
+            - edge_dc_frankfurt
+            - cloud_dc
+          amount: 1
+          hosts:
+            - !host
+                amount: 3
+                pes: 6
+                pe_mips: 60
+                ram: 65536
+                storage: 1000000
+                bw: 1000
+                vms:
+                  - !vm
+                    amount: 1
+                    pes: 6
+                    pe_mips: 60
+                    ram: 65536
+                    size: 1000000
+                    bw: 1000
   seed: 1234
   timestep_interval: 1.0
-  max_episode_length: 100
+  min_time_between_events: 0.1
+  max_episode_length: 10
   split_large_jobs: true
-  clear_created_lists: true
+  clear_created_lists: false
   vm_startup_delay: 0.0
   vm_shutdown_delay: 0.0
-  datacenters:
-    - !datacenter
-      name: cloud_dc
-      type: cloud
-      amount: 1
-      hosts:
-        - !host
-          amount: 16
-          pes: 64
-          pe_mips: 60000
-          ram: 65536
-          storage: 4000000
-          bw: 100000
-          vms:
-            - !vm
-              amount: 8
-              pes: 8
-              pe_mips: 60000
-              ram: 8192
-              size: 64000
-              bw: 10000
-    - !datacenter
-      name: edge_dc_ireland
-      type: edge
-      amount: 1
-      hosts:
-        - !host
-            amount: 8
-            pes: 16
-            pe_mips: 60000
-            ram: 65536
-            storage: 2000000
-            bw: 10000
-            vms:
-              !vm
-                amount: 4
-                pes: 4
-                pe_mips: 60000
-                ram: 2048
-                size: 8000
-                bw: 1000
-    - !datacenter
-        name: micro_dc_ucd
-        type: micro
-        amount: 1
-        hosts:
-          - !host
-              amount: 3
-              pes: 6
-              pe_mips: 60000
-              ram: 65536
-              storage: 1000000
-              bw: 1000
-              vms:
-                - !vm
-                  amount: 3
-                  pes: 2
-                  pe_mips: 60000
-                  ram: 1024
-                  size: 4000
-                  bw: 1000
-    - !datacenter
-        name: micro_dc_dcu
-        type: micro
-        amount: 1
-        hosts:
-          - !host
-              amount: 2
-              pes: 6
-              pe_mips: 60000
-              ram: 65536
-              storage: 1000000
-              bw: 1000
-              vms:
-                - !vm
-                  amount: 3
-                  pes: 2
-                  pe_mips: 60000
-                  ram: 1024
-                  size: 4000
-                  bw: 1000
-    - !datacenter
-        name: micro_dc_eur
-        type: micro
-        amount: 1
-        hosts:
-          - !host
-              amount: 3
-              pes: 6
-              pe_mips: 60000
-              ram: 65536
-              storage: 1000000
-              bw: 1000
-              vms:
-                - !vm
-                  amount: 3
-                  pes: 2
-                  pe_mips: 60000
-                  ram: 1024
-                  size: 4000
-                  bw: 1000
   paying_for_the_full_hour: false
   save_experiment: true
   base_log_dir: logs
   mode: train
-  vm_allocation_policy: rl
+  max_jobs_waiting: 20
+  vm_allocation_policy: bestfit
+  state_action_space_type: select-dc
   enable_autoencoder_observation: false
-  freeze_inactive_input_layer_weights: true
+  freeze_inactive_input_layer_weights: false
   algorithm: MaskablePPO
   max_hosts: 32
-  max_job_pes: 8
-  job_trace_filename: three_60max_8maxcores.csv
+  job_trace_filename: jobs_with_locations.csv
   timesteps: 2048
   n_rollout_steps: 2048
-  reward_job_wait_coef: 0.25
-  reward_running_vm_cores_coef: 0.25
-  reward_unutilized_vm_cores_coef: 0.25
-  reward_invalid_coef: 0.25
+  reward_jobs_placed_coef: 0.5
+  reward_quality_coef: 0.5
+  # reward_job_wait_coef: 0.25
+  # reward_running_vm_cores_coef: 0.25
+  # reward_unutilized_vm_cores_coef: 0.25
+  # reward_invalid_coef: 0.25
 
 experiment_1:
     experiment_type_dir: testing

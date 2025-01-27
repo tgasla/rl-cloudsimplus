@@ -44,8 +44,8 @@ def generate_job_trace(args):
 
     core_range = [1] + list(range(2, args.max_cores + 1, 2))
 
-    # Generating allocated_cores to be divisible by 2 and not exceed max_cores
-    allocated_cores = np.random.choice([i for i in core_range], args.jobs)
+    # Generating requessted_cores to be divisible by 2 and not exceed max_cores
+    required_cores = np.random.choice([i for i in core_range], args.jobs)
 
     if args.noise:
         # Adding Gaussian noise to the arrival times
@@ -58,7 +58,7 @@ def generate_job_trace(args):
         "job_id": list(range(args.id_start_from, args.id_start_from + args.jobs)),
         "arrival_time": arrival_times,
         "mi": mis,
-        "allocated_cores": allocated_cores,
+        "required_cores": required_cores,
     }
 
     # if type == "list_of_dict":

@@ -5,24 +5,26 @@ def trace_to_csv(jobs: pd.DataFrame, filename="data.csv"):
     jobs.to_csv(filename)
 
 
-def as_cloudlet_descriptor_dict(job_id, submit_time, mi, allocated_cores):
+def as_cloudlet_descriptor_dict(job_id, arrival_time, mi, required_cores, location):
     return {
         "jobId": job_id,
-        "submissionDelay": submit_time,
+        "submissionDelay": arrival_time,
         "mi": mi,
-        "cores": allocated_cores,
+        "cores": required_cores,
+        "location": location,
     }
 
 
-def csv_to_cloudlet_descriptor(filename="data.csv"):
+def csv_to_cloudlet_descriptor(filename):
     jobs = []
     df = pd.read_csv(filename, sep=",")
     for i in df.index:
         cloudlet = as_cloudlet_descriptor_dict(
-            int(df.job_id[i]),
-            int(df.arrival_time[i]),
-            int(df.mi[i]),
-            int(df.allocated_cores[i]),
+            job_id=int(df.job_id[i]),
+            arrival_time=int(df.arrival_time[i]),
+            mi=int(df.mi[i]),
+            required_cores=int(df.required_cores[i]),
+            location=str(df.location[i]),
         )
         jobs.append(cloudlet)
     return jobs
@@ -54,11 +56,11 @@ def swf_to_cloudlet_descriptor(
             job_id = int(line_splitted[0])
             submit_time = int(line_splitted[1])
             run_time = int(line_splitted[3])
-            allocated_cores = int(line_splitted[4])
+            required_cores = int(line_splitted[4])
             status = int(line_splitted[10])
-            mi = run_time * mips * allocated_cores
+            mi = run_time * mips * required_cores
 
-            if status != 0 or run_time <= 0 or allocated_cores <= 0:
+            if status != 0 or run_time <= 0 or required_cores <= 0:
                 continue
 
             if relative_submission_delay:
@@ -73,7 +75,7 @@ def swf_to_cloudlet_descriptor(
                     previous_submit_time = original_submit_time
 
             cloudlet = as_cloudlet_descriptor_dict(
-                job_id, submit_time, mi, allocated_cores
+                job_id, submit_time, mi, required_cores
             )
             jobs.append(cloudlet)
             jobs_read += 1

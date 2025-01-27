@@ -41,7 +41,7 @@ def main():
             "job_id": len(df),
             "arrival_time": np.random.choice(list(dead_periods) + list(arrival_times)),
             "mi": 10,
-            "allocated_cores": np.random.choice(
+            "required_cores": np.random.choice(
                 [1, 2, 4, 8]
             ),  # Choose cores from the set {1, 2, 4, 8}
         }
@@ -54,7 +54,7 @@ def main():
         df.at[idx, "arrival_time"] += np.random.choice(
             [-1, 0, 1]
         )  # Slightly shift arrival time
-        df.at[idx, "allocated_cores"] = max(
+        df.at[idx, "required_cores"] = max(
             1, np.random.choice([1, 2, 4, 8])
         )  # Choose cores from the set {1, 2, 4, 8}
 

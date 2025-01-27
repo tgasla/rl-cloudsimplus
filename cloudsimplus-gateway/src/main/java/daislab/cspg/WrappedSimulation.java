@@ -1,5 +1,6 @@
 package daislab.cspg;
 
+import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.cloudlets.Cloudlet;
@@ -44,6 +45,8 @@ public class WrappedSimulation {
     // private final Gson gson = new Gson();
     private final String identifier;
     private final SimulationSettings settings;
+    private CloudSimProxy cloudSimProxy;
+    private int currentStep;
     // private final MetricsStorage metricsStorage;
     // private final SimulationHistory simulationHistory;
     // private final int maxVms;
@@ -51,8 +54,6 @@ public class WrappedSimulation {
     // private final int observationArrayRows;
     // private final int observationArrayColumns;
     // private final int minJobPes = 1;
-    private CloudSimProxy cloudSimProxy;
-    private int currentStep;
     // private long epWaitingJobsCountMax = 0;
     // private long epRunningVmsCountMax = 0;
 
@@ -61,6 +62,7 @@ public class WrappedSimulation {
         this.identifier = identifier;
         this.settings = settings;
         initialJobsDescriptors = jobs;
+
         // simulationHistory = new SimulationHistory();
         // maxHosts = settings.getMaxHosts();
         // maxVms = maxHosts * settings.getHostPes() / settings.getSmallVmPes();
@@ -73,15 +75,6 @@ public class WrappedSimulation {
         // vmMetricsCount, jobMetricsCount, maxHosts, maxVms, maxJobsCount);
 
         LOGGER.info("Creating simulation: {}", identifier);
-    }
-
-    private int getJobCoresWaitingObservation() {
-        final int jobCoresWaiting = cloudSimProxy.calculateJobCoresWaiting();
-        // final int largeVmPes = settings.getSmallVmPes() * settings.getLargeVmMultiplier();
-        // Do not allow the observation to be larger than the number of cores in the
-        // large VM
-        return 1;
-        // return Math.min(jobCoresWaiting, largeVmPes);
     }
 
     // public void resetEpisodeStats() {
@@ -129,11 +122,10 @@ public class WrappedSimulation {
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
-        SimulationStepInfo info = new SimulationStepInfo();
+        SimulationStepInfo info = new SimulationStepInfo(0, 0, new ArrayList<>());
 
-        // Observation observation =
-        // new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
-        Observation observation = new Observation(null, 1);
+        Observation observation =
+                new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
 
         return new SimulationResetResult(observation, info);
     }
@@ -141,19 +133,20 @@ public class WrappedSimulation {
     public SimulationStepResult step(final int[] action) {
         validateSimulationReset();
         currentStep++;
-
         LOGGER.info("Step {} starting", currentStep);
-        int[] actionResult = switch (settings.getVmAllocationPolicy()) {
-            case "rl", "fromfile" -> executeCustomAction(action);
-            case "rule-based" -> {
-                cloudSimProxy.executeRuleBasedAction();
-                yield new int[] {0, 0}; // does not matter
-            }
-            default -> throw new IllegalArgumentException(
-                    "Unexpected value: " + settings.getVmAllocationPolicy());
-        };
 
-        final boolean isValid = actionResult[0] != -1;
+        final double[] ratios = executeCustomCloudletToDcAction(action);
+        // switch (settings.getVmAllocationPolicy()) {
+        // case "rl", "fromfile" -> {
+        // ratios = executeCustomVmManagementAction(action);
+        // }
+        // case "rule-based" -> cloudSimProxy.executeRuleBasedAction();
+        // default -> throw new IllegalArgumentException(
+        // "Unexpected value: " + settings.getVmAllocationPolicy());
+        // };
+
+        // final boolean isValid = actionResult[0] != -1;
+        // final boolean isValid = true;
 
         cloudSimProxy.runOneTimestep();
 
@@ -171,7 +164,7 @@ public class WrappedSimulation {
         boolean terminated = !cloudSimProxy.isRunning();
         boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
 
-        double[] rewards = calculateReward(isValid);
+        double[] rewards = calculateReward(ratios[0], ratios[1]);
 
         // TEMPORARILY DISABLED FOR OPTIMIZATION
         // recordSimulationData(action, rewards);
@@ -200,15 +193,15 @@ public class WrappedSimulation {
         // getUnutilizedVmCoreRatio(),
         // getInfrastructureObservation());
 
-        // SimulationStepInfo info = new SimulationStepInfo(rewards,
-        // cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
-        // getInfrastructureObservation(), actionResult[0], actionResult[1]);
+        final List<Double> jobWaitTime = cloudSimProxy.getFinishedJobsWaitTimeLastTimestep();
 
-        SimulationStepInfo info = new SimulationStepInfo();
+        SimulationStepInfo info = new SimulationStepInfo(rewards[1], rewards[2], jobWaitTime);
+
 
         // Observation observation =
         // new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
-        Observation observation = new Observation(null, 1);
+        Observation observation =
+                new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
 
         return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
     }
@@ -224,14 +217,15 @@ public class WrappedSimulation {
     // }
 
     // private List<Cloudlet> getCloudletList() {
-    // List<Cloudlet> cloudletList = cloudSimProxy.getBroker().getVmExecList().parallelStream()
+    // List<Cloudlet> cloudletList =
+    // cloudSimProxy.getBroker().getVmExecList().parallelStream()
     // .map(Vm::getCloudletScheduler).map(CloudletScheduler::getCloudletList)
     // .flatMap(List::stream).collect(Collectors.toList());
 
     // return cloudletList;
     // }
 
-    private double getUnutilizedVmCoreRatio() {
+    double getUnutilizedVmCoreRatio() {
         List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
         Long unutilizedVmCores = getUnutilizedVmCores(vmList);
         Long runningVmCores = getRunningVmCores(vmList);
@@ -239,7 +233,7 @@ public class WrappedSimulation {
         return runningVmCores > 0 ? ((double) unutilizedVmCores / runningVmCores) : 0.0;
     }
 
-    private Long getUnutilizedVmCores(List<Vm> vmList) {
+    Long getUnutilizedVmCores(List<Vm> vmList) {
         Long unutilizedVmCores =
                 vmList.parallelStream().map(Vm::getExpectedFreePesNumber).reduce(0L, Long::sum);
 
@@ -259,7 +253,8 @@ public class WrappedSimulation {
     // private Long getRunningCloudletsCount() {
     // List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
 
-    // Long runningCloudletCount = vmList.parallelStream().map(Vm::getCloudletScheduler)
+    // Long runningCloudletCount =
+    // vmList.parallelStream().map(Vm::getCloudletScheduler)
     // .map(CloudletScheduler::getCloudletExecList).mapToLong(List::size).sum();
     // return runningCloudletCount;
     // }
@@ -272,7 +267,8 @@ public class WrappedSimulation {
     // }
 
     // private double[] collectDatacenterMetrics() {
-    // double[] datacenterMetrics = new double[] {(double) cloudSimProxy.getAllocatedCores(),
+    // double[] datacenterMetrics = new double[] {(double)
+    // cloudSimProxy.getAllocatedCores(),
     // (double) settings.getTotalHostCores(), getHostCoresAllocatedToVmsRatio(),
     // (double) settings.getHostsCount(), (double) getRunningVmsCount(),
     // (double) getRunningCloudletsCount()};
@@ -295,7 +291,8 @@ public class WrappedSimulation {
     // long mediumVmCount = vmCountByType(vmList, "M");
     // long largeVmCount = vmCountByType(vmList, "L");
 
-    // hostMetrics[i] = new double[] {host.getId(), host.getVmList().size(), smallVmCount,
+    // hostMetrics[i] = new double[] {host.getId(), host.getVmList().size(),
+    // smallVmCount,
     // smallVmCount
     // / (settings.getHostPes() / cloudSimProxy.getVmCoreCountByType("S")),
     // mediumVmCount,
@@ -388,49 +385,118 @@ public class WrappedSimulation {
     // simulationHistory.record("vmExecCount",
     // cloudSimProxy.getBroker().getVmExecList().size());
     // // simulationHistory.record("totalCost", cloudSimProxy.getRunningCost()); #
-    // TODO: NEEDS FIX
+    // TODO: total cost is not properly calculated, fix it
     // }
 
-    private int[] executeCustomAction(final int[] action) {
-        // returns [hostId, coresChanged]
-
-        final boolean isValid;
-
-        LOGGER.info("{}: Timestep: {}, Action: [{}, {}, {}, {}]", clock(), currentStep, action[0],
-                action[1], action[2], action[3]);
-
-        // [action, hostId, vmId, type]
-        // action = {0: do nothing, 1: create vm, 2: destroy vm}
-        // id = {hostId to place new vm (when action = 1), vmId to terminate (when
-        // action = 2)
-        // type = {0: small, 1: medium, 2: large} (relevant only when action = 1)
-
-        // if (action[0] == 1) {
-        // final int hostId = action[1];
-        // final int vmTypeIndex = action[3];
-        // final int vmCores = cloudSimProxy.getVmCoreCountByType(settings.VM_TYPES[vmTypeIndex]);
-        // isValid = addNewVm(settings.VM_TYPES[vmTypeIndex], hostId);
-        // if (!isValid) {
-        // return new int[] {-1, 0};
-        // }
-        // return new int[] {hostId, vmCores};
-        // }
-
-        // else if (action[0] == 2) {
-        // final int vmIndex = action[2];
-        // List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
-        // Vm vm = vmList.get(vmIndex);
-        // int hostId = (int) vm.getHost().getId();
-        // int vmCores = (int) vm.getPesNumber();
-        // isValid = removeVm(vmIndex);
-        // if (!isValid) {
-        // return new int[] {-1, 0};
-        // }
-        // return new int[] {hostId, vmCores};
-        // }
-
-        return new int[] {0, 0};
+    private Vm getFirstAvailableVmOfDcForCloudlet(final int targetDcId, final Cloudlet cloudlet) {
+        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+        // LOGGER.info("VMs running when trying to find binding: {}", vmList.size());
+        for (Vm vm : vmList) {
+            final int dcId = (int) vm.getHost().getDatacenter().getId();
+            if (dcId == targetDcId && vm.isSuitableForCloudlet(cloudlet)) {
+                LOGGER.info("Found VM in DC {}", dcId);
+                return vm;
+            }
+        }
+        return Vm.NULL;
     }
+
+    private double getQualityOfDcById(final int dcId) {
+        final String datacenterType =
+                ((DatacenterWithType) cloudSimProxy.getDatacenterById(dcId)).getType();
+        return switch (datacenterType) {
+            case "cloud" -> 0.0;
+            case "edge" -> 0.5;
+            case "micro" -> 1.0;
+            default -> throw new IllegalArgumentException("Unexpected value: " + datacenterType);
+        };
+    }
+
+    // this action is if the agent performs cloudlet to DC mapping
+    private double[] executeCustomCloudletToDcAction(final int[] action) {
+        // final int[] actionSucess = new int[jobsWaitingThisTimestep];
+        // LOGGER.info("VMs running: {}", cloudSimProxy.getBroker().getVmExecList().size());
+        // alternative way is to have the agent return -1 for jobs not waiting, so you
+        // return the
+        // index - 1, where index is the index of the first -1 in the array
+        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final List<Cloudlet> jobsToSubmit = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final int jobsWaiting = jobsToSubmit.size();
+
+        int jobsPlaced = 0;
+        double quality = 0.0;
+        for (int i = 0; i < jobsWaiting; i++) {
+            final Cloudlet job = jobsToSubmit.get(i);
+            final int dcId = action[i] + 1;
+            LOGGER.info("Action[{}]: {}", i, dcId);
+            if (dcId == 1) {
+                LOGGER.info("No action for job {}", i);
+                continue;
+            }
+            final Vm vm = getFirstAvailableVmOfDcForCloudlet(dcId, job);
+            if (vm == Vm.NULL) {
+                // This should never happen because the agent should not return an action that
+                // is
+                // not possible. The agent knows the free cores of each DC.
+                LOGGER.warn("No available VM for job {} in DC {}", job.getId(), dcId);
+                continue;
+            }
+            cloudSimProxy.getBroker().bindCloudletToVm(job, vm);
+            quality += getQualityOfDcById(dcId);
+            jobsPlaced++;
+        }
+
+        if (jobsWaiting == 0 || jobsPlaced == 0) {
+            return new double[] {0.0, 0.0};
+        }
+
+        final double jobsPlacedRatio = (double) jobsPlaced / jobsWaiting;
+        final double qualityRatio = quality / jobsPlaced;
+        return new double[] {jobsPlacedRatio, qualityRatio};
+    }
+
+    // This is for the VM management action
+    // private int[] executeCustomVmManagementAction(final int[] action) {
+    // returns [hostId, coresChanged]
+
+    // final boolean isValid;
+
+    // LOGGER.info("{}: Timestep: {}, Action: [{}, {}, {}, {}]", clock(),
+    // currentStep,
+    // action[0],
+    // action[1], action[2], action[3]);
+
+    // [action, hostId, vmId, type]
+    // action = {0: do nothing, 1: create vm, 2: destroy vm}
+    // id = {hostId to place new vm (when action = 1), vmId to terminate (when
+    // action = 2)
+    // type = {0: small, 1: medium, 2: large} (relevant only when action = 1)
+
+    // if (action[0] == 1) {
+    // final int hostId = action[1];
+    // final int vmTypeIndex = action[3];
+    // final int vmCores =
+    // cloudSimProxy.getVmCoreCountByType(settings.VM_TYPES[vmTypeIndex]);
+    // isValid = addNewVm(settings.VM_TYPES[vmTypeIndex], hostId);
+    // if (!isValid) {
+    // return new int[] {-1, 0};
+    // }
+    // return new int[] {hostId, vmCores};
+    // }
+
+    // else if (action[0] == 2) {
+    // final int vmIndex = action[2];
+    // List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+    // Vm vm = vmList.get(vmIndex);
+    // int hostId = (int) vm.getHost().getId();
+    // int vmCores = (int) vm.getPesNumber();
+    // isValid = removeVm(vmIndex);
+    // if (!isValid) {
+    // return new int[] {-1, 0};
+    // }
+    // return new int[] {hostId, vmCores};
+    // }
+    // }
 
     // final long id;
     // final int index;
@@ -541,7 +607,8 @@ public class WrappedSimulation {
 
     private double getHostCoresAllocatedToVmsRatio() {
         return 0.0;
-        // return ((double) cloudSimProxy.getAllocatedCores()) / settings.getTotalHostCores();
+        // return ((double) cloudSimProxy.getAllocatedCores()) /
+        // settings.getTotalHostCores();
     }
 
     // private double[] getObservation() {
@@ -563,7 +630,8 @@ public class WrappedSimulation {
      * @param columnIndices An array of column indices to be included in the subarray.
      * @return A 2D array containing the selected columns from the original matrix.
      */
-    // private double[][] getVertSubarray(final double[][] matrix, final int[] columnIndices) {
+    // private double[][] getVertSubarray(final double[][] matrix, final int[]
+    // columnIndices) {
     // int numRows = matrix.length;
     // int numCols = columnIndices.length;
     // double[][] result = new double[numRows][numCols];
@@ -575,7 +643,97 @@ public class WrappedSimulation {
     // return result;
     // }
 
-    // private int[] getInfrastructureObservation() {
+    private int[] getInfrastructureObservation() {
+        switch (settings.getStateActionSpaceType()) {
+            case "select-dc":
+                return getInfraObsTotalFreeVmCoresPerHost();
+            default:
+                throw new IllegalArgumentException(
+                        "Unexpected value: " + settings.getStateActionSpaceType());
+        }
+    }
+
+    private int[] getJobsWaitingObservation() {
+        final int[] coreLocObs = cloudSimProxy.getCoresAndLocationForJobsWaiting();
+        final int jobsWaiting = coreLocObs.length / 2;
+        LOGGER.info("Jobs waiting: {}", jobsWaiting);
+        // for (int i = 0; i < jobsWaiting; i++) {
+        // LOGGER.info("Waiting job: {}, Cores: {}, Location: {}", i, coreLocObs[2 * i],
+        // coreLocObs[2 * i + 1]);
+        // }
+        return coreLocObs;
+    }
+
+    // private int getTotalJobCoresWaitingObservation() {
+    // final int jobCoresWaiting = cloudSimProxy.calculateJobCoresWaiting();
+    // final int largeVmPes = settings.getSmallVmPes() *
+    // settings.getLargeVmMultiplier();
+    // // Do not allow the observation to be larger than the number of cores in the
+    // // large VM
+    // return Math.min(jobCoresWaiting, largeVmPes);
+    // }
+
+    private int getMaxVmPesAcrossAllDc() {
+        final List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+        return vmList.stream().map(Vm::getPesNumber).reduce(0L, Math::max).intValue();
+    }
+
+    /**
+     * Retrieves the total number of free VM cores per host in the infrastructure.
+     * <p>
+     * This method assumes that the trace file contains cloudlets, and VMs have already been opened
+     * to fit inside all hosts. Therefore, the free cores of interest are the free cores of the VMs.
+     * It also assumes that each host has only one VM that is as large as the host. Consequently,
+     * the method counts the free cores of the VMs.
+     * <p>
+     * If the trace file contains VMs, no VMs should be opened, and the free cores of the hosts
+     * should be counted instead.
+     * <p>
+     * The method returns an array where each pair of elements represents a datacenter ID and the
+     * corresponding number of free cores in that datacenter.
+     * 
+     * @return an array of integers where each pair of elements represents a datacenter ID and the
+     *         corresponding number of free cores in that datacenter.
+     */
+    private int[] getInfraObsTotalFreeVmCoresPerHost() {
+        final int totalHosts = getTotalHosts();
+        final int[] infrastructureObservation = new int[2 * totalHosts];
+        List<Datacenter> datacenterList =
+                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+        int currentIndex = 0;
+        for (Datacenter dc : datacenterList) {
+            for (Host host : dc.getHostList()) {
+                int freePes = 0;
+                final List<Vm> vmList = host.getVmList();
+                // - 1 because dc ids start from 2, Actions start with 0 but 0 means no dc, so
+                // we send 1 that means dc with id 2.
+                // We do the opposite (add 1) when we get the action
+                infrastructureObservation[currentIndex++] = (int) dc.getId() - 1;
+                for (Vm vm : vmList) {
+                    freePes += vm.getFreePesNumber();
+                }
+                infrastructureObservation[currentIndex++] = freePes;
+            }
+        }
+        for (int i = 0; i < infrastructureObservation.length; i += 2) {
+            LOGGER.info("DC: {}, Free cores: {}", infrastructureObservation[i] + 1,
+                    infrastructureObservation[i + 1]);
+        }
+        return infrastructureObservation;
+    }
+
+    private int getTotalHosts() {
+        int totalHosts = 0;
+        List<Datacenter> datacenterList =
+                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+        for (Datacenter datacenter : datacenterList) {
+            List<Host> hostList = datacenter.getHostList();
+            totalHosts += hostList.size();
+        }
+        return totalHosts;
+    }
+
+    // private int[] getInfrastructureObservationAsTreeArray() {
     // final int hostsNum = settings.getHostsCount();
     // final int vmsNum = getRunningVmsCount().intValue();
     // final int jobsNum = getRunningCloudletsCount().intValue();
@@ -667,50 +825,87 @@ public class WrappedSimulation {
     // return observation;
     // }
 
-    private double[] calculateReward(final boolean isValid) {
-        double[] rewards = new double[5];
+    // private double calculateJobPlacementRatioReward() {
+    // final int jobsWaitingThisTimestep = ;
+    // if (jobsWaitingThisTimestep == 0) {
+    // return 0.0;
+    // }
+    // final double jobsPlacedCoef = settings.getRewardJobsPlacedCoef();
+    // final double jobsPlacedReward = (double) jobsPlaced / jobsWaitingThisTimestep;
+    // return jobsPlacedCoef * jobsPlacedReward;
+    // }
+
+    private double[] calculateReward(final double jobsPlacedRatio, final double qualityRatio) {
+        double[] rewards = new double[3];
         /*
          * reward is the negative cost of running the infrastructure minus any penalties from jobs
          * waiting in the queue minus penalty if action was invalid
          */
 
-        final double jobWaitCoef = settings.getRewardJobWaitCoef();
-        final double runningVmCoresCoef = settings.getRewardRunningVmCoresCoef();
-        final double unutilizedVmCoresCoef = settings.getRewardUnutilizedVmCoresCoef();
-        final double invalidCoef = settings.getRewardInvalidCoef();
+        final double jobsPlacedCoef = settings.getRewardJobsPlacedCoef();
+        final double qualityCoef = settings.getRewardQualityCoef();
 
-        final double jobWaitReward = -jobWaitCoef * getWaitingJobsRatio();
-        final double runningVmCoresReward = -runningVmCoresCoef * getHostCoresAllocatedToVmsRatio();
-        final double unutilizedVmCoresReward = -unutilizedVmCoresCoef * getUnutilizedVmCoreRatio();
-        final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
+        final double reward = jobsPlacedCoef * jobsPlacedRatio + qualityCoef * qualityRatio;
 
-        double totalReward = 0;
-        if (settings.getVmAllocationPolicy().equals("rule-based")) {
-            totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
-        } else if (settings.getVmAllocationPolicy().equals("rl")) {
-            totalReward =
-                    jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
-        } else {
-            LOGGER.error(identifier + ": Invalid VM allocation policy");
-        }
+        LOGGER.info("totalReward: " + reward);
+        LOGGER.info("jobsPlacedReward: " + jobsPlacedCoef * jobsPlacedRatio);
+        LOGGER.info("qualityReward: " + qualityCoef * qualityRatio);
 
-        LOGGER.info("totalReward: " + totalReward);
-        LOGGER.info("jobWaitReward: " + jobWaitReward);
-        LOGGER.info("runningVmCoresReward: " + runningVmCoresReward);
-        LOGGER.info("unutilizedVmCoresReward: " + unutilizedVmCoresReward);
-        LOGGER.info("invalidReward: " + invalidReward);
+        rewards[0] = reward;
+        rewards[1] = jobsPlacedRatio;
+        rewards[2] = qualityRatio;
 
-        rewards[0] = totalReward;
-        rewards[1] = jobWaitReward;
-        rewards[2] = runningVmCoresReward;
-        rewards[3] = unutilizedVmCoresReward;
-        rewards[4] = invalidReward;
-
-        if (!isValid) {
-            LOGGER.debug("Penalty given to the agent because the selected action was not possible");
-        }
         return rewards;
     }
+
+    public SimulationSettings getSettings() {
+        return settings;
+    }
+
+    // private double[] calculateReward(final boolean isValid) {
+    // double[] rewards = new double[5];
+    // /*
+    // * reward is the negative cost of running the infrastructure minus any penalties from jobs
+    // * waiting in the queue minus penalty if action was invalid
+    // */
+
+    // final double jobWaitCoef = settings.getRewardJobWaitCoef();
+    // final double runningVmCoresCoef = settings.getRewardRunningVmCoresCoef();
+    // final double unutilizedVmCoresCoef = settings.getRewardUnutilizedVmCoresCoef();
+    // final double invalidCoef = settings.getRewardInvalidCoef();
+
+    // final double jobWaitReward = -jobWaitCoef * getWaitingJobsRatio();
+    // final double runningVmCoresReward = -runningVmCoresCoef * getHostCoresAllocatedToVmsRatio();
+    // final double unutilizedVmCoresReward = -unutilizedVmCoresCoef * getUnutilizedVmCoreRatio();
+    // final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
+
+    // double totalReward = 0;
+    // if (settings.getVmAllocationPolicy().equals("rule-based")) {
+    // totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
+    // } else if (settings.getVmAllocationPolicy().equals("rl")) {
+    // totalReward =
+    // jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
+    // } else {
+    // LOGGER.error(identifier + ": Invalid VM allocation policy");
+    // }
+
+    // LOGGER.info("totalReward: " + totalReward);
+    // LOGGER.info("jobWaitReward: " + jobWaitReward);
+    // LOGGER.info("runningVmCoresReward: " + runningVmCoresReward);
+    // LOGGER.info("unutilizedVmCoresReward: " + unutilizedVmCoresReward);
+    // LOGGER.info("invalidReward: " + invalidReward);
+
+    // rewards[0] = totalReward;
+    // rewards[1] = jobWaitReward;
+    // rewards[2] = runningVmCoresReward;
+    // rewards[3] = unutilizedVmCoresReward;
+    // rewards[4] = invalidReward;
+
+    // if (!isValid) {
+    // LOGGER.debug("Penalty given to the agent because the selected action was not possible");
+    // }
+    // return rewards;
+    // }
 
     public int getCurrentStep() {
         return currentStep;

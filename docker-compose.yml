@@ -14,6 +14,7 @@ services:
       - RUN_MODE=${RUN_MODE:-""}
       - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-""}
       - CUBLAS_WORKSPACE_CONFIG=:4096:8
+      - CUDA_LAUNCH_BLOCKING=1  
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
     build:
       context: .

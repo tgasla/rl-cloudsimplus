@@ -44,13 +44,13 @@ task configureLogging {
         if (logDestination == "file") {
             newAppenderRefs = '\t<appender-ref ref="FILE" />\n'
         }
-        // if (logDestination == "stdout") {
-        //     newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n'
-        // } else if (logDestination == "file") {
-        //     newAppenderRefs = '\t<appender-ref ref="FILE" />\n'
-        // } else if (logDestination == "stdout-file") {
-        //     newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n\t<appender-ref ref="FILE" />\n'
-        // }
+        if (logDestination == "stdout") {
+            newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n'
+        } else if (logDestination == "file") {
+            newAppenderRefs = '\t<appender-ref ref="FILE" />\n'
+        } else if (logDestination == "stdout-file") {
+            newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n\t<appender-ref ref="FILE" />\n'
+        }
         // Note: If "none" is selected, we leave the <root> section empty
 
         // Insert the new appender-refs between <root> and </root>
@@ -87,6 +87,9 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.5.12'
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
     implementation 'com.google.code.gson:gson:2.11.0'
+
+    compileOnly 'org.projectlombok:lombok:1.18.36'
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
     testImplementation 'commons-io:commons-io:2.18.1'
     testImplementation 'org.hamcrest:hamcrest:3.0'
