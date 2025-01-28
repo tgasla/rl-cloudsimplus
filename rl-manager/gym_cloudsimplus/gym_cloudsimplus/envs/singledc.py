@@ -367,7 +367,7 @@ class SingleDC(gym.Env):
         return max(self._get_max_cur_free_host_pes_per_dc())
 
     def _get_connect_to_of_dc(self, dc_id):
-        return self.params["datacenters"][dc_id]["connect_to"]
+        return self.params["datacenters"][int(dc_id)]["connect_to"]
 
     def action_masks(self) -> list[bool]:
         dc_num = self._get_datacenters_count()  # Number of datacenters
@@ -391,9 +391,6 @@ class SingleDC(gym.Env):
         for i in range(0, self.jobs_waiting_obs_length, 2):  # Iterate over jobs
             # Cores requested by the current job
             job_idx = i // 2
-            print(self.jobs_waiting_obs)
-            if self.current_step == 4:
-                exit()
             job_cores = self.jobs_waiting_obs[i]
             job_location = self.jobs_waiting_obs[i + 1]
             # Iterate over datacenters (+1 for "no action" case)
@@ -401,22 +398,30 @@ class SingleDC(gym.Env):
                 # Compute the flat index for the action
                 action_index = job_idx * options_num + j
                 # If no cores it means no more jobs waiting
-                if j == 0 and job_cores == 0:
-                    # allow only the no action, to make the invalid action masking work
-                    valid_action_mask[action_index] = True
-                elif j == 0 and job_cores > max_host_cores_all_dc:
-                    # This case is when the job is too big for any host
-                    # So, allow only the no action, again
+                # if j == 0 and job_cores == 0:
+                #     # allow only the no action, to make the invalid action masking work
+                #     valid_action_mask[action_index] = True
+                # elif j == 0 and job_cores > max_host_cores_all_dc:
+                #     # This case is when the job is too big for any host
+                #     # So, allow only the no action, again
+                #     valid_action_mask[action_index] = True
+                if j == 0:
+                    # allow no-op action for all jobs
                     valid_action_mask[action_index] = True
                 elif (
                     j > 0
+                    and j - 1 in self._get_connect_to_of_dc(job_location)
                     and 0 < job_cores <= max_host_cores_per_dc[j - 1]
-                    and job_location in self._get_connect_to_of_dc(j - 1)
                 ):
+                    # print(f"mpainw edw sto action index: {action_index}")
+                    # print(f"job location: {job_location}")
+                    # print(f"{self._get_connect_to_of_dc(job_location)}")
                     # Valid placement for the job
                     valid_action_mask[action_index] = True
 
-        print("valid_action_mask: ", valid_action_mask.tolist())
+        # if self.current_step == 30:
+        #     print(self.jobs_waiting_obs)
+        #     print("valid_action_mask: ", valid_action_mask.tolist())
 
         return valid_action_mask.tolist()  # Return as a Python list of booleans
 

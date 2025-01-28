@@ -34,7 +34,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.previous_best_episode_num = None  # to delete the previous best
         self.current_episode_num = 0
         self.best_episode_filename_prefix = "best_episode"
-        # self.job_wait_time_deque = deque(maxlen=100)
+        self.job_wait_time_deque = deque(maxlen=100)
         # self.isValid = None
         # self.job_queue_ratio_rew_deque = deque(maxlen=100)
         # self.allocated_vm_cores_rew_deque = deque(maxlen=100)
@@ -60,7 +60,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         episode_details = {
             "timestep": timesteps,
             "reward": self.rewards,
-            "new_obs": self.new_observations,
+            # "new_obs": self.new_observations,
             # "obs": self.observations, # obs and actions are saved in independent files
             # "action": self.actions,
             # "job_wait_reward": self.job_wait_rewards,
@@ -77,7 +77,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.rewards = []
         self.new_observations = []
         self.current_episode_length = 0
-        # self.job_wait_time = []
+        self.job_wait_time = []
         # self.host_metrics = []
         # self.vm_metrics = []
         # self.job_metrics = []
@@ -118,7 +118,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.actions.append(self.locals["actions"][0])
         self.rewards.append(self.locals["rewards"][0])
         self.new_observations.append(self._get_observation_from_locals("new_obs"))
-        # self.job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
+        self.job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
         # self.host_metrics.append(self.locals["infos"][0]["host_metrics"])
         # self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
         # self.job_metrics.append(self.locals["infos"][0]["job_metrics"])
@@ -151,7 +151,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             self.model.save_replay_buffer(replay_buffer_path)
 
     def _create_csv_paths(self) -> Dict:
-        # job_wait_time_path = os.path.join(self.log_dir, "job_wait_time.csv")
+        job_wait_time_path = os.path.join(self.log_dir, "job_wait_time.csv")
         episode_actions_path = os.path.join(self.log_dir, "actions.csv")
         episode_details_path = os.path.join(
             self.log_dir,
@@ -164,7 +164,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         #     self.log_dir, "unutilized_vm_core_ratio.csv"
         # )
         paths = {
-            # "job_wait_time": job_wait_time_path,
+            "job_wait_time": job_wait_time_path,
             "actions": episode_actions_path,
             "episode_details": episode_details_path,
             # "host_metrics": host_metrics_path,
@@ -176,7 +176,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _create_dataframes(self) -> Dict:
         df_dict = {
-            # "job_wait_time": pd.DataFrame(self.job_wait_time),
+            "job_wait_time": pd.DataFrame(self.job_wait_time),
             "episode_actions": pd.DataFrame(self.actions),
             "episode_details": pd.DataFrame(self._create_episode_details_dict()),
             # "unutilized_vm_core_ratio": pd.DataFrame(self.unutilized_vm_core_ratio),
@@ -187,10 +187,11 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         return df_dict
 
     def _write_dataframes_to_csvs(self, df_dict, path_dict) -> None:
-        # df_dict["job_wait_time"].to_csv(path_dict["job_wait_time"], header=False)
+        df_dict["job_wait_time"].to_csv(path_dict["job_wait_time"], header=False)
         df_dict["episode_actions"].to_csv(
             path_dict["actions"],
             index=False,
+            header=False,
             # header=["action", "hostId", "vmId", "vmType"],
         )
         df_dict["episode_details"].to_csv(path_dict["episode_details"], index=False)
@@ -272,9 +273,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         #     "train/ep_inv_rew", np.sum(self.invalid_rewards), exclude="tensorboard"
         # )
 
-        # self.job_wait_time_deque.append(
-        #     self.mean_of_non_empty_sublists(self.job_wait_time)
-        # )
+        self.job_wait_time_deque.append(
+            self.mean_of_non_empty_sublists(self.job_wait_time)
+        )
         # self.job_queue_ratio_rew_deque.append(
         #     np.mean(self.job_wait_rewards) / self.reward_job_wait_coef
         # )
@@ -348,9 +349,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _on_rollout_end(self):
         super()._on_rollout_end()
-        # self.logger.record(
-        #     "rollout/ep_job_wait_time_mean", np.mean(self.job_wait_time_deque)
-        # )
+        self.logger.record(
+            "rollout/ep_job_wait_time_mean", np.mean(self.job_wait_time_deque)
+        )
         # self.logger.record(
         #     "rollout/ep_job_wait_rew_mean", np.mean(self.job_queue_ratio_rew_deque)
         # )

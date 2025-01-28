@@ -75,15 +75,20 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
                 # Attach only to the manager container logs
                 echo "Attaching to logs of manager container (ID: $MANAGER_CONTAINER_ID) for experiment $i..."
                 if [ "$NUM_EXPERIMENTS" -gt 1 ]; then
-                    docker logs -f "$MANAGER_CONTAINER_ID"
+                    docker logs -f "$MANAGER_CONTAINER_ID" # attach only to rl manager logs
                 else
-                    docker-compose logs -f
+                    docker compose logs -f # attach to all logs
                 fi
             fi
 
-            # Wait for the manager container to stop
-            echo "Waiting for the manager container (ID: $MANAGER_CONTAINER_ID) to complete..."
-            docker compose wait "$MANAGER_CONTAINER_ID"
+            # Wait for the manager container to finish
+            echo "Waiting for manager container (ID: $MANAGER_CONTAINER_ID) to finish for experiment $i..."
+            # use docker wait if you have done docker ps
+            # use docker compose wait if you have done
+            # docker compose ps --services | grep manager
+            # MANAGER_CONTAINERID=$(docker compose ps --services | grep manager) 
+            # docker compose wait "$MANAGER_CONTAINERID"
+            docker wait "$MANAGER_CONTAINER_ID"
 
             # Cleanup after the experiment
             cleanup_experiment
