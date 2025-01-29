@@ -408,7 +408,7 @@ public class WrappedSimulation {
             case "cloud" -> 0.0;
             case "edge" -> 0.5;
             case "micro" -> 1.0;
-            default -> throw new IllegalArgumentException("Unexpected value: " + datacenterType);
+            default -> throw new IllegalArgumentException("Unexpected DC type: " + datacenterType);
         };
     }
 

@@ -135,7 +135,7 @@ def main():
     if params["save_experiment"]:
         params["log_dir"] = os.path.join(
             params["base_log_dir"],
-            params["experiment_type_dir"],
+            params["experiment_dir"],
             params["experiment_name"],
         )
         # Create folder if needed

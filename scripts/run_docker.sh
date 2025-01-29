@@ -64,7 +64,8 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
             RUN_MODE="serial" EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" docker compose $PROFILE_OPTION up --build --remove-orphans -d
 
             # Get the container ID for the manager container
-            MANAGER_CONTAINER_ID=$(docker ps --filter "name=manager" --filter "status=running" -q)
+            #MANAGER_CONTAINER_ID=$(docker ps --filter "name=manager" --filter "status=running" -q)
+            MANAGER_CONTAINER_ID=$(docker compose ps --services | grep manager)
 
             if [ -z "$MANAGER_CONTAINER_ID" ]; then
                 echo "Error: No running manager container found for experiment $i."
@@ -72,24 +73,19 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
             fi
 
             if [ "$ATTACHED" = true ]; then
-                # Attach only to the manager container logs
-                echo "Attaching to logs of manager container (ID: $MANAGER_CONTAINER_ID) for experiment $i..."
                 if [ "$NUM_EXPERIMENTS" -gt 1 ]; then
-                    docker logs -f "$MANAGER_CONTAINER_ID" # attach only to rl manager logs
+                    # Attach only to the manager container logs
+                    #echo "Attaching to logs of $MANAGER_CONTAINER_ID for experiment $i..."
+                    docker-compose logs -f "$MANAGER_CONTAINER_ID" # attach only to rl manager logs
                 else
-                    docker compose logs -f # attach to all logs
+                    #echo "Attaching to all container logs for experiment $i..."
+                    docker-compose logs -f # attach to all logs
                 fi
+            else
+                # Wait for the manager container to finish
+                echo "Waiting for container $MANAGER_CONTAINER_ID to finish for experiment $i..."
+                docker compose wait "$MANAGER_CONTAINER_ID"
             fi
-
-            # Wait for the manager container to finish
-            echo "Waiting for manager container (ID: $MANAGER_CONTAINER_ID) to finish for experiment $i..."
-            # use docker wait if you have done docker ps
-            # use docker compose wait if you have done
-            # docker compose ps --services | grep manager
-            # MANAGER_CONTAINERID=$(docker compose ps --services | grep manager) 
-            # docker compose wait "$MANAGER_CONTAINERID"
-            docker wait "$MANAGER_CONTAINER_ID"
-
             # Cleanup after the experiment
             cleanup_experiment
         done
@@ -100,3 +96,18 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 else
     echo "No replicas found in the YAML file."
 fi
+
+# Wait commands
+# docker-compose wait - no such command
+# docker compose wait or docker wait
+# use docker wait if you have done docker ps --filter "name=manager" --filter "status=running" -q
+# use docker compose wait if you have done
+# docker compose ps --services | grep manager
+# Example:
+# MANAGER_CONTAINERID=$(docker compose ps --services | grep manager) 
+# docker compose wait "$MANAGER_CONTAINERID"
+
+# Logs commands
+# docker logs -f <container_id> - attach to logs of a container
+# docker compose logs -f - attach to logs of all containers - It does not work as expected, only attacks to the gateway container
+# docker-compose logs -f - Use this command instead

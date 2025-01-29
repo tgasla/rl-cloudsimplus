@@ -11,14 +11,20 @@ build-tensorboard:
 	docker build -t tensorboard tensorboard
 
 build-gateway:
-	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=$(call get_yaml_value,java_log_level) -Dlog.destination=$(call get_yaml_value,java_log_destination) -Djunit.output.show=$(call get_yaml_value,junit_output_show)
-	cd cloudsimplus-gateway && ./gradlew dockerBuildImage
+	cd cloudsimplus-gateway && ./gradlew build --warning-mode all \
+		-Dlog.level=$(call get_yaml_value,java_log_level) \
+		-Dlog.destination=$(call get_yaml_value,java_log_destination) \
+		-Djunit.output.show=$(call get_yaml_value,junit_output_show) \
+		&& ./gradlew dockerBuildImage
 
 run-tensorboard:
 	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 80:6006 tensorboard
 
 run:
-	ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) RUN_MODE=$(call get_yaml_value,run_mode) scripts/run_docker.sh
+	ATTACHED=$(call get_yaml_value,attached) \
+		GPU=$(call get_yaml_value,gpu) \
+		RUN_MODE=$(call get_yaml_value,run_mode) \
+	scripts/run_docker.sh
 
 clean-gateway:
 	cd cloudsimplus-gateway && ./gradlew clean

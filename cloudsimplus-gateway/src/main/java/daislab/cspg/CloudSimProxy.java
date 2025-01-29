@@ -672,8 +672,10 @@ public class CloudSimProxy {
         cloudlet.addOnStartListener(new EventListener<CloudletVmEventInfo>() {
             @Override
             public void update(CloudletVmEventInfo info) {
-                LOGGER.debug("Cloudlet: {} started running on VM {} at {} ", cloudlet.getId(),
-                        cloudlet.getVm().getId(), clock());
+                LOGGER.debug("{}: Cloudlet: {} started running on VM {}, Host {}, DC {} now!",
+                        clock(), cloudlet.getId(), cloudlet.getVm().getId(),
+                        cloudlet.getVm().getHost().getId(),
+                        cloudlet.getVm().getHost().getDatacenter().getId());
             }
         });
     }
@@ -689,17 +691,21 @@ public class CloudSimProxy {
         cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
             @Override
             public void update(CloudletVmEventInfo info) {
-                LOGGER.debug(
-                        "{}: Cloudlet: {} that was running on vm {} (runs {} cloudlets) on host {} (runs {} vms) finished at {} with total execution time {}",
-                        clock(), cloudlet.getId(), cloudlet.getVm().getId(),
-                        cloudlet.getVm().getCloudletScheduler().getCloudletExecList().size(),
-                        cloudlet.getVm().getHost(), cloudlet.getVm().getHost().getVmList().size(),
-                        clock(), cloudlet.getTotalExecutionTime());
                 final double waitTime =
                         cloudlet.getStartTime() - jobArrivalTimeMap.get(cloudlet.getId());
                 jobsFinishedWaitTimeLastTimestep.add(waitTime);
-                // jobsFinishedWaitTimes.add(waitTime);
-                LOGGER.debug("{}: cloudletWaitTime: {}", clock(), waitTime);
+                LOGGER.debug(
+                        "{}: Cloudlet {}, {} mi, {} cores on vm{}/host{} (host index in dc {}, host pes {})/dc{}, idx {}, type {}. Arrived at {}, started running at {}, finished at {}, executed for {}, waited for {}",
+                        clock(), cloudlet.getId(), cloudlet.getLength(), cloudlet.getPesNumber(),
+                        cloudlet.getVm().getId(), cloudlet.getVm().getHost().getId(),
+                        cloudlet.getVm().getHost().getDatacenter().getHostList()
+                                .indexOf(cloudlet.getVm().getHost()),
+                        cloudlet.getVm().getHost().getPeList().size(),
+                        cloudlet.getVm().getHost().getDatacenter().getId(),
+                        datacenters.indexOf(cloudlet.getVm().getHost().getDatacenter()),
+                        ((DatacenterWithType) cloudlet.getVm().getHost().getDatacenter()).getType(),
+                        jobArrivalTimeMap.get(cloudlet.getId()), cloudlet.getStartTime(),
+                        cloudlet.getFinishTime(), cloudlet.getTotalExecutionTime(), waitTime);
             }
         });
     }
@@ -747,8 +753,8 @@ public class CloudSimProxy {
 
         LOGGER.info("[{} - {}): Will try to submit {} jobs", startTime, clock(),
                 cloudletList.size());
-        LOGGER.info("[{} - {}): VMs created: {}", startTime, clock(),
-                broker.getVmCreatedList().size());
+        // LOGGER.info("[{} - {}): VMs created: {}", startTime, clock(),
+        // broker.getVmCreatedList().size());
         LOGGER.info("[{} - {}): VMs running: {}", startTime, clock(),
                 broker.getVmExecList().size());
         for (Cloudlet cloudlet : cloudletList) {
@@ -763,12 +769,14 @@ public class CloudSimProxy {
             // if vm is null it means that previously the agent decided not to submit this
             // cloudlet (in WrappedSimulation.java:executeCustomAction())
             if (cloudlet.getVm() == null || cloudlet.getVm() == Vm.NULL) {
-                LOGGER.info("[{} - {}): Not submitting cloudlet {} because action was no-op.",
+                LOGGER.info("[{} - {}): Cloudlet {} not submitted because action was no-op.",
                         startTime, clock(), cloudlet.getId());
                 continue;
             }
             // here we calculate how much time the job needs to be submitted
             cloudlet.setSubmissionDelay(Math.max(cloudlet.getSubmissionDelay() - clock(), 0));
+            LOGGER.info("[{} - {}): Submitting cloudlet {} with delay {}", startTime, clock(),
+                    cloudlet.getId(), cloudlet.getSubmissionDelay());
             jobsToSubmit.add(cloudlet);
         }
 

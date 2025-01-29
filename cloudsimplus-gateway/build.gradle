@@ -60,7 +60,6 @@ task configureLogging {
         logbackFile.write(logbackConfig)
 
         logger.lifecycle "Logging level set to $logLevel, output set to $logDestination"
-    
     }
 }
 
