@@ -7,7 +7,10 @@ import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -47,6 +50,8 @@ public class WrappedSimulation {
     private final SimulationSettings settings;
     private CloudSimProxy cloudSimProxy;
     private int currentStep;
+    private int bestEpisodeReward;
+    private int currentEpisodeReward;
     // private final MetricsStorage metricsStorage;
     // private final SimulationHistory simulationHistory;
     // private final int maxVms;
@@ -113,7 +118,8 @@ public class WrappedSimulation {
         LOGGER.info("Reset initiated");
         LOGGER.info("job count: " + initialJobsDescriptors.size());
 
-        resetCurrentStep();
+        this.currentStep = 0;
+        this.currentEpisodeReward = 0;
         // resetEpisodeStats(); // TEMPORARILY DISABLED FOR OPTIMIZATION
         // metricsStorage.clear();
         // simulationHistory.reset();
@@ -166,6 +172,8 @@ public class WrappedSimulation {
 
         double[] rewards = calculateReward(ratios[0], ratios[1]);
 
+        this.currentEpisodeReward += rewards[0];
+
         // TEMPORARILY DISABLED FOR OPTIMIZATION
         // recordSimulationData(action, rewards);
 
@@ -176,6 +184,10 @@ public class WrappedSimulation {
             LOGGER.info("Simulation ended. Jobs finished: {}/{}",
                     cloudSimProxy.getBroker().getCloudletFinishedList().size(),
                     initialJobsDescriptors.size());
+            if (currentEpisodeReward > bestEpisodeReward) {
+                bestEpisodeReward = currentEpisodeReward;
+                LOGGER.info("New best episode reward: {}", bestEpisodeReward);
+            }
             // for (double jobWaitTime : cloudSimProxy.getJobsFinishedWaitTimes()) {
             // LOGGER.info("{}", jobWaitTime);
             // }
@@ -388,17 +400,88 @@ public class WrappedSimulation {
     // TODO: total cost is not properly calculated, fix it
     // }
 
-    private Vm getFirstAvailableVmOfDcForCloudlet(final int targetDcId, final Cloudlet cloudlet) {
+    // private Vm getFirstAvailableVmOfDcForCloudlet(final int targetDcId, final Cloudlet cloudlet)
+    // {
+    // List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+    // List<Cloudlet> cloudletList = cloudSimProxy.getBroker().getCloudletCreatedList();
+    // Map<Vm, Integer> vmUsedCoresMap =
+    // vmList.stream().collect(Collectors.toMap(vm -> vm, vm -> (int) cloudletList.stream()
+    // .filter(c -> c.getVm() == vm).mapToLong(Cloudlet::getPesNumber).sum()));
+
+    // for (Vm vm : vmList) {
+    // // Filter cloudlets with the target VM
+    // int expectedFreeVmPes = (int) vm.getPesNumber() - vmUsedCoresMap.get(vm);
+    // final int dcId = (int) vm.getHost().getDatacenter().getId();
+    // if (dcId == targetDcId && vm.isSuitableForCloudlet(cloudlet)
+    // && cloudlet.getPesNumber() <= expectedFreeVmPes) {
+    // return vm;
+    // }
+    // }
+    // return Vm.NULL;
+    // }
+
+    // This function does not take into account the cores that will not be available because of
+    // the cloudlets that have been assigned to a vm but not yet submitted.
+    // private Vm getFirstAvailableVmOfDcForCloudlet(final int targetDcId, final Cloudlet cloudlet)
+    // {
+    // List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+    // // LOGGER.info("VMs running when trying to find binding: {}", vmList.size());
+    // for (Vm vm : vmList) {
+    // final int dcId = (int) vm.getHost().getDatacenter().getId();
+    // if (dcId == targetDcId && vm.isSuitableForCloudlet(cloudlet)
+    // && vm.getExpectedFreePesNumber() >= cloudlet.getPesNumber()) {
+    // LOGGER.info("Found VM in DC {}", dcId);
+    // return vm;
+    // }
+    // }
+    // return Vm.NULL;
+    // }
+
+    private Vm getMostFreeVmOfDcForCloudlet(final int targetDcId, final Cloudlet cloudlet) {
+        long maxExpectedFreePes = 0;
+        Vm mostFreeVm = Vm.NULL;
+        final double targetTime = cloudSimProxy.calculateTargetTime();
         List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+        List<Cloudlet> cloudletList = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        // Map<Vm, Long> vmUsedCoresMap = new HashMap<>();
+        // for (Vm vm : vmList) {
+        // vmUsedCoresMap.put(vm, 0L);
+        // for (Cloudlet c : cloudletList) {
+        // if (c.getVm() != Vm.NULL && c.getVm() != null && c.getVm() == vm) {
+        // vmUsedCoresMap.put(vm, vmUsedCoresMap.get(vm) + c.getPesNumber());
+        // }
+        // }
+        // }
+        Map<Vm, Long> expectedToUseVmPesMap =
+                vmList.stream().collect(Collectors.toMap(vm -> vm, vm -> cloudletList.stream()
+                        .filter(c -> c.getVm() == vm).mapToLong(Cloudlet::getPesNumber).sum()));
+        // Map<Long, Long> vmFreeCoresMap = vmList.stream()
+        // .collect(Collectors.toMap(vm -> vm.getId(), vm -> vm.getExpectedFreePesNumber()));
+        LOGGER.debug("{}: {}", clock(), expectedToUseVmPesMap.toString());
         // LOGGER.info("VMs running when trying to find binding: {}", vmList.size());
         for (Vm vm : vmList) {
             final int dcId = (int) vm.getHost().getDatacenter().getId();
-            if (dcId == targetDcId && vm.isSuitableForCloudlet(cloudlet)) {
-                LOGGER.info("Found VM in DC {}", dcId);
-                return vm;
+            final long usedVmPes = vm.getCloudletScheduler().getCloudletList().stream()
+                    .mapToLong(Cloudlet::getPesNumber).sum();
+            final long expectedFreePes =
+                    Math.max(0, vm.getPesNumber() - usedVmPes - expectedToUseVmPesMap.get(vm));
+            // final long expectedFreePes =
+            // Math.max(0, vm.getExpectedFreePesNumber() - vmUsedCoresMap.get(vm));
+            LOGGER.debug("{}: VM {} has {} expected free cores", clock(), vm.getId(),
+                    expectedFreePes);
+            if (dcId == targetDcId && vm.isSuitableForCloudlet(cloudlet)
+                    && expectedFreePes >= cloudlet.getPesNumber()) {
+                if (expectedFreePes > maxExpectedFreePes) {
+                    maxExpectedFreePes = expectedFreePes;
+                    mostFreeVm = vm;
+                }
             }
         }
-        return Vm.NULL;
+
+        LOGGER.debug("{}: Selecting VM {} for cloudlet {} with {} expected free cores",
+
+                clock(), mostFreeVm.getId(), cloudlet.getId(), maxExpectedFreePes);
+        return mostFreeVm;
     }
 
     private double getQualityOfDcById(final int dcId) {
@@ -430,10 +513,10 @@ public class WrappedSimulation {
             final int dcId = action[i] + 1;
             LOGGER.info("Action[{}]: {}", i, dcId);
             if (dcId == 1) {
-                LOGGER.info("No action for job {}", i);
+                LOGGER.info("No action for Cloudlet {}", job.getId());
                 continue;
             }
-            final Vm vm = getFirstAvailableVmOfDcForCloudlet(dcId, job);
+            final Vm vm = getMostFreeVmOfDcForCloudlet(dcId, job);
             if (vm == Vm.NULL) {
                 // This should never happen because the agent should not return an action that
                 // is
@@ -441,8 +524,12 @@ public class WrappedSimulation {
                 LOGGER.warn("No available VM for job {} in DC {}", job.getId(), dcId);
                 continue;
             }
+            LOGGER.info("Binding Cloudlet {} to VM{}/H{}/DC{}", job.getId(), vm.getId(),
+                    vm.getHost().getId(), dcId);
             cloudSimProxy.getBroker().bindCloudletToVm(job, vm);
+            LOGGER.info("Cloudlet {} getVm {} ", job.getId(), job.getVm().getId());
             quality += getQualityOfDcById(dcId);
+
             jobsPlaced++;
         }
 
@@ -657,6 +744,7 @@ public class WrappedSimulation {
         final int[] coreLocObs = cloudSimProxy.getCoresAndLocationForJobsWaiting();
         final int jobsWaiting = coreLocObs.length / 2;
         LOGGER.info("Jobs waiting: {}", jobsWaiting);
+        LOGGER.info("JobWaitObs: {}", Arrays.toString(coreLocObs));
         // for (int i = 0; i < jobsWaiting; i++) {
         // LOGGER.info("Waiting job: {}, Cores: {}, Location: {}", i, coreLocObs[2 * i],
         // coreLocObs[2 * i + 1]);
@@ -715,10 +803,7 @@ public class WrappedSimulation {
                 infrastructureObservation[currentIndex++] = freePes;
             }
         }
-        for (int i = 0; i < infrastructureObservation.length; i += 2) {
-            LOGGER.info("DC: {}, Free cores: {}", infrastructureObservation[i] + 1,
-                    infrastructureObservation[i + 1]);
-        }
+        LOGGER.info("InfrObs: {}", Arrays.toString(infrastructureObservation));
         return infrastructureObservation;
     }
 
@@ -909,10 +994,6 @@ public class WrappedSimulation {
 
     public int getCurrentStep() {
         return currentStep;
-    }
-
-    private void resetCurrentStep() {
-        currentStep = 0;
     }
 
     // private void resetEpRunningVmsCountMax() {

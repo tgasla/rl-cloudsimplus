@@ -50,15 +50,14 @@ public class MultiSimulationEnvironment {
         validateIdentifier(simulationIdentifier);
 
         final WrappedSimulation simulation = simulations.remove(simulationIdentifier);
-
         simulation.close();
         experimentsFinishedCount++;
 
         if (runMode.equals("batch")) {
-            LOGGER.debug("Simulation {} terminated. {} simulations still running.",
-                    simulationIdentifier, simulations.size());
+            LOGGER.debug("{} terminated. {} simulations still running.", simulationIdentifier,
+                    simulations.size());
         } else if (runMode.equals("serial")) {
-            LOGGER.debug("Simulation {}/{} terminated", simulationIdentifier, numExperiments);
+            LOGGER.debug("Simulation {}/{} terminated", experimentsFinishedCount, numExperiments);
         }
         if (simulations.isEmpty() && experimentsFinishedCount == numExperiments) {
             LOGGER.debug("All experiments finished running. Initiating shutdown...");
