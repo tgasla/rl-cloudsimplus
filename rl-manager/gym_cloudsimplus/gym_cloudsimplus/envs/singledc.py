@@ -410,7 +410,10 @@ class SingleDC(gym.Env):
                     valid_action_mask[action_index] = True
                 elif (
                     j > 0
-                    and j - 1 in self._get_connect_to_of_dc(job_location)
+                    and (
+                        j - 1 in self._get_connect_to_of_dc(job_location)
+                        or j - 1 == job_location
+                    )
                     and 0 < job_cores <= max_host_cores_per_dc[j - 1]
                 ):
                     # print(f"mpainw edw sto action index: {action_index}")

@@ -798,7 +798,10 @@ public class WrappedSimulation {
                 // We do the opposite (add 1) when we get the action
                 infrastructureObservation[currentIndex++] = (int) dc.getId() - 1;
                 for (Vm vm : vmList) {
-                    freePes += vm.getFreePesNumber();
+                    List<Cloudlet> cloudletList = vm.getCloudletScheduler().getCloudletList();
+                    long usedPes = cloudletList.stream().mapToLong(Cloudlet::getPesNumber).sum();
+                    freePes += vm.getPesNumber() - usedPes;
+                    // freePes += vm.getFreePesNumber();
                 }
                 infrastructureObservation[currentIndex++] = freePes;
             }
