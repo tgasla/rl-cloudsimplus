@@ -155,8 +155,9 @@ common:
   job_trace_filename: jobs_with_locations.csv
   timesteps: 200000
   n_rollout_steps: 2048
-  reward_jobs_placed_coef: 0.5
-  reward_quality_coef: 0.5
+  reward_jobs_placed_coef: 0.333
+  reward_quality_coef: 0.333
+  reward_deadline_violation_coef: 0.333
   # reward_job_wait_coef: 0.25
   # reward_running_vm_cores_coef: 0.25
   # reward_unutilized_vm_cores_coef: 0.25
@@ -164,4 +165,4 @@ common:
 
 experiment_1:
     experiment_dir: euromlsys
-    experiment_name: test3
+    experiment_name: delays_and_deadlines

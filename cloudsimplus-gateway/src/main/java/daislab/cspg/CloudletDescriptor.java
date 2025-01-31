@@ -13,11 +13,15 @@ public class CloudletDescriptor {
     private final long mi;
     private final int cores;
     private final int location;
+    private final int delaySensitivity;
+    private final int deadline;
 
     public Cloudlet toCloudlet() {
-        Cloudlet cloudlet = new CloudletWithLocation(jobId, mi, cores, location)
-                .setFileSize(DataCloudTags.DEFAULT_MTU).setOutputSize(DataCloudTags.DEFAULT_MTU)
-                .setUtilizationModelCpu(new UtilizationModelFull());
+        Cloudlet cloudlet =
+                new CloudletWithLocation(jobId, mi, cores, location, delaySensitivity, deadline)
+                        .setFileSize(DataCloudTags.DEFAULT_MTU)
+                        .setOutputSize(DataCloudTags.DEFAULT_MTU)
+                        .setUtilizationModelCpu(new UtilizationModelFull());
         cloudlet.setSubmissionDelay(submissionDelay);
         return cloudlet;
     }

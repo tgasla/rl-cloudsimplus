@@ -334,20 +334,22 @@ public class CloudSimProxy {
         return jobsToSubmitList.stream().mapToInt(c -> (int) c.getPesNumber()).toArray();
     }
 
-    int[] getCoresAndLocationForJobsWaiting() {
+    int[] getJobsWaitingObservation() {
         final double targetTime = calculateTargetTime();
         List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
-        int[] coresAndLocationForJobsWaiting = new int[2 * jobsToSubmitList.size()];
+        int[] jobsWaitingObs = new int[4 * jobsToSubmitList.size()];
         for (int i = 0; i < jobsToSubmitList.size(); i++) {
-            coresAndLocationForJobsWaiting[2 * i] = (int) jobsToSubmitList.get(i).getPesNumber();
-            coresAndLocationForJobsWaiting[2 * i + 1] =
-                    ((CloudletWithLocation) jobsToSubmitList.get(i)).getLocation();
+            CloudletWithLocation job = (CloudletWithLocation) jobsToSubmitList.get(i);
+            jobsWaitingObs[4 * i] = (int) job.getPesNumber();
+            jobsWaitingObs[4 * i + 1] = job.getLocation();
+            jobsWaitingObs[4 * i + 2] = job.getDelaySensitivity();
+            jobsWaitingObs[4 * i + 3] = job.getDeadline();
+
             // LOGGER.info("Job {} requires {} cores and is at location {}",
             // jobsToSubmitList.get(i).getId(), coresAndLocationForJobsWaiting[2 * i],
             // coresAndLocationForJobsWaiting[2 * i + 1]);
         }
-
-        return coresAndLocationForJobsWaiting;
+        return jobsWaitingObs;
     }
 
     int calculateTotalJobCoresWaiting() {

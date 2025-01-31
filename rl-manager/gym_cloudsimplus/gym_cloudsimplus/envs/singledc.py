@@ -289,7 +289,7 @@ class SingleDC(gym.Env):
             raise ValueError(f"Unknown observation type: {obs_type}")
 
     def _create_jobs_waiting_obs_space(self):
-        jobs_waiting_obs_length = 2 * self.params["max_jobs_waiting"]
+        jobs_waiting_obs_length = 4 * self.params["max_jobs_waiting"]
         return spaces.MultiDiscrete(
             (self.params["max_job_pes"] + 1)
             * np.ones(jobs_waiting_obs_length, dtype=np.int32)
@@ -329,6 +329,7 @@ class SingleDC(gym.Env):
             return autoencoder
         return None
 
+    # this is when infrastructure is [<dc_id, host_free_pes>, ...]
     def _get_max_cur_free_host_pes_per_dc(self):
         # Step 1: Create an empty dictionary to store the max free cores per datacenter
         max_cores_per_dc = {}
@@ -374,9 +375,9 @@ class SingleDC(gym.Env):
         max_host_cores_per_dc = (
             self._get_max_cur_free_host_pes_per_dc()
         )  # Max cores per datacenter
-        max_host_cores_all_dc = (
-            self._get_max_cur_host_pes()
-        )  # Max cores across all datacenters
+        # max_host_cores_all_dc = (
+        #     self._get_max_cur_host_pes()
+        # )  # Max cores across all datacenters
         # print("num_jobs", num_jobs)
         options_num = dc_num + 1  # Number of datacenters + 1 for no action
         # print("max_host_cores_all_dc", max_host_cores_all_dc)
@@ -388,11 +389,13 @@ class SingleDC(gym.Env):
             total_actions, False, dtype=bool
         )  # Start with all False
 
-        for i in range(0, self.jobs_waiting_obs_length, 2):  # Iterate over jobs
+        for i in range(0, self.jobs_waiting_obs_length, 4):  # Iterate over jobs
             # Cores requested by the current job
-            job_idx = i // 2
+            job_idx = i // 4
             job_cores = self.jobs_waiting_obs[i]
             job_location = self.jobs_waiting_obs[i + 1]
+            # job_sensitivity = self.jpb_waiting_obs[i + 2]
+            # job_deadline = self.jobs_waiting_obs[i + 3]
             # Iterate over datacenters (+1 for "no action" case)
             for j in range(options_num):
                 # Compute the flat index for the action
@@ -416,6 +419,8 @@ class SingleDC(gym.Env):
                     )
                     and 0 < job_cores <= max_host_cores_per_dc[j - 1]
                 ):
+                    # because job cores must be > 0 it means that for jobs no waiting, the action is always 0,
+                    # which means no-op.
                     # print(f"mpainw edw sto action index: {action_index}")
                     # print(f"job location: {job_location}")
                     # print(f"{self._get_connect_to_of_dc(job_location)}")

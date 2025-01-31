@@ -25,6 +25,7 @@ public class SimulationSettings {
     private final boolean clearCreatedLists;
     private final double rewardJobsPlacedCoef;
     private final double rewardQualityCoef;
+    private final double rewardDeadlineViolationCoef;
     private final int maxEpisodeLength;
     private final String vmAllocationPolicy;
     private final String algorithm;

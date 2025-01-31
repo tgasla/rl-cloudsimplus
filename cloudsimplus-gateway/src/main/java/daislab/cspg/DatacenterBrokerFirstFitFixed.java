@@ -32,94 +32,107 @@ public class DatacenterBrokerFirstFitFixed extends DatacenterBrokerSimple {
         super(simulation);
     }
 
-    @Override
-    public void processEvent(final SimEvent evt) {
-        super.processEvent(evt);
-        /*
-         * This is important! CLOUDLET_RETURN is sent whenever a cloudlet finishes executing. The
-         * default behaviour in CloudSim Plus is to destroy a Vm when it has no more cloudlets to
-         * execute. Here we override the default behaviour and we trigger the creation of waiting
-         * cloudlets so they can be possibly allocated inside a Vm. This is because in our case, we
-         * may reschedule some cloudlets so we want the VMs to trigger the creation of those waiting
-         * cloudlets
-         */
+    // @Override
+    // public void processEvent(final SimEvent evt) {
+    // super.processEvent(evt);
+    // /*
+    // * This is important! CLOUDLET_RETURN is sent whenever a cloudlet finishes executing. The
+    // * default behaviour in CloudSim Plus is to destroy a Vm when it has no more cloudlets to
+    // * execute. Here we override the default behaviour and we trigger the creation of waiting
+    // * cloudlets so they can be possibly allocated inside a Vm. This is because in our case, we
+    // * may reschedule some cloudlets so we want the VMs to trigger the creation of those waiting
+    // * cloudlets
+    // */
+    // /*
+    // * Update: This is not true. The default behaviour is that if broker.vmDestructionDelay is
+    // * not set then vms are not destroyed. If it is set, then the vms are destroyed after the
+    // * delay set up by the function. Actually, this override is not actually correct because
+    // * when cloudlet returns we should also add the expected free cores which we do not do here.
+    // * We should do it. Disabling the override for now.
+    // */
 
-        if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
-            final Cloudlet cloudlet = (Cloudlet) evt.getData();
-            final Vm vm = cloudlet.getVm();
-            LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
-                    cloudlet.getId(), vm.getId());
-            requestDatacentersToCreateWaitingCloudlets();
-            // if (vm.getCloudletScheduler().isEmpty()) {
-            // LOGGER.info("VM {} is empty, destroying...", vm.getId());
-            // getDatacenter(vm).getVmAllocationPolicy().deallocateHostForVm(vm);
-            // // schedule(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
-            // // send(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
-            // }
-        }
+    // if (evt.getTag() == CloudSimTag.CLOUDLET_RETURN) {
+    // final Cloudlet cloudlet = (Cloudlet) evt.getData();
+    // final Vm vm = cloudlet.getVm();
+    // LOGGER.debug("Cloudlet {} in VM {} returned. Scheduling more cloudlets...",
+    // cloudlet.getId(), vm.getId());
+    // // requestDatacentersToCreateWaitingCloudlets();
+    // // if (vm.getCloudletScheduler().isEmpty()) {
+    // // LOGGER.info("VM {} is empty, destroying...", vm.getId());
+    // // getDatacenter(vm).getVmAllocationPolicy().deallocateHostForVm(vm);
+    // // // schedule(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
+    // // // send(getDatacenter(vm), 0, CloudSimTag.VM_DESTROY, vm);
+    // // }
+    // }
 
-        // Clean the vm created list because over an episode we may create/destroy
-        // many vms so we do not want to cause OOM.
-        // if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
-        // LOGGER.debug("Cleaning the vmCreatedList");
-        // getVmCreatedList().clear();
-        // }
-    }
+    // // Clean the vm created list because over an episode we may create/destroy
+    // // many vms so we do not want to cause OOM.
+    // // if (evt.getTag() == CloudSimTag.VM_CREATE_ACK) {
+    // // LOGGER.debug("Cleaning the vmCreatedList");
+    // // getVmCreatedList().clear();
+    // // }
+    // }
 
     /*
      * This function triggers immediately the cloudlet to vm mapping and this behaviour leads to 0
      * waitingTime for all cloudlets, which is not realistic, that's why we have commented out this
      * part.
      */
-    @Override
-    protected void requestDatacentersToCreateWaitingCloudlets() {
-        final List<Cloudlet> scheduled = new LinkedList<>();
-        final List<Cloudlet> cloudletWaitingList = getCloudletWaitingList();
-        final int cloudletWaitingListSize = cloudletWaitingList.size();
-        for (final Iterator<Cloudlet> it = cloudletWaitingList.iterator(); it.hasNext();) {
-            final CloudletWithLocation cloudlet = (CloudletWithLocation) it.next();
-            if (!cloudlet.getLastTriedDatacenter().equals(Datacenter.NULL)) {
-                continue;
-            }
+    // @Override
+    // protected void requestDatacentersToCreateWaitingCloudlets() {
+    // final List<Cloudlet> scheduled = new LinkedList<>();
+    // final List<Cloudlet> cloudletWaitingList = getCloudletWaitingList();
+    // final int cloudletWaitingListSize = cloudletWaitingList.size();
+    // for (final Iterator<Cloudlet> it = cloudletWaitingList.iterator();
+    // it.hasNext();) {
+    // final CloudletWithLocation cloudlet = (CloudletWithLocation) it.next();
+    // if (!cloudlet.getLastTriedDatacenter().equals(Datacenter.NULL)) {
+    // continue;
+    // }
 
-            // selects a VM for the given Cloudlet
-            Vm selectedVm = defaultVmMapper(cloudlet);
-            if (selectedVm == Vm.NULL) {
-                break;
-            }
+    // // selects a VM for the given Cloudlet
+    // Vm selectedVm = defaultVmMapper(cloudlet);
+    // if (selectedVm == Vm.NULL) {
+    // break;
+    // }
 
-            ((VmSimple) selectedVm).removeExpectedFreePesNumber(cloudlet.getPesNumber());
+    // ((VmSimple) selectedVm).removeExpectedFreePesNumber(cloudlet.getPesNumber());
 
-            cloudlet.setVm(selectedVm);
-            send(getDatacenter(selectedVm), cloudlet.getSubmissionDelay(),
-                    CloudSimTag.CLOUDLET_SUBMIT, cloudlet);
-            cloudlet.setLastTriedDatacenter(getDatacenter(selectedVm));
-            getCloudletCreatedList().add(cloudlet);
-            scheduled.add(cloudlet);
-            it.remove();
-        }
+    // cloudlet.setVm(selectedVm);
+    // send(getDatacenter(selectedVm), cloudlet.getSubmissionDelay(),
+    // CloudSimTag.CLOUDLET_SUBMIT, cloudlet);
+    // cloudlet.setLastTriedDatacenter(getDatacenter(selectedVm));
+    // getCloudletCreatedList().add(cloudlet); // this list is unmodifiable, it will
+    // not work
+    // scheduled.add(cloudlet);
+    // it.remove();
+    // }
 
-        LOGGER.debug("requestDatacentersToCreateWaitingCloudlets scheduled: " + scheduled.size()
-                + "/" + cloudletWaitingListSize);
-        // LOGGER.debug(
-        // "Events cnt before: " + getSimulation().getNumberOfFutureEvents(simEvent -> true));
-        for (Cloudlet cloudlet : scheduled) {
-            final long totalLengthInMips = cloudlet.getTotalLength();
-            final double peMips = cloudlet.getVm().getProcessor().getMips();
-            final double lengthInSeconds = totalLengthInMips / peMips;
-            final Datacenter datacenter = getDatacenter(cloudlet.getVm());
-            final double eventDelay = lengthInSeconds + 1.0;
+    // LOGGER.debug("requestDatacentersToCreateWaitingCloudlets scheduled: " +
+    // scheduled.size()
+    // + "/" + cloudletWaitingListSize);
+    // // LOGGER.debug(
+    // // "Events cnt before: " + getSimulation().getNumberOfFutureEvents(simEvent
+    // -> true));
+    // for (Cloudlet cloudlet : scheduled) {
+    // final long totalLengthInMips = cloudlet.getTotalLength();
+    // final double peMips = cloudlet.getVm().getProcessor().getMips();
+    // final double lengthInSeconds = totalLengthInMips / peMips;
+    // final Datacenter datacenter = getDatacenter(cloudlet.getVm());
+    // final double eventDelay = lengthInSeconds + 1.0;
 
-            LOGGER.debug("Cloudlet {} scheduled to run on VM{}/H{}/DC{}. Updating in {}",
-                    cloudlet.getId(), cloudlet.getVm().getId(), cloudlet.getVm().getHost().getId(),
-                    cloudlet.getVm().getHost().getDatacenter().getId(), eventDelay);
+    // LOGGER.debug("Cloudlet {} scheduled to run on VM{}/H{}/DC{}. Updating in {}",
+    // cloudlet.getId(), cloudlet.getVm().getId(),
+    // cloudlet.getVm().getHost().getId(),
+    // cloudlet.getVm().getHost().getDatacenter().getId(), eventDelay);
 
-            getSimulation().send(datacenter, datacenter, eventDelay,
-                    CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING, null);
-        }
-        // LOGGER.debug(
-        // "Events cnt after: " + getSimulation().getNumberOfFutureEvents(simEvent -> true));
-    }
+    // getSimulation().send(datacenter, datacenter, eventDelay,
+    // CloudSimTag.VM_UPDATE_CLOUDLET_PROCESSING, null);
+    // }
+    // // LOGGER.debug(
+    // // "Events cnt after: " + getSimulation().getNumberOfFutureEvents(simEvent ->
+    // true));
+    // }
 
     /**
      * Here, we override the original function which tries to find a vm from the created list to

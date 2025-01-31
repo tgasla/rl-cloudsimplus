@@ -69,7 +69,8 @@ public class SimulationFactory {
                         // we divide by the pesNumber because cloudSimPlus do not parallelize jobs
                         // :) so we artificially do it here.
                         miForThisSplit / pesForThisSplit, pesForThisSplit,
-                        cloudletDescriptor.getLocation());
+                        cloudletDescriptor.getLocation(), cloudletDescriptor.getDelaySensitivity(),
+                        cloudletDescriptor.getDeadline());
 
                 splitted.add(splittedDescriptor);
             }

@@ -289,6 +289,13 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
         self.logger.dump()
 
+    def _write_infr_observation_to_file(self, filename, mode="a") -> None:
+        filepath = os.path.join(self.log_dir, filename)
+        with open(filepath, mode) as file:
+            for obs in self.observations:
+                file.write(f"{obs}\n")
+            file.write("\n")
+
     def _write_observation_tree_arrays_to_file(self, filename, mode="a") -> None:
         filepath = os.path.join(self.log_dir, filename)
         with open(filepath, mode) as file:
@@ -316,6 +323,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             if self.verbose >= 1:
                 print("Episode terminated")
             self._write_progress_log_row()
+            self._write_infr_observation_to_file("infr_observation.csv")
             # self._write_observation_tree_arrays_to_file(
             #     "observation_tree_arrays.csv", "a"
             # )
