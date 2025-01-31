@@ -129,7 +129,7 @@ public class WrappedSimulation {
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
-        SimulationStepInfo info = new SimulationStepInfo(0, 0, new ArrayList<>());
+        SimulationStepInfo info = new SimulationStepInfo(0, 0, 0, new ArrayList<>());
 
         Observation observation =
                 new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
@@ -171,9 +171,9 @@ public class WrappedSimulation {
         boolean terminated = !cloudSimProxy.isRunning();
         boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
 
-        double[] rewards = calculateReward(ratios[0], ratios[1], ratios[2]);
+        double reward = calculateReward(ratios[0], ratios[1], ratios[2]);
 
-        this.currentEpisodeReward += rewards[0];
+        this.currentEpisodeReward += reward;
 
         // TEMPORARILY DISABLED FOR OPTIMIZATION
         // recordSimulationData(action, rewards);
@@ -208,7 +208,8 @@ public class WrappedSimulation {
 
         final List<Double> jobWaitTime = cloudSimProxy.getFinishedJobsWaitTimeLastTimestep();
 
-        SimulationStepInfo info = new SimulationStepInfo(rewards[1], rewards[2], jobWaitTime);
+        SimulationStepInfo info =
+                new SimulationStepInfo(ratios[0], ratios[1], ratios[2], jobWaitTime);
 
         // Observation observation =
         // new Observation(getInfrastructureObservation(),
@@ -216,7 +217,7 @@ public class WrappedSimulation {
         Observation observation =
                 new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
 
-        return new SimulationStepResult(observation, rewards[0], terminated, truncated, info);
+        return new SimulationStepResult(observation, reward, terminated, truncated, info);
     }
 
     // private List<double[][]> getCurrentTimestepMetrics() {
@@ -1259,9 +1260,8 @@ public class WrappedSimulation {
     // return jobsPlacedCoef * jobsPlacedReward;
     // }
 
-    private double[] calculateReward(final double jobsPlacedRatio, final double qualityRatio,
+    private double calculateReward(final double jobsPlacedRatio, final double qualityRatio,
             final double deadlineViolationRatio) {
-        double[] rewards = new double[4];
         /*
          * reward is the negative cost of running the infrastructure minus any penalties from jobs
          * waiting in the queue minus penalty if action was invalid
@@ -1279,12 +1279,7 @@ public class WrappedSimulation {
         LOGGER.info("qualityReward: {}", qualityCoef * qualityRatio);
         LOGGER.info("deadlineMissReward: {}", deadlineViolationCoef * deadlineViolationRatio);
 
-        rewards[0] = reward;
-        rewards[1] = jobsPlacedRatio;
-        rewards[2] = qualityRatio;
-        rewards[3] = deadlineViolationRatio;
-
-        return rewards;
+        return reward;
     }
 
     public SimulationSettings getSettings() {

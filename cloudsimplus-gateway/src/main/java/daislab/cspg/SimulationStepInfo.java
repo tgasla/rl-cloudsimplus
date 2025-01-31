@@ -9,8 +9,9 @@ import java.util.List;
  */
 @Data
 public class SimulationStepInfo {
-    private final double jobsPlacedReward;
-    private final double qualityReward;
+    private final double jobsPlacedRatio;
+    private final double qualityRatio;
+    private final double deadlineViolationRatio;
     private final List<Double> jobWaitTime;
     // private double jobWaitReward = 0;
     // private double runningVmCoresReward = 0;
