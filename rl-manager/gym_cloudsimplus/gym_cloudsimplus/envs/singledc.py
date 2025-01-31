@@ -181,7 +181,7 @@ class SingleDC(gym.Env):
         self.params = params
 
         self.action_file_data = self._maybe_get_action_file_data()
-        self.action_space = self._create_action_space(params["state_action_space_type"])
+        self.action_space = self._create_action_space()
 
         infr_obs_space, self.infr_obs_length = self._create_infr_obs_space(
             params["state_action_space_type"]
@@ -239,9 +239,9 @@ class SingleDC(gym.Env):
         return render_mode
 
     def _create_infr_obs_space(self, obs_type, autoencoder_latent_dim=None):
-        if obs_type == "select-dc":
+        if obs_type == "dcid-dctype-freevmpes-per-host":
             infr_obs_length = (
-                2 * self._get_total_hosts()
+                3 * self._get_total_hosts()
             )  # dc id, free host pes (which in fact are free vm cores)
             value_upper_bound = self._get_max_host_pes()
             return spaces.MultiDiscrete(
@@ -303,15 +303,14 @@ class SingleDC(gym.Env):
             }
         )
 
-    def _create_action_space(self, action_space_type):
-        if action_space_type == "select-dc":
-            return gym.spaces.MultiDiscrete(
-                (self._get_datacenters_count() + 1)
-                * np.ones(self.params["max_jobs_waiting"], dtype=np.int32),
-                # + 1 to allow for -1 which means the job queue is not full
-                # datacenter ids in cloudsimplus start from 2 (LOL), so we start from 1 to allow a no action
-            )  # the reason is that dcs are considered global entities and have global ids, CIS gets id 0, and broker gets id 1
-            # return gym.spaces.Discrete(self._get_datacenters_count() + 1)
+    def _create_action_space(self):
+        return gym.spaces.MultiDiscrete(
+            (self._get_datacenters_count() + 1)
+            * np.ones(self.params["max_jobs_waiting"], dtype=np.int32),
+            # + 1 to allow for -1 which means the job queue is not full
+            # datacenter ids in cloudsimplus start from 2 (LOL), so we start from 1 to allow a no action
+        )  # the reason is that dcs are considered global entities and have global ids, CIS gets id 0, and broker gets id 1
+        # return gym.spaces.Discrete(self._get_datacenters_count() + 1)
 
     def _maybe_setup_autoencoder(
         self,
@@ -352,6 +351,7 @@ class SingleDC(gym.Env):
         # Print the result
         return result
 
+    # calculated from the datacenter topology described in the yaml file
     def _get_max_host_pes_per_dc(self):
         # Initialize the array with zeros (or use np.empty for uninitialized values)
         max_host_pes_per_dc = np.zeros(self._get_datacenters_count())
@@ -361,12 +361,15 @@ class SingleDC(gym.Env):
             max_host_pes_per_dc[i] = max_pes  # Assign the max PEs to the array
         return max_host_pes_per_dc
 
+    # calculated from the datacenter topology described in the yaml file
     def _get_max_host_pes(self):
         return max(self._get_max_host_pes_per_dc())
 
+    # calculated from the datacenter topology described in the yaml file
     def _get_max_cur_host_pes(self):
         return max(self._get_max_cur_free_host_pes_per_dc())
 
+    # calculated from the datacenter topology described in the yaml file
     def _get_connect_to_of_dc(self, dc_id):
         return self.params["datacenters"][int(dc_id)]["connect_to"]
 
@@ -568,6 +571,7 @@ class SingleDC(gym.Env):
 
     def _maybe_get_autoencoder_obs(self, infr_obs):
         if self.autoencoder:
+            # no need to pad, already done just before calling this function
             # infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
             infr_obs = self._min_max_normalize(infr_obs)
             infr_obs = torch.tensor(infr_obs, dtype=torch.float32).unsqueeze(0)

@@ -1066,8 +1066,8 @@ public class WrappedSimulation {
 
     private int[] getInfrastructureObservation() {
         switch (settings.getStateActionSpaceType()) {
-            case "select-dc":
-                return getInfraObsTotalFreeVmCoresPerHost();
+            case "dcid-dctype-freevmpes-per-host":
+                return getInfraObsDcIdDcTypeFreeVmPesPerHost();
             default:
                 throw new IllegalArgumentException(
                         "Unexpected value: " + settings.getStateActionSpaceType());
@@ -1076,6 +1076,7 @@ public class WrappedSimulation {
 
     private int[] getJobsWaitingObservation() {
         final int[] jobWaitObs = cloudSimProxy.getJobsWaitingObservation();
+        // 4 should not be hardcoded. Same here for python side.
         final int jobsWaiting = jobWaitObs.length / 4;
         LOGGER.info("Jobs waiting: {}", jobsWaiting);
         LOGGER.info("JobWaitObs: {}", Arrays.toString(jobWaitObs));
@@ -1117,9 +1118,9 @@ public class WrappedSimulation {
      * @return an array of integers where each pair of elements represents a datacenter ID and the
      *         corresponding number of free cores in that datacenter.
      */
-    private int[] getInfraObsTotalFreeVmCoresPerHost() {
+    private int[] getInfraObsDcIdDcTypeFreeVmPesPerHost() {
         final int totalHosts = getTotalHosts();
-        final int[] infrastructureObservation = new int[2 * totalHosts];
+        final int[] infrastructureObservation = new int[3 * totalHosts];
         List<Datacenter> datacenterList =
                 cloudSimProxy.getSimulation().getCis().getDatacenterList();
         int currentIndex = 0;
@@ -1131,6 +1132,8 @@ public class WrappedSimulation {
                 // we send 1 that means dc with id 2.
                 // We do the opposite (add 1) when we get the action
                 infrastructureObservation[currentIndex++] = (int) dc.getId() - 1;
+                infrastructureObservation[currentIndex++] =
+                        getDcTypeIdFromStr(((DatacenterWithType) dc).getType());
                 for (Vm vm : vmList) {
                     List<Cloudlet> cloudletList = vm.getCloudletScheduler().getCloudletList();
                     long usedPes = cloudletList.stream().mapToLong(Cloudlet::getPesNumber).sum();
@@ -1144,6 +1147,15 @@ public class WrappedSimulation {
         }
         LOGGER.info("InfrObs: {}", Arrays.toString(infrastructureObservation));
         return infrastructureObservation;
+    }
+
+    private int getDcTypeIdFromStr(final String dcType) {
+        return switch (dcType) {
+            case "cloud" -> 0;
+            case "edge" -> 1;
+            case "micro" -> 2;
+            default -> throw new IllegalArgumentException("Unexpected DC type: " + dcType);
+        };
     }
 
     private int getTotalHosts() {
