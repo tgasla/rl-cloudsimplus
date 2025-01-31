@@ -1,11 +1,5 @@
 import pandas as pd
 
-sensitivity_mapping = {"tolerant": 0, "moderate": 1, "critical": 2}
-
-
-def get_sensitivity_level(sensetivity_str: str) -> int:
-    return sensitivity_mapping[sensetivity_str]
-
 
 def trace_to_csv(jobs: pd.DataFrame, filename="data.csv"):
     jobs.to_csv(filename)
@@ -35,7 +29,7 @@ def csv_to_cloudlet_descriptor(filename):
             mi=int(df.mi[i]),
             required_cores=int(df.required_cores[i]),
             location=str(df.location[i]),
-            delay_sensitivity=get_sensitivity_level(df.delay_sensitivity[i]),
+            delay_sensitivity=str(df.delay_sensitivity[i]),
             deadline=int(df.deadline[i]),
         )
         jobs.append(cloudlet)

@@ -31,5 +31,4 @@ public class SafeCasting {
 
         return null;
     }
-
 }

@@ -14,6 +14,12 @@ from utils.trace_utils import csv_to_cloudlet_descriptor
 
 CONFIG_FILE = "config.yml"
 
+sensitivity_mapping = {"tolerant": 0, "moderate": 1, "critical": 2}
+
+
+def get_sensitivity_level(sensitivity_str: str) -> int:
+    return sensitivity_mapping[sensitivity_str]
+
 
 def _find_replica_id(hostname):
     response_buffer = BytesIO()
@@ -73,10 +79,16 @@ def _write_seed_to_file(seed, log_dir, filename="seed.txt"):
         print(f"An error occurred while writing to the file: {e}")
 
 
-def _translate_location_names_to_idx(jobs, datacenters):
+def _translate_job_location_names_to_idx(jobs, datacenters):
     for job in jobs:
         location_idx = _get_dc_idx_by_name(job["location"], datacenters)
         job["location"] = location_idx
+    return jobs
+
+
+def _translate_sensitivity_str_to_levels(jobs):
+    for job in jobs:
+        job["delaySensitivity"] = get_sensitivity_level(job["delaySensitivity"])
     return jobs
 
 
@@ -124,7 +136,8 @@ def main():
     params.update(datacenters=datacenters)
     params.update(max_job_pes=_get_max_job_pes(jobs))
 
-    jobs = _translate_location_names_to_idx(jobs, params["datacenters"])
+    jobs = _translate_job_location_names_to_idx(jobs, params["datacenters"])
+    jobs = _translate_sensitivity_str_to_levels(jobs)
 
     if params["seed"] == "random":
         params["seed"] = np.random.randint(0, sys.maxsize)

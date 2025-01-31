@@ -4,15 +4,14 @@ import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.cloudlets.Cloudlet;
-import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 // import com.google.gson.Gson;
@@ -118,6 +117,7 @@ public class WrappedSimulation {
         // ignoring seed for now
         LOGGER.info("Reset initiated");
         LOGGER.info("job count: " + initialJobsDescriptors.size());
+        // LOGGER.info(settings.getCloudletToDcAssignmentPolicy());
 
         this.currentStep = 0;
         this.currentEpisodeReward = 0;
@@ -464,7 +464,7 @@ public class WrappedSimulation {
         // Map<Long, Long> vmFreeCoresMap = vmList.stream()
         // .collect(Collectors.toMap(vm -> vm.getId(), vm ->
         // vm.getExpectedFreePesNumber()));
-        LOGGER.debug("{}: {}", clock(), expectedToUseVmPesMap.toString());
+        // LOGGER.debug("{}: {}", clock(), expectedToUseVmPesMap.toString());
         // LOGGER.info("VMs running when trying to find binding: {}", vmList.size());
         for (Vm vm : vmList) {
             final int dcId = (int) vm.getHost().getDatacenter().getId();
@@ -478,8 +478,8 @@ public class WrappedSimulation {
                     vm.getPesNumber() - usedVmPes - expectedToUseVmPesMap.get(vm);
             // final long expectedFreePes =
             // Math.max(0, vm.getExpectedFreePesNumber() - vmUsedCoresMap.get(vm));
-            LOGGER.debug("{}: VM {} has {} expected free cores", clock(), vm.getId(),
-                    expectedFreePes);
+            // LOGGER.debug("{}: VM {} has {} expected free cores", clock(), vm.getId(),
+            // expectedFreePes);
             if (dcId == targetDcId && vm.isSuitableForCloudlet(cloudlet)
                     && expectedFreePes >= cloudlet.getPesNumber()) {
                 if (expectedFreePes > maxExpectedFreePes) {
@@ -495,7 +495,7 @@ public class WrappedSimulation {
         return mostFreeVm;
     }
 
-    private double getQualityOfPlacement(final int dcId, final Cloudlet job) {
+    private double calculateQualityOfPlacement(final int dcId, final Cloudlet job) {
         final String datacenterType =
                 ((DatacenterWithType) cloudSimProxy.getDatacenterById(dcId)).getType();
         // jobSensitivity - 0: tolerant, 1: moderate, 2: critical
@@ -510,8 +510,302 @@ public class WrappedSimulation {
         return 0.0;
     }
 
-    // this action is if the agent performs cloudlet to DC mapping
     private double[] executeCustomCloudletToDcAction(final int[] action) {
+        return switch (settings.getCloudletToDcAssignmentPolicy()) {
+            case "rl" -> executeRlCloudletToDcAction(action);
+            case "earliest-shortest-to-most-free-dc" -> executeEarliestShortestCloudletToMostFreeDcAction();
+            case "earliest-shortest-to-nearest-dc" -> executeEarliestShortestCloudletToNearestDcAction();
+            case "random-to-most-free-dc" -> executeRandomCloudletToMostFreeDcAction();
+            case "earliest-most-critical-to-nearest-dc" -> executeEarliestMostCriticalCloudletToNearestDcAction();
+            default -> throw new IllegalArgumentException("Cloudlet-to-DC Assignment Policy"
+                    + settings.getCloudletToDcAssignmentPolicy() + " was not found!");
+        };
+    }
+
+    private List<DatacenterWithType> getOrderedDatacentersForCloudlet(Cloudlet cloudlet) {
+        // Step 1: Get the datacenter list
+        List<Datacenter> datacenterList =
+                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+
+        // Step 2: Get the location index from the cloudlet
+        int loc = ((CloudletWithLocation) cloudlet).getLocation();
+
+        // Step 3: Get the datacenter corresponding to the location
+        DatacenterWithType dc = (DatacenterWithType) datacenterList.get(loc);
+
+        // Step 4: Initialize the result list with the selected datacenter
+        List<DatacenterWithType> resultList = new ArrayList<>();
+        resultList.add(dc); // Assuming the primary datacenter is of
+                            // type "edge" by default
+
+        // Step 5: Get the connected datacenters from the "connectTo" array
+        List<Integer> connectToArray = dc.getConnectTo();
+        LOGGER.info("dc {} has connectTo {}", dc.getId(), dc.getConnectTo().toString());
+        // datacenter indices
+
+        List<DatacenterWithType> connectedDatacenters = new ArrayList<>();
+
+        for (int i = 0; i < connectToArray.size(); i++) {
+            DatacenterWithType connectedDatacenter = (DatacenterWithType) datacenterList.get(i);
+            connectedDatacenters.add(connectedDatacenter);
+        }
+
+        // Step 6: Sort the connected datacenters - "edge" ones first, then "cloud"
+        connectedDatacenters = connectedDatacenters.stream()
+                .sorted(Comparator.comparing(DatacenterWithType::getType,
+                        Comparator.reverseOrder())) // "edge" before "cloud"
+                .collect(Collectors.toList());
+
+        // Step 7: Add all connected datacenters to the result list
+        resultList.addAll(connectedDatacenters);
+
+        return resultList;
+    }
+
+    private double[] executeEarliestShortestCloudletToNearestDcAction() {
+        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final List<Cloudlet> jobsWaitingList =
+                cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
+        // final List<Datacenter> datacenterList =
+        // cloudSimProxy.getSimulation().getCis().getDatacenterList();
+        // final Map<Datacenter, Long> dcFreePesMap = datacenterList.stream().collect(
+        // Collectors.toMap(datacenter -> datacenter, datacenter -> datacenter.getHostList()
+        // .stream().flatMap(host -> host.getVmList().stream()).mapToLong(vm -> {
+        // long usedPes = vm.getCloudletScheduler().getCloudletList().stream()
+        // .mapToLong(cloudlet -> cloudlet.getPesNumber()).sum();
+        // return vm.getPesNumber() - usedPes;
+        // }).sum()));
+        int jobsPlaced = 0;
+        int quality = 0;
+
+        while (!jobsToProcessList.isEmpty()) {
+            // Step 1: Find cloudlets with the earliest deadline
+            double earliestDeadline = jobsToProcessList.stream()
+                    .mapToDouble(
+                            c -> c.getSubmissionDelay() + ((CloudletWithLocation) c).getDeadline())
+                    .min().orElse(Double.MAX_VALUE);
+
+            // Filter cloudlets with the earliest deadline
+            List<Cloudlet> earliestDeadlineCloudlets = jobsToProcessList.stream()
+                    .filter(c -> (c.getSubmissionDelay()
+                            + ((CloudletWithLocation) c).getDeadline()) == earliestDeadline)
+                    .collect(Collectors.toList());
+
+            // From these, select the shortest one(s)
+            long shortestLength = earliestDeadlineCloudlets.stream().mapToLong(Cloudlet::getLength)
+                    .min().orElseThrow();
+
+            Cloudlet selectedCloudlet = earliestDeadlineCloudlets.stream()
+                    .filter(c -> c.getLength() == shortestLength).findFirst().orElseThrow();
+
+            List<DatacenterWithType> sortedDcs = getOrderedDatacentersForCloudlet(selectedCloudlet);
+
+            Vm targetVm = Vm.NULL;
+            for (DatacenterWithType datacenter : sortedDcs) {
+                targetVm = getMostFreeVmOfDcForCloudlet((int) datacenter.getId(), selectedCloudlet);
+
+                if (targetVm != Vm.NULL) {
+                    // Found a suitable VM
+                    cloudSimProxy.getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
+                    jobsToProcessList.remove(selectedCloudlet);
+                    jobsPlaced++;
+                    quality +=
+                            calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
+
+                    // Update the free PEs in dcFreePesMap
+                    // long updatedFreePes =
+                    // dcFreePesMap.get(datacenter) - selectedCloudlet.getPesNumber();
+                    // dcFreePesMap.put(datacenter, updatedFreePes);
+                    break; // Stop searching once a suitable VM is found
+                }
+            }
+            // If no suitable VM was found after traversing all datacenters
+            if (targetVm == Vm.NULL) {
+                jobsToProcessList.remove(selectedCloudlet);
+            }
+        }
+
+        final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaitingList.size());
+        final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
+        final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsWaitingList);
+        LOGGER.info("jobsPlacedRatio: {}, qualityRatio: {}, deadlineViolationRatio: {}",
+                jobsPlacedRatio, qualityRatio, deadlineViolationRatio);
+
+        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
+    }
+
+    private double[] executeEarliestMostCriticalCloudletToNearestDcAction() {
+        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final List<Cloudlet> jobsWaitingList =
+                cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
+        // final List<Datacenter> datacenterList =
+        // cloudSimProxy.getSimulation().getCis().getDatacenterList();
+        // final Map<Datacenter, Long> dcFreePesMap = datacenterList.stream().collect(
+        // Collectors.toMap(datacenter -> datacenter, datacenter -> datacenter.getHostList()
+        // .stream().flatMap(host -> host.getVmList().stream()).mapToLong(vm -> {
+        // long usedPes = vm.getCloudletScheduler().getCloudletList().stream()
+        // .mapToLong(cloudlet -> cloudlet.getPesNumber()).sum();
+        // return vm.getPesNumber() - usedPes;
+        // }).sum()));
+        int jobsPlaced = 0;
+        int quality = 0;
+
+        while (!jobsToProcessList.isEmpty()) {
+            // Step 1: Find cloudlets with the earliest deadline
+            double earliestDeadline = jobsToProcessList.stream()
+                    .mapToDouble(
+                            c -> c.getSubmissionDelay() + ((CloudletWithLocation) c).getDeadline())
+                    .min().orElse(Double.MAX_VALUE);
+
+            // Filter cloudlets with the earliest deadline
+            List<Cloudlet> earliestDeadlineCloudlets = jobsToProcessList.stream()
+                    .filter(c -> (c.getSubmissionDelay()
+                            + ((CloudletWithLocation) c).getDeadline()) == earliestDeadline)
+                    .collect(Collectors.toList());
+
+            // From these, select the shortest one(s)
+            int mostCritical = earliestDeadlineCloudlets.stream()
+                    .mapToInt(c -> ((CloudletWithLocation) c).getDelaySensitivity()).max()
+                    .orElseThrow();
+
+            CloudletWithLocation selectedCloudlet = (CloudletWithLocation) earliestDeadlineCloudlets
+                    .stream()
+                    .filter(c -> ((CloudletWithLocation) c).getDelaySensitivity() == mostCritical)
+                    .findFirst().orElseThrow();
+
+            List<DatacenterWithType> sortedDcs = getOrderedDatacentersForCloudlet(selectedCloudlet);
+
+            Vm targetVm = Vm.NULL;
+            for (DatacenterWithType datacenter : sortedDcs) {
+                targetVm = getMostFreeVmOfDcForCloudlet((int) datacenter.getId(), selectedCloudlet);
+
+                if (targetVm != Vm.NULL) {
+                    // Found a suitable VM
+                    cloudSimProxy.getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
+                    jobsToProcessList.remove(selectedCloudlet);
+                    jobsPlaced++;
+                    quality +=
+                            calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
+
+                    // Update the free PEs in dcFreePesMap
+                    // long updatedFreePes =
+                    // dcFreePesMap.get(datacenter) - selectedCloudlet.getPesNumber();
+                    // dcFreePesMap.put(datacenter, updatedFreePes);
+                    break; // Stop searching once a suitable VM is found
+                }
+            }
+            // If no suitable VM was found after traversing all datacenters
+            if (targetVm == Vm.NULL) {
+                jobsToProcessList.remove(selectedCloudlet);
+            }
+        }
+
+        final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaitingList.size());
+        final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
+        final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsWaitingList);
+        LOGGER.info("jobsPlacedRatio: {}, qualityRatio: {}, deadlineViolationRatio: {}",
+                jobsPlacedRatio, qualityRatio, deadlineViolationRatio);
+
+        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
+    }
+
+    private double[] executeEarliestShortestCloudletToMostFreeDcAction() {
+        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final List<Cloudlet> jobsWaitingList =
+                cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
+        final List<Datacenter> datacenterList =
+                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+        final Map<Datacenter, Long> dcFreePesMap = datacenterList.stream().collect(
+                Collectors.toMap(datacenter -> datacenter, datacenter -> datacenter.getHostList()
+                        .stream().flatMap(host -> host.getVmList().stream()).mapToLong(vm -> {
+                            long usedPes = vm.getCloudletScheduler().getCloudletList().stream()
+                                    .mapToLong(cloudlet -> cloudlet.getPesNumber()).sum();
+                            return vm.getPesNumber() - usedPes;
+                        }).sum()));
+        int jobsPlaced = 0;
+        int quality = 0;
+
+        while (!jobsToProcessList.isEmpty()) {
+            // Step 1: Find cloudlets with the earliest deadline
+            double earliestDeadline = jobsToProcessList.stream()
+                    .mapToDouble(
+                            c -> c.getSubmissionDelay() + ((CloudletWithLocation) c).getDeadline())
+                    .min().orElse(Double.MAX_VALUE);
+
+            // Filter cloudlets with the earliest deadline
+            List<Cloudlet> earliestDeadlineCloudlets = jobsToProcessList.stream()
+                    .filter(c -> (c.getSubmissionDelay()
+                            + ((CloudletWithLocation) c).getDeadline()) == earliestDeadline)
+                    .collect(Collectors.toList());
+
+            // From these, select the shortest one(s)
+            long shortestLength = earliestDeadlineCloudlets.stream().mapToLong(Cloudlet::getLength)
+                    .min().orElseThrow();
+
+            Cloudlet selectedCloudlet = earliestDeadlineCloudlets.stream()
+                    .filter(c -> c.getLength() == shortestLength).findFirst().orElseThrow();
+
+            // // Step 2: Find the datacenter with the most free PEs
+            // Datacenter targetDatacenter =
+            // dcFreePesMap.entrySet().stream().max(Map.Entry.comparingByValue())
+            // .map(Map.Entry::getKey).orElse(Datacenter.NULL);
+
+            // if (targetDatacenter == Datacenter.NULL) {
+            // // No datacenters are available
+            // jobsToProcessList.remove(selectedCloudlet);
+            // continue;
+            // }
+
+            // Step 3: Traverse datacenters in descending order of free PEs
+            List<Map.Entry<Datacenter, Long>> sortedDcs = dcFreePesMap.entrySet().stream()
+                    .sorted(Map.Entry.<Datacenter, Long>comparingByValue().reversed())
+                    .collect(Collectors.toList());
+
+            Vm targetVm = Vm.NULL;
+            for (Iterator<Map.Entry<Datacenter, Long>> it = sortedDcs.iterator(); it.hasNext();) {
+                Datacenter datacenter = it.next().getKey();
+                targetVm = getMostFreeVmOfDcForCloudlet((int) datacenter.getId(), selectedCloudlet);
+
+                if (targetVm != Vm.NULL) {
+                    // Found a suitable VM
+                    cloudSimProxy.getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
+                    jobsToProcessList.remove(selectedCloudlet);
+                    jobsPlaced++;
+                    quality +=
+                            calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
+
+                    // Update the free PEs in dcFreePesMap
+                    long updatedFreePes =
+                            dcFreePesMap.get(datacenter) - selectedCloudlet.getPesNumber();
+                    dcFreePesMap.put(datacenter, updatedFreePes);
+                    break; // Stop searching once a suitable VM is found
+                }
+                it.remove(); // Remove datacenter from the list for this cloudlet
+            }
+            // If no suitable VM was found after traversing all datacenters
+            if (targetVm == Vm.NULL) {
+                jobsToProcessList.remove(selectedCloudlet);
+            }
+        }
+
+        final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaitingList.size());
+        final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
+        final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsWaitingList);
+        LOGGER.info("jobsPlacedRatio: {}, qualityRatio: {}, deadlineViolationRatio: {}",
+                jobsPlacedRatio, qualityRatio, deadlineViolationRatio);
+
+        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
+    }
+
+    private double[] executeRandomCloudletToMostFreeDcAction() {
+        return new double[] {0.0};
+    }
+
+    // this action is if the agent performs cloudlet to DC mapping
+    private double[] executeRlCloudletToDcAction(final int[] action) {
         // final int[] actionSucess = new int[jobsWaitingThisTimestep];
         // LOGGER.info("VMs running: {}",
         // cloudSimProxy.getBroker().getVmExecList().size());
@@ -545,7 +839,7 @@ public class WrappedSimulation {
             cloudSimProxy.getBroker().bindCloudletToVm(job, vm);
             // or simply job.setVm(vm);
             LOGGER.info("Cloudlet {} getVm {} ", job.getId(), job.getVm().getId());
-            quality += getQualityOfPlacement(dcId, job);
+            quality += calculateQualityOfPlacement(dcId, job);
             jobsPlaced++;
         }
 
@@ -569,16 +863,16 @@ public class WrappedSimulation {
         return quality / jobsPlaced;
     }
 
-    private double calculateDeadlineViolationRatio(final List<Cloudlet> jobsToSubmit) {
-        final int jobsWaiting = jobsToSubmit.size();
-        if (jobsWaiting == 0) {
+    private double calculateDeadlineViolationRatio(final List<Cloudlet> jobsWaiting) {
+        if (jobsWaiting.size() == 0) {
             return 0;
         }
         final double targetTime = cloudSimProxy.calculateTargetTime();
-        final long deadlineViolations =
-                jobsToSubmit.stream().filter(job -> targetTime > job.getSubmissionDelay()
-                        + ((CloudletWithLocation) job).getDeadline()).count();
-        return (double) deadlineViolations / jobsWaiting;
+        final long deadlineViolations = jobsWaiting.stream()
+                .filter(job -> targetTime > job.getSubmissionDelay()
+                        + ((CloudletWithLocation) job).getDeadline() && job.getVm() == Vm.NULL)
+                .count();
+        return (double) deadlineViolations / jobsWaiting.size();
     }
 
     // This is for the VM management action

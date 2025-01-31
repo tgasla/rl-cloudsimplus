@@ -8,6 +8,8 @@
 # experiment_name: name of the experiment
 # mode: [train, test, transfer]
 # vm_allocation_policy: [rl, rule-based]
+# cloudlet_to_dc_assignment_policy: [earliest-shortest-to-most-free-dc, random-to-most-free-dc, earliest-most-critical-to-nearest-dc, rl]
+# cloudlet_to_vm_assignment_policy: [most-free-cores]
 # algorithm: [any stable-baselines3 or sb3-contrib algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
 
 # globals.run_mode: [batch, serial]
@@ -147,13 +149,15 @@ common:
   mode: train
   max_jobs_waiting: 20
   vm_allocation_policy: bestfit
+  cloudlet_to_dc_assignment_policy: earliest-most-critical-to-nearest-dc
+  cloudlet_to_vm_assignment_policy: most-free-cores
   state_action_space_type: select-dc
   enable_autoencoder_observation: false
   freeze_inactive_input_layer_weights: false
   algorithm: MaskablePPO
   max_hosts: 32
   job_trace_filename: jobs_with_locations.csv
-  timesteps: 200000
+  timesteps: 2048
   n_rollout_steps: 2048
   reward_jobs_placed_coef: 0.333
   reward_quality_coef: 0.333
@@ -165,4 +169,4 @@ common:
 
 experiment_1:
     experiment_dir: euromlsys
-    experiment_name: delays_and_deadlines
+    experiment_name: earliest-most-critical-to-nearest-dc

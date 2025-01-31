@@ -28,6 +28,8 @@ public class SimulationSettings {
     private final double rewardDeadlineViolationCoef;
     private final int maxEpisodeLength;
     private final String vmAllocationPolicy;
+    private final String cloudletToDcAssignmentPolicy;
+    private final String cloudletToVmAssignmentPolicy;
     private final String algorithm;
     private final String stateActionSpaceType;
     private final int maxJobsWaiting;

@@ -156,9 +156,11 @@ public class CloudSimProxy {
         final List<Map<Host, List<Vm>>> hostVmMapping = createHostVmMapping(
                 SafeCasting.castToListOfMapStringObject(dcMap.get("hosts")), vmAllocationPolicy);
         final String type = String.valueOf(dcMap.get("type"));
+        final List<Integer> connectTo = (List<Integer>) dcMap.get("connect_to");
+        LOGGER.info("while creating datacenter, I have connectTo {}", connectTo.toString());
         final List<Host> hostList = getHostListFromMapping(hostVmMapping);
         final Datacenter dc =
-                new DatacenterWithType(cloudSimPlus, hostList, vmAllocationPolicy, type);
+                new DatacenterWithType(cloudSimPlus, hostList, vmAllocationPolicy, type, connectTo);
         LOGGER.info("Datacenter created: {}", dc.getId());
         allocateHostsForVms(hostVmMapping, vmAllocationPolicy);
         final List<Vm> vms = getVmsFromAllHosts(hostVmMapping);

@@ -13,10 +13,13 @@ import lombok.Setter;
 @Setter
 public class DatacenterWithType extends DatacenterSimple {
     private String type;
+    private List<Integer> connectTo;
 
     public DatacenterWithType(final Simulation simulation, final List<Host> hostList,
-            final VmAllocationPolicy vmAllocationPolicy, final String type) {
+            final VmAllocationPolicy vmAllocationPolicy, final String type,
+            final List<Integer> connectTo) {
         super(simulation, hostList, vmAllocationPolicy);
         this.type = type;
+        this.connectTo = connectTo;
     }
 }
