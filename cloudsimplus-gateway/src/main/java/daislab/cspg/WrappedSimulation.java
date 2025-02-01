@@ -1065,12 +1065,12 @@ public class WrappedSimulation {
     // }
 
     private int[] getInfrastructureObservation() {
-        switch (settings.getStateActionSpaceType()) {
+        switch (settings.getStateSpaceType()) {
             case "dcid-dctype-freevmpes-per-host":
                 return getInfraObsDcIdDcTypeFreeVmPesPerHost();
             default:
                 throw new IllegalArgumentException(
-                        "Unexpected value: " + settings.getStateActionSpaceType());
+                        "Unexpected value: " + settings.getStateSpaceType());
         }
     }
 

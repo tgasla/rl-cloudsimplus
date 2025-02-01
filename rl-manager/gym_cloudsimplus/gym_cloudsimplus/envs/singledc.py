@@ -88,13 +88,13 @@ class SimpleAutoencoder(nn.Module):
         super(SimpleAutoencoder, self).__init__()
         # Encoder
         self.encoder = nn.Sequential(
-            nn.Linear(input_dim, 128), nn.ReLU(), nn.Linear(128, latent_dim), nn.ReLU()
+            nn.Linear(input_dim, 64), nn.ReLU(), nn.Linear(64, latent_dim), nn.ReLU()
         )
         # Decoder
         self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, 128),
+            nn.Linear(latent_dim, 64),
             nn.ReLU(),
-            nn.Linear(128, input_dim),
+            nn.Linear(64, input_dim),
             nn.Sigmoid(),  # Assuming input values are normalized to [0, 1]
         )
 
@@ -110,28 +110,31 @@ class Autoencoder(nn.Module):
         super(Autoencoder, self).__init__()
         # Encoder
         self.encoder = nn.Sequential(
-            nn.Linear(input_dim, 128),
+            nn.Linear(input_dim, 64),
             nn.ReLU(),
-            nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
+            nn.BatchNorm1d(64) if use_batch_norm else nn.Identity(),
             nn.Dropout(dropout),
-            nn.Linear(128, latent_dim),
+            nn.Linear(64, latent_dim),
             nn.ReLU(),
             nn.BatchNorm1d(latent_dim) if use_batch_norm else nn.Identity(),
-            nn.Sigmoid(),
+            nn.Sigmoid(),  # Output values are normalized to [0, 1]
         )
         # Decoder
         self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, 128),
+            nn.Linear(latent_dim, 64),
             nn.ReLU(),
-            nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
+            nn.BatchNorm1d(64) if use_batch_norm else nn.Identity(),
             nn.Dropout(dropout),
-            nn.Linear(128, input_dim),
+            nn.Linear(64, input_dim),
             nn.Sigmoid(),  # Assuming input values are normalized to [0, 1]
         )
 
     def forward(self, x):
+        # print("Input shape:", x.shape)
         latent = self.encoder(x)
+        # print("Latent shape:", latent.shape)
         reconstructed = self.decoder(latent)
+        # print("Reconstructed shape:", reconstructed.shape)
         return latent, reconstructed
 
 
@@ -180,17 +183,14 @@ class SingleDC(gym.Env):
         # we need to convert them to a list of dictionaries
         self.params = params
 
+        self.autoencoder = None
+
         self.action_file_data = self._maybe_get_action_file_data()
         self.action_space = self._create_action_space()
 
-        infr_obs_space, self.infr_obs_length = self._create_infr_obs_space(
-            params["state_action_space_type"]
-        )
+        infr_obs_space, self.infr_obs_length = self._create_infr_obs_space()
         job_cores_waiting_obs_space, self.jobs_waiting_obs_length = (
             self._create_jobs_waiting_obs_space()
-        )
-        self.autoencoder = self._maybe_setup_autoencoder(
-            params["enable_autoencoder_observation"],
         )
         self.observation_space = self._create_obs_space(
             infr_obs_space, job_cores_waiting_obs_space
@@ -238,17 +238,37 @@ class SingleDC(gym.Env):
             return None
         return render_mode
 
-    def _create_infr_obs_space(self, obs_type, autoencoder_latent_dim=None):
+    def _get_infr_obs_length_from_type(self):
+        obs_type = self.params["state_space_type"]
+        if obs_type == "dcid-dctype-freevmpes-per-host":
+            return 3 * self.params["max_hosts"]
+        raise ValueError(f"Unknown observation type: {obs_type}")
+
+    def _create_infr_obs_space(self):
+        obs_type = self.params["state_space_type"]
+        enable_autoencoder = self.params.get("enable_autoencoder_observation")
+        latent_dim = self.params.get("autoencoder_latent_dim")
+        if enable_autoencoder and latent_dim:
+            input_dim = self._get_infr_obs_length_from_type()
+            self.autoencoder = self._setup_autoencoder(
+                input_dim, latent_dim, Autoencoder
+            )
+            return spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(latent_dim,),
+                dtype=np.float32,
+            ), input_dim
         if obs_type == "dcid-dctype-freevmpes-per-host":
             infr_obs_length = (
-                3 * self._get_total_hosts()
+                3 * self.params["max_hosts"]
             )  # dc id, free host pes (which in fact are free vm cores)
-            value_upper_bound = self._get_max_host_pes()
-            return spaces.MultiDiscrete(
-                (value_upper_bound + 1) * np.ones(infr_obs_length, dtype=np.int32)
+            infr_obs_upper_bound = self.params["max_host_pes"]
+            return spaces.MultiDiscrete(  # + 1 to allow [0, max_host_pes] values
+                (infr_obs_upper_bound + 1) * np.ones(infr_obs_length, dtype=np.int32)
             ), infr_obs_length
-        elif obs_type == "tree":
-            # TODO: not ready yet
+        if obs_type == "tree":
+            # TODO: not ready yet, OUTDATED - DO NOT USE
             # Tree representation with MultiDiscrete
             infr_obs_length = 2 * (
                 1 + self.total_hosts + self.total_vms + self.total_jobs
@@ -258,7 +278,7 @@ class SingleDC(gym.Env):
                 (value_upper_bound + 1) * np.ones(infr_obs_length, dtype=np.int32),
                 dtype=np.int32,
             ), infr_obs_length
-        elif obs_type == "2d-array":
+        if obs_type == "2d-array":
             # TODO: not ready yet
             # 2D array representation
             observation_rows = (
@@ -274,14 +294,7 @@ class SingleDC(gym.Env):
                 shape=(observation_rows, observation_cols),
                 dtype=np.float32,
             ), observation_rows * observation_cols
-        elif obs_type == "autoencoder" and autoencoder_latent_dim:
-            return spaces.Box(
-                low=0.0,
-                high=1.0,
-                shape=(autoencoder_latent_dim,),
-                dtype=np.float32,
-            ), autoencoder_latent_dim
-        elif obs_type == "autoencoder" and not autoencoder_latent_dim:
+        if obs_type == "autoencoder" and not latent_dim:
             raise ValueError(
                 "autoencoder_latent_dim must be provided when using autoencoder observation type"
             )
@@ -305,28 +318,24 @@ class SingleDC(gym.Env):
 
     def _create_action_space(self):
         return gym.spaces.MultiDiscrete(
-            (self._get_datacenters_count() + 1)
+            (self.params["max_datacenters"] + 1)
             * np.ones(self.params["max_jobs_waiting"], dtype=np.int32),
             # + 1 to allow for -1 which means the job queue is not full
             # datacenter ids in cloudsimplus start from 2 (LOL), so we start from 1 to allow a no action
         )  # the reason is that dcs are considered global entities and have global ids, CIS gets id 0, and broker gets id 1
         # return gym.spaces.Discrete(self._get_datacenters_count() + 1)
 
-    def _maybe_setup_autoencoder(
+    def _setup_autoencoder(
         self,
-        enable,
-        latent_dim=64,
+        input_dim,
+        latent_dim,
         ae_class=Autoencoder,
-        ae_path=os.path.join("mnt", "autoencoders", "AE_10hosts_64_BN.pth"),
+        ae_path=os.path.join("mnt", "autoencoders", "AE_5hosts_and_10hosts_64_BN.pth"),
     ) -> Autoencoder | SimpleAutoencoder | VQVAE | None:
-        if enable:
-            autoencoder = ae_class(
-                self.infr_obs_length, latent_dim, use_batch_norm=True
-            )
-            autoencoder.load_state_dict(torch.load(ae_path, weights_only=True))
-            autoencoder.eval()
-            return autoencoder
-        return None
+        autoencoder = ae_class(input_dim, latent_dim, use_batch_norm=True)
+        autoencoder.load_state_dict(torch.load(ae_path, weights_only=True))
+        autoencoder.eval()
+        return autoencoder
 
     # this is when infrastructure is [<dc_id, host_free_pes>, ...]
     def _get_max_cur_free_host_pes_per_dc(self):
@@ -352,6 +361,7 @@ class SingleDC(gym.Env):
         return result
 
     # calculated from the datacenter topology described in the yaml file
+    # NOT from the parameter max_hosts_pes
     def _get_max_host_pes_per_dc(self):
         # Initialize the array with zeros (or use np.empty for uninitialized values)
         max_host_pes_per_dc = np.zeros(self._get_datacenters_count())
@@ -362,10 +372,12 @@ class SingleDC(gym.Env):
         return max_host_pes_per_dc
 
     # calculated from the datacenter topology described in the yaml file
+    # NOT from the parameter max_host_pes
     def _get_max_host_pes(self):
         return max(self._get_max_host_pes_per_dc())
 
     # calculated from the datacenter topology described in the yaml file
+    # NOT from the parameter max_host_pes
     def _get_max_cur_host_pes(self):
         return max(self._get_max_cur_free_host_pes_per_dc())
 
@@ -374,15 +386,18 @@ class SingleDC(gym.Env):
         return self.params["datacenters"][int(dc_id)]["connect_to"]
 
     def action_masks(self) -> list[bool]:
-        dc_num = self._get_datacenters_count()  # Number of datacenters
+        cur_dc_num = self._get_datacenters_count()  # Number of datacenters
+        max_dc_num = self.params[
+            "max_datacenters"
+        ]  # Max number of datacenters (accounting for transfers)
         max_host_cores_per_dc = (
             self._get_max_cur_free_host_pes_per_dc()
-        )  # Max cores per datacenter
+        )  # Current max cores per datacenter
         # max_host_cores_all_dc = (
         #     self._get_max_cur_host_pes()
         # )  # Max cores across all datacenters
         # print("num_jobs", num_jobs)
-        options_num = dc_num + 1  # Number of datacenters + 1 for no action
+        options_num = max_dc_num + 1  # Number of datacenters + 1 for no action
         # print("max_host_cores_all_dc", max_host_cores_all_dc)
         # print("job_cores_waiting_obs", self.jobs_waiting_obs)
         # Initialize valid_action_mask with False values
@@ -394,6 +409,7 @@ class SingleDC(gym.Env):
 
         for i in range(0, self.jobs_waiting_obs_length, 4):  # Iterate over jobs
             # Cores requested by the current job
+            # each job has 4 values (cores, location, sensitivity, deadline)
             job_idx = i // 4
             job_cores = self.jobs_waiting_obs[i]
             job_location = self.jobs_waiting_obs[i + 1]
@@ -415,11 +431,12 @@ class SingleDC(gym.Env):
                     # allow no-op action for all jobs
                     valid_action_mask[action_index] = True
                 elif (
-                    j > 0
-                    and (
+                    0 < j <= cur_dc_num  # check if the datacenter id is valid
+                    and (  # check connectivity of dcs
                         j - 1 in self._get_connect_to_of_dc(job_location)
                         or j - 1 == job_location
                     )
+                    # check if there are enough cores in any host in the datacenter
                     and 0 < job_cores <= max_host_cores_per_dc[j - 1]
                 ):
                     # because job cores must be > 0 it means that for jobs no waiting, the action is always 0,
@@ -513,6 +530,8 @@ class SingleDC(gym.Env):
     #     masks = [action_type_mask, host_mask, vm_mask, vm_type_mask]
     #     return [item for sublist in masks for item in sublist]
 
+    # Calculated from the datacenter topology described in the yaml file
+    # NOT from the parameter max_hosts
     def _get_total_hosts(self):
         total_hosts = 0
         for datacenter in self.params["datacenters"]:
@@ -552,6 +571,9 @@ class SingleDC(gym.Env):
 
         # we need to pad the observation to the max length
         infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
+
+        self.infr_obs = infr_obs
+
         infr_obs = self._maybe_get_autoencoder_obs(infr_obs)
 
         jobs_waiting_obs = self._convert_to_primitive(
@@ -561,7 +583,6 @@ class SingleDC(gym.Env):
             jobs_waiting_obs, self.jobs_waiting_obs_length
         )
 
-        self.infr_obs = infr_obs
         self.jobs_waiting_obs = jobs_waiting_obs
 
         return {
@@ -571,8 +592,6 @@ class SingleDC(gym.Env):
 
     def _maybe_get_autoencoder_obs(self, infr_obs):
         if self.autoencoder:
-            # no need to pad, already done just before calling this function
-            # infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
             infr_obs = self._min_max_normalize(infr_obs)
             infr_obs = torch.tensor(infr_obs, dtype=torch.float32).unsqueeze(0)
             autoencoder_out = self.autoencoder(infr_obs)

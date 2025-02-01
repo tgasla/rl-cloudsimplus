@@ -5,7 +5,7 @@ from stable_baselines3.common.monitor import Monitor
 from utils.misc import (
     create_logger,
     create_callback,
-    # maybe_freeze_weights,
+    maybe_freeze_weights,
     vectorize_env,
     get_suitable_device,
     get_algorithm,
@@ -35,8 +35,7 @@ def train(params, jobs):
 
     # Instantiate the agent
     model = algorithm(policy=policy, env=env, device=device, **algorithm_kwargs)
-
-    # maybe_freeze_weights(model, params)
+    maybe_freeze_weights(model, params)
 
     callback = create_callback(params["save_experiment"], params["log_dir"])
     logger = create_logger(params["save_experiment"], params["log_dir"])

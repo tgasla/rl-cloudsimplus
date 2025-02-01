@@ -31,7 +31,7 @@ public class SimulationSettings {
     private final String cloudletToDcAssignmentPolicy;
     private final String cloudletToVmAssignmentPolicy;
     private final String algorithm;
-    private final String stateActionSpaceType;
+    private final String stateSpaceType;
     private final int maxJobsWaiting;
     private final List<Map<String, Object>> datacenters;
     // private final double rewardJobWaitCoef;

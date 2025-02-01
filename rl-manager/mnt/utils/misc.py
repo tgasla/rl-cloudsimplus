@@ -21,6 +21,8 @@ from utils.rl_algorithm_support_flags import (
 def get_host_count_from_train_dir(train_model_dir) -> int | None:
     # Regular expression to match the number before "hosts"
     match = re.search(r"(\d+)hosts", train_model_dir)
+    if not match:
+        re.search(r"(\d+)nodes", train_model_dir)
     if match:
         number = match.group(1)  # Extract the matched number
         return int(number)
@@ -49,7 +51,45 @@ def create_callback(
     return None
 
 
-def compute_indices(params, prev_host_count=None) -> dict:
+def _get_total_hosts(params):
+    total_hosts = 0
+    for datacenter in params["datacenters"]:
+        for host_type in datacenter["hosts"]:
+            total_hosts += host_type["amount"]
+    return total_hosts
+
+
+def compute_freeze_indices_for_multi_dc_obs(params, prev_host_count=None) -> dict:
+    """
+    Compute the indices and relevant parameters for freezing weights.
+
+    Args:
+        params (dict): Parameters containing host and VM configuration.
+        prev_host_count (int, optional): Previous host count for transfer learning. Defaults to None.
+
+    Returns:
+        dict: A dictionary containing the computed indices and other derived values.
+    """
+    max_hosts = params["max_hosts"]
+    cur_host_count = _get_total_hosts(params)
+    max_host_pes = params["max_host_pes"]
+    infr_obs_upper_bound = max_host_pes + 1
+    # current infrastructure observation length
+    cur_start_idx = 3 * cur_host_count * infr_obs_upper_bound
+    end_idx = 3 * max_hosts * infr_obs_upper_bound
+
+    prev_start_idx = None
+    if prev_host_count is not None:
+        prev_start_idx = 3 * prev_host_count * infr_obs_upper_bound
+
+    return {
+        "cur_start_idx": cur_start_idx,
+        "end_idx": end_idx,
+        "prev_start_idx": prev_start_idx,
+    }
+
+
+def compute_freeze_indices_for_tree_obs(params, prev_host_count=None) -> dict:
     """
     Compute the indices and relevant parameters for freezing weights.
 
@@ -102,7 +142,14 @@ def maybe_freeze_weights(model, params, prev_host_count=None) -> None:
         params (dict): Parameters containing host and VM configuration.
         prev_host_count (int, optional): Previous host count for transfer learning. Defaults to None.
     """
-    indices = compute_indices(params, prev_host_count)
+    if params["state_space_type"] == "tree" and params["vm_allocation_policy"] == "rl":
+        indices = compute_freeze_indices_for_tree_obs(params, prev_host_count)
+    elif (
+        params["state_space_type"] == "dcid-dctype-freevmpes-per-host"
+        and params["cloudlet_to_dc_assignment_policy"] == "rl"
+    ):
+        indices = compute_freeze_indices_for_multi_dc_obs(params, prev_host_count)
+
     prev_start_idx = indices["prev_start_idx"]
     cur_start_idx = indices["cur_start_idx"]
     end_idx = indices["end_idx"]

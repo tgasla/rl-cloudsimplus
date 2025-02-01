@@ -1,3 +1,5 @@
+from email import header
+from math import inf
 import os
 import numpy as np
 import pandas as pd
@@ -291,10 +293,12 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _write_infr_observation_to_file(self, filename, mode="a") -> None:
         filepath = os.path.join(self.log_dir, filename)
-        with open(filepath, mode) as file:
-            for obs in self.observations:
-                file.write(f"{obs}\n")
-            file.write("\n")
+        data = [obs["infr_state"].detach().numpy() for obs in self.observations]
+        with open(filepath, "a") as file:
+            for item in data:
+                file.write(", ".join(map(str, item)) + "\n")
+        # df = pd.DataFrame({"state": data})
+        # df.to_csv(filepath, header=False, index=False, mode=mode)
 
     def _write_observation_tree_arrays_to_file(self, filename, mode="a") -> None:
         filepath = os.path.join(self.log_dir, filename)
