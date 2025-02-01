@@ -117,7 +117,7 @@ make run-tensorboard
 ```
 
 > [!NOTE]
-> The default port of tensorboard has been overridden, so it uses port 80. If you have other processing running on port 80 and you wish to change the port that tensorbaord uses, you can do so by changing this [Dockerfile](tensorboard/Dockerfile?plain=1#L18). You can check that the TensorBoard dashboard is running by visiting [http://localhost](http://localhost).
+> The default port of tensorboard has been overridden, so it uses port 80. If you have other processing running on port 80 and you wish to change the port that tensorbaord uses, you can do so by changing this [Makefile](Makefile?plain=1#L18). You can check that the TensorBoard dashboard is running by visiting [http://localhost](http://localhost).
 
 ## Editing the experiment configuration file
 
