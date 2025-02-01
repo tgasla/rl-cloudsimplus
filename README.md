@@ -105,7 +105,7 @@ make build
 > If the log level environment variable is not set, the log level is set to INFO by default.
 
 ```bash
-[LOG_LEVEL=TRACE|DEBUG|INFO|WARN|ERROR] make build-gateway
+make build-gateway
 ```
 
 ## Starting the TensorBoard dashboard
@@ -119,7 +119,7 @@ make run-tensorboard
 ```
 
 > [!NOTE]
-> You can check that the TensorBoard dashboard is running by visiting [http://localhost](http://localhost).
+> The default port of tensorboard has been overridden, so it uses port 80. If you have other processing running on port 80 and you wish to change the port that tensorbaord uses, you can do so by changing this [Dockerfile](tensorboard/Dockerfile). You can check that the TensorBoard dashboard is running by visiting [http://localhost](http://localhost).
 
 ## Editing the experiment configuration file
 
