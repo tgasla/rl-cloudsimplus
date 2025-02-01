@@ -147,12 +147,14 @@ common:
   save_experiment: true
   base_log_dir: logs
   mode: train
+  max_job_pes: 16 
   max_jobs_waiting: 20
+  batch_size: 128
   vm_allocation_policy: bestfit
   cloudlet_to_dc_assignment_policy: rl
   cloudlet_to_vm_assignment_policy: most-free-cores
   state_space_type: dcid-dctype-freevmpes-per-host
-  enable_autoencoder_observation: true
+  enable_autoencoder_observation: true # for now, autoencoder observation is only for the infrastructure state
   autoencoder_latent_dim: 32
   freeze_inactive_input_layer_weights: false # keep false if autoencoder is used
   algorithm: MaskablePPO
@@ -160,6 +162,8 @@ common:
   max_hosts: 32
   max_host_pes: 64
   job_trace_filename: jobs_with_locations.csv
+  use_lstm: false
+  normalize_job_waiting_obs: true
   timesteps: 200000
   n_rollout_steps: 2048
   reward_jobs_placed_coef: 0.333
@@ -172,4 +176,4 @@ common:
 
 experiment_1:
     experiment_dir: euromlsys
-    experiment_name: debug_use_autoencoder
+    experiment_name: min_max_jobs_waiting

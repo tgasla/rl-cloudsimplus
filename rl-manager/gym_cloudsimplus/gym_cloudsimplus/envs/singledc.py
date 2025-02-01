@@ -5,10 +5,10 @@ import csv
 import numpy as np
 import torch
 import re
-from py4j.java_collections import JavaList, JavaArray
 from gymnasium import spaces
 from torch import nn
 from torch.functional import F
+from py4j.java_collections import JavaList, JavaArray
 from py4j.java_gateway import JavaGateway, GatewayParameters
 
 
@@ -303,6 +303,13 @@ class SingleDC(gym.Env):
 
     def _create_jobs_waiting_obs_space(self):
         jobs_waiting_obs_length = 4 * self.params["max_jobs_waiting"]
+        if self.params["normalize_job_waiting_obs"]:
+            return spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(jobs_waiting_obs_length,),
+                dtype=np.float32,
+            ), jobs_waiting_obs_length
         return spaces.MultiDiscrete(
             (self.params["max_job_pes"] + 1)
             * np.ones(jobs_waiting_obs_length, dtype=np.int32)
@@ -447,11 +454,7 @@ class SingleDC(gym.Env):
                     # Valid placement for the job
                     valid_action_mask[action_index] = True
 
-        # if self.current_step == 30:
-        #     print(self.jobs_waiting_obs)
-        #     print("valid_action_mask: ", valid_action_mask.tolist())
-
-        return valid_action_mask.tolist()  # Return as a Python list of booleans
+        return valid_action_mask.tolist()
 
     # def action_masks(self) -> list[bool]:
     #     """
@@ -585,14 +588,19 @@ class SingleDC(gym.Env):
 
         self.jobs_waiting_obs = jobs_waiting_obs
 
+        if self.params["normalize_job_waiting_obs"]:
+            max_job_pes = self.params["max_job_pes"]
+            jobs_waiting_obs = self._min_max_normalize(jobs_waiting_obs, 0, max_job_pes)
+
         return {
             "infr_state": infr_obs,
             "jobs_waiting_state": jobs_waiting_obs,
         }
 
     def _maybe_get_autoencoder_obs(self, infr_obs):
+        max_host_pes = self.params["max_host_pes"]
         if self.autoencoder:
-            infr_obs = self._min_max_normalize(infr_obs)
+            infr_obs = self._min_max_normalize(infr_obs, 0, max_host_pes)
             infr_obs = torch.tensor(infr_obs, dtype=torch.float32).unsqueeze(0)
             autoencoder_out = self.autoencoder(infr_obs)
             infr_obs = autoencoder_out[0].squeeze().detach().numpy()  # latent space
@@ -626,7 +634,6 @@ class SingleDC(gym.Env):
         result = self.simulation_environment.reset(self.simulation_id, seed)
 
         obs = self._get_observation(result)
-        self.jobs_waiting_obs = obs["jobs_waiting_state"]
 
         raw_info = result.getInfo()
         info = self._raw_info_to_dict(raw_info)
@@ -651,7 +658,6 @@ class SingleDC(gym.Env):
         truncated = result.isTruncated()
 
         obs = self._get_observation(result)
-        self.jobs_waiting_obs = obs["jobs_waiting_state"]
 
         # print(obs["infr_state"])
 

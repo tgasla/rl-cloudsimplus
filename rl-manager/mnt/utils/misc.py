@@ -218,6 +218,8 @@ def create_kwargs_with_algorithm_params(env, params) -> dict:
         algorithm_kwargs["learning_rate"] = params["learning_rate"]
     if params.get("n_rollout_steps") and params["algorithm"] in ALGORITHMS_WITH_N_STEPS:
         algorithm_kwargs["n_steps"] = params["n_rollout_steps"]
+    if params.get("batch_size") and params["algorithm"] != "HER":
+        algorithm_kwargs["batch_size"] = params["batch_size"]
     if params.get("seed") and params["algorithm"] != "HER":
         algorithm_kwargs["seed"] = params["seed"]
     if (

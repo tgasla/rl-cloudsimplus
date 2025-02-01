@@ -134,7 +134,7 @@ def main():
     _check_if_datacenters_have_unique_names(datacenters)
     datacenters = _translate_connect_to_names_to_idx(datacenters)
     params.update(datacenters=datacenters)
-    params.update(max_job_pes=_get_max_job_pes(jobs))
+    # params.update(max_job_pes=_get_max_job_pes(jobs))
 
     jobs = _translate_job_location_names_to_idx(jobs, params["datacenters"])
     jobs = _translate_sensitivity_str_to_levels(jobs)
