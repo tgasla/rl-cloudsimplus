@@ -101,8 +101,6 @@ make build
 > [!NOTE]  
 > It is often useful to rebuild images one at a time, especially when a change is made only in a specific application part.
 > For example, when we change the gateway code, we must rebuild the image before running the application.
-> Optionally, when building, we can specify the log level of the messages printed in stdout and a log file.
-> If the log level environment variable is not set, the log level is set to INFO by default.
 
 ```bash
 make build-gateway
@@ -112,14 +110,14 @@ make build-gateway
 
 The project consists of three docker images. The gateway and manager images contain the main application and are the docker compose services we need for every experiment we want to run.
 The TensorBoard image is the UI endpoint and helps us keep track of the experiment's progress. Because we do not want to shut down the visualization dashboard every time we want to stop an experiment,
-the TensorBoard image is not a docker compose service and can be started as a standalone docker container by using the following command (TODO: consider changing it):
+the TensorBoard image is not a docker compose service and can be started as a standalone docker container by using the following command:
 
 ```bash
 make run-tensorboard
 ```
 
 > [!NOTE]
-> The default port of tensorboard has been overridden, so it uses port 80. If you have other processing running on port 80 and you wish to change the port that tensorbaord uses, you can do so by changing this [Dockerfile](tensorboard/Dockerfile). You can check that the TensorBoard dashboard is running by visiting [http://localhost](http://localhost).
+> The default port of tensorboard has been overridden, so it uses port 80. If you have other processing running on port 80 and you wish to change the port that tensorbaord uses, you can do so by changing this [Dockerfile](tensorboard/Dockerfile?plain=1#L18). You can check that the TensorBoard dashboard is running by visiting [http://localhost](http://localhost).
 
 ## Editing the experiment configuration file
 
