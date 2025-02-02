@@ -1,4 +1,6 @@
+from pyexpat import features
 import gymnasium as gym
+from numpy import isin
 import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
@@ -21,84 +23,119 @@ from utils.misc import (
 
 class DictLSTMFeatureExtractor(BaseFeaturesExtractor):
     """
-    Custom feature extractor that processes dictionary observations with an LSTM.
-    Handles both Box (continuous) and MultiDiscrete (categorical) spaces.
+    Generalized feature extractor for dictionary observations with Box and MultiDiscrete spaces.
+    Uses LSTM for sequential processing.
     """
 
     def __init__(self, observation_space: spaces.Dict, features_dim: int = 64):
         super().__init__(observation_space, features_dim)
 
-        # Extract spaces from the dictionary
         self.extractors = nn.ModuleDict()
+        self.embeddings = nn.ModuleDict()  # Store embeddings for MultiDiscrete keys
         total_input_dim = 0
 
         for key, subspace in observation_space.spaces.items():
             if isinstance(subspace, spaces.Box):
                 # Linear layer for Box space
                 input_dim = subspace.shape[0]
-                self.extractors[key] = nn.Linear(
-                    input_dim, 32
-                )  # Feature extraction for Box
-                total_input_dim += 32  # Adjusted feature size
+                self.extractors[key] = nn.Linear(input_dim, 32)
+                total_input_dim += 32
 
             elif isinstance(subspace, spaces.MultiDiscrete):
-                # Embedding layer for MultiDiscrete space
-                num_categories = subspace.nvec  # List of category sizes
-                embedding_dims = [
-                    min(32, (n // 2) + 1) for n in num_categories
-                ]  # Dynamic embedding size
+                # Create embeddings for each MultiDiscrete key separately
+                num_categories = subspace.nvec
+                embedding_dims = [min(32, (n // 2) + 1) for n in num_categories]
 
-                self.embeddings = nn.ModuleList(
+                self.embeddings[key] = nn.ModuleList(
                     [
                         nn.Embedding(num_categories[i], embedding_dims[i])
                         for i in range(len(num_categories))
                     ]
                 )
 
-                total_input_dim += sum(embedding_dims)  # Sum of embedding sizes
+                total_input_dim += sum(embedding_dims)
 
-        # LSTM for sequential feature processing
+        # LSTM for sequential processing
         self.lstm = nn.LSTM(total_input_dim, 64, batch_first=True)
 
-        # Final fully connected layer
+        # Final FC layer
         self.fc = nn.Linear(64, features_dim)
 
     def forward(self, observations: dict) -> torch.Tensor:
         extracted_features = []
 
+        # Process Box features
         for key, extractor in self.extractors.items():
             if key in observations:
                 extracted_features.append(extractor(observations[key]))
 
-        # Process MultiDiscrete separately using embeddings
-        if hasattr(self, "embeddings"):
+        # Process MultiDiscrete features
+        for key, embedding_layers in self.embeddings.items():
             categorical_features = []
-            for i, embedding in enumerate(self.embeddings):
-                categorical_features.append(
-                    embedding(observations["jobs_waiting_state"].long()[:, i])
-                )  # One-hot embedding
+            for i, embedding in enumerate(embedding_layers):
+                categorical_features.append(embedding(observations[key].long()[:, i]))
             extracted_features.append(torch.cat(categorical_features, dim=-1))
 
         # Concatenate all extracted features
         concatenated = torch.cat(extracted_features, dim=-1)
 
-        # Make sure concatenated has the correct shape: (batch_size, seq_len, input_dim)
-        # Remove unsqueeze(0) to preserve the batch size
-        batch_size = observations["jobs_waiting_state"].shape[
+        # Ensure correct LSTM input shape: (batch_size, seq_len, input_dim)
+        batch_size = next(iter(observations.values())).shape[
             0
-        ]  # Assuming batch size is from this observation
-        concatenated = concatenated.view(
-            batch_size, 1, -1
-        )  # (batch_size, seq_len, input_dim)
+        ]  # Get batch size from any input
+        concatenated = concatenated.view(batch_size, 1, -1)
 
-        # LSTM expects (batch_size, seq_len, input_dim), so we pass it directly
+        # Pass through LSTM
         lstm_out, _ = self.lstm(concatenated)
 
-        # Take the last output of LSTM and pass it through FC layer
+        # Take last LSTM output and pass through FC layer
         return self.fc(lstm_out[:, -1, :])
 
 
-class CustomLSTMPPOPolicy(MaskableActorCriticPolicy):
+class BoxLSTMFeatureExtractor(BaseFeaturesExtractor):
+    """
+    Feature extractor for Box observations with sequential processing using LSTM.
+    """
+
+    def __init__(self, observation_space: spaces.Box, features_dim: int = 64):
+        super().__init__(observation_space, features_dim)
+
+        # The input dimension is the flattened shape of the Box observation space
+        input_dim = observation_space.shape[0]
+
+        # LSTM layer for sequential processing
+        self.lstm = nn.LSTM(input_dim, 64, batch_first=True)
+
+        # Final FC layer to produce the feature dimension
+        self.fc = nn.Linear(64, features_dim)
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        # Ensure the input is in the right shape: (batch_size, seq_len, input_dim)
+        batch_size = observations.shape[0]
+        observations = observations.view(
+            batch_size, 1, -1
+        )  # (batch_size, 1, input_dim)
+
+        # Pass through the LSTM layer
+        lstm_out, _ = self.lstm(observations)
+
+        # Take the last LSTM output and pass through the fully connected layer
+        return self.fc(lstm_out[:, -1, :])
+
+
+class BoxLSTMPPOPolicy(MaskableActorCriticPolicy):
+    """
+    Custom PPO policy using LSTM for dictionary observations.
+    """
+
+    def __init__(self, *args, **kwargs):
+        features_extractor_class = BoxLSTMFeatureExtractor
+        super().__init__(
+            *args, **kwargs, features_extractor_class=features_extractor_class
+        )
+
+
+class DictLSTMPPOPolicy(MaskableActorCriticPolicy):
     """
     Custom PPO policy using LSTM for dictionary observations.
     """
@@ -128,7 +165,10 @@ def train(params, jobs):
 
     policy = create_policy_from_obs_space_type(env.observation_space)
     if params["use_lstm"]:
-        policy = CustomLSTMPPOPolicy
+        if isinstance(env.observation_space, spaces.Dict):
+            policy = DictLSTMPPOPolicy
+        elif isinstance(env.observation_space, spaces.Box):
+            policy = BoxLSTMPPOPolicy
 
     # Instantiate the agent
     model = algorithm(policy=policy, env=env, device=device, **algorithm_kwargs)

@@ -1138,14 +1138,14 @@ public class WrappedSimulation {
                     List<Cloudlet> cloudletList = vm.getCloudletScheduler().getCloudletList();
                     long usedPes = cloudletList.stream().mapToLong(Cloudlet::getPesNumber).sum();
                     freePes += vm.getPesNumber() - usedPes;
-                    LOGGER.info("Writing {} in the observation", freePes);
-                    LOGGER.info("vm.getFreePesNumber(): {}", vm.getFreePesNumber());
+                    // LOGGER.info("Writing {} in the observation", freePes);
+                    // LOGGER.info("vm.getFreePesNumber(): {}", vm.getFreePesNumber());
                     // freePes += vm.getFreePesNumber();
                 }
                 infrastructureObservation[currentIndex++] = freePes;
             }
         }
-        LOGGER.info("InfrObs: {}", Arrays.toString(infrastructureObservation));
+        // LOGGER.info("InfrObs: {}", Arrays.toString(infrastructureObservation));
         return infrastructureObservation;
     }
 

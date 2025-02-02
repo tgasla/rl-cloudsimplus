@@ -293,12 +293,11 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _write_infr_observation_to_file(self, filename, mode="a") -> None:
         filepath = os.path.join(self.log_dir, filename)
-        data = [obs["infr_state"].detach().numpy() for obs in self.observations]
-        with open(filepath, "a") as file:
-            for item in data:
-                file.write(", ".join(map(str, item)) + "\n")
-        # df = pd.DataFrame({"state": data})
-        # df.to_csv(filepath, header=False, index=False, mode=mode)
+        if isinstance(self.observations, dict):
+            data = [obs["infr_state"].detach().numpy() for obs in self.observations]
+            with open(filepath, "a") as file:
+                for item in data:
+                    file.write(", ".join(map(str, item)) + "\n")
 
     def _write_observation_tree_arrays_to_file(self, filename, mode="a") -> None:
         filepath = os.path.join(self.log_dir, filename)

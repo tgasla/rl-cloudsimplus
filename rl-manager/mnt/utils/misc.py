@@ -235,6 +235,8 @@ def create_kwargs_with_algorithm_params(env, params) -> dict:
 
 
 def create_policy_from_obs_space_type(observation_space) -> str:
-    if isinstance(observation_space, gym.spaces.Dict):
+    if isinstance(observation_space, gym.spaces.Dict) or isinstance(
+        observation_space, gym.spaces.Tuple
+    ):
         return "MultiInputPolicy"  # when state is Spaces.Dict()
     return "MlpPolicy"  # when state is not Spaces.Dict()

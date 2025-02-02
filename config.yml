@@ -17,10 +17,10 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: true
+    attached: false
     gpu: true
-    java_log_level: DEBUG
-    java_log_destination: file
+    java_log_level: INFO
+    java_log_destination: none
     junit_output_show: false
     run_mode: serial
 
@@ -147,33 +147,54 @@ common:
   save_experiment: true
   base_log_dir: logs
   mode: train
-  max_job_pes: 16 
-  max_jobs_waiting: 20
-  batch_size: 128
+  batch_size: 64
   vm_allocation_policy: bestfit
   cloudlet_to_dc_assignment_policy: rl
   cloudlet_to_vm_assignment_policy: most-free-cores
   state_space_type: dcid-dctype-freevmpes-per-host
-  enable_autoencoder_observation: true # for now, autoencoder observation is only for the infrastructure state
-  autoencoder_latent_dim: 32
+  autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
+  autoencoder_infr_obs_latent_dim: 32
+  convert_obs_to_embedding: true
   freeze_inactive_input_layer_weights: false # keep false if autoencoder is used
   algorithm: MaskablePPO
   max_datacenters: 6
-  max_hosts: 32
+  max_hosts: 40
   max_host_pes: 64
+  max_job_pes: 16
+  max_jobs_waiting: 20
   job_trace_filename: jobs_with_locations.csv
-  use_lstm: false
-  normalize_job_waiting_obs: true
+  normalize_job_waiting_obs: false
   timesteps: 200000
   n_rollout_steps: 2048
   reward_jobs_placed_coef: 0.333
   reward_quality_coef: 0.333
   reward_deadline_violation_coef: 0.333
+  experiment_dir: euromlsys
   # reward_job_wait_coef: 0.25
   # reward_running_vm_cores_coef: 0.25
   # reward_unutilized_vm_cores_coef: 0.25
   # reward_invalid_coef: 0.25
 
 experiment_1:
-    experiment_dir: euromlsys
-    experiment_name: min_max_jobs_waiting
+    convert_obs_to_embedding: true
+    embedding_dim: 64
+    use_lstm: false
+    experiment_name: embedding_64_layer_norm
+
+# experiment_1:
+#   convert_obs_to_embedding: true
+#   embedding_dim: 32
+#   use_lstm: false
+#   experiment_name: embedding_32
+
+# experiment_2:
+#   convert_obs_to_embedding: true
+#   embedding_dim: 64
+#   use_lstm: true
+#   experiment_name: embedding_64_lstm
+
+# experiment_3:
+#   convert_obs_to_embedding: true
+#   embedding_dim: 32
+#   use_lstm: true
+#   experiment_name: embedding_32_lstm
