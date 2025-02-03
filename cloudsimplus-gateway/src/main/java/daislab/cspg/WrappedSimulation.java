@@ -51,6 +51,7 @@ public class WrappedSimulation {
     private int currentStep;
     private int bestEpisodeReward;
     private int currentEpisodeReward;
+    private int jobsPlacedThisTimestep;
     // private final MetricsStorage metricsStorage;
     // private final SimulationHistory simulationHistory;
     // private final int maxVms;
@@ -129,7 +130,7 @@ public class WrappedSimulation {
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
-        SimulationStepInfo info = new SimulationStepInfo(0, 0, 0, new ArrayList<>());
+        SimulationStepInfo info = new SimulationStepInfo(0, 0, 0, 0, 0, new ArrayList<>());
 
         Observation observation =
                 new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
@@ -143,6 +144,10 @@ public class WrappedSimulation {
         LOGGER.info("Step {} starting", currentStep);
 
         final double[] ratios = executeCustomCloudletToDcAction(action);
+
+        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final List<Cloudlet> jobsToSubmit = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final int jobsWaiting = jobsToSubmit.size();
         // switch (settings.getVmAllocationPolicy()) {
         // case "rl", "fromfile" -> {
         // ratios = executeCustomVmManagementAction(action);
@@ -208,8 +213,8 @@ public class WrappedSimulation {
 
         final List<Double> jobWaitTime = cloudSimProxy.getFinishedJobsWaitTimeLastTimestep();
 
-        SimulationStepInfo info =
-                new SimulationStepInfo(ratios[0], ratios[1], ratios[2], jobWaitTime);
+        SimulationStepInfo info = new SimulationStepInfo(jobsWaiting, this.jobsPlacedThisTimestep,
+                ratios[0], ratios[1], ratios[2], jobWaitTime);
 
         // Observation observation =
         // new Observation(getInfrastructureObservation(),
@@ -627,6 +632,8 @@ public class WrappedSimulation {
             }
         }
 
+        this.jobsPlacedThisTimestep = jobsPlaced;
+
         final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaitingList.size());
         final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
         final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsWaitingList);
@@ -702,6 +709,8 @@ public class WrappedSimulation {
                 jobsToProcessList.remove(selectedCloudlet);
             }
         }
+
+        this.jobsPlacedThisTimestep = jobsPlaced;
 
         final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaitingList.size());
         final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
@@ -792,6 +801,8 @@ public class WrappedSimulation {
             }
         }
 
+        this.jobsPlacedThisTimestep = jobsPlaced;
+
         final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaitingList.size());
         final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
         final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsWaitingList);
@@ -843,6 +854,8 @@ public class WrappedSimulation {
             quality += calculateQualityOfPlacement(dcId, job);
             jobsPlaced++;
         }
+
+        this.jobsPlacedThisTimestep = jobsPlaced;
 
         final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaiting);
         final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);

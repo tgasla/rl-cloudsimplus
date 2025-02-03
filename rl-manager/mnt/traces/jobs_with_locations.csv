@@ -14,7 +14,7 @@ job_id,arrival_time,mi,required_cores,location,delay_sensitivity,deadline
 12,2,30000,16,micro_dc_eur,moderate,3
 13,2,30000,16,micro_dc_eur,moderate,4
 14,2,30000,16,micro_dc_eur,moderate,3
-15,3,50000,6,micro_dc_eur,critical,5
+15,3,10000,6,micro_dc_eur,critical,5
 16,4,5000,1,micro_dc_eur,tolerant,0
 17,4,5000,1,micro_dc_eur,critical,1
 18,4,5000,1,micro_dc_eur,critical,0

@@ -138,8 +138,73 @@ class Autoencoder(nn.Module):
         return latent, reconstructed
 
 
+# class DictEmbeddingFeatureExtractor(nn.Module):
+#     def __init__(self, observation_space: spaces.Dict, features_dim: int = 64):
+#         super().__init__()
+
+#         self.extractors = nn.ModuleDict()
+#         total_embedding_dim = 0
+#         self.features_dim = features_dim
+
+#         for key, subspace in observation_space.spaces.items():
+#             if isinstance(subspace, spaces.MultiDiscrete):
+#                 num_categories = subspace.nvec
+#                 embedding_dims = [min(32, (n // 2) + 1) for n in num_categories]
+
+#                 # Store separate embeddings for each category in MultiDiscrete
+#                 self.extractors[key] = nn.ModuleList(
+#                     [
+#                         nn.Embedding(num_categories[i], embedding_dims[i])
+#                         for i in range(len(num_categories))
+#                     ]
+#                 )
+
+#                 total_embedding_dim += sum(embedding_dims)
+
+#         # Optional normalization layer to stabilize learning
+#         self.layer_norm = nn.LayerNorm(total_embedding_dim)
+
+#         # Final linear projection to a fixed feature size
+#         self.fc = nn.Linear(total_embedding_dim, features_dim)
+
+#     def forward(self, observations: dict) -> torch.Tensor:
+#         embedded_features = []
+
+#         for key, embedding_layers in self.extractors.items():
+#             if key in observations:
+#                 obs_tensor = torch.tensor(
+#                     observations[key],
+#                     dtype=torch.long,
+#                     device=next(self.parameters()).device,
+#                 )
+
+#                 # Apply embeddings efficiently in batch mode
+#                 categorical_features = [
+#                     embedding_layer(obs_tensor[i])
+#                     for i, embedding_layer in enumerate(embedding_layers)
+#                 ]
+#                 embedded_features.append(torch.cat(categorical_features, dim=-1))
+
+#         if not embedded_features:
+#             raise ValueError("No valid embeddings found in the observation dictionary!")
+
+#         # Concatenate embeddings along the feature axis
+#         concatenated = torch.cat(embedded_features, dim=-1)
+
+#         # Normalize for stable training
+#         normalized = self.layer_norm(concatenated)
+
+#         # Project to fixed feature size
+#         return self.fc(normalized)
+
+
 class DictEmbeddingFeatureExtractor(nn.Module):
-    def __init__(self, observation_space: spaces.Dict, features_dim: int = 64):
+    def __init__(
+        self,
+        observation_space: spaces.Dict,
+        embedding_size: int = 64,
+        features_dim: int = 64,
+    ):
         super().__init__()
 
         self.extractors = nn.ModuleDict()
@@ -148,54 +213,72 @@ class DictEmbeddingFeatureExtractor(nn.Module):
 
         for key, subspace in observation_space.spaces.items():
             if isinstance(subspace, spaces.MultiDiscrete):
-                num_categories = subspace.nvec
-                embedding_dims = [min(32, (n // 2) + 1) for n in num_categories]
-
-                # Store separate embeddings for each category in MultiDiscrete
+                # Categorical features -> Embedding for each dimension
+                embedding_dims = [
+                    min(embedding_size, (n // 2) + 1) for n in subspace.nvec
+                ]
                 self.extractors[key] = nn.ModuleList(
                     [
-                        nn.Embedding(num_categories[i], embedding_dims[i])
-                        for i in range(len(num_categories))
+                        nn.Embedding(n, embedding_dim)
+                        for n, embedding_dim in zip(subspace.nvec, embedding_dims)
                     ]
                 )
-
                 total_embedding_dim += sum(embedding_dims)
 
-        # Optional normalization layer to stabilize learning
-        self.layer_norm = nn.LayerNorm(total_embedding_dim)
+            elif isinstance(subspace, spaces.Discrete):
+                # Single categorical feature -> Embedding
+                embedding_dim = min(embedding_size, (subspace.n // 2) + 1)
+                self.extractors[key] = nn.Embedding(subspace.n, embedding_dim)
+                total_embedding_dim += embedding_dim
 
-        # Final linear projection to a fixed feature size
+            elif isinstance(subspace, spaces.Box):
+                # Continuous features -> Linear transformation
+                # already normalized
+                input_dim = subspace.shape[0]
+                self.extractors[key] = nn.Linear(
+                    input_dim, input_dim
+                )  # Identity transformation
+                total_embedding_dim += input_dim
+
+        # Optional LayerNorm to stabilize learning
+        self.layer_norm = nn.LayerNorm(total_embedding_dim)
+        # Final projection layer
         self.fc = nn.Linear(total_embedding_dim, features_dim)
 
-    def forward(self, observations: dict) -> torch.Tensor:
+    def forward(self, observations):
         embedded_features = []
 
-        for key, embedding_layers in self.extractors.items():
-            if key in observations:
-                obs_tensor = torch.tensor(
-                    observations[key],
-                    dtype=torch.long,
-                    device=next(self.parameters()).device,
-                )
+        for key, extractor in self.extractors.items():
+            if isinstance(extractor, nn.ModuleList):
+                # For MultiDiscrete (categorical with multiple values per key)
+                feature_list = []
+                for sub_extractor, obs_val in zip(extractor, observations[key]):
+                    obs_val_tensor = torch.tensor(obs_val, dtype=torch.long)
+                    feature_list.append(
+                        sub_extractor(obs_val_tensor)
+                    )  # Convert to long for embeddings
+                embedded_features.append(torch.cat(feature_list, dim=-1))
 
-                # Apply embeddings efficiently in batch mode
-                categorical_features = [
-                    embedding_layer(obs_tensor[i])
-                    for i, embedding_layer in enumerate(embedding_layers)
-                ]
-                embedded_features.append(torch.cat(categorical_features, dim=-1))
+            elif isinstance(extractor, nn.Embedding):
+                # For single categorical features
+                obs_val_tensor = torch.tensor(observations[key], dtype=torch.long)
+                embedded_features.append(
+                    extractor(obs_val_tensor)
+                )  # Convert to long for embeddings
 
-        if not embedded_features:
-            raise ValueError("No valid embeddings found in the observation dictionary!")
+            else:
+                # For continuous features
+                obs_val_tensor = torch.tensor(observations[key], dtype=torch.float)
+                embedded_features.append(
+                    extractor(obs_val_tensor)
+                )  # Convert to float for linear layers
 
-        # Concatenate embeddings along the feature axis
-        concatenated = torch.cat(embedded_features, dim=-1)
+        # Concatenate all features
+        final_features = torch.cat(embedded_features, dim=-1)
+        final_features = self.layer_norm(final_features)
+        final_features = self.fc(final_features)
 
-        # Normalize for stable training
-        normalized = self.layer_norm(concatenated)
-
-        # Project to fixed feature size
-        return self.fc(normalized)
+        return final_features
 
 
 class BoxFeatureExtractor(nn.Module):
@@ -337,14 +420,14 @@ class SingleDC(gym.Env):
 
         self.infr_obs_length = self._get_infr_obs_length_from_type()
         self.jobs_waiting_obs_length = 4 * self.params["max_jobs_waiting"]
-        infr_obs_space = self._create_infr_obs_space()
-        job_cores_waiting_obs_space = self._create_jobs_waiting_obs_space()
-        observation_space_dict = self._create_obs_space_dict(
-            infr_obs_space, job_cores_waiting_obs_space
-        )
-        self.extractor = self._maybe_setup_embedding_extractor(observation_space_dict)
+        # infr_obs_space = self._create_infr_obs_space()
+        # job_cores_waiting_obs_space = self._create_jobs_waiting_obs_space()
+        # observation_space_dict = self._create_obs_space_dict(
+        # infr_obs_space, job_cores_waiting_obs_space
+        # )
+        observation_space_dict = self._create_obs_space_dict()
+        self.extractor = self._setup_embedding_extractor(observation_space_dict)
         self.observation_space = self._create_obs_space(observation_space_dict)
-
         self.render_mode = self._check_render_mode(render_mode)
         params = self._convert_dict_keys_to_camel(params)
         params_as_json = json.dumps(params, default=self._json_serialization)
@@ -387,10 +470,12 @@ class SingleDC(gym.Env):
             return None
         return render_mode
 
-    def _maybe_setup_embedding_extractor(self, observation_space_dict):
-        if self.params.get("convert_obs_to_embedding"):
+    def _setup_embedding_extractor(self, observation_space_dict):
+        if self.params["convert_obs_to_embedding"]:
             return DictEmbeddingFeatureExtractor(
-                observation_space_dict, features_dim=self.params["embedding_dim"]
+                observation_space_dict,
+                embedding_size=self.params["embedding_size"],
+                features_dim=self.params["embedding_latent_dim"],
             )
         return None
 
@@ -465,19 +550,6 @@ class SingleDC(gym.Env):
         else:
             raise ValueError(f"Unknown observation type: {obs_type}")
 
-    def _create_jobs_waiting_obs_space(self):
-        if self.params["normalize_job_waiting_obs"]:
-            return spaces.Box(
-                low=0.0,
-                high=1.0,
-                shape=(self.jobs_waiting_obs_length,),
-                dtype=np.float32,
-            )
-        return spaces.MultiDiscrete(
-            (self.params["max_job_pes"] + 1)
-            * np.ones(self.jobs_waiting_obs_length, dtype=np.int32)
-        )
-
     def _create_obs_space(self, obs_space_dict):
         if self.extractor:
             return spaces.Box(
@@ -488,13 +560,70 @@ class SingleDC(gym.Env):
             )
         return obs_space_dict
 
-    def _create_obs_space_dict(self, infr_obs_space, jobs_waiting_obs_space):
+    def _get_continuous_high_val_dict(self):
+        if self.params["normalize_continuous_obs"]:
+            return {
+                "free_host_pes": 1,
+                "job_cores": 1,
+                "job_deadline": 1,
+            }
+        return {
+            "free_host_pes": self.params["max_host_pes"],
+            "job_cores": self.params["max_job_pes"],
+            "job_deadline": self.params["max_job_deadline"],
+        }
+
+    def _create_obs_space_dict(self):
+        high_val = self._get_continuous_high_val_dict()
         return spaces.Dict(
             {
-                "infr_state": infr_obs_space,
-                "jobs_waiting_state": jobs_waiting_obs_space,
+                "dc_id": spaces.MultiDiscrete(
+                    [self.params["max_datacenters"] + 1] * self.params["max_hosts"],
+                    dtype=np.int64,
+                ),
+                "dc_type": spaces.MultiDiscrete(
+                    [self.params["max_datacenter_types"] + 1]
+                    * self.params["max_hosts"],
+                    dtype=np.int64,
+                ),
+                "free_host_pes": spaces.Box(
+                    low=0,
+                    high=high_val["free_host_pes"],
+                    shape=(self.params["max_hosts"],),
+                    dtype=np.float32,
+                ),
+                "job_cores": spaces.Box(
+                    low=0,
+                    high=high_val["job_cores"],
+                    shape=(self.params["max_jobs_waiting"],),
+                    dtype=np.float32,
+                ),
+                "job_location": spaces.MultiDiscrete(
+                    [self.params["max_datacenters"] + 1]
+                    * self.params["max_jobs_waiting"],
+                    dtype=np.int64,
+                ),
+                "job_delay_sensitivity": spaces.MultiDiscrete(
+                    [self.params["max_job_delay_sensitivity_levels"] + 1]
+                    * self.params["max_jobs_waiting"],
+                    dtype=np.int64,
+                ),
+                "job_deadline": spaces.Box(
+                    low=0,
+                    high=high_val["job_deadline"],
+                    shape=(self.params["max_jobs_waiting"],),
+                    dtype=np.float32,
+                ),
             }
         )
+
+    # def _create_obs_space_dict(self, infr_obs_space, jobs_waiting_obs_space):
+    #     return spaces.Dict(
+    #         {
+    #             "infr_state": infr_obs_space,
+    #             "jobs_waiting_state": jobs_waiting_obs_space,
+    #         }
+    #     )
 
     def _create_action_space(self):
         return gym.spaces.MultiDiscrete(
@@ -752,31 +881,32 @@ class SingleDC(gym.Env):
         infr_obs = self._convert_to_primitive(raw_obs.getInfrastructureObservation())
 
         # we need to pad the observation to the max length
-        infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
 
-        self.infr_obs = infr_obs
+        # USED ONLY FOR ACTION MASKING
+        self.infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
 
-        infr_obs = self._maybe_get_autoencoder_infr_obs(infr_obs)
+        infr_obs_dict = self._flatten_infr_obs_to_dict(infr_obs)
+
+        # infr_obs = self._maybe_get_autoencoder_infr_obs(infr_obs)
 
         jobs_waiting_obs = self._convert_to_primitive(
             raw_obs.getJobsWaitingObservation()
         )
-        jobs_waiting_obs = self._pad_observation(
+
+        # USED ONLY FOR ACTION MASKING
+        self.jobs_waiting_obs = self._pad_observation(
             jobs_waiting_obs, self.jobs_waiting_obs_length
         )
 
-        self.jobs_waiting_obs = jobs_waiting_obs
+        jobs_waiting_obs_dict = self._flatten_jobs_waiting_obs_to_dict(jobs_waiting_obs)
+        obs_dict = self._merge_observations(infr_obs_dict, jobs_waiting_obs_dict)
 
-        jobs_waiting_obs = self._maybe_normalize_jobs_waiting_obs(jobs_waiting_obs)
-
-        obs_dict = {
-            "infr_state": infr_obs,
-            "jobs_waiting_state": jobs_waiting_obs,
-        }
+        # jobs_waiting_obs = self._maybe_normalize_jobs_waiting_obs(jobs_waiting_obs)
 
         if self.extractor:
+            # print(obs_dict)
             embedded_features = self.extractor(obs_dict)
-            print("Embedded features shape:", embedded_features.shape)
+            # print("Embedded features shape:", embedded_features.shape)
             return embedded_features.detach().numpy()
         return obs_dict
 
@@ -803,6 +933,95 @@ class SingleDC(gym.Env):
         if isinstance(action, list):
             return action
         raise ValueError(f"Invalid action type: {type(action)}")
+
+    def _flatten_infr_obs_to_dict(self, flat_obs):
+        """
+        Convert a flattened observation from Java into a structured Dict.
+
+        Args:
+            flat_obs (list): Flattened list from Java.
+            max_hosts (int): Maximum number of hosts in the observation space.
+
+        Returns:
+            dict: Structured Gym Dict observation.
+        """
+        max_hosts = self.params["max_hosts"]
+        num_hosts = len(flat_obs) // 3  # Each host has (dc_id, dc_type, free_host_pes)
+        assert num_hosts <= max_hosts, "Received more hosts than expected!"
+
+        # Convert to numpy array for easier manipulation
+        obs_array = np.array(flat_obs).reshape(num_hosts, 3)
+
+        # Extract individual fields
+        dc_ids = obs_array[:, 0]  # First column → dc_id
+        dc_types = obs_array[:, 1]  # Second column → dc_type
+        free_host_pes = obs_array[:, 2]
+        if self.params["normalize_continuous_obs"]:
+            free_host_pes = free_host_pes / self.params["max_host_pes"]
+        # Third column → free_host_pes (reshaped for Box space)
+
+        # Pad to max_hosts if necessary (to maintain fixed-size input)
+        pad_size = max_hosts - num_hosts
+        if pad_size > 0:
+            dc_ids = np.pad(dc_ids, (0, pad_size), constant_values=0)
+            dc_types = np.pad(dc_types, (0, pad_size), constant_values=0)
+            free_host_pes = np.pad(free_host_pes, ((0, pad_size)), constant_values=0)
+
+        return {
+            "dc_id": dc_ids.astype(np.int64),  # Convert to correct dtype
+            "dc_type": dc_types.astype(np.int64),
+            "free_host_pes": free_host_pes.astype(np.float32),
+        }
+
+    def _flatten_jobs_waiting_obs_to_dict(self, flat_obs):
+        """
+        Convert a flattened job observation into a structured Dict.
+
+        Args:
+            flat_jobs (list): Flattened list from Java.
+            max_jobs (int): Maximum number of jobs in the observation space.
+
+        Returns:
+            dict: Structured Gym Dict observation.
+        """
+        max_jobs = self.params["max_jobs_waiting"]
+        num_jobs = (
+            len(flat_obs) // 4
+        )  # Each job has (cores, location, sensitivity, deadline)
+        assert num_jobs <= max_jobs, "Received more jobs than expected!"
+
+        # Convert to numpy array for easier manipulation
+        job_array = np.array(flat_obs).reshape(num_jobs, 4)
+
+        # Extract individual fields
+        job_cores = job_array[:, 0]  # Continuous → Box
+        if self.params["normalize_continuous_obs"]:
+            job_cores = job_cores / self.params["max_job_pes"]
+        job_location = job_array[:, 1]  # Categorical → Discrete
+        delay_sensitivity = job_array[:, 2]  # Categorical → Discrete
+        deadline = job_array[:, 3]  # Continuous → Box
+        if self.params["normalize_continuous_obs"]:
+            deadline = deadline / self.params["max_job_deadline"]
+
+        # Pad to max_jobs if necessary
+        pad_size = max_jobs - num_jobs
+        if pad_size > 0:
+            job_cores = np.pad(job_cores, (0, pad_size), constant_values=0)
+            job_location = np.pad(job_location, (0, pad_size), constant_values=0)
+            delay_sensitivity = np.pad(
+                delay_sensitivity, (0, pad_size), constant_values=0
+            )
+            deadline = np.pad(deadline, (0, pad_size), constant_values=0)
+
+        return {
+            "job_cores": job_cores.astype(np.float32),
+            "job_location": job_location.astype(np.int64),
+            "job_delay_sensitivity": delay_sensitivity.astype(np.int64),
+            "job_deadline": deadline.astype(np.float32),
+        }
+
+    def _merge_observations(self, infr_obs, job_obs):
+        return {**infr_obs, **job_obs}
 
     def reset(self, seed=None, options=None):
         super(SingleDC, self).reset()

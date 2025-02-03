@@ -9,6 +9,8 @@ import java.util.List;
  */
 @Data
 public class SimulationStepInfo {
+    private final int jobsWaiting;
+    private final int jobsPlaced;
     private final double jobsPlacedRatio;
     private final double qualityRatio;
     private final double deadlineViolationRatio;

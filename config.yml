@@ -135,7 +135,6 @@ common:
                     ram: 65536
                     size: 1000000
                     bw: 1000
-  seed: 1234
   timestep_interval: 1.0
   min_time_between_events: 0.1
   max_episode_length: 150
@@ -154,47 +153,63 @@ common:
   state_space_type: dcid-dctype-freevmpes-per-host
   autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
   autoencoder_infr_obs_latent_dim: 32
-  convert_obs_to_embedding: true
   freeze_inactive_input_layer_weights: false # keep false if autoencoder is used
-  algorithm: MaskablePPO
   max_datacenters: 6
+  max_datacenter_types: 3
   max_hosts: 40
   max_host_pes: 64
-  max_job_pes: 16
   max_jobs_waiting: 20
+  max_job_pes: 16
+  max_job_delay_sensitivity_levels: 3
+  max_job_deadline: 20
   job_trace_filename: jobs_with_locations.csv
-  normalize_job_waiting_obs: false
-  timesteps: 200000
+  timesteps: 300000
   n_rollout_steps: 2048
   reward_jobs_placed_coef: 0.333
   reward_quality_coef: 0.333
   reward_deadline_violation_coef: 0.333
-  experiment_dir: euromlsys
-  # reward_job_wait_coef: 0.25
-  # reward_running_vm_cores_coef: 0.25
-  # reward_unutilized_vm_cores_coef: 0.25
-  # reward_invalid_coef: 0.25
-
-experiment_1:
-    convert_obs_to_embedding: true
-    embedding_dim: 64
-    use_lstm: false
-    experiment_name: embedding_64_layer_norm
+  experiment_dir: euromlsys/ablation
+  seed: 1234
 
 # experiment_1:
+#   algorithm: MaskablePPO
+#   embedding_latent_dim: 64
+#   embedding_size: 64
+#   use_lstm: true
 #   convert_obs_to_embedding: true
-#   embedding_dim: 32
-#   use_lstm: false
-#   experiment_name: embedding_32
+#   normalize_continuous_obs: true
+#   experiment_name: all
 
 # experiment_2:
-#   convert_obs_to_embedding: true
-#   embedding_dim: 64
+#   algorithm: MaskablePPO
 #   use_lstm: true
-#   experiment_name: embedding_64_lstm
+#   convert_obs_to_embedding: false
+#   normalize_continuous_obs: true
+#   experiment_name: without_embedding
 
-# experiment_3:
-#   convert_obs_to_embedding: true
-#   embedding_dim: 32
-#   use_lstm: true
-#   experiment_name: embedding_32_lstm
+experiment_1:
+  algorithm: MaskablePPO
+  use_lstm: true
+  embedding_latent_dim: 64
+  embedding_size: 64
+  convert_obs_to_embedding: true
+  normalize_continuous_obs: false
+  experiment_name: without_norm
+
+experiment_2:
+  algorithm: MaskablePPO
+  use_lstm: false
+  embedding_latent_dim: 64
+  embedding_size: 64
+  convert_obs_to_embedding: true
+  normalize_continuous_obs: true
+  experiment_name: without_lstm
+
+experiment_3:
+  algorithm: PPO
+  use_lstm: true
+  embedding_latent_dim: 64
+  embedding_size: 64
+  convert_obs_to_embedding: true
+  normalize_continuous_obs: true
+  experiment_name: without_mask

@@ -42,8 +42,8 @@ def transfer(params, jobs):
         custom_objects=custom_objects,
     )
 
-    prev_host_count = get_host_count_from_train_dir(params["train_model_dir"])
-    maybe_freeze_weights(model, params, prev_host_count=prev_host_count)
+    # prev_host_count = get_host_count_from_train_dir(params["train_model_dir"])
+    # maybe_freeze_weights(model, params, prev_host_count=prev_host_count)
 
     logger = create_logger(params["save_experiment"], params["log_dir"])
     callback = create_callback(params["save_experiment"], params["log_dir"])
