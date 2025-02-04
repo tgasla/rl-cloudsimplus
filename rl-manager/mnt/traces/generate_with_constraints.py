@@ -27,7 +27,7 @@ def generate_job(job_id, arrival_time):
     mi, time_taken = calculate_mi(cores)  # Calculate MI and time taken
     delay_sensitivity = random.choice(["moderate", "critical", "tolerant"])
     deadline = random.randint(0, 5)
-    location = random.choice(["micro_dc_ucd", "micro_dc_dcu"])
+    location = random.choice(["micro_dc_ucd", "micro_dc_dcu", "micro_dc_aau"])
 
     job = [job_id, arrival_time, mi, cores, location, delay_sensitivity, deadline]
     return job
@@ -62,9 +62,9 @@ header = [
     "deadline",
 ]
 
-with open("euromlsys_jobs.csv", mode="w", newline="") as file:
+with open("euromlsys_jobs_three_locs.csv", mode="w", newline="") as file:
     writer = csv.writer(file)
     writer.writerow(header)
     writer.writerows(jobs)
 
-print("Dataset generated and saved as 'euromlsys_jobs.csv'.")
+print("Dataset generated and saved as 'euromlsys_jobs_three_locs.csv'.")
