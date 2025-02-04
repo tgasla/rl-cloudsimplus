@@ -831,6 +831,11 @@ public class WrappedSimulation {
         int jobsPlaced = 0;
         double quality = 0.0;
         for (int i = 0; i < jobsWaiting; i++) {
+            if (action.length <= i) {
+                LOGGER.warn(
+                        "More jobs waiting than actions returned by the agent. Jobs will stay in the queue. Continuing...");
+                break;
+            }
             final CloudletWithLocation job = (CloudletWithLocation) jobsToSubmit.get(i);
             final int dcId = action[i] + 1;
             LOGGER.info("Action[{}]: {}", i, dcId);

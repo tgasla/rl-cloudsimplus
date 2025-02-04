@@ -1,3 +1,4 @@
+import os
 import yaml
 
 
@@ -122,10 +123,20 @@ def vm_constructor(loader, node):
     )
 
 
+def include_constructor(loader, node):
+    filename = os.path.join(
+        os.path.dirname(loader.stream.name), loader.construct_scalar(node)
+    )
+
+    with open(filename, "r") as f:
+        return yaml.load(f, Loader=yaml.FullLoader)
+
+
 def register_cnstructors():
     yaml.add_constructor("!datacenter", datacenter_constructor)
     yaml.add_constructor("!host", host_constructor)
     yaml.add_constructor("!vm", vm_constructor)
+    yaml.add_constructor("!include", include_constructor)
 
 
 def dict_from_config(replica_id, config):

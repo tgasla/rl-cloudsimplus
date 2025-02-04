@@ -988,10 +988,13 @@ class SingleDC(gym.Env):
         num_jobs = (
             len(flat_obs) // 4
         )  # Each job has (cores, location, sensitivity, deadline)
-        assert num_jobs <= max_jobs, "Received more jobs than expected!"
+
+        # Ensure we don't exceed max_jobs by slicing the array to keep only the maximum number of rows
+        # Keep only max_jobs rows (each with 4 elements)
+        flat_obs = flat_obs[: max_jobs * 4]
 
         # Convert to numpy array for easier manipulation
-        job_array = np.array(flat_obs).reshape(num_jobs, 4)
+        job_array = np.array(flat_obs).reshape(min(num_jobs, max_jobs), 4)
 
         # Extract individual fields
         job_cores = job_array[:, 0]  # Continuous → Box

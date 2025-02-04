@@ -47,6 +47,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
         self._clear_episode_details()
 
+    def mean_exclude_neg(self, arr):
+        non_negative_values = [value for value in arr if value >= 0]
+        return np.mean(non_negative_values)
+
     def mean_of_non_empty_sublists(self, arr):
         # Flatten the list while excluding empty sublists
         non_empty_values = [value for sublist in arr if sublist for value in sublist]
@@ -65,6 +69,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         episode_details = {
             "timestep": timesteps,
             "reward": self.rewards,
+            "jobs_placed_ratio": self.jobs_placed_ratio,
+            "quality_ratio": self.quality_ratio,
+            "deadline_violation_ratio": self.deadline_violation_ratio,
             # "new_obs": self.new_observations,
             # "obs": self.observations, # obs and actions are saved in independent files
             # "action": self.actions,
@@ -132,8 +139,13 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             self.deadline_violation_ratio.append(
                 self.locals["infos"][0]["deadline_violation_ratio"]
             )
+        else:
+            self.jobs_placed_ratio.append(-1)
+            self.deadline_violation_ratio.append(-1)
         if self.locals["infos"][0]["jobs_placed"] > 0:
             self.quality_ratio.append(self.locals["infos"][0]["quality_ratio"])
+        else:
+            self.quality_ratio.append(-1)
         # self.host_metrics.append(self.locals["infos"][0]["host_metrics"])
         # self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
         # self.job_metrics.append(self.locals["infos"][0]["job_metrics"])
@@ -271,10 +283,12 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.job_wait_time_deque.append(
             self.mean_of_non_empty_sublists(self.job_wait_time)
         )
-        self.jobs_placed_ratio_deque.append(np.mean(self.jobs_placed_ratio))
-        self.quality_ratio_deque.append(np.mean(self.quality_ratio))
+        self.jobs_placed_ratio_deque.append(
+            self.mean_exclude_neg(self.jobs_placed_ratio)
+        )
+        self.quality_ratio_deque.append(self.mean_exclude_neg(self.quality_ratio))
         self.deadline_violation_ratio_deque.append(
-            np.mean(self.deadline_violation_ratio)
+            self.mean_exclude_neg(self.deadline_violation_ratio)
         )
         # self.job_queue_ratio_rew_deque.append(
         #     np.mean(self.job_wait_rewards) / self.reward_job_wait_coef

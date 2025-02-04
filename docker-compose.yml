@@ -23,6 +23,7 @@ services:
       - gateway
     volumes:
       - ./config.yml:/mgr/config.yml
+      - ./datacenters_b.yml:/mgr/datacenters_b.yml
       - ./rl-manager/mnt:/mgr/mnt
       - ./logs:/mgr/logs
       - /run/docker.sock:/run/docker.sock:ro

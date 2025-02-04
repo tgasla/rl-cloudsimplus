@@ -26,115 +26,7 @@ globals:
 
 common:
   datacenters:
-      - !datacenter
-        name: cloud_dc
-        type: cloud
-        amount: 1
-        hosts:
-          - !host
-            amount: 16
-            pes: 64
-            pe_mips: 60
-            ram: 65536
-            storage: 4000000
-            bw: 100000
-            vms:
-              - !vm
-                amount: 1
-                pes: 64
-                pe_mips: 60
-                ram: 65536
-                size: 4000000
-                bw: 100000
-      - !datacenter
-        name: edge_dc_frankfurt
-        type: edge
-        amount: 1
-        hosts:
-          - !host
-              amount: 8
-              pes: 16
-              pe_mips: 60
-              ram: 65536
-              storage: 2000000
-              bw: 10000
-              vms:
-                !vm
-                  amount: 1
-                  pes: 16
-                  pe_mips: 60
-                  ram: 65536
-                  size: 2000000
-                  bw: 10000
-      - !datacenter
-          name: micro_dc_ucd
-          type: micro
-          connect_to:
-            - edge_dc_frankfurt
-            - cloud_dc
-          amount: 1
-          hosts:
-            - !host
-                amount: 3
-                pes: 6
-                pe_mips: 60
-                ram: 65536
-                storage: 1000000
-                bw: 1000
-                vms:
-                  - !vm
-                    amount: 1
-                    pes: 6
-                    pe_mips: 60
-                    ram: 65536
-                    size: 1000000
-                    bw: 1000
-      - !datacenter
-          name: micro_dc_dcu
-          type: micro
-          connect_to:
-            - edge_dc_frankfurt
-            - cloud_dc
-          amount: 1
-          hosts:
-            - !host
-                amount: 2
-                pes: 6
-                pe_mips: 60
-                ram: 65536
-                storage: 1000000
-                bw: 1000
-                vms:
-                  - !vm
-                    amount: 1
-                    pes: 6
-                    pe_mips: 60
-                    ram: 65536
-                    size: 1000000
-                    bw: 1000
-      - !datacenter
-          name: micro_dc_eur
-          type: micro
-          connect_to:
-            - edge_dc_frankfurt
-            - cloud_dc
-          amount: 1
-          hosts:
-            - !host
-                amount: 3
-                pes: 6
-                pe_mips: 60
-                ram: 65536
-                storage: 1000000
-                bw: 1000
-                vms:
-                  - !vm
-                    amount: 1
-                    pes: 6
-                    pe_mips: 60
-                    ram: 65536
-                    size: 1000000
-                    bw: 1000
+    !include datacenters_b.yml
   timestep_interval: 1.0
   min_time_between_events: 0.1
   max_episode_length: 150
@@ -145,7 +37,7 @@ common:
   paying_for_the_full_hour: false
   save_experiment: true
   base_log_dir: logs
-  mode: train
+  mode: transfer
   batch_size: 64
   vm_allocation_policy: bestfit
   cloudlet_to_dc_assignment_policy: rl
@@ -162,54 +54,38 @@ common:
   max_job_pes: 16
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
-  job_trace_filename: jobs_with_locations.csv
+  job_trace_filename: euromlsys_jobs_first_20.csv
   timesteps: 300000
   n_rollout_steps: 2048
   reward_jobs_placed_coef: 0.333
   reward_quality_coef: 0.333
   reward_deadline_violation_coef: 0.333
-  experiment_dir: euromlsys/ablation
+  experiment_dir: euromlsys/transfer_to_b_1234
   seed: 1234
 
 # experiment_1:
+#   train_model_dir: euromlsys/ablation/all_2345
 #   algorithm: MaskablePPO
 #   embedding_latent_dim: 64
 #   embedding_size: 64
 #   use_lstm: true
 #   convert_obs_to_embedding: true
 #   normalize_continuous_obs: true
-#   experiment_name: all
-
-# experiment_2:
-#   algorithm: MaskablePPO
-#   use_lstm: true
-#   convert_obs_to_embedding: false
-#   normalize_continuous_obs: true
-#   experiment_name: without_embedding
+#   experiment_name: all_2345
 
 experiment_1:
+  train_model_dir: euromlsys/ablation/without_embedding_and_norm_2345
   algorithm: MaskablePPO
   use_lstm: true
-  embedding_latent_dim: 64
-  embedding_size: 64
-  convert_obs_to_embedding: true
+  convert_obs_to_embedding: false
   normalize_continuous_obs: false
-  experiment_name: without_norm
+  experiment_name: without_embedding_norm_300k
 
-experiment_2:
-  algorithm: MaskablePPO
-  use_lstm: false
-  embedding_latent_dim: 64
-  embedding_size: 64
-  convert_obs_to_embedding: true
-  normalize_continuous_obs: true
-  experiment_name: without_lstm
-
-experiment_3:
-  algorithm: PPO
-  use_lstm: true
-  embedding_latent_dim: 64
-  embedding_size: 64
-  convert_obs_to_embedding: true
-  normalize_continuous_obs: true
-  experiment_name: without_mask
+# experiment_3:
+#   algorithm: MaskablePPO
+#   use_lstm: false
+#   embedding_latent_dim: 64
+#   embedding_size: 64
+#   convert_obs_to_embedding: true
+#   normalize_continuous_obs: true
+#   experiment_name: without_lstm
