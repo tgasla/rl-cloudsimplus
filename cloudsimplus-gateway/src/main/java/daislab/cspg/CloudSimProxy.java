@@ -51,10 +51,11 @@ public class CloudSimProxy {
     private boolean firstStep;
 
     /**
-     * Constructs a new CloudSimProxy instance with the specified simulation settings and input
+     * Constructs a new CloudSimProxy instance with the specified simulation
+     * settings and input
      * jobs.
      *
-     * @param settings the simulation settings to be used
+     * @param settings  the simulation settings to be used
      * @param inputJobs the list of Cloudlet jobs to be processed
      */
     public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
@@ -93,11 +94,14 @@ public class CloudSimProxy {
     }
 
     /**
-     * Retrieves the number of virtual machine (VM) cores based on the specified VM type.
+     * Retrieves the number of virtual machine (VM) cores based on the specified VM
+     * type.
      *
      * @param type the type of the VM for which the core count is to be retrieved.
-     * @return the number of VM cores for the specified type, calculated as the product of the small
-     *         VM processing elements (PEs) and the size multiplier for the given type.
+     * @return the number of VM cores for the specified type, calculated as the
+     *         product of the small
+     *         VM processing elements (PEs) and the size multiplier for the given
+     *         type.
      */
     public int getVmCoreCountByType(final String type) {
         // return settings.getSmallVmPes() * settings.getSizeMultiplier(type);
@@ -105,7 +109,8 @@ public class CloudSimProxy {
     }
 
     /**
-     * Initializes job listeners for each job in the inputJobs collection. This method adds both
+     * Initializes job listeners for each job in the inputJobs collection. This
+     * method adds both
      * start and finish listeners to each job.
      */
     private void initializeJobListeners() {
@@ -114,9 +119,12 @@ public class CloudSimProxy {
     }
 
     /**
-     * Ensures that all jobs are completed before the simulation ends. This method sets up an event
-     * listener that checks if there are unfinished jobs when there is only one future event left.
-     * If there are unfinished jobs, it sends an empty event to keep the simulation running.
+     * Ensures that all jobs are completed before the simulation ends. This method
+     * sets up an event
+     * listener that checks if there are unfinished jobs when there is only one
+     * future event left.
+     * If there are unfinished jobs, it sends an empty event to keep the simulation
+     * running.
      */
     private void ensureAllJobsCompleteBeforeSimulationEnds() {
         double interval = settings.getTimestepInterval();
@@ -132,13 +140,15 @@ public class CloudSimProxy {
     /**
      * Creates a Datacenter with a list of hosts and a VM allocation policy.
      * 
-     * @return a new instance of {@link DatacenterSimple} initialized with the specified hosts and
+     * @return a new instance of {@link DatacenterSimple} initialized with the
+     *         specified hosts and
      *         VM allocation policy.
      */
     private List<Datacenter> createDatacenters(final List<Map<String, Object>> listOfDcMaps) {
         List<Datacenter> datacenters = new ArrayList<>();
         for (Map<String, Object> dcMap : listOfDcMaps) {
-            // gson reads all numbers as double, so we need to read the object as a double and then
+            // gson reads all numbers as double, so we need to read the object as a double
+            // and then
             // cast it to an int
             final int dcAmount = parseInt(dcMap.get("amount"));
             for (int i = 0; i < dcAmount; i++) {
@@ -159,8 +169,7 @@ public class CloudSimProxy {
         final List<Integer> connectTo = (List<Integer>) dcMap.get("connect_to");
         LOGGER.info("while creating datacenter, I have connectTo {}", connectTo.toString());
         final List<Host> hostList = getHostListFromMapping(hostVmMapping);
-        final Datacenter dc =
-                new DatacenterWithType(cloudSimPlus, hostList, vmAllocationPolicy, type, connectTo);
+        final Datacenter dc = new DatacenterWithType(cloudSimPlus, hostList, vmAllocationPolicy, type, connectTo);
         LOGGER.info("Datacenter created: {}", dc.getId());
         allocateHostsForVms(hostVmMapping, vmAllocationPolicy);
         final List<Vm> vms = getVmsFromAllHosts(hostVmMapping);
@@ -210,10 +219,14 @@ public class CloudSimProxy {
      * 
      * @return A list of {@link Host} objects.
      * 
-     *         The method initializes a list of hosts with the following properties: - RAM,
-     *         bandwidth, and storage are set according to the settings. - Each host is assigned a
-     *         list of processing elements (PEs) created by the {@code createPeList()} method. -
-     *         Each host is configured with simple resource provisioners for RAM and bandwidth. -
+     *         The method initializes a list of hosts with the following properties:
+     *         - RAM,
+     *         bandwidth, and storage are set according to the settings. - Each host
+     *         is assigned a
+     *         list of processing elements (PEs) created by the
+     *         {@code createPeList()} method. -
+     *         Each host is configured with simple resource provisioners for RAM and
+     *         bandwidth. -
      *         Each host uses a time-shared VM scheduler.
      */
     private List<Map<Host, List<Vm>>> createHostVmMapping(
@@ -224,16 +237,14 @@ public class CloudSimProxy {
             final long hostRam = parseLong(hostMap.get("ram"));
             final long hostStorage = parseLong(hostMap.get("storage"));
             final long hostBw = parseLong(hostMap.get("bw"));
-            final List<Pe> peList =
-                    createPeList(parseLong(hostMap.get("pes")), parseLong(hostMap.get("pe_mips")));
+            final List<Pe> peList = createPeList(parseLong(hostMap.get("pes")), parseLong(hostMap.get("pe_mips")));
             final int hostAmount = parseInt(hostMap.get("amount"));
             for (int i = 0; i < hostAmount; i++) {
                 final Host host = new HostSimple(hostRam, hostBw, hostStorage, peList)
                         .setRamProvisioner(new ResourceProvisionerSimple())
                         .setBwProvisioner(new ResourceProvisionerSimple())
                         .setVmScheduler(new VmSchedulerTimeShared());
-                final List<Vm> vms =
-                        createVmList(SafeCasting.castToListOfMapStringObject(hostMap.get("vms")));
+                final List<Vm> vms = createVmList(SafeCasting.castToListOfMapStringObject(hostMap.get("vms")));
                 hostVmMapping.add(Map.of(host, vms));
             }
         }
@@ -255,7 +266,7 @@ public class CloudSimProxy {
      * Creates a list of virtual machines (VMs) of a specified type.
      *
      * @param vmCount the number of VMs to create
-     * @param type the type of VMs to create
+     * @param type    the type of VMs to create
      * @return a list of created VMs
      */
     private List<Vm> createVmList(final List<Map<String, Object>> listOfVmMaps) {
@@ -284,8 +295,10 @@ public class CloudSimProxy {
     }
 
     /**
-     * Creates a list of Processing Elements (PEs) for a host. Each PE is initialized with a
-     * specified MIPS (Million Instructions Per Second) capacity and a simple PE provisioner.
+     * Creates a list of Processing Elements (PEs) for a host. Each PE is
+     * initialized with a
+     * specified MIPS (Million Instructions Per Second) capacity and a simple PE
+     * provisioner.
      *
      * @return a list of PEs configured according to the host settings.
      */
@@ -298,8 +311,10 @@ public class CloudSimProxy {
     }
 
     /**
-     * Advances the simulation clock to the specified target time. This method runs the simulation
-     * in increments until the target time is reached or the maximum number of iterations is
+     * Advances the simulation clock to the specified target time. This method runs
+     * the simulation
+     * in increments until the target time is reached or the maximum number of
+     * iterations is
      * exceeded to prevent an infinite loop.
      *
      * @param targetTime The target time to advance the simulation clock to.
@@ -316,8 +331,7 @@ public class CloudSimProxy {
             // Calculate the remaining time to the target
             adjustedInterval = targetTime - clock();
             // Use the minimum time between events if the remaining time is non-positive
-            adjustedInterval =
-                    adjustedInterval <= 0 ? settings.getMinTimeBetweenEvents() : adjustedInterval;
+            adjustedInterval = adjustedInterval <= 0 ? settings.getMinTimeBetweenEvents() : adjustedInterval;
 
             // Increment the iteration counter and break if it exceeds the maximum allowed
             // iterations
@@ -548,7 +562,8 @@ public class CloudSimProxy {
     }
 
     /**
-     * Ensures that the simulation is currently running. If the simulation is not running, it throws
+     * Ensures that the simulation is currently running. If the simulation is not
+     * running, it throws
      * an IllegalStateException.
      *
      * @throws IllegalStateException if the simulation is not running.
@@ -561,10 +576,14 @@ public class CloudSimProxy {
     }
 
     /**
-     * Clears the lists of created cloudlets and VMs if needed to prevent OutOfMemoryError (OOM).
-     * The lists can grow to large sizes as cloudlets are re-scheduled when VMs are terminated. This
-     * method checks a setting to determine if the lists should be cleared. It is safe to clear
-     * these lists in the current environment because they are only used in CloudSimPlus when a VM
+     * Clears the lists of created cloudlets and VMs if needed to prevent
+     * OutOfMemoryError (OOM).
+     * The lists can grow to large sizes as cloudlets are re-scheduled when VMs are
+     * terminated. This
+     * method checks a setting to determine if the lists should be cleared. It is
+     * safe to clear
+     * these lists in the current environment because they are only used in
+     * CloudSimPlus when a VM
      * is being upscaled, which is not performed in this environment.
      */
     private void maybeClearLists() {
@@ -613,7 +632,8 @@ public class CloudSimProxy {
         LOGGER.info("[{} - {}): ARRIVED: {}", startTime, clock(), getArrivedJobsCount());
     }
 
-    // private List<Vm> createSingleVm(final double targetTime, final long coresNeeded) {
+    // private List<Vm> createSingleVm(final double targetTime, final long
+    // coresNeeded) {
     // final int vmTypesCount = settings.VM_TYPES.length;
     // final List<Vm> vmList = new ArrayList<>();
     // final double startTime = targetTime - settings.getTimestepInterval();
@@ -645,11 +665,13 @@ public class CloudSimProxy {
     // }
 
     /**
-     * Checks if any VM (Virtual Machine) in the broker's execution list is suitable for the given
+     * Checks if any VM (Virtual Machine) in the broker's execution list is suitable
+     * for the given
      * cloudlet.
      *
      * @param cloudlet the cloudlet to be checked for suitability against the VMs.
-     * @return {@code true} if there is at least one VM suitable for the cloudlet, {@code false}
+     * @return {@code true} if there is at least one VM suitable for the cloudlet,
+     *         {@code false}
      *         otherwise.
      */
     private boolean isAnyVmSuitableForCloudlet(Cloudlet cloudlet) {
@@ -657,8 +679,10 @@ public class CloudSimProxy {
     }
 
     /**
-     * Adds an event listener to the specified Cloudlet that triggers when the Cloudlet starts
-     * running. The listener logs a debug message with the Cloudlet ID, VM ID, and the current
+     * Adds an event listener to the specified Cloudlet that triggers when the
+     * Cloudlet starts
+     * running. The listener logs a debug message with the Cloudlet ID, VM ID, and
+     * the current
      * simulation time.
      *
      * @param cloudlet the Cloudlet to which the start listener will be added
@@ -679,8 +703,10 @@ public class CloudSimProxy {
     }
 
     /**
-     * Adds an on-finish listener to the specified Cloudlet. The listener logs detailed information
-     * about the Cloudlet's execution and calculates the wait time for the Cloudlet upon its
+     * Adds an on-finish listener to the specified Cloudlet. The listener logs
+     * detailed information
+     * about the Cloudlet's execution and calculates the wait time for the Cloudlet
+     * upon its
      * completion.
      *
      * @param cloudlet the Cloudlet to which the on-finish listener will be added
@@ -689,8 +715,7 @@ public class CloudSimProxy {
         cloudlet.addOnFinishListener(new EventListener<CloudletVmEventInfo>() {
             @Override
             public void update(CloudletVmEventInfo info) {
-                final double waitTime =
-                        cloudlet.getStartTime() - jobArrivalTimeMap.get(cloudlet.getId());
+                final double waitTime = cloudlet.getStartTime() - jobArrivalTimeMap.get(cloudlet.getId());
                 jobsFinishedWaitTimeLastTimestep.add(waitTime);
                 LOGGER.debug(
                         "{}: Cloudlet {}, {} mi, {} cores on vm{}/host{} (host index in dc {}, host pes {})/dc{}, idx {}, type {}. Arrived at {}, started running at {}, finished at {}, executed for {}, waited for {}",
@@ -709,17 +734,20 @@ public class CloudSimProxy {
     }
 
     /**
-     * Retrieves a list of Cloudlets that are ready to be submitted at the current timestep. The
-     * Cloudlets are selected based on their submission delay, which must be less than or equal to
+     * Retrieves a list of Cloudlets that are ready to be submitted at the current
+     * timestep. The
+     * Cloudlets are selected based on their submission delay, which must be less
+     * than or equal to
      * the specified target time.
      *
      * @param targetTime The target time to retrieve Cloudlets for submission.
-     * @return A list of Cloudlets that are ready to be submitted at the specified target time.
+     * @return A list of Cloudlets that are ready to be submitted at the specified
+     *         target time.
      */
     List<Cloudlet> getJobsToSubmitAtThisTimestep(final double targetTime) {
-        final List<Cloudlet> jobsToSubmit =
-                jobQueue.stream().takeWhile(cloudlet -> cloudlet.getSubmissionDelay() < targetTime)
-                        .collect(Collectors.toList());
+        final List<Cloudlet> jobsToSubmit = jobQueue.stream()
+                .takeWhile(cloudlet -> cloudlet.getSubmissionDelay() < targetTime)
+                .collect(Collectors.toList());
         return jobsToSubmit;
     }
 
@@ -747,7 +775,8 @@ public class CloudSimProxy {
     /**
      * Attempts to submit a list of cloudlets (jobs) to the cloud infrastructure.
      * 
-     * This method filters the provided list of cloudlets to identify those that can be submitted
+     * This method filters the provided list of cloudlets to identify those that can
+     * be submitted
      * based on the suitability of available VMs and the submission delay.
      * 
      * @param cloudletList The list of cloudlets to be considered for submission.
@@ -766,7 +795,8 @@ public class CloudSimProxy {
             // Do not schedule cloudlet if there are no suitable vms to run it
             // enable this if-case the agent is doint vm management
             // if (!isAnyVmSuitableForCloudlet(cloudlet)) {
-            // LOGGER.debug("[{} - {}): Could not submit job {}, no suitable vm found", startTime,
+            // LOGGER.debug("[{} - {}): Could not submit job {}, no suitable vm found",
+            // startTime,
             // clock(), cloudlet.getId());
             // continue;
             // }

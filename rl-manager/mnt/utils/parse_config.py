@@ -121,6 +121,15 @@ def vm_constructor(loader, node):
         size=fields["size"],
         bw=fields["bw"],
     )
+    
+
+def include_constructor(loader, node):
+    filename = os.path.join(
+        os.path.dirname(loader.stream.name), loader.construct_scalar(node)
+    )
+
+    with open(filename, "r") as f:
+        return yaml.load(f, Loader=yaml.FullLoader)
 
 
 def include_constructor(loader, node):

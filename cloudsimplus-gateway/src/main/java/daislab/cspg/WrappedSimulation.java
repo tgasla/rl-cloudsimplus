@@ -132,8 +132,7 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo(0, 0, 0, 0, 0, new ArrayList<>());
 
-        Observation observation =
-                new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
+        Observation observation = new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
 
         return new SimulationResetResult(observation, info);
     }
@@ -219,8 +218,7 @@ public class WrappedSimulation {
         // Observation observation =
         // new Observation(getInfrastructureObservation(),
         // getJobCoresWaitingObservation());
-        Observation observation =
-                new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
+        Observation observation = new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
 
         return new SimulationStepResult(observation, reward, terminated, truncated, info);
     }
@@ -253,8 +251,7 @@ public class WrappedSimulation {
     }
 
     Long getUnutilizedVmCores(List<Vm> vmList) {
-        Long unutilizedVmCores =
-                vmList.parallelStream().map(Vm::getExpectedFreePesNumber).reduce(0L, Long::sum);
+        Long unutilizedVmCores = vmList.parallelStream().map(Vm::getExpectedFreePesNumber).reduce(0L, Long::sum);
 
         return unutilizedVmCores;
     }
@@ -464,8 +461,8 @@ public class WrappedSimulation {
         // }
         // }
         // }
-        Map<Vm, Long> expectedToUseVmPesMap =
-                vmList.stream().collect(Collectors.toMap(vm -> vm, vm -> cloudletList.stream()
+        Map<Vm, Long> expectedToUseVmPesMap = vmList.stream()
+                .collect(Collectors.toMap(vm -> vm, vm -> cloudletList.stream()
                         .filter(c -> c.getVm() == vm).mapToLong(Cloudlet::getPesNumber).sum()));
         // Map<Long, Long> vmFreeCoresMap = vmList.stream()
         // .collect(Collectors.toMap(vm -> vm.getId(), vm ->
@@ -480,8 +477,7 @@ public class WrappedSimulation {
             // that are in some vms queue, so we get an estimation of how much overloaded it
             // is.
             // We get the vm that will have maximum expected free cores
-            final long expectedFreePes =
-                    vm.getPesNumber() - usedVmPes - expectedToUseVmPesMap.get(vm);
+            final long expectedFreePes = vm.getPesNumber() - usedVmPes - expectedToUseVmPesMap.get(vm);
             // final long expectedFreePes =
             // Math.max(0, vm.getExpectedFreePesNumber() - vmUsedCoresMap.get(vm));
             // LOGGER.debug("{}: VM {} has {} expected free cores", clock(), vm.getId(),
@@ -502,8 +498,7 @@ public class WrappedSimulation {
     }
 
     private double calculateQualityOfPlacement(final int dcId, final Cloudlet job) {
-        final String datacenterType =
-                ((DatacenterWithType) cloudSimProxy.getDatacenterById(dcId)).getType();
+        final String datacenterType = ((DatacenterWithType) cloudSimProxy.getDatacenterById(dcId)).getType();
         // jobSensitivity - 0: tolerant, 1: moderate, 2: critical
         final int jobSensitivity = ((CloudletWithLocation) job).getDelaySensitivity();
         if (jobSensitivity == 0 | datacenterType.equals("micro")
@@ -530,8 +525,7 @@ public class WrappedSimulation {
 
     private List<DatacenterWithType> getOrderedDatacentersForCloudlet(Cloudlet cloudlet) {
         // Step 1: Get the datacenter list
-        List<Datacenter> datacenterList =
-                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+        List<Datacenter> datacenterList = cloudSimProxy.getSimulation().getCis().getDatacenterList();
 
         // Step 2: Get the location index from the cloudlet
         int loc = ((CloudletWithLocation) cloudlet).getLocation();
@@ -570,13 +564,13 @@ public class WrappedSimulation {
 
     private double[] executeEarliestShortestCloudletToNearestDcAction() {
         final double targetTime = cloudSimProxy.calculateTargetTime();
-        final List<Cloudlet> jobsWaitingList =
-                cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final List<Cloudlet> jobsWaitingList = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
         final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
         // final List<Datacenter> datacenterList =
         // cloudSimProxy.getSimulation().getCis().getDatacenterList();
         // final Map<Datacenter, Long> dcFreePesMap = datacenterList.stream().collect(
-        // Collectors.toMap(datacenter -> datacenter, datacenter -> datacenter.getHostList()
+        // Collectors.toMap(datacenter -> datacenter, datacenter ->
+        // datacenter.getHostList()
         // .stream().flatMap(host -> host.getVmList().stream()).mapToLong(vm -> {
         // long usedPes = vm.getCloudletScheduler().getCloudletList().stream()
         // .mapToLong(cloudlet -> cloudlet.getPesNumber()).sum();
@@ -616,8 +610,7 @@ public class WrappedSimulation {
                     cloudSimProxy.getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
                     jobsToProcessList.remove(selectedCloudlet);
                     jobsPlaced++;
-                    quality +=
-                            calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
+                    quality += calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
 
                     // Update the free PEs in dcFreePesMap
                     // long updatedFreePes =
@@ -640,18 +633,18 @@ public class WrappedSimulation {
         LOGGER.info("jobsPlacedRatio: {}, qualityRatio: {}, deadlineViolationRatio: {}",
                 jobsPlacedRatio, qualityRatio, deadlineViolationRatio);
 
-        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
+        return new double[] { jobsPlacedRatio, qualityRatio, deadlineViolationRatio };
     }
 
     private double[] executeEarliestMostCriticalCloudletToNearestDcAction() {
         final double targetTime = cloudSimProxy.calculateTargetTime();
-        final List<Cloudlet> jobsWaitingList =
-                cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final List<Cloudlet> jobsWaitingList = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
         final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
         // final List<Datacenter> datacenterList =
         // cloudSimProxy.getSimulation().getCis().getDatacenterList();
         // final Map<Datacenter, Long> dcFreePesMap = datacenterList.stream().collect(
-        // Collectors.toMap(datacenter -> datacenter, datacenter -> datacenter.getHostList()
+        // Collectors.toMap(datacenter -> datacenter, datacenter ->
+        // datacenter.getHostList()
         // .stream().flatMap(host -> host.getVmList().stream()).mapToLong(vm -> {
         // long usedPes = vm.getCloudletScheduler().getCloudletList().stream()
         // .mapToLong(cloudlet -> cloudlet.getPesNumber()).sum();
@@ -694,8 +687,7 @@ public class WrappedSimulation {
                     cloudSimProxy.getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
                     jobsToProcessList.remove(selectedCloudlet);
                     jobsPlaced++;
-                    quality +=
-                            calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
+                    quality += calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
 
                     // Update the free PEs in dcFreePesMap
                     // long updatedFreePes =
@@ -718,16 +710,14 @@ public class WrappedSimulation {
         LOGGER.info("jobsPlacedRatio: {}, qualityRatio: {}, deadlineViolationRatio: {}",
                 jobsPlacedRatio, qualityRatio, deadlineViolationRatio);
 
-        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
+        return new double[] { jobsPlacedRatio, qualityRatio, deadlineViolationRatio };
     }
 
     private double[] executeEarliestShortestCloudletToMostFreeDcAction() {
         final double targetTime = cloudSimProxy.calculateTargetTime();
-        final List<Cloudlet> jobsWaitingList =
-                cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final List<Cloudlet> jobsWaitingList = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
         final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
-        final List<Datacenter> datacenterList =
-                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+        final List<Datacenter> datacenterList = cloudSimProxy.getSimulation().getCis().getDatacenterList();
         final Map<Datacenter, Long> dcFreePesMap = datacenterList.stream().collect(
                 Collectors.toMap(datacenter -> datacenter, datacenter -> datacenter.getHostList()
                         .stream().flatMap(host -> host.getVmList().stream()).mapToLong(vm -> {
@@ -784,12 +774,10 @@ public class WrappedSimulation {
                     cloudSimProxy.getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
                     jobsToProcessList.remove(selectedCloudlet);
                     jobsPlaced++;
-                    quality +=
-                            calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
+                    quality += calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
 
                     // Update the free PEs in dcFreePesMap
-                    long updatedFreePes =
-                            dcFreePesMap.get(datacenter) - selectedCloudlet.getPesNumber();
+                    long updatedFreePes = dcFreePesMap.get(datacenter) - selectedCloudlet.getPesNumber();
                     dcFreePesMap.put(datacenter, updatedFreePes);
                     break; // Stop searching once a suitable VM is found
                 }
@@ -809,11 +797,11 @@ public class WrappedSimulation {
         LOGGER.info("jobsPlacedRatio: {}, qualityRatio: {}, deadlineViolationRatio: {}",
                 jobsPlacedRatio, qualityRatio, deadlineViolationRatio);
 
-        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
+        return new double[] { jobsPlacedRatio, qualityRatio, deadlineViolationRatio };
     }
 
     private double[] executeRandomCloudletToMostFreeDcAction() {
-        return new double[] {0.0};
+        return new double[] { 0.0 };
     }
 
     // this action is if the agent performs cloudlet to DC mapping
@@ -865,7 +853,7 @@ public class WrappedSimulation {
         final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaiting);
         final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
         final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsToSubmit);
-        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
+        return new double[] { jobsPlacedRatio, qualityRatio, deadlineViolationRatio };
     }
 
     private double calculateJobsPlacedRatio(final int jobsPlaced, final int jobsWaiting) {
@@ -1065,8 +1053,10 @@ public class WrappedSimulation {
     /**
      * Extracts a subarray from the given matrix by selecting specific columns.
      *
-     * @param matrix The original 2D array from which the subarray will be extracted.
-     * @param columnIndices An array of column indices to be included in the subarray.
+     * @param matrix        The original 2D array from which the subarray will be
+     *                      extracted.
+     * @param columnIndices An array of column indices to be included in the
+     *                      subarray.
      * @return A 2D array containing the selected columns from the original matrix.
      */
     // private double[][] getVertSubarray(final double[][] matrix, final int[]
@@ -1122,25 +1112,30 @@ public class WrappedSimulation {
     /**
      * Retrieves the total number of free VM cores per host in the infrastructure.
      * <p>
-     * This method assumes that the trace file contains cloudlets, and VMs have already been opened
-     * to fit inside all hosts. Therefore, the free cores of interest are the free cores of the VMs.
-     * It also assumes that each host has only one VM that is as large as the host. Consequently,
+     * This method assumes that the trace file contains cloudlets, and VMs have
+     * already been opened
+     * to fit inside all hosts. Therefore, the free cores of interest are the free
+     * cores of the VMs.
+     * It also assumes that each host has only one VM that is as large as the host.
+     * Consequently,
      * the method counts the free cores of the VMs.
      * <p>
-     * If the trace file contains VMs, no VMs should be opened, and the free cores of the hosts
+     * If the trace file contains VMs, no VMs should be opened, and the free cores
+     * of the hosts
      * should be counted instead.
      * <p>
-     * The method returns an array where each pair of elements represents a datacenter ID and the
+     * The method returns an array where each pair of elements represents a
+     * datacenter ID and the
      * corresponding number of free cores in that datacenter.
      * 
-     * @return an array of integers where each pair of elements represents a datacenter ID and the
+     * @return an array of integers where each pair of elements represents a
+     *         datacenter ID and the
      *         corresponding number of free cores in that datacenter.
      */
     private int[] getInfraObsDcIdDcTypeFreeVmPesPerHost() {
         final int totalHosts = getTotalHosts();
         final int[] infrastructureObservation = new int[3 * totalHosts];
-        List<Datacenter> datacenterList =
-                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+        List<Datacenter> datacenterList = cloudSimProxy.getSimulation().getCis().getDatacenterList();
         int currentIndex = 0;
         for (Datacenter dc : datacenterList) {
             for (Host host : dc.getHostList()) {
@@ -1150,8 +1145,7 @@ public class WrappedSimulation {
                 // we send 1 that means dc with id 2.
                 // We do the opposite (add 1) when we get the action
                 infrastructureObservation[currentIndex++] = (int) dc.getId() - 1;
-                infrastructureObservation[currentIndex++] =
-                        getDcTypeIdFromStr(((DatacenterWithType) dc).getType());
+                infrastructureObservation[currentIndex++] = getDcTypeIdFromStr(((DatacenterWithType) dc).getType());
                 for (Vm vm : vmList) {
                     List<Cloudlet> cloudletList = vm.getCloudletScheduler().getCloudletList();
                     long usedPes = cloudletList.stream().mapToLong(Cloudlet::getPesNumber).sum();
@@ -1178,8 +1172,7 @@ public class WrappedSimulation {
 
     private int getTotalHosts() {
         int totalHosts = 0;
-        List<Datacenter> datacenterList =
-                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+        List<Datacenter> datacenterList = cloudSimProxy.getSimulation().getCis().getDatacenterList();
         for (Datacenter datacenter : datacenterList) {
             List<Host> hostList = datacenter.getHostList();
             totalHosts += hostList.size();
@@ -1293,7 +1286,8 @@ public class WrappedSimulation {
     private double calculateReward(final double jobsPlacedRatio, final double qualityRatio,
             final double deadlineViolationRatio) {
         /*
-         * reward is the negative cost of running the infrastructure minus any penalties from jobs
+         * reward is the negative cost of running the infrastructure minus any penalties
+         * from jobs
          * waiting in the queue minus penalty if action was invalid
          */
 
