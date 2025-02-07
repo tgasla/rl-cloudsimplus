@@ -35,15 +35,17 @@ def train(params, jobs):
 
     policy = create_correct_policy(env.observation_space, params)
 
-    policy_kwargs = dict(
-        features_extractor_class=CustomFeatureExtractor,
-        features_extractor_kwargs=dict(
-            features_dim=params["features_dim"],
-            embedding_size=params["embedding_size"],
-            hidden_dim=params["hidden_dim"],
-            adaptation_bottleneck=params["adaptation_bottleneck"],
-        ),
-    )
+    policy_kwargs = None
+    if params.get("feature_extractor") == "custom":
+        policy_kwargs = dict(
+            features_extractor_class=CustomFeatureExtractor,
+            features_extractor_kwargs=dict(
+                features_dim=params["features_dim"],
+                embedding_size=params["embedding_size"],
+                hidden_dim=params["hidden_dim"],
+                adaptation_bottleneck=params["adaptation_bottleneck"],
+            ),
+        )
 
     # Instantiate the agent
     model = algorithm(

@@ -63,26 +63,42 @@ experiment_1:
     !include datacenters_b.yml
   mode: train
   algorithm: PPO
+  feature_extractor: custom
   features_dim: 64
   embedding_size: 32
   hidden_dim: 128
   adaptation_bottleneck: false
   use_lstm: false
   experiment_dir: euromlsys/train_envB_600k
-  experiment_name: finalBossPPO_no_masking_no_target_kl
+  experiment_name: customPPO_no_masking_no_target_kl
   job_trace_filename: euromlsys_jobs_first_50.csv
 
-# experiment_2:
-#   datacenters:
-#     !include datacenters_a.yml
-#   mode: transfer
-#   algorithm: MaskablePPO
-#   features_dim: 64
-#   embedding_size: 64
-#   target_kl: 0.2
-#   convert_obs_to_embedding: true
-#   normalize_continuous_obs: true
-#   use_lstm: false
-#   experiment_dir: euromlsys/transfer_600k_complexPPO_from_envB
-#   experiment_name: to_envA
-#   job_trace_filename: euromlsys_jobs_first_50.csv
+experiment_2:
+  datacenters:
+    !include datacenters_a.yml
+  mode: transfer
+  algorithm: PPO
+  feature_extractor: custom
+  features_dim: 64
+  embedding_size: 32
+  hidden_dim: 128
+  adaptation_bottleneck: false
+  use_lstm: false
+  experiment_dir: euromlsys/transfer_envB_600k_to_envA
+  experiment_name: customPPO_no_masking_no_target_kl
+  job_trace_filename: euromlsys_jobs_first_50.csv
+
+experiment_3:
+  datacenters:
+    !include datacenters_c.yml
+  mode: transfer
+  algorithm: PPO
+  feature_extractor: custom
+  features_dim: 64
+  embedding_size: 32
+  hidden_dim: 128
+  adaptation_bottleneck: false
+  use_lstm: false
+  experiment_dir: euromlsys/transfer_envB_600k_to_envC
+  experiment_name: customPPO_no_masking_no_target_kl
+  job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
