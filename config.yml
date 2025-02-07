@@ -17,7 +17,7 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: false
+    attached: true
     gpu: true
     java_log_level: INFO
     java_log_destination: none
@@ -42,7 +42,7 @@ common:
   state_space_type: dcid-dctype-freevmpes-per-host
   autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
   autoencoder_infr_obs_latent_dim: 32
-  freeze_inactive_input_layer_weights: false # keep false if autoencoder is used
+  freeze_inactive_input_layer_weights: false # keep false if autoencoder or embeddings are used
   max_datacenters: 6
   max_datacenter_types: 3
   max_hosts: 40
@@ -51,43 +51,38 @@ common:
   max_job_pes: 16
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
-  job_trace_filename: euromlsys_jobs_three_locs.csv
-  timesteps: 500000
+  timesteps: 600000
   n_rollout_steps: 2048
   reward_jobs_placed_coef: 0.333
   reward_quality_coef: 0.333
   reward_deadline_violation_coef: 0.333
-  experiment_dir: euromlsys/transfer_b_to_c_1234
   seed: 1234
-  mode: transfer
 
 experiment_1:
   datacenters:
-    !include datacenters_c.yml
-  train_model_dir: euromlsys/train_in_b/refined_envB
-  algorithm: MaskablePPO
-  embedding_latent_dim: 64
-  embedding_size: 64
-  use_lstm: true
-  convert_obs_to_embedding: true
-  normalize_continuous_obs: true
-  experiment_name: refinedPPO
-
-experiment_2:
-  datacenters:
-    !include datacenters_c.yml
-  train_model_dir: euromlsys/train_in_b/simplePPO_envB
+    !include datacenters_b.yml
+  mode: train
   algorithm: PPO
+  features_dim: 64
+  embedding_size: 32
+  hidden_dim: 128
+  adaptation_bottleneck: false
   use_lstm: false
-  convert_obs_to_embedding: false
-  normalize_continuous_obs: false
-  experiment_name: simplePPO
+  experiment_dir: euromlsys/train_envB_600k
+  experiment_name: finalBossPPO_no_masking_no_target_kl
+  job_trace_filename: euromlsys_jobs_first_50.csv
 
-# experiment_3:
+# experiment_2:
+#   datacenters:
+#     !include datacenters_a.yml
+#   mode: transfer
 #   algorithm: MaskablePPO
-#   use_lstm: false
-#   embedding_latent_dim: 64
+#   features_dim: 64
 #   embedding_size: 64
+#   target_kl: 0.2
 #   convert_obs_to_embedding: true
 #   normalize_continuous_obs: true
-#   experiment_name: without_lstm
+#   use_lstm: false
+#   experiment_dir: euromlsys/transfer_600k_complexPPO_from_envB
+#   experiment_name: to_envA
+#   job_trace_filename: euromlsys_jobs_first_50.csv

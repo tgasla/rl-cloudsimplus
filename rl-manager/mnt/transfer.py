@@ -2,6 +2,7 @@ import os
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import VecNormalize
 
 from utils.misc import (
     create_kwargs_with_algorithm_params,
@@ -29,9 +30,11 @@ def transfer(params, jobs):
     env = gym.make("SingleDC-v0", params=params, jobs=jobs)
     env = Monitor(env, params["log_dir"])
     env = vectorize_env(env, algorithm)
+    env = VecNormalize(env, norm_obs=True, norm_reward=True)
 
     # Change any model parameters you want here
     custom_objects = create_kwargs_with_algorithm_params(env, params)
+
     device = get_suitable_device(params["algorithm"])
 
     # Load the trained agent

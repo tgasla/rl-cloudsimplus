@@ -1,7 +1,7 @@
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
-from gymnasium import spaces
+from torch import nn
 
 from utils.misc import (
     create_logger,
@@ -12,6 +12,7 @@ from utils.misc import (
     get_algorithm,
     create_kwargs_with_algorithm_params,
     create_correct_policy,
+    CustomFeatureExtractor,
 )
 
 
@@ -34,8 +35,24 @@ def train(params, jobs):
 
     policy = create_correct_policy(env.observation_space, params)
 
+    policy_kwargs = dict(
+        features_extractor_class=CustomFeatureExtractor,
+        features_extractor_kwargs=dict(
+            features_dim=params["features_dim"],
+            embedding_size=params["embedding_size"],
+            hidden_dim=params["hidden_dim"],
+            adaptation_bottleneck=params["adaptation_bottleneck"],
+        ),
+    )
+
     # Instantiate the agent
-    model = algorithm(policy=policy, env=env, device=device, **algorithm_kwargs)
+    model = algorithm(
+        policy=policy,
+        env=env,
+        policy_kwargs=policy_kwargs,
+        device=device,
+        **algorithm_kwargs,
+    )
     maybe_freeze_weights(model, params)
 
     callback = create_callback(params["save_experiment"], params["log_dir"])

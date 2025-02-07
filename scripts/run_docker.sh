@@ -109,5 +109,5 @@ fi
 
 # Logs commands
 # docker logs -f <container_id> - attach to logs of a container
-# docker compose logs -f - attach to logs of all containers - It does not work as expected, only attacks to the gateway container
+# docker compose logs -f - attach to logs of all containers - It does not work as expected, only attaches to the gateway container
 # docker-compose logs -f - Use this command instead

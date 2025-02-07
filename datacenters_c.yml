@@ -24,20 +24,20 @@
   amount: 1
   hosts:
     - !host
-        amount: 8
-        pes: 16
-        pe_mips: 60
-        ram: 65536
-        storage: 2000000
-        bw: 10000
-        vms:
-          !vm
-            amount: 1
-            pes: 16
-            pe_mips: 60
-            ram: 65536
-            size: 2000000
-            bw: 10000
+      amount: 8
+      pes: 16
+      pe_mips: 60
+      ram: 65536
+      storage: 2000000
+      bw: 10000
+      vms:
+        !vm
+          amount: 1
+          pes: 16
+          pe_mips: 60
+          ram: 65536
+          size: 2000000
+          bw: 10000
 - !datacenter
     name: micro_dc_ucd
     type: micro
@@ -47,20 +47,20 @@
     amount: 1
     hosts:
       - !host
-          amount: 3
-          pes: 6
-          pe_mips: 60
-          ram: 65536
-          storage: 1000000
-          bw: 1000
-          vms:
-            - !vm
-              amount: 1
-              pes: 6
-              pe_mips: 60
-              ram: 65536
-              size: 1000000
-              bw: 1000
+        amount: 3
+        pes: 6
+        pe_mips: 60
+        ram: 65536
+        storage: 1000000
+        bw: 1000
+        vms:
+          - !vm
+            amount: 1
+            pes: 6
+            pe_mips: 60
+            ram: 65536
+            size: 1000000
+            bw: 1000
 - !datacenter
     name: micro_dc_dcu
     type: micro
@@ -70,40 +70,40 @@
     amount: 1
     hosts:
       - !host
-          amount: 2
-          pes: 6
-          pe_mips: 60
-          ram: 65536
-          storage: 1000000
-          bw: 1000
-          vms:
-            - !vm
-              amount: 1
-              pes: 6
-              pe_mips: 60
-              ram: 65536
-              size: 1000000
-              bw: 1000
+        amount: 2
+        pes: 6
+        pe_mips: 60
+        ram: 65536
+        storage: 1000000
+        bw: 1000
+        vms:
+          - !vm
+            amount: 1
+            pes: 6
+            pe_mips: 60
+            ram: 65536
+            size: 1000000
+            bw: 1000
 - !datacenter
   name: edge_dc_copenhagen
   type: edge
   amount: 1
   hosts:
     - !host
-        amount: 8
-        pes: 16
-        pe_mips: 60
-        ram: 65536
-        storage: 2000000
-        bw: 10000
-        vms:
-          !vm
-            amount: 1
-            pes: 16
-            pe_mips: 60
-            ram: 65536
-            size: 2000000
-            bw: 10000
+      amount: 8
+      pes: 16
+      pe_mips: 60
+      ram: 65536
+      storage: 2000000
+      bw: 10000
+      vms:
+        !vm
+          amount: 1
+          pes: 16
+          pe_mips: 60
+          ram: 65536
+          size: 2000000
+          bw: 10000
 - !datacenter
     name: micro_dc_aau
     type: micro
@@ -113,17 +113,17 @@
     amount: 1
     hosts:
       - !host
-          amount: 3
-          pes: 6
-          pe_mips: 60
-          ram: 65536
-          storage: 1000000
-          bw: 1000
-          vms:
-            - !vm
-              amount: 1
-              pes: 6
-              pe_mips: 60
-              ram: 65536
-              size: 1000000
-              bw: 1000
+        amount: 3
+        pes: 6
+        pe_mips: 60
+        ram: 65536
+        storage: 1000000
+        bw: 1000
+        vms:
+          - !vm
+            amount: 1
+            pes: 6
+            pe_mips: 60
+            ram: 65536
+            size: 1000000
+            bw: 1000
