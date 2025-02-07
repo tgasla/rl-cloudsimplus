@@ -30,7 +30,6 @@ def transfer(params, jobs):
     env = gym.make("SingleDC-v0", params=params, jobs=jobs)
     env = Monitor(env, params["log_dir"])
     env = vectorize_env(env, algorithm)
-    env = VecNormalize(env, norm_obs=True, norm_reward=True)
 
     # Change any model parameters you want here
     custom_objects = create_kwargs_with_algorithm_params(env, params)

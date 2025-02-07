@@ -84,6 +84,7 @@ experiment_2:
   hidden_dim: 128
   adaptation_bottleneck: false
   use_lstm: false
+  train_model_dir: euromlsys/train_envB_600k/customPPO_no_masking_no_target_kl
   experiment_dir: euromlsys/transfer_envB_600k_to_envA
   experiment_name: customPPO_no_masking_no_target_kl
   job_trace_filename: euromlsys_jobs_first_50.csv
@@ -99,6 +100,7 @@ experiment_3:
   hidden_dim: 128
   adaptation_bottleneck: false
   use_lstm: false
+  train_model_dir: euromlsys/train_envB_600k/customPPO_no_masking_no_target_kl
   experiment_dir: euromlsys/transfer_envB_600k_to_envC
   experiment_name: customPPO_no_masking_no_target_kl
   job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
