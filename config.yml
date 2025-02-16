@@ -17,7 +17,7 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: true
+    attached: false
     gpu: true
     java_log_level: INFO
     java_log_destination: none
@@ -37,7 +37,7 @@ common:
   base_log_dir: logs
   batch_size: 64
   vm_allocation_policy: bestfit
-  cloudlet_to_dc_assignment_policy: rl
+  cloudlet_to_dc_assignment_policy:  earliest-most-critical-to-nearest-dc
   cloudlet_to_vm_assignment_policy: most-free-cores
   state_space_type: dcid-dctype-freevmpes-per-host
   autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
@@ -51,56 +51,32 @@ common:
   max_job_pes: 16
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
-  timesteps: 600000
+  timesteps: 2048
   n_rollout_steps: 2048
   reward_jobs_placed_coef: 0.333
   reward_quality_coef: 0.333
   reward_deadline_violation_coef: 0.333
   seed: 1234
+  algorithm: PPO
+  mode: train
+
+# experiment_1:
+#   datacenters:
+#     !include datacenters_b.yml
+#   experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
+#   experiment_name: env_b
+#   job_trace_filename: euromlsys_jobs_first_50.csv
 
 experiment_1:
   datacenters:
-    !include datacenters_b.yml
-  mode: train
-  algorithm: PPO
-  feature_extractor: custom
-  features_dim: 64
-  embedding_size: 32
-  hidden_dim: 128
-  adaptation_bottleneck: false
-  use_lstm: false
-  experiment_dir: euromlsys/train_envB_600k
-  experiment_name: customPPO_no_masking_no_target_kl
+    !include datacenters_a.yml
+  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
+  experiment_name: env_a
   job_trace_filename: euromlsys_jobs_first_50.csv
 
 experiment_2:
   datacenters:
-    !include datacenters_a.yml
-  mode: transfer
-  algorithm: PPO
-  feature_extractor: custom
-  features_dim: 64
-  embedding_size: 32
-  hidden_dim: 128
-  adaptation_bottleneck: false
-  use_lstm: false
-  train_model_dir: euromlsys/train_envB_600k/customPPO_no_masking_no_target_kl
-  experiment_dir: euromlsys/transfer_envB_600k_to_envA
-  experiment_name: customPPO_no_masking_no_target_kl
-  job_trace_filename: euromlsys_jobs_first_50.csv
-
-experiment_3:
-  datacenters:
     !include datacenters_c.yml
-  mode: transfer
-  algorithm: PPO
-  feature_extractor: custom
-  features_dim: 64
-  embedding_size: 32
-  hidden_dim: 128
-  adaptation_bottleneck: false
-  use_lstm: false
-  train_model_dir: euromlsys/train_envB_600k/customPPO_no_masking_no_target_kl
-  experiment_dir: euromlsys/transfer_envB_600k_to_envC
-  experiment_name: customPPO_no_masking_no_target_kl
+  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
+  experiment_name: env_c
   job_trace_filename: euromlsys_jobs_three_locs_first_50.csv

@@ -487,6 +487,8 @@ def maybe_freeze_weights(model, params, prev_host_count=None) -> None:
         params (dict): Parameters containing host and VM configuration.
         prev_host_count (int, optional): Previous host count for transfer learning. Defaults to None.
     """
+    if not params["freeze_inactive_input_layer_weights"]:
+        return
     if params["state_space_type"] == "tree" and params["vm_allocation_policy"] == "rl":
         indices = compute_freeze_indices_for_tree_obs(params, prev_host_count)
     elif (
@@ -495,6 +497,8 @@ def maybe_freeze_weights(model, params, prev_host_count=None) -> None:
     ):
         indices = compute_freeze_indices_for_multi_dc_obs(params, prev_host_count)
 
+    if indices is None:
+        return
     prev_start_idx = indices["prev_start_idx"]
     cur_start_idx = indices["cur_start_idx"]
     end_idx = indices["end_idx"]
