@@ -228,3 +228,5 @@ old-logs/
 notebooks/data/
 
 nohup.out
+
+config.yml
