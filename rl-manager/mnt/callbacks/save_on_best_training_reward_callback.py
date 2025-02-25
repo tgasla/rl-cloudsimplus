@@ -1,5 +1,3 @@
-from email import header
-from math import inf
 import os
 import numpy as np
 import pandas as pd
@@ -40,6 +38,13 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.jobs_placed_ratio_deque = deque(maxlen=100)
         self.quality_ratio_deque = deque(maxlen=100)
         self.deadline_violation_ratio_deque = deque(maxlen=100)
+        self.observations = []
+        self.actions = []
+        self.rewards = []
+        self.jobs_placed_rewards = []
+        self.quality_rewards = []
+        self.deadline_violation_rewards = []
+        self.new_observations = []
         # self.isValid = None
         # self.job_queue_ratio_rew_deque = deque(maxlen=100)
         # self.allocated_vm_cores_rew_deque = deque(maxlen=100)
@@ -68,14 +73,13 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # will be written to best_episode_{episode_num}.csv
         episode_details = {
             "timestep": timesteps,
-            "reward": self.rewards,
-            "jobs_placed_ratio": self.jobs_placed_ratio,
-            "quality_ratio": self.quality_ratio,
-            "deadline_violation_ratio": self.deadline_violation_ratio,
-            # "job_wait_time": self.job_wait_time, # job_wait_time is saved in independent file
-            "jobs_placed_ratio": self.jobs_placed_ratio,
-            "quality_ratio": self.quality_ratio,
-            "deadline_violation_ratio": self.deadline_violation_ratio,
+            "reward": self.ep_rewards,
+            "jobs_placed_reward": self.ep_jobs_placed_reward,
+            "quality_reward": self.ep_quality_reward,
+            "deadline_violation_reward": self.ep_deadline_violation_reward,
+            "jobs_placed_ratio": self.ep_jobs_placed_ratio,
+            "quality_ratio": self.ep_quality_ratio,
+            "deadline_violation_ratio": self.ep_deadline_violation_ratio,
             # "new_obs": self.new_observations,
             # "obs": self.observations, # obs and actions are saved in independent files
             # "action": self.actions,
@@ -85,18 +89,23 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             # "invalid_reward": self.invalid_rewards,
             # "isValid": self.isValid,
         }
+        # for key, value in episode_details.items():
+        #     print(f"Length of {key}: {len(value)}")
         return episode_details
 
     def _clear_episode_details(self) -> None:
-        self.observations = []
-        self.actions = []
-        self.rewards = []
-        self.new_observations = []
         self.current_episode_length = 0
-        self.job_wait_time = []
-        self.jobs_placed_ratio = []
-        self.quality_ratio = []
-        self.deadline_violation_ratio = []
+        self.ep_observations = []
+        self.ep_actions = []
+        self.ep_rewards = []
+        self.ep_jobs_placed_reward = []
+        self.ep_quality_reward = []
+        self.ep_deadline_violation_reward = []
+        self.ep_new_observations = []
+        self.ep_job_wait_time = []
+        self.ep_jobs_placed_ratio = []
+        self.ep_quality_ratio = []
+        self.ep_deadline_violation_ratio = []
         # self.host_metrics = []
         # self.vm_metrics = []
         # self.job_metrics = []
@@ -133,23 +142,30 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         return processed_obs
 
     def _save_timestep_details(self) -> None:
-        self.observations.append(self._get_observation_from_locals("obs_tensor"))
-        self.actions.append(self.locals["actions"][0])
-        self.rewards.append(self.locals["rewards"][0])
-        self.new_observations.append(self._get_observation_from_locals("new_obs"))
-        self.job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
+        self.ep_observations.append(self._get_observation_from_locals("obs_tensor"))
+        self.ep_actions.append(self.locals["actions"][0])
+        self.ep_rewards.append(self.locals["rewards"][0])
+        self.ep_jobs_placed_reward.append(self.locals["infos"][0]["jobs_placed_reward"])
+        self.ep_quality_reward.append(self.locals["infos"][0]["quality_reward"])
+        self.ep_deadline_violation_reward.append(
+            self.locals["infos"][0]["deadline_violation_reward"]
+        )
+        self.ep_new_observations.append(self._get_observation_from_locals("new_obs"))
+        self.ep_job_wait_time.append(self.locals["infos"][0]["job_wait_time"])
         if self.locals["infos"][0]["jobs_waiting"] > 0:
-            self.jobs_placed_ratio.append(self.locals["infos"][0]["jobs_placed_ratio"])
-            self.deadline_violation_ratio.append(
+            self.ep_jobs_placed_ratio.append(
+                self.locals["infos"][0]["jobs_placed_ratio"]
+            )
+            self.ep_deadline_violation_ratio.append(
                 self.locals["infos"][0]["deadline_violation_ratio"]
             )
         else:
-            self.jobs_placed_ratio.append(-1)
-            self.deadline_violation_ratio.append(-1)
+            self.ep_jobs_placed_ratio.append(-1)
+            self.ep_deadline_violation_ratio.append(-1)
         if self.locals["infos"][0]["jobs_placed"] > 0:
-            self.quality_ratio.append(self.locals["infos"][0]["quality_ratio"])
+            self.ep_quality_ratio.append(self.locals["infos"][0]["quality_ratio"])
         else:
-            self.quality_ratio.append(-1)
+            self.ep_quality_ratio.append(-1)
         # self.host_metrics.append(self.locals["infos"][0]["host_metrics"])
         # self.vm_metrics.append(self.locals["infos"][0]["vm_metrics"])
         # self.job_metrics.append(self.locals["infos"][0]["job_metrics"])
@@ -197,8 +213,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
     def _create_dataframes(self) -> Dict:
         df_dict = {
-            "job_wait_time": pd.DataFrame(self.job_wait_time),
-            "episode_actions": pd.DataFrame(self.actions),
+            "job_wait_time": pd.DataFrame(self.ep_job_wait_time),
+            "episode_actions": pd.DataFrame(self.ep_actions),
             "episode_details": pd.DataFrame(self._create_episode_details_dict()),
         }
         return df_dict
@@ -232,7 +248,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             # you can access it also with self.locals['self'].num_timesteps
             print(f"Current timesteps: {self.num_timesteps - 1}")
             print(f"Episode number: {self.current_episode_num}")
-            print(f"Episode length: {len(self.observations)}")
+            print(f"Episode length: {len(self.ep_observations)}")
             print(f"Best reward: {self.best_reward:.2f}")
             print(f"Current reward: {current_reward:.2f}")
 
@@ -242,13 +258,13 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.model.save(self.model_save_path)
         self._maybe_save_replay_buffer()
         self._maybe_save_best_episode_details()
-    
+
     def _mean_exclude_neg(self, arr):
         non_negative_values = [value for value in arr if value >= 0]
         return np.mean(non_negative_values)
 
     # Write episode info in a row in the log progress.csv
-    def _write_progress_log_row(self) -> None:
+    def _write_ep_progress_log_row(self) -> None:
         ep_first_timestep = self.num_timesteps - self.current_episode_length + 1
         ep_last_timestep = self.num_timesteps
         self.logger.record(
@@ -264,7 +280,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             "train/ep_last_timestep", ep_last_timestep, exclude="tensorboard"
         )
         self.logger.record(
-            "train/ep_total_rew", np.sum(self.rewards), exclude="tensorboard"
+            "train/ep_total_rew", np.sum(self.ep_rewards), exclude="tensorboard"
         )
         # self.logger.record(
         #     "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
@@ -289,14 +305,14 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # )
 
         self.job_wait_time_deque.append(
-            self.mean_of_non_empty_sublists(self.job_wait_time)
+            self.mean_of_non_empty_sublists(self.ep_job_wait_time)
         )
         self.jobs_placed_ratio_deque.append(
-            self.mean_exclude_neg(self.jobs_placed_ratio)
+            self.mean_exclude_neg(self.ep_jobs_placed_ratio)
         )
-        self.quality_ratio_deque.append(self.mean_exclude_neg(self.quality_ratio))
+        self.quality_ratio_deque.append(self.mean_exclude_neg(self.ep_quality_ratio))
         self.deadline_violation_ratio_deque.append(
-            self.mean_exclude_neg(self.deadline_violation_ratio)
+            self.mean_exclude_neg(self.ep_deadline_violation_ratio)
         )
         # self.job_queue_ratio_rew_deque.append(
         #     np.mean(self.job_wait_rewards) / self.reward_job_wait_coef
@@ -315,7 +331,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         filepath = os.path.join(self.log_dir, filename)
         if isinstance(self.observations, dict):
             data = [obs["infr_state"].detach().numpy() for obs in self.observations]
-            with open(filepath, "a") as file:
+            with open(filepath, mode) as file:
                 for item in data:
                     file.write(", ".join(map(str, item)) + "\n")
 
@@ -325,6 +341,25 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             for array in self.observation_tree_arrays:
                 file.write(f"{array}\n")
             file.write("\n")
+
+    def _write_step_progress_log_row(self) -> None:
+        self.logger.record("step/step_num", self.num_timesteps, exclude="tensorboard")
+        self.logger.record(
+            "step/ep_num", self.current_episode_num, exclude="tensorboard"
+        )
+        self.logger.record(
+            "step/ep_length", self.current_episode_length, exclude="tensorboard"
+        )
+        self.logger.dump()
+
+    def _save_episode_details(self) -> None:
+        self.observations.extend(self.ep_observations)
+        self.actions.extend(self.ep_actions)
+        self.rewards.extend(self.ep_rewards)
+        self.jobs_placed_rewards.extend(self.ep_jobs_placed_reward)
+        self.quality_rewards.extend(self.ep_quality_reward)
+        self.deadline_violation_rewards.extend(self.ep_deadline_violation_reward)
+        self.new_observations.extend(self.ep_new_observations)
 
     # def _write_dot_strings_to_file(self) -> None:
     #     dot_path = os.path.join(self.log_dir, "dot_graphs.txt")
@@ -340,13 +375,15 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # the first element of the tuple.
         self.current_episode_length += 1
         self._save_timestep_details()
+        # self._write_step_progress_log_row()
 
         if self.locals["dones"][0]:
             self.current_episode_num += 1
             if self.verbose >= 1:
                 print("Episode terminated")
-            self._write_progress_log_row()
-            self._write_infr_observation_to_file("infr_observation.csv")
+            self._save_episode_details()
+            self._write_ep_progress_log_row()
+            # self._write_infr_observation_to_file("infr_observation.csv")
             # self._write_observation_tree_arrays_to_file(
             #     "observation_tree_arrays.csv", "a"
             # )
@@ -377,6 +414,19 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # self.reward_unutilized_vm_cores_coef = self.get(
         #     "reward_unutilized_vm_cores_coef"
         # )
+
+    def _on_training_end(self):
+        super()._on_training_end()
+        all_details = {
+            "observations": self.observations,
+            "actions": self.actions,
+            "rewards": self.rewards,
+            "jobs_placed_rewards": self.jobs_placed_rewards,
+            "quality_rewards": self.quality_rewards,
+            "deadline_violation_rewards": self.deadline_violation_rewards,
+            "new_observations": self.new_observations,
+        }
+        torch.save(all_details, os.path.join(self.log_dir, "all_details.pt"))
 
     def _on_rollout_end(self):
         super()._on_rollout_end()

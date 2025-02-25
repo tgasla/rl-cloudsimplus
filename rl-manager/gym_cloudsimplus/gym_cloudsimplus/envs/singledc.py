@@ -3,7 +3,6 @@ import json
 import os
 import csv
 import numpy as np
-import torch
 import re
 from gymnasium import spaces
 from py4j.java_collections import JavaList, JavaArray
@@ -176,15 +175,15 @@ class SingleDC(gym.Env):
         )  # the reason is that dcs are considered global entities and have global ids, CIS gets id 0, and broker gets id 1
         # return gym.spaces.Discrete(self._get_datacenters_count() + 1)
 
-    # this is when infrastructure is [<dc_id, host_free_pes>, ...]
+    # this is when infrastructure is [<dc_id1, dc_type1, host_free_pes1>, ...]
     def _get_max_cur_free_host_pes_per_dc(self):
         # Step 1: Create an empty dictionary to store the max free cores per datacenter
         max_cores_per_dc = {}
 
         # Step 2: Iterate over the list in pairs and update the dictionary with the maximum cores
-        for i in range(0, len(self.infr_obs), 2):
+        for i in range(0, len(self.infr_obs), 3):
             dc_id = self.infr_obs[i]  # Datacenter id
-            free_cores = self.infr_obs[i + 1]  # Host free cores
+            free_cores = self.infr_obs[i + 2]  # Host free cores
 
             # Step 3: Check if the datacenter id is already in the dictionary
             if dc_id in max_cores_per_dc:
@@ -224,6 +223,9 @@ class SingleDC(gym.Env):
     def _get_connect_to_of_dc(self, dc_id):
         return self.params["datacenters"][int(dc_id)]["connect_to"]
 
+    # TODO: NEEDS UPDATE BECAUE IT IS NOT UPDATED FOR THE NEW OBSERVATION SPACE FORMAT
+    # IT WORKS FOR [DC_ID, FREE_HOST_PES] OBSERVATION SPACE
+    # INSTEAD OF [DC_ID, DC_TYPE, FREE_HOST_PES]
     def action_masks(self) -> list[bool]:
         cur_dc_num = self._get_datacenters_count()  # Number of datacenters
         max_dc_num = self.params[

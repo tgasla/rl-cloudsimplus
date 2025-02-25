@@ -1,6 +1,8 @@
 package daislab.cspg;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.util.List;
 
 /*
@@ -8,13 +10,18 @@ import java.util.List;
  * call.
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class SimulationStepInfo {
-    private final int jobsWaiting;
-    private final int jobsPlaced;
-    private final double jobsPlacedRatio;
-    private final double qualityRatio;
-    private final double deadlineViolationRatio;
-    private final List<Double> jobWaitTime;
+    private int jobsWaiting;
+    private int jobsPlaced;
+    private double jobsPlacedRatio;
+    private double qualityRatio;
+    private double deadlineViolationRatio;
+    private double jobsPlacedReward;
+    private double qualityReward;
+    private double deadlineViolationReward;
+    private List<Double> jobWaitTime;
     // private double jobWaitReward = 0;
     // private double runningVmCoresReward = 0;
     // private double unutilizedVmCoresReward = 0;

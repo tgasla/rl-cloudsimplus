@@ -17,12 +17,12 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: false
-    gpu: true
-    java_log_level: INFO
-    java_log_destination: none
-    junit_output_show: false
-    run_mode: serial
+  attached: false
+  gpu: true
+  java_log_level: INFO
+  java_log_destination: none
+  junit_output_show: false
+  run_mode: serial
 
 common:
   timestep_interval: 1.0
@@ -35,9 +35,8 @@ common:
   paying_for_the_full_hour: false
   save_experiment: true
   base_log_dir: logs
-  batch_size: 64
   vm_allocation_policy: bestfit
-  cloudlet_to_dc_assignment_policy:  earliest-most-critical-to-nearest-dc
+  cloudlet_to_dc_assignment_policy:  rl
   cloudlet_to_vm_assignment_policy: most-free-cores
   state_space_type: dcid-dctype-freevmpes-per-host
   autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
@@ -51,32 +50,21 @@ common:
   max_job_pes: 16
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
-  timesteps: 2048
-  n_rollout_steps: 2048
+  timesteps: 600000
   reward_jobs_placed_coef: 0.333
   reward_quality_coef: 0.333
   reward_deadline_violation_coef: 0.333
   seed: 1234
-  algorithm: PPO
+  algorithm: RecurrentPPO
   mode: train
 
-# experiment_1:
-#   datacenters:
-#     !include datacenters_b.yml
-#   experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-#   experiment_name: env_b
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-
 experiment_1:
+  n_steps: 2048
+  batch_size: 64
   datacenters:
-    !include datacenters_a.yml
-  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-  experiment_name: env_a
+    !include datacenters_b.yml
+  experiment_dir: no_pretraining
+  experiment_name: RecurrentPPO_2048_n_steps_64_batch_size
+  feature_extractor: CustomFeatureExtractor
+  # feature_extractor_load_path: mnt/feature_extractor_250k_action.pth
   job_trace_filename: euromlsys_jobs_first_50.csv
-
-experiment_2:
-  datacenters:
-    !include datacenters_c.yml
-  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-  experiment_name: env_c
-  job_trace_filename: euromlsys_jobs_three_locs_first_50.csv

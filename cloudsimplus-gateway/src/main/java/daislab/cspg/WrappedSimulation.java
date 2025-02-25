@@ -130,7 +130,7 @@ public class WrappedSimulation {
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
-        SimulationStepInfo info = new SimulationStepInfo(0, 0, 0, 0, 0, new ArrayList<>());
+        SimulationStepInfo info = new SimulationStepInfo();
 
         Observation observation = new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
 
@@ -213,7 +213,9 @@ public class WrappedSimulation {
         final List<Double> jobWaitTime = cloudSimProxy.getFinishedJobsWaitTimeLastTimestep();
 
         SimulationStepInfo info = new SimulationStepInfo(jobsWaiting, this.jobsPlacedThisTimestep,
-                ratios[0], ratios[1], ratios[2], jobWaitTime);
+                ratios[0], ratios[1], ratios[2], ratios[0] * settings.getRewardJobsPlacedCoef(),
+                ratios[1] * settings.getRewardQualityCoef(),
+                ratios[2] * settings.getRewardDeadlineViolationCoef(), jobWaitTime);
 
         // Observation observation =
         // new Observation(getInfrastructureObservation(),

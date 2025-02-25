@@ -1,5 +1,6 @@
 import re
 import os
+from typing import final
 import numpy as np
 import torch
 from torch import nn
@@ -34,11 +35,12 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
         observation_space: spaces.Dict,
         features_dim: int = 64,
         embedding_size: int = 32,
-        hidden_dim: int = 128,
-        hidden_dims: dict = None,
-        activation: nn.Module = nn.ReLU(),
-        adaptation_bottleneck: bool = False,
+        hidden_dims: list = [128],
+        activation_fn: nn.Module = nn.ReLU(),
         dropout: float = 0.1,
+        use_residual: bool = True,
+        residual_weight_init: float = 1.0,
+        load_path: str = None,
     ):
         """
         Initialize the feature extractor.
@@ -49,22 +51,17 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
             embedding_size (int): The size of embeddings for discrete and multi-discrete spaces.
             hidden_dim (int): The default hidden dimension for MLPs.
             hidden_dims (dict): Custom hidden dimensions per key in the observation space.
-            activation (nn.Module): The activation function to use.
+            activation_fn (nn.Module): The activation function to use.
             adaptation_bottleneck (bool): Whether to use a bottleneck layer for adaptation.
             dropout (float): Dropout probability for regularization.
         """
-        super().__init__(observation_space, features_dim)
+        super(CustomFeatureExtractor, self).__init__(observation_space, features_dim)
 
         self.extractors = nn.ModuleDict()
         self.embeddings = nn.ModuleDict()  # Separate embedding layers for MultiDiscrete
         total_embedding_dim = 0
 
-        if hidden_dims is None:
-            hidden_dims = {key: hidden_dim for key in observation_space.spaces.keys()}
-
         for key, subspace in observation_space.spaces.items():
-            current_hidden_dim = hidden_dims.get(key, hidden_dim)
-
             if isinstance(subspace, spaces.MultiDiscrete):
                 # Create embeddings separately for each dimension in MultiDiscrete
                 embedding_dims = [
@@ -79,74 +76,46 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
 
                 # MLP for processing concatenated embeddings
                 input_dim = sum(embedding_dims)
-                self.extractors[key] = nn.Sequential(
-                    nn.Linear(input_dim, current_hidden_dim),
-                    activation,
-                    nn.LayerNorm(current_hidden_dim),
-                    nn.Dropout(dropout),
-                    nn.Linear(current_hidden_dim, current_hidden_dim),
-                    activation,
-                )
-                total_embedding_dim += current_hidden_dim
-
-            elif isinstance(subspace, spaces.Discrete):
-                # Embedding for Discrete spaces
-                embedding_dim = min(embedding_size, (subspace.n // 2) + 1)
-                self.extractors[key] = nn.Sequential(
-                    nn.Embedding(subspace.n, embedding_dim),
-                    nn.LayerNorm(embedding_dim),
-                )
-                total_embedding_dim += embedding_dim
 
             elif isinstance(subspace, spaces.Box):
                 # MLP for Box (continuous) spaces
-                input_dim = (
-                    subspace.shape[0]
-                    if len(subspace.shape) == 1
-                    else np.prod(subspace.shape)
-                )
-                self.extractors[key] = nn.Sequential(
-                    nn.Flatten(),  # Flatten if the input is multi-dimensional
-                    nn.Linear(input_dim, current_hidden_dim),
-                    activation,
-                    nn.LayerNorm(current_hidden_dim),
-                    nn.Dropout(dropout),
-                    nn.Linear(current_hidden_dim, current_hidden_dim),
-                    activation,
-                )
-                total_embedding_dim += current_hidden_dim
-
-            elif isinstance(subspace, spaces.Tuple):
-                # Recursively process each element in the tuple
-                for i, sub_subspace in enumerate(subspace.spaces):
-                    self.extractors[f"{key}_{i}"] = self._create_extractor(
-                        sub_subspace, current_hidden_dim
-                    )
-                    total_embedding_dim += current_hidden_dim
-
+                input_dim = np.prod(subspace.shape)
             else:
                 raise ValueError(
                     f"Unsupported observation space type: {type(subspace)}"
                 )
-
-        # Adaptation layer for transfer learning
-        if adaptation_bottleneck:
-            self.adaptation_layer = nn.Sequential(
-                nn.Linear(total_embedding_dim, 32),
-                activation,
-                nn.Linear(32, total_embedding_dim),
+            self.extractors[key] = self.create_mlp(
+                input_dim=input_dim,
+                hidden_dims=hidden_dims,
+                output_dim=features_dim,
+                activation_fn=activation_fn,
+                norm=True,
+                dropout=dropout,
             )
-        else:
-            self.adaptation_layer = nn.Linear(total_embedding_dim, total_embedding_dim)
+            total_embedding_dim += features_dim
 
-        # Final projection layer
-        self.fc = nn.Sequential(
-            activation,
-            nn.Linear(total_embedding_dim, features_dim),
-        )
+        self.use_residual = use_residual
+        if self.use_residual:
+            self.residual_layer = nn.Linear(total_embedding_dim, features_dim)
+            # Learnable residual weight
+            self.residual_weight = nn.Parameter(torch.tensor(residual_weight_init))
+
+        self.fc = nn.Linear(total_embedding_dim, features_dim)
 
         # Initialize weights
-        self.apply(self.init_weights)
+        if load_path is None:
+            self.apply(self.init_weights)
+        else:
+            # print(f"Loading pretrained feature extractor from {load_path}")
+            state_dict = torch.load(load_path, weights_only=True)
+            filtered_state_dict = {
+                k: v for k, v in state_dict.items() if k in self.state_dict()
+            }
+            result = self.load_state_dict(filtered_state_dict, strict=False)
+            if result.missing_keys:
+                print(f"Missing keys: {result.missing_keys}")
+            if result.unexpected_keys:
+                print(f"Unexpected keys: {result.unexpected_keys}")
 
     @staticmethod
     def init_weights(m):
@@ -155,6 +124,42 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
             nn.init.xavier_uniform_(m.weight)
             if m.bias is not None:
                 nn.init.zeros_(m.bias)
+        if isinstance(m, nn.Embedding):
+            nn.init.xavier_uniform_(m.weight)
+
+    def create_mlp(
+        self, input_dim, hidden_dims, output_dim, activation_fn, norm=True, dropout=0.0
+    ):
+        """
+        Dynamically creates an MLP with optional LayerNorm and Dropout.
+
+        Args:
+            input_dim (int): Input feature size.
+            hidden_dims (list): List of hidden layer sizes.
+            output_dim (int): Output feature size.
+            activation_fn (nn.Module): Activation function.
+            norm (bool): Whether to apply LayerNorm after each linear layer.
+            dropout (float): Dropout probability.
+
+        Returns:
+            nn.Sequential: The constructed MLP.
+        """
+        layers = []
+        prev_dim = input_dim
+
+        for hidden_dim in hidden_dims:
+            layers.append(nn.Linear(prev_dim, hidden_dim))
+            layers.append(activation_fn)
+            if norm:
+                layers.append(nn.LayerNorm(hidden_dim))
+            if dropout > 0.0:
+                layers.append(nn.Dropout(dropout))
+            prev_dim = hidden_dim
+
+        # Final layer (without activation)
+        layers.append(nn.Linear(prev_dim, output_dim))
+
+        return nn.Sequential(*layers)
 
     def forward(self, observations):
         """
@@ -190,21 +195,23 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
                 concatenated_embeddings = torch.cat(feature_list, dim=-1)
                 transformed = extractor(concatenated_embeddings)  # Apply MLP
                 embedded_features.append(transformed)
-
-            elif isinstance(extractor[0], nn.Embedding):  # Discrete case
-                embedded_features.append(extractor(obs_val.long()))
-
-            else:  # Box or Tuple case
-                embedded_features.append(extractor(obs_val.float()))
+            else:  # Box case
+                embedded_features.append(
+                    extractor(obs_val.view(obs_val.shape[0], -1).float())
+                )
 
         # Concatenate all features
-        final_features = torch.cat(embedded_features, dim=-1)
+        concatenated_features = torch.cat(embedded_features, dim=-1)
+        final_features = self.fc(torch.relu(concatenated_features))
 
-        # Apply residual adaptation
-        adapted_features = final_features + 0.1 * self.adaptation_layer(final_features)
+        if self.use_residual:
+            # Apply residual connection if enabled
+            residual_output = self.residual_layer(torch.relu(concatenated_features))
+            # Weight the residual before adding
+            final_features += self.residual_weight * residual_output
 
         # Final projection
-        return self.fc(adapted_features)
+        return final_features
 
 
 class DictLSTMFeatureExtractor(BaseFeaturesExtractor):
@@ -565,8 +572,8 @@ def create_kwargs_with_algorithm_params(env, params) -> dict:
         algorithm_kwargs["ent_coef"] = params["ent_coef"]
     if params.get("learning_rate") and params["algorithm"] != "HER":
         algorithm_kwargs["learning_rate"] = params["learning_rate"]
-    if params.get("n_rollout_steps") and params["algorithm"] in ALGORITHMS_WITH_N_STEPS:
-        algorithm_kwargs["n_steps"] = params["n_rollout_steps"]
+    if params.get("n_steps") and params["algorithm"] in ALGORITHMS_WITH_N_STEPS:
+        algorithm_kwargs["n_steps"] = params["n_steps"]
     if params.get("batch_size") and params["algorithm"] != "HER":
         algorithm_kwargs["batch_size"] = params["batch_size"]
     if params.get("seed") and params["algorithm"] != "HER":
@@ -602,5 +609,9 @@ def create_correct_policy(observation_space, params) -> str | classmethod:
     if isinstance(observation_space, gym.spaces.Dict) or isinstance(
         observation_space, gym.spaces.Tuple
     ):
+        if "RecurrentPPO" in params["algorithm"]:
+            return "MultiInputLstmPolicy"
         return "MultiInputPolicy"  # when state is Spaces.Dict()
+    if "RecurrentPPO" in params["algorithm"]:
+        return "MlpLstmPolicy"
     return "MlpPolicy"  # when state is not Spaces.Dict()

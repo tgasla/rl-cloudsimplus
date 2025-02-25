@@ -1,7 +1,7 @@
 import gymnasium as gym
+import torch
 import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
-from torch import nn
 
 from utils.misc import (
     create_logger,
@@ -36,15 +36,29 @@ def train(params, jobs):
     policy = create_correct_policy(env.observation_space, params)
 
     policy_kwargs = None
-    if params.get("feature_extractor") == "custom":
+    if params.get("feature_extractor"):
+        features_extractor_kwargs = {}
+        if params.get("features_dim"):
+            features_extractor_kwargs["features_dim"] = params["features_dim"]
+        if params.get("embedding_size"):
+            features_extractor_kwargs["embedding_size"] = params["embedding_size"]
+        if params.get("hidden_dims"):
+            features_extractor_kwargs["hidden_dims"] = params["hidden_dims"]
+        if params.get("feature_extractor_load_path"):
+            features_extractor_kwargs["load_path"] = params[
+                "feature_extractor_load_path"
+            ]
+        if params.get("embedding_size"):
+            features_extractor_kwargs["embedding_size"] = params["embedding_size"]
+        if params.get("dropout"):
+            features_extractor_kwargs["dropout"] = params["dropout"]
+        if params.get("activation_fn"):
+            features_extractor_kwargs["activation_fn"] = torch.nn.__dict__[
+                params["activation_fn"]
+            ]()
         policy_kwargs = dict(
-            features_extractor_class=CustomFeatureExtractor,
-            features_extractor_kwargs=dict(
-                features_dim=params["features_dim"],
-                embedding_size=params["embedding_size"],
-                hidden_dim=params["hidden_dim"],
-                adaptation_bottleneck=params["adaptation_bottleneck"],
-            ),
+            features_extractor_class=globals()[params["feature_extractor"]],
+            features_extractor_kwargs=features_extractor_kwargs,
         )
 
     # Instantiate the agent
