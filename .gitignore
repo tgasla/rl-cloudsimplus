@@ -226,3 +226,5 @@ logs/
 notebooks/data/
 
 config.yml
+
+plots/
