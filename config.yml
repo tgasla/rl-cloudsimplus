@@ -17,7 +17,7 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-  attached: false
+  attached: true
   gpu: true
   java_log_level: INFO
   java_log_destination: none
@@ -60,11 +60,11 @@ common:
 
 experiment_1:
   n_steps: 2048
-  batch_size: 64
+  batch_size: 256
   datacenters:
     !include datacenters_b.yml
   experiment_dir: no_pretraining
-  experiment_name: RecurrentPPO_2048_n_steps_64_batch_size
+  experiment_name: RecurrentPPO_2048_n_steps_256_batch_size
   feature_extractor: CustomFeatureExtractor
   # feature_extractor_load_path: mnt/feature_extractor_250k_action.pth
   job_trace_filename: euromlsys_jobs_first_50.csv

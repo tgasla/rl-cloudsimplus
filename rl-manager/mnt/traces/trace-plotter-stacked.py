@@ -79,7 +79,7 @@ def main():
     )
 
     # Save the plot
-    output_filename = args.trace.split(".")[0] + "_stacked.pdf"
+    output_filename = args.trace.split(".")[0] + "_stacked_test.png"
     plt.tight_layout()
     plt.savefig(output_filename, bbox_inches="tight", pad_inches=0)
     print(f"Stacked plot saved as {output_filename}")
