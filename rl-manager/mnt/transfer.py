@@ -1,11 +1,8 @@
-from gc import freeze
 import os
-import json
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
 
-from utils.trace_utils import csv_to_cloudlet_descriptor
 from utils.misc import (
     create_kwargs_with_algorithm_params,
     create_logger,
@@ -19,11 +16,7 @@ from utils.misc import (
 )
 
 
-def transfer(params):
-    jobs = csv_to_cloudlet_descriptor(
-        os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
-    )
-
+def transfer(params, jobs):
     best_model_path = os.path.join(
         params["base_log_dir"],
         f"{params['train_model_dir']}",
@@ -33,12 +26,13 @@ def transfer(params):
     algorithm = get_algorithm(params["algorithm"], params["vm_allocation_policy"])
 
     # Create and wrap the environment
-    env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
+    env = gym.make("SingleDC-v0", params=params, jobs=jobs)
     env = Monitor(env, params["log_dir"])
     env = vectorize_env(env, algorithm)
 
     # Change any model parameters you want here
     custom_objects = create_kwargs_with_algorithm_params(env, params)
+
     device = get_suitable_device(params["algorithm"])
 
     # Load the trained agent
@@ -52,8 +46,8 @@ def transfer(params):
     prev_host_count = get_host_count_from_train_dir(params["train_model_dir"])
     maybe_freeze_weights(model, params, prev_host_count=prev_host_count)
 
-    logger = create_logger(params["save_experiment"], params["log_dir"])
     callback = create_callback(params["save_experiment"], params["log_dir"])
+    logger = create_logger(params["save_experiment"], params["log_dir"])
     model.set_logger(logger)
 
     maybe_load_replay_buffer(model, params["train_model_dir"])

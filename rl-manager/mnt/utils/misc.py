@@ -20,8 +20,8 @@ from utils.rl_algorithm_support_flags import (
 
 
 def get_host_count_from_train_dir(train_model_dir):
-    # Regular expression to match the number before "hosts"
-    match = re.search(r"(\d+)hosts", train_model_dir)
+    # Regular expression to match the number before "hosts" or "nodes", optionally delimited by an underscore
+    match = re.search(r"(\d+)_?(hosts|nodes)", train_model_dir)
     if match:
         number = match.group(1)  # Extract the matched number
         return int(number)
