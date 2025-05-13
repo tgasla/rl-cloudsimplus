@@ -45,7 +45,6 @@ common:
     base_log_dir: logs
     mode: train
     vm_allocation_policy: rl
-    freeze_inactive_input_layer_weights: true
     algorithm: MaskablePPO
     max_hosts: 32
     host_pes: 16

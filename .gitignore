@@ -222,3 +222,7 @@ gradle-app.setting
 
 # Log directories
 logs/
+
+notebooks/data/
+
+config.yml
