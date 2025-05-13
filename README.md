@@ -121,15 +121,29 @@ make run-tensorboard
 
 ## Editing the experiment configuration file
 
-To run an experiment, first edit the configuration file config.yml.
+To run an experiment, first rename the file `config-template.yml` to `config.yml` and edit it to create the experiment scenario of your choice.
 
-The configuration file contains two sections: the 'common' section and the 'experiment' section. This is because we may run multiple different experiments in parallel.
-- The parameters that all experiments have in common are specified under the common section, and those that are unique among the experiments are defined under the experiment_{id} section
+The configuration file is divided into three sections:
+- `global`: Global settings that apply to all experiments
+- `common`: Shared parameters used by all experiments
+- `experiment_{id}`: Specific parameters for individual experiments (e.g., experiment_1, experiment_2, etc.)
+
+- The `global` section controls high-level settings related to logging, GPU usage, and process output.
+
+| Key                                  | Type                                                 | Description                                                                                                                                                             |
+| ------------------------------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `attached`                           | `[true\|false]`                                      | Whether the terminal should attach to the experiment output.                                                                                                            |
+| `gpu`                                | `[true\|false]`                                      | Whether to use GPU during experiments.                                                                                                                                  |
+| `java_log_level`                     | `[TRACE\|DEBUG\|INFO\|WARNING\|ERROR]`               | Logging verbosity level for Java components.                                                                                                                            |
+| `java_log_destination`               | `[none\|stdout\|file\|stdout-file]`                  | Defines where Java logs are written. <br> - `none`: no logging <br> - `stdout`: logs printed to terminal <br> - `file`: logs written to file <br> - `stdout-file`: both |
+| `junit_output_show`                  | `[true\|false]`                                      | Whether to print JUnit test results to stdout. Useful for debugging test failures.                                                                                      |
+
+- The parameters that all experiments have in common are specified under the `common` section, and those that are unique among the experiments are defined under the `experiment_{id}` section
   - If a parameter is specified in both the common and experiment sections, the common one is ignored, and the experiment one takes effect.
 - To run multiple experiments in parallel, add as many experiment areas as you want, specifying the corresponding parameters for each experiment.
-- Each experiment should have a unique experiment id, and each section should be written as experiment_{id}. Use ids starting by 1 and increment by 1.
+- Each experiment should have a unique experiment id, and each section should be written as `experiment_{id}`. The first ids should start by 1 and be incremented by 1.
 
-There are three experiment modes: train, transfer, and test. When transfer or test modes are specified, an additional 'train_model_dir' key for an experiment should be defined, with the directory name in which the trained agent model should be used.
+There are three experiment modes: `train`, `transfer`, and `test`. When transfer or test modes are specified, an additional `train_model_dir` key for an experiment should be defined, with the directory name in which the trained agent model should be used.
 
 ## Running an experiment
 
@@ -147,7 +161,7 @@ There is also support to run the experiments in CUDA GPUs.
 
 > [!WARNING]
 > If after installing nvidia-container-toolkit you still cannot access GPU in the container, follow the steps below:
-> 1) Edit the /etc/Nvidia-container-runtime/config.toml file changing the no-cgroups to false.
+> 1) Edit the /etc/nvidia-container-runtime/config.toml file changing the no-cgroups to false.
 > 2) Restart the docker daemon using: sudo systemctl restart docker
 > 3) Test by running sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
 
