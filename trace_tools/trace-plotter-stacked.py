@@ -1,4 +1,5 @@
 import argparse
+import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,6 +15,12 @@ def main():
         type=bool,
         default=True,
         help="Count the number of cores instead of jobs",
+    )
+    parser.add_argument(
+        "--filetype",
+        type=str,
+        required=True,
+        help="The file type of the trace data image (e.g., 'png', 'pdf')",
     )
     args = parser.parse_args()
 
@@ -79,7 +86,7 @@ def main():
     )
 
     # Save the plot
-    output_filename = args.trace.split(".")[0] + "_stacked.pdf"
+    output_filename = args.trace.split(".")[0] + "_stacked." + args.filetype
     plt.tight_layout()
     plt.savefig(output_filename, bbox_inches="tight", pad_inches=0)
     print(f"Stacked plot saved as {output_filename}")

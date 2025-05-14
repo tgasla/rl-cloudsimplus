@@ -228,3 +228,6 @@ notebooks/data/
 plots/
 
 config.yml
+
+**.png
+**.pdf
