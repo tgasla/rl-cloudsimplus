@@ -1,7 +1,6 @@
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
-from torch import nn
 
 from utils.misc import (
     create_logger,
