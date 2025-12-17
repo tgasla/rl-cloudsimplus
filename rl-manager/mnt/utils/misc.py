@@ -379,9 +379,11 @@ def datacenter_constructor(_, node) -> dict:
 
 
 def create_logger(save_experiment, log_dir) -> sb3.common.logger.Logger:
-    log_destination = ["stdout"]
+    # log_destination = ["stdout"]
+    # log_destination.extend(["csv", "tensorboard"])
+    log_destination = []
     if save_experiment:
-        log_destination.extend(["csv", "tensorboard"])
+        log_destination.append("tensorboard")
 
     # the logger can write to stdout, progress.csv and tensorboard
     return configure(log_dir, log_destination)
@@ -487,6 +489,15 @@ def maybe_freeze_weights(model, params, prev_host_count=None) -> None:
         params (dict): Parameters containing host and VM configuration.
         prev_host_count (int, optional): Previous host count for transfer learning. Defaults to None.
     """
+    # --- NEW TURRET LOGIC ---
+    if params.get("feature_extractor") == "turret":
+        # In Transfer learning with GNNs, we usually freeze the GNN (representation learner)
+        # and fine-tune the PPO head (decision maker).
+        print("Freezing TURRET GNN Feature Extractor...")
+        for param in model.policy.features_extractor.parameters():
+            param.requires_grad = False
+        return
+    # ------------------------
     if not params["freeze_inactive_input_layer_weights"]:
         return
     if params["state_space_type"] == "tree" and params["vm_allocation_policy"] == "rl":

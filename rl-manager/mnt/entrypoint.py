@@ -163,6 +163,7 @@ def main():
         print(
             f"Mode {params['mode']} was not found. Available modes are: 'train', 'transfer', 'test'."
         )
+        raise
     func = getattr(module, params["mode"])
     func(params, jobs)
 

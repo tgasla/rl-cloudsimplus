@@ -1,6 +1,7 @@
 import gymnasium as gym
 import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
+from utils.turret_extractor import TurretGNNExtractor
 
 from utils.misc import (
     create_logger,
@@ -43,6 +44,18 @@ def train(params, jobs):
                 embedding_size=params["embedding_size"],
                 hidden_dim=params["hidden_dim"],
                 adaptation_bottleneck=params["adaptation_bottleneck"],
+            ),
+        )
+    elif params.get("feature_extractor") == "turret":
+        print("Initializing TURRET GNN Agent...")
+        policy_kwargs = dict(
+            features_extractor_class=TurretGNNExtractor,
+            features_extractor_kwargs=dict(
+                params=params,  # Pass full params so Extractor can read topology
+                features_dim=params["features_dim"],
+                hidden_dim=params.get("hidden_dim"),
+                num_heads=params.get("num_heads"),
+                num_layers=params.get("num_layers"),
             ),
         )
 

@@ -3,7 +3,6 @@ import json
 import os
 import csv
 import numpy as np
-import torch
 import re
 from gymnasium import spaces
 from py4j.java_collections import JavaList, JavaArray
@@ -224,6 +223,7 @@ class SingleDC(gym.Env):
     def _get_connect_to_of_dc(self, dc_id):
         return self.params["datacenters"][int(dc_id)]["connect_to"]
 
+    # action mask version for the 2nd paper
     def action_masks(self) -> list[bool]:
         cur_dc_num = self._get_datacenters_count()  # Number of datacenters
         max_dc_num = self.params[
@@ -252,7 +252,7 @@ class SingleDC(gym.Env):
             job_idx = i // 4
             job_cores = self.jobs_waiting_obs[i]
             job_location = self.jobs_waiting_obs[i + 1]
-            # job_sensitivity = self.jpb_waiting_obs[i + 2]
+            # job_sensitivity = self.jobs_waiting_obs[i + 2]
             # job_deadline = self.jobs_waiting_obs[i + 3]
             # Iterate over datacenters (+1 for "no action" case)
             for j in range(options_num):
@@ -287,6 +287,7 @@ class SingleDC(gym.Env):
 
         return valid_action_mask.tolist()
 
+    # old for 1st paper
     # def action_masks(self) -> list[bool]:
     #     """
     #     Return a list of masks for the current environment.

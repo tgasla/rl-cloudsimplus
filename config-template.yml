@@ -7,12 +7,19 @@
 # experiment_dir: parent directory for a set of experiments
 # experiment_name: name of the experiment
 # mode: [train, test, transfer]
-# vm_allocation_policy: [rl, rule-based]
+# vm_allocation_policy: [rl, rule-based, bestfit]
 # cloudlet_to_dc_assignment_policy: [earliest-shortest-to-most-free-dc, random-to-most-free-dc, earliest-most-critical-to-nearest-dc, rl]
+# earliest most critical to nearest dc has the best results
 # cloudlet_to_vm_assignment_policy: [most-free-cores]
 # algorithm: [any stable-baselines3 or sb3-contrib algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
+# if feature_extractor == turret
+  # define TURRET Specifics:
+  # features_dim: 128
+  # turret_hidden_dim: 64
+  # turret_num_heads: 4
 
-# globals.run_mode: [batch, serial]
+
+# globals.run_mode: [batch, serial] (batch runs all experiments in parallel, serial runs them one after the other)
 
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
@@ -37,9 +44,13 @@ common:
   base_log_dir: logs
   batch_size: 64
   vm_allocation_policy: bestfit
-  cloudlet_to_dc_assignment_policy:  earliest-most-critical-to-nearest-dc
+  cloudlet_to_dc_assignment_policy:  rl
   cloudlet_to_vm_assignment_policy: most-free-cores
   state_space_type: dcid-dctype-freevmpes-per-host
+  feature_extractor: turret # options: custom, turret
+  features_dim: 128
+  turret_hidden_dim: 64
+  turret_num_heads: 4
   autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
   autoencoder_infr_obs_latent_dim: 32
   freeze_inactive_input_layer_weights: false # keep false if autoencoder or embeddings are used
@@ -58,25 +69,20 @@ common:
   reward_deadline_violation_coef: 0.333
   seed: 1234
   algorithm: PPO
-  mode: train
-
-# experiment_1:
-#   datacenters:
-#     !include datacenters_b.yml
-#   experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-#   experiment_name: env_b
-#   job_trace_filename: euromlsys_jobs_first_50.csv
 
 experiment_1:
   datacenters:
     !include datacenters_a.yml
-  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-  experiment_name: env_a
+  mode: train
+  experiment_dir: euromlsys_extension/turret
+  experiment_name: train_env_a
   job_trace_filename: euromlsys_jobs_first_50.csv
 
 experiment_2:
   datacenters:
-    !include datacenters_c.yml
-  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-  experiment_name: env_c
+    !include datacenters_b.yml
+  mode: transfer
+  train_model_dir: logs/euromlsys_extension/turret/train_env_a
+  experiment_dir: euromlsys_extension/turret
+  experiment_name: env_b_transfer_from_a
   job_trace_filename: euromlsys_jobs_three_locs_first_50.csv

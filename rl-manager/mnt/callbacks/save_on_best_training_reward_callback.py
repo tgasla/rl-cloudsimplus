@@ -1,5 +1,3 @@
-from email import header
-from math import inf
 import os
 import numpy as np
 import pandas as pd
@@ -73,9 +71,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             "quality_ratio": self.quality_ratio,
             "deadline_violation_ratio": self.deadline_violation_ratio,
             # "job_wait_time": self.job_wait_time, # job_wait_time is saved in independent file
-            "jobs_placed_ratio": self.jobs_placed_ratio,
-            "quality_ratio": self.quality_ratio,
-            "deadline_violation_ratio": self.deadline_violation_ratio,
             # "new_obs": self.new_observations,
             # "obs": self.observations, # obs and actions are saved in independent files
             # "action": self.actions,
@@ -242,7 +237,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.model.save(self.model_save_path)
         self._maybe_save_replay_buffer()
         self._maybe_save_best_episode_details()
-    
+
     def _mean_exclude_neg(self, arr):
         non_negative_values = [value for value in arr if value >= 0]
         return np.mean(non_negative_values)
