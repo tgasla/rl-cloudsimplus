@@ -209,7 +209,14 @@ apptainer build gateway.sif docker-archive://gateway.tar
 apptainer build manager.sif docker-archive://manager.tar
 ```
 
-Run the run-hpc make target:
+On the HPC login node, create a experiments directory and inside put directories for each experiment.
+For example if you want to run three experiments, you should create experiment_{1-3} directories and inside them put a config.yml.
+Note that it mostly make sense to run one experiment at a time per node, so the .sbatch and Makefile have already been configured this way.
+
+Before running the experiment edit the rl-cloudsimplus.sbatch file to define the number of experiments #SBATCH --array=1-[number-of-experiments]
+If you only want to run one experiment, define #SBATCH --array=1
+
+Then, run the run-hpc make target:
 
 ```
 make run-hpc
