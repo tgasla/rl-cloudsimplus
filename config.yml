@@ -27,6 +27,7 @@ globals:
     junit_output_show: false
 
 common:
+  gateway_host: gateway
   timestep_interval: 1.0
   min_time_between_events: 0.1
   max_episode_length: 150
@@ -84,21 +85,32 @@ common:
 #   experiment_name: transfer_env_a_from_b
 #   job_trace_filename: euromlsys_jobs_first_50.csv
 
+# experiment_1:
+#   mode: train
+#   seed: 1234
+#   timesteps: 300000
+#   datacenters:
+#     !include datacenters_b.yml
+#   features_dim: 64
+#   hidden_dim: 128
+#   num_heads: 8
+#   num_layers: 2
+#   leaky_relu_negative_slope: 0.2
+#   use_masking: true
+#   use_host_ids: true
+#   experiment_dir: euromlsys_extension/attention_pooling_64feat_128hid_8head_2lay
+#   experiment_name: train_env_b_1234
+#   job_trace_filename: euromlsys_jobs_first_50.csv
+
 experiment_1:
-  mode: train
+  mode: transfer
   seed: 1234
-  timesteps: 300000
+  timesteps: 30000
   datacenters:
-    !include datacenters_b.yml
-  features_dim: 64
-  hidden_dim: 128
-  num_heads: 8
-  num_layers: 2
-  leaky_relu_negative_slope: 0.2
-  use_masking: true
-  use_host_ids: true
+    !include datacenters_a.yml
+  train_model_dir: euromlsys_extension/attention_pooling_64feat_128hid_8head_2lay/train_env_b_1234
   experiment_dir: euromlsys_extension/attention_pooling_64feat_128hid_8head_2lay
-  experiment_name: train_env_b_1234
+  experiment_name: transfer_env_a_from_b
   job_trace_filename: euromlsys_jobs_first_50.csv
 
 # experiment_2:

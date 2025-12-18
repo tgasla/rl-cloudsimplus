@@ -35,14 +35,17 @@ class SingleDC(gym.Env):
 
     metadata = {"render_modes": ["human", "ansi"]}
     # default port = 25333
-    gateway_parameters = GatewayParameters(address="gateway", auto_convert=True)
     params = {}
 
     def __init__(self, params, jobs, render_mode="ansi"):
         super(SingleDC, self).__init__()
-        self.gateway = JavaGateway(gateway_parameters=self.gateway_parameters)
-        self.simulation_environment = self.gateway.entry_point
         self.params = params
+
+        gateway_parameters = GatewayParameters(
+            address=params["gateway_host"], auto_convert=True
+        )
+        self.gateway = JavaGateway(gateway_parameters=gateway_parameters)
+        self.simulation_environment = self.gateway.entry_point
 
         self.action_file_data = self._maybe_get_action_file_data()
         self.action_space = self._create_action_space()

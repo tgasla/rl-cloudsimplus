@@ -201,7 +201,7 @@ def create_logger(save_experiment, log_dir) -> sb3.common.logger.Logger:
     if save_experiment:
         log_destination.append("tensorboard")
 
-    # the logger can write to stdout, progress.csv and tensorboard
+    # the logger can write to stdout, csv (the file created is called progress.csv) and tensorboard
     return configure(log_dir, log_destination)
 
 

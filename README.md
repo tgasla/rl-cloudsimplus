@@ -200,8 +200,21 @@ scp gateway <username>@login.<your-cluster-ip>:/home/people/<username>/scratch
 scp gateway <username>@login.<your-cluster-ip>:/home/people/<username>/scratch
 ```
 
+Then login to the login (head) of the HPC cluster, load apptainer and build the apptainer images
 
-Thogin to the login (head) of the HPC cluster.
+```
+cd scratch
+module load apptainer
+apptainer build gateway.sif docker-archive://gateway.tar
+apptainer build manager.sif docker-archive://manager.tar
+```
+
+Run the run-hpc make target:
+
+```
+make run-hpc
+```
+
 
 ## Acknowledgements
 

@@ -27,9 +27,10 @@ services:
       - ./datacenters_b.yml:/mgr/datacenters_b.yml
       - ./datacenters_c.yml:/mgr/datacenters_c.yml
       - ./rl-manager/mnt:/mgr/mnt
+      - ./rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus
       - ./logs:/mgr/logs
       - /run/docker.sock:/run/docker.sock:ro
-    command: python mnt/entrypoint.py
+    command: /bin/sh -c "pip3 install -e gym_cloudsimplus && python mnt/entrypoint.py"
 
   manager-cuda:
     <<: *cpu
