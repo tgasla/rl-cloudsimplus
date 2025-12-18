@@ -180,6 +180,29 @@ docker system prune [-f | --force]
 ```
 -->
 
+# Run in an HPC Cluster
+
+## If the cliuster has apptainer
+
+### Build the apptainer images from the docker images
+
+On the machine you have docker installed, save the images as .tar files:
+
+```
+docker save -o gateway.tar gateway
+docker save -o manager.tar manager
+```
+
+Copy the images to your HPC cluster:
+
+```
+scp gateway <username>@login.<your-cluster-ip>:/home/people/<username>/scratch
+scp gateway <username>@login.<your-cluster-ip>:/home/people/<username>/scratch
+```
+
+
+Thogin to the login (head) of the HPC cluster.
+
 ## Acknowledgements
 
 - This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework, a full-featured, highly extensible, and easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).

@@ -15,12 +15,14 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         hidden_dim: int = 128,
         num_heads: int = 4,
         num_layers: int = 2,
+        leaky_relu_negative_slope: float = 0.2,
     ):
         super().__init__(observation_space, features_dim)
 
         self.hidden_dim = hidden_dim
         self.params = params
         self.num_layers = num_layers
+        self.leaky_relu_negative_slope = leaky_relu_negative_slope
         self.datacenters = params["datacenters"]
 
         # --- 1. Dimensions & Vocabs ---
@@ -28,12 +30,9 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         self.max_jobs = params["max_jobs_waiting"]
 
         # Vocab Sizes (From config + 1)
-        self.vocab_dc_ids = params.get("max_datacenters", 6) + 1
-        self.vocab_dc_types = params.get("max_datacenter_types", 3) + 1
-        self.vocab_job_sensitivity = (
-            params.get("max_job_delay_sensitivity_levels", 3) + 1
-        )
-
+        self.vocab_dc_ids = params["max_datacenters"] + 1
+        self.vocab_dc_types = params["max_datacenter_types"] + 1
+        self.vocab_job_sensitivity = params["max_job_delay_sensitivity_levels"] + 1
         # Embedding Dimensions
         self.emb_dim_id = 4
         self.emb_dim_type = 4
@@ -63,7 +62,7 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         # --- 4. Graph Path (Hosts) ---
         self.f_in = nn.Sequential(
             nn.Linear(self.host_input_dim, hidden_dim),
-            nn.LeakyReLU(negative_slope=0.2),
+            nn.LeakyReLU(negative_slope=leaky_relu_negative_slope),
             nn.LayerNorm(hidden_dim),
         )
 
@@ -89,17 +88,17 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         # --- 5. Job Path (Context MLP) ---
         self.job_encoder = nn.Sequential(
             nn.Linear(self.job_queue_flat_dim, hidden_dim),
-            nn.LeakyReLU(negative_slope=0.2),
+            nn.LeakyReLU(negative_slope=leaky_relu_negative_slope),
             nn.LayerNorm(hidden_dim),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.LeakyReLU(negative_slope=0.2),
+            nn.LeakyReLU(negative_slope=leaky_relu_negative_slope),
         )
 
         # --- 6. Fusion ---
         fusion_dim = hidden_dim + hidden_dim
         self.linear_out = nn.Sequential(
             nn.Linear(fusion_dim, hidden_dim),
-            nn.LeakyReLU(negative_slope=0.2),
+            nn.LeakyReLU(negative_slope=leaky_relu_negative_slope),
             nn.Linear(hidden_dim, features_dim),
         )
 
@@ -209,7 +208,10 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
             h_in = h
             h_out = gat(h, edge_index_batch)
             h_out = norm(h_out)
-            h = F.leaky_relu(h_out, negative_slope=0.2) + h_in
+            h = (
+                F.leaky_relu(h_out, negative_slope=self.leaky_relu_negative_slope)
+                + h_in
+            )
 
         # Readout
         h_dense = h.view(batch_size, self.total_active_hosts, -1)

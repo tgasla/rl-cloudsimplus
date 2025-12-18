@@ -1,5 +1,5 @@
 #!/bin/bash
-
+exec </dev/null
 CONFIG_FILE="config.yml"
 
 # Detect the correct grep flag based on OS
@@ -52,7 +52,9 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
     # Run the docker compose command based on ATTACHED flag
     if [ "$RUN_MODE" = "batch" ]; then
-        RUN_MODE="batch" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" docker compose $PROFILE_OPTION up --scale $SCALE_OPTION --build --remove-orphans -d
+        RUN_MODE="batch" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" \
+            docker compose $PROFILE_OPTION up --scale $SCALE_OPTION \
+            --build --remove-orphans -d
         if [ "$ATTACHED" = true ]; then
             echo "Attaching to logs of all containers for batch mode..."
             docker-compose logs -f
@@ -61,7 +63,8 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
     elif [ "$RUN_MODE" = "serial" ]; then
         for i in $(seq 1 $NUM_EXPERIMENTS); do
             # Start all containers
-            RUN_MODE="serial" EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" docker compose $PROFILE_OPTION up --build --remove-orphans -d
+            RUN_MODE="serial" EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" \
+                docker compose $PROFILE_OPTION up --build --remove-orphans -d
 
             # Get the container ID for the manager container
             #MANAGER_CONTAINER_ID=$(docker ps --filter "name=manager" --filter "status=running" -q)

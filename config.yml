@@ -12,11 +12,6 @@
 # earliest most critical to nearest dc has the best results
 # cloudlet_to_vm_assignment_policy: [most-free-cores]
 # algorithm: [any stable-baselines3 or sb3-contrib algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
-# if feature_extractor == turret
-  # define TURRET Specifics:
-  # features_dim: 128
-  # turret_hidden_dim: 64
-  # turret_num_heads: 4
 
 
 # globals.run_mode: [batch, serial] (batch runs all experiments in parallel, serial runs them one after the other)
@@ -26,10 +21,10 @@
 globals:
     attached: false
     gpu: true
+    run_mode: serial
     java_log_level: INFO
     java_log_destination: none
     junit_output_show: false
-    run_mode: serial
 
 common:
   timestep_interval: 1.0
@@ -47,14 +42,9 @@ common:
   cloudlet_to_dc_assignment_policy:  rl
   cloudlet_to_vm_assignment_policy: most-free-cores
   state_space_type: dcid-dctype-freevmpes-per-host
-  features_dim: 128
-  hidden_dim: 64
-  num_heads: 4
-  num_layers: 2
   autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
   autoencoder_infr_obs_latent_dim: 32
   freeze_inactive_input_layer_weights: false # keep false if autoencoder or embeddings are used
-  timesteps: 600000
   max_datacenters: 6
   max_datacenter_types: 3
   max_hosts: 40
@@ -83,13 +73,47 @@ common:
 #   experiment_name: train_env_b_1234
 #   job_trace_filename: euromlsys_jobs_first_50.csv
 
+# experiment_1:
+#   seed: 1234
+#   datacenters:
+#     !include datacenters_a.yml
+#   mode: transfer
+#   train_model_dir: euromlsys_extension/turret_64feat_128hid_8head_2lay/train_env_b_1234
+#   feature_extractor: turret # options: custom, turret
+#   experiment_dir: euromlsys_extension/turret_64feat_128hid_8head_2lay
+#   experiment_name: transfer_env_a_from_b
+#   job_trace_filename: euromlsys_jobs_first_50.csv
+
 experiment_1:
+  mode: train
   seed: 1234
+  timesteps: 300000
   datacenters:
-    !include datacenters_a.yml
-  mode: transfer
-  train_model_dir: euromlsys_extension/turret_64feat_128hid_8head_2lay/train_env_b_1234
-  feature_extractor: turret # options: custom, turret
-  experiment_dir: euromlsys_extension/turret_64feat_128hid_8head_2lay
-  experiment_name: transfer_env_a_from_b
+    !include datacenters_b.yml
+  features_dim: 64
+  hidden_dim: 128
+  num_heads: 8
+  num_layers: 2
+  leaky_relu_negative_slope: 0.2
+  use_masking: true
+  use_host_ids: true
+  experiment_dir: euromlsys_extension/attention_pooling_64feat_128hid_8head_2lay
+  experiment_name: train_env_b_1234
   job_trace_filename: euromlsys_jobs_first_50.csv
+
+# experiment_2:
+#   mode: train
+#   seed: 1234
+#   timesteps: 300000
+#   datacenters:
+#     !include datacenters_b.yml
+#   features_dim: 256
+#   hidden_dim: 128
+#   num_heads: 8
+#   num_layers: 2
+#   leaky_relu_negative_slope: 0.2
+#   use_masking: true
+#   use_host_ids: true
+#   experiment_dir: euromlsys_extension/attention_pooling_256feat_128hid_8head_2lay
+#   experiment_name: train_env_b_1234
+#   job_trace_filename: euromlsys_jobs_first_50.csv
