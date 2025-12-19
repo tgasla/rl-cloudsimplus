@@ -1,10 +1,11 @@
 import gymnasium as gym
-import gym_cloudsimplus  # noqa: F401
+import importlib
 from stable_baselines3.common.monitor import Monitor
+import wandb
 
 from utils.misc import (
     create_logger,
-    create_callback,
+    maybe_create_callback,
     maybe_freeze_weights,
     vectorize_env,
     get_suitable_device,
@@ -12,6 +13,10 @@ from utils.misc import (
     create_kwargs_with_algorithm_params,
     create_correct_policy,
 )
+
+import gym_cloudsimplus
+
+importlib.reload(gym_cloudsimplus)
 
 
 def train(params, jobs):
@@ -103,12 +108,23 @@ def train(params, jobs):
     )
     # maybe_freeze_weights(model, params)
 
-    callback = create_callback(params["save_experiment"], params["log_dir"])
+    callbacks = []
+
+    callbacks.append(
+        maybe_create_callback(params["save_experiment"], params["log_dir"])
+    )
+
+    callbacks.append(
+        wandb.integration.sb3.WandbCallback(
+            model_save_path=params["log_dir"],
+            verbose=2,
+        )
+    )
     logger = create_logger(params["save_experiment"], params["log_dir"])
     model.set_logger(logger)
 
     # Train the agent
-    model.learn(total_timesteps=params["timesteps"], log_interval=1, callback=callback)
+    model.learn(total_timesteps=params["timesteps"], log_interval=1, callback=callbacks)
 
     # Close the environment and free the resources
     env.close()

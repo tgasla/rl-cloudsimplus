@@ -246,21 +246,12 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
     def _write_progress_log_row(self) -> None:
         ep_first_timestep = self.num_timesteps - self.current_episode_length + 1
         ep_last_timestep = self.num_timesteps
-        self.logger.record(
-            "train/episode_num", self.current_episode_num, exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/episode_length", self.current_episode_length, exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/ep_first_timestep", ep_first_timestep, exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/ep_last_timestep", ep_last_timestep, exclude="tensorboard"
-        )
-        self.logger.record(
-            "train/ep_total_rew", np.sum(self.rewards), exclude="tensorboard"
-        )
+        # when I was using tensorboard, I was excluding these episode info from tensorboard
+        self.logger.record("train/episode_num", self.current_episode_num)
+        self.logger.record("train/episode_length", self.current_episode_length)
+        self.logger.record("train/ep_first_timestep", ep_first_timestep)
+        self.logger.record("train/ep_last_timestep", ep_last_timestep)
+        self.logger.record("train/ep_total_rew", np.sum(self.rewards))
         # self.logger.record(
         #     "train/ep_valid_count", np.sum(self.isValid), exclude="tensorboard"
         # )
@@ -304,7 +295,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         #     / self.reward_unutilized_vm_cores_coef
         # )
 
-        self.logger.dump()
+        self.logger.dump(step=self.num_timesteps)
 
     def _write_infr_observation_to_file(self, filename, mode="a") -> None:
         filepath = os.path.join(self.log_dir, filename)

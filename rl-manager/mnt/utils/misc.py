@@ -205,7 +205,7 @@ def create_logger(save_experiment, log_dir) -> sb3.common.logger.Logger:
     return configure(log_dir, log_destination)
 
 
-def create_callback(
+def maybe_create_callback(
     save_experiment, log_dir
 ) -> SaveOnBestTrainingRewardCallback | None:
     if save_experiment:

@@ -1,6 +1,6 @@
 import os
 import gymnasium as gym
-import gym_cloudsimplus  # noqa: F401
+import importlib
 import pandas as pd
 
 from sb3_contrib.common.maskable.utils import get_action_masks
@@ -9,6 +9,10 @@ from utils.misc import (
     get_suitable_device,
     maybe_load_replay_buffer,
 )
+
+import gym_cloudsimplus
+
+importlib.reload(gym_cloudsimplus)
 
 
 def test(params, jobs):

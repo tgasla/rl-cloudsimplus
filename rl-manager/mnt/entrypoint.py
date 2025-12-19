@@ -7,6 +7,7 @@ import numpy as np
 from io import BytesIO
 import torch
 import sys
+import wandb
 
 import importlib
 from utils.parse_config import dict_from_config
@@ -156,6 +157,14 @@ def main():
         # Make a copy of the config file in the log directory
         shutil.copy(CONFIG_FILE, params["log_dir"])
         _write_seed_to_file(params["seed"], params["log_dir"])
+
+        wandb.init(
+            project="rl-cloudsimplus-euromlsys-extension",
+            name=f"{params['experiment_dir']}/{params['experiment_name']}",
+            dir=params["log_dir"],
+            config=params,  # logs all hyperparams,
+            sync_tensorboard=True,
+        )
 
     try:
         module = importlib.import_module(params["mode"])

@@ -10,6 +10,7 @@ services:
     image: manager:0.10
     # container_name: manager # disabled to allow multiple instances
     environment: # passing defaults to avoid warnings
+      - WANDB_API_KEY=${WANDB_API_KEY}
       - EXPERIMENT_ID=${EXPERIMENT_ID:-""}
       - RUN_MODE=${RUN_MODE:-""}
       - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-""}
@@ -19,6 +20,9 @@ services:
     build:
       context: .
       dockerfile: rl-manager/Dockerfile
+      args:
+        UID: ${DOCKER_UID}
+        GID: ${DOCKER_GID}
     depends_on:
       - gateway
     volumes:
@@ -30,7 +34,7 @@ services:
       - ./rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus
       - ./logs:/mgr/logs
       - /run/docker.sock:/run/docker.sock:ro
-    command: /bin/sh -c "pip3 install -e gym_cloudsimplus && python mnt/entrypoint.py"
+    command: python mnt/entrypoint.py
 
   manager-cuda:
     <<: *cpu

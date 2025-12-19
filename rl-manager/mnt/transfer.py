@@ -1,13 +1,13 @@
 import os
 import gymnasium as gym
-import gym_cloudsimplus  # noqa: F401
+import importlib
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import VecNormalize
 
 from utils.misc import (
     create_kwargs_with_algorithm_params,
     create_logger,
-    create_callback,
+    maybe_create_callback,
     get_algorithm,
     maybe_freeze_weights,
     vectorize_env,
@@ -15,6 +15,10 @@ from utils.misc import (
     maybe_load_replay_buffer,
     get_host_count_from_train_dir,
 )
+
+import gym_cloudsimplus
+
+importlib.reload(gym_cloudsimplus)
 
 
 def transfer(params, jobs):
@@ -47,8 +51,8 @@ def transfer(params, jobs):
     # prev_host_count = get_host_count_from_train_dir(params["train_model_dir"])
     # maybe_freeze_weights(model, params, prev_host_count=prev_host_count)
 
+    callback = maybe_create_callback(params["save_experiment"], params["log_dir"])
     logger = create_logger(params["save_experiment"], params["log_dir"])
-    callback = create_callback(params["save_experiment"], params["log_dir"])
     model.set_logger(logger)
 
     maybe_load_replay_buffer(model, params["train_model_dir"])

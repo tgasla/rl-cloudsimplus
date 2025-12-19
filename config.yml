@@ -19,7 +19,7 @@
 # if you make any changes in java_log_level, java_log_destination or junit_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: false
+    attached: true
     gpu: true
     run_mode: serial
     java_log_level: INFO
@@ -60,57 +60,15 @@ common:
   reward_deadline_violation_coef: 0.333
   algorithm: PPO
 
-# experiment_1:
-#   seed: 1234
-#   datacenters:
-#     !include datacenters_b.yml
-#   mode: train
-#   feature_extractor: turret # options: custom, turret
-#   features_dim: 64
-#   hidden_dim: 128
-#   num_heads: 8
-#   num_layers: 2
-#   experiment_dir: euromlsys_extension/turret_64feat_128hid_8head_2lay
-#   experiment_name: train_env_b_1234
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-
-# experiment_1:
-#   seed: 1234
-#   datacenters:
-#     !include datacenters_a.yml
-#   mode: transfer
-#   train_model_dir: euromlsys_extension/turret_64feat_128hid_8head_2lay/train_env_b_1234
-#   feature_extractor: turret # options: custom, turret
-#   experiment_dir: euromlsys_extension/turret_64feat_128hid_8head_2lay
-#   experiment_name: transfer_env_a_from_b
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-
-# experiment_1:
-#   mode: train
-#   seed: 1234
-#   timesteps: 300000
-#   datacenters:
-#     !include datacenters_b.yml
-#   features_dim: 64
-#   hidden_dim: 128
-#   num_heads: 8
-#   num_layers: 2
-#   leaky_relu_negative_slope: 0.2
-#   use_masking: true
-#   use_host_ids: true
-#   experiment_dir: euromlsys_extension/attention_pooling_64feat_128hid_8head_2lay
-#   experiment_name: train_env_b_1234
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-
 experiment_1:
   mode: transfer
   seed: 1234
   timesteps: 30000
   datacenters:
-    !include datacenters_a.yml
+    !include datacenters_c.yml
   train_model_dir: euromlsys_extension/attention_pooling_64feat_128hid_8head_2lay/train_env_b_1234
   experiment_dir: euromlsys_extension/attention_pooling_64feat_128hid_8head_2lay
-  experiment_name: transfer_env_a_from_b
+  experiment_name: transfer_env_c_from_b
   job_trace_filename: euromlsys_jobs_first_50.csv
 
 # experiment_2:

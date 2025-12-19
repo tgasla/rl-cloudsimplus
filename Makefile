@@ -18,7 +18,7 @@ build-gateway:
 		&& ./gradlew dockerBuildImage
 
 run-tensorboard:
-	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 80:6006 tensorboard
+	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 6006:6006 tensorboard
 
 run:
 	ATTACHED=$(call get_yaml_value,attached) \

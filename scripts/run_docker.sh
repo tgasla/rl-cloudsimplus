@@ -2,6 +2,10 @@
 exec </dev/null
 CONFIG_FILE="config.yml"
 
+# Export UID and GID for docker build args
+export DOCKER_UID=$(id -u)
+export DOCKER_GID=$(id -g)
+
 # Detect the correct grep flag based on OS
 if [[ "$OSTYPE" == "darwin"* ]]; then
     GREP_FLAG="-E" # macOS
@@ -57,18 +61,18 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
             --build --remove-orphans -d
         if [ "$ATTACHED" = true ]; then
             echo "Attaching to logs of all containers for batch mode..."
-            docker-compose logs -f
+            docker compose logs -f
         fi
 
     elif [ "$RUN_MODE" = "serial" ]; then
         for i in $(seq 1 $NUM_EXPERIMENTS); do
             # Start all containers
             RUN_MODE="serial" EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" \
-                docker compose $PROFILE_OPTION up --build --remove-orphans -d
+                docker compose $PROFILE_OPTION up --build --remove-orphans
 
             # Get the container ID for the manager container
             #MANAGER_CONTAINER_ID=$(docker ps --filter "name=manager" --filter "status=running" -q)
-            MANAGER_CONTAINER_ID=$(docker compose ps --services | grep manager)
+            MANAGER_CONTAINER_ID=$(docker compose ps -q manager)
 
             if [ -z "$MANAGER_CONTAINER_ID" ]; then
                 echo "Error: No running manager container found for experiment $i."
@@ -79,10 +83,10 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
                 if [ "$NUM_EXPERIMENTS" -gt 1 ]; then
                     # Attach only to the manager container logs
                     #echo "Attaching to logs of $MANAGER_CONTAINER_ID for experiment $i..."
-                    docker-compose logs -f "$MANAGER_CONTAINER_ID" # attach only to rl manager logs
+                    docker compose logs -f "$MANAGER_CONTAINER_ID" # attach only to rl manager logs
                 else
                     #echo "Attaching to all container logs for experiment $i..."
-                    docker-compose logs -f # attach to all logs
+                    docker compose logs -f # attach to all logs
                 fi
             else
                 # Wait for the manager container to finish
