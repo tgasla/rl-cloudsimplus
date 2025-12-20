@@ -26,6 +26,9 @@ run:
 		RUN_MODE=$(call get_yaml_value,run_mode) \
 	scripts/run_docker.sh
 
+run-hpc:
+	sbatch scripts/rl-cloudsimplus.sbatch
+
 clean-gateway:
 	cd cloudsimplus-gateway && ./gradlew clean
 

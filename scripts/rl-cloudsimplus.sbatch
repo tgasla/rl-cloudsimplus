@@ -15,13 +15,12 @@
 module load apptainer
 
 ##################################
-# Paths (fixed, explicit)
+# Paths
 ##################################
-PROJECT_DIR=/home/people/22211067/rl-cloudsimplus
-SCRATCH_DIR=/home/people/22211067/scratch
+PROJECT_DIR=/home/people/$USER/rl-cloudsimplus
+SCRATCH_DIR=/scratch/$USER
 
-COMMON_DIR=$PROJECT_DIR
-EXP_DIR=$PROJECT_DIR/experiments/euromlsys_extension/experiment_${SLURM_ARRAY_TASK_ID}
+EXP_DIR=$SCRATCH_DIR/experiments/experiment_${SLURM_ARRAY_TASK_ID}
 
 CONFIG_FILE=$EXP_DIR/config.yml
 LOG_DIR=$EXP_DIR/logs
@@ -47,10 +46,10 @@ apptainer exec \
   --bind "$LOG_DIR:/app/logs" \
   "$GATEWAY_IMAGE" \
   java -Xms1G -Xmx8G -cp /app/resources:/app/classes:/app/libs/* daislab.cspg.Main \
-  > "$LOG_DIR/gateway.out" 2>&1 &
+  > "$LOG_DIR/gateway.out" 2> "$LOG_DIR/gateway.err" &
 
 GATEWAY_PID=$!
-sleep 5
+sleep 5 # Give the gateway some time to start
 
 ##################################
 # Start manager (blocking)
@@ -58,16 +57,16 @@ sleep 5
 apptainer exec \
   --nv \
   --bind "$CONFIG_FILE:/mgr/config.yml" \
-  --bind "$COMMON_DIR/datacenters_a.yml:/mgr/datacenters_a.yml" \
-  --bind "$COMMON_DIR/datacenters_b.yml:/mgr/datacenters_b.yml" \
-  --bind "$COMMON_DIR/datacenters_c.yml:/mgr/datacenters_c.yml" \
-  --bind "$COMMON_DIR/rl-manager/mnt:/mgr/mnt" \
-  --bind "$COMMON_DIR/rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus" \
+  --bind "$PROJECT_DIR/datacenters_a.yml:/mgr/datacenters_a.yml" \
+  --bind "$PROJECT_DIR/datacenters_b.yml:/mgr/datacenters_b.yml" \
+  --bind "$PROJECT_DIR/datacenters_c.yml:/mgr/datacenters_c.yml" \
+  --bind "$PROJECT_DIR/rl-manager/mnt:/mgr/mnt" \
+  --bind "$PROJECT_DIR/rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus" \
   --bind "$LOG_DIR:/mgr/logs" \
   --pwd /mgr \
   "$MANAGER_IMAGE" \
-  /bin/bash -c "pip3 install -e gym_cloudsimplus && python /mgr/mnt/entrypoint.py" \
-  > "$LOG_DIR/manager.out" 2>&1
+  python /mgr/mnt/entrypoint.py \
+  > "$LOG_DIR/manager.out" 2>"$LOG_DIR/manager.err"
 
 MANAGER_RC=$?
 
