@@ -23,10 +23,12 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         log_dir: str,
         save_replay_buffer: bool = True,
         verbose: int = 0,
+        send_observation_tree_array: bool = True,
     ) -> None:
         super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
         self.log_dir = log_dir
         self.save_replay_buffer = save_replay_buffer
+        self.send_observation_tree_array = send_observation_tree_array
         self.model_save_path = os.path.join(log_dir, "best_model")
         self.best_reward = -np.inf
         self.previous_best_episode_num = None  # to delete the previous best
@@ -122,9 +124,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.unutilized_vm_core_ratio.append(
             self.locals["infos"][0]["unutilized_vm_core_ratio"]
         )
-        self.observation_tree_arrays.append(
-            self.locals["infos"][0]["observation_tree_array"]
-        )
+        if self.send_observation_tree_array:
+            self.observation_tree_arrays.append(
+                self.locals["infos"][0]["observation_tree_array"]
+            )
 
     def _maybe_save_replay_buffer(self) -> None:
         if (
@@ -289,24 +292,41 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             if self.verbose >= 1:
                 print("Episode terminated")
             self._write_progress_log_row()
-            self._write_observation_tree_arrays_to_file(
-                "observation_tree_arrays.csv", "a"
-            )
+            if self.send_observation_tree_array:
+                self._write_observation_tree_arrays_to_file(
+                    "observation_tree_arrays.csv", "a"
+                )
             # Retrieve training reward
-            x, y = ts2xy(load_results(self.log_dir), "timesteps")
-            if len(x) == 0:
+            df = load_results(self.log_dir)
+            r_vals = df['r'].tolist()
+            # Clean string values like '--8.568277' -> float
+            cleaned = []
+            for v in r_vals:
+                if isinstance(v, str):
+                    v = v.strip("'\"")
+                    if v.startswith('--'):
+                        v = '-' + v[2:]
+                try:
+                    cleaned.append(float(v))
+                except:
+                    cleaned.append(v)
+            if len(cleaned) == 0:
                 return True
-            # Training reward for this episode
-            current_reward = y[-1]
+            # Replace r column with cleaned values and recompute timestep index
+            df = df.copy()
+            df['r'] = cleaned
+            x, y = ts2xy(df, "timesteps")
+            current_reward = float(y[-1])
             self._maybe_print_current_episode_info(current_reward)
 
             # New best model, save the agent and the episode details
             if current_reward > self.best_reward:
                 self.best_reward = current_reward
                 self._save_new_best()
-                self._write_observation_tree_arrays_to_file(
-                    "best_obs_tree_arrays.csv", "w"
-                )
+                if self.send_observation_tree_array:
+                    self._write_observation_tree_arrays_to_file(
+                        "best_obs_tree_arrays.csv", "w"
+                    )
 
             self._clear_episode_details()
         return True

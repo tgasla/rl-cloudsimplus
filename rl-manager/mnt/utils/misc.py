@@ -46,9 +46,9 @@ def create_logger(save_experiment, log_dir):
     return configure(log_dir, log_destination)
 
 
-def create_callback(save_experiment, log_dir):
+def create_callback(save_experiment, log_dir, send_observation_tree_array=True):
     if save_experiment:
-        return SaveOnBestTrainingRewardCallback(log_dir)
+        return SaveOnBestTrainingRewardCallback(log_dir, send_observation_tree_array=send_observation_tree_array)
     # the callback writes all the .csv files and saves the model (with replay buffer) when the reward is the best
     return None
 
@@ -125,12 +125,298 @@ def maybe_freeze_weights(model, params, prev_host_count=None):
             weights[:, cur_start_idx:end_idx] = 0
 
 
-def vectorize_env(env, algorithm):
-    # see https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html note
-    if algorithm == "A2C":
+# Global state for subprocess workers - set by _init_grpc_subproc
+_worker_rank = None
+_worker_params = None
+_worker_jobs_json = None
+_worker_base_port = None
+_worker_env = None
+
+
+def _init_grpc_subproc(rank, params, jobs_json, base_port):
+    """
+    Initializer for SubprocVecEnv workers using spawn.
+    Each subprocess gets its rank passed via the initializer args,
+    then creates its own gRPC connection and Java JVM.
+    """
+    global _worker_rank, _worker_params, _worker_jobs_json, _worker_base_port, _worker_env
+
+    _worker_rank = rank
+    _worker_params = params
+    _worker_jobs_json = jobs_json
+    _worker_base_port = base_port
+
+    # Start Java JVM and create GrpcSingleDC env in this subprocess
+    _worker_env = _create_grpc_env_for_rank(rank, params, jobs_json, base_port)
+
+
+def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
+    """
+    Create a GrpcSingleDC env in the current process, starting a Java JVM first.
+    Must be called from within the subprocess after fork/spawn.
+    """
+    import subprocess as _subprocess
+    import time as _time
+    import socket as _socket
+    from grpc_cloudsimplus.envs.grpc_singledc import GrpcSingleDC
+
+    port = base_port + rank
+
+    # Start Java JVM
+    jar_path = os.environ.get(
+        "CLOUDSIM_GATEWAY_JAR",
+        "/app/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-0.1.0.jar",
+    )
+    java_cmd = [
+        "java", "-jar", jar_path,
+        "--grpc", str(port),
+        "-Dlog.level=INFO",
+    ]
+    proc = _subprocess.Popen(
+        java_cmd,
+        stdout=_subprocess.DEVNULL,
+        stderr=_subprocess.STDOUT,
+        env={**os.environ, "JAVA_TOOL_OPTIONS": "-XX:+UseSerialGC"},
+    )
+
+    # Wait for Java server to be ready
+    deadline = _time.time() + 60
+    while _time.time() < deadline:
+        if proc.poll() is not None:
+            raise RuntimeError(
+                f"Java gRPC server (port {port}) exited with code {proc.returncode}"
+            )
+        sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+        try:
+            sock.settimeout(1)
+            sock.connect(("localhost", port))
+            sock.close()
+            break
+        except Exception:
+            sock.close()
+            _time.sleep(0.5)
+
+    # Create the GrpcSingleDC env - this connects via gRPC
+    env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+    env._java_proc = proc
+    return env
+
+
+def _make_grpc_env_for_subproc():
+    """
+    Factory for SubprocVecEnv workers using spawn.
+    Each subprocess already has _worker_env set by _init_grpc_subproc.
+    """
+    return _worker_env
+
+
+def make_grpc_env(rank, params, jobs_json, num_cpu, base_port=50051, log_dir=None):
+    """
+    Legacy factory for DummyVecEnv workers using gRPC.
+    Each subprocess spawns its own Java JVM running the CloudSim gRPC server.
+
+    Args:
+        rank:         Worker index (passed by SubprocVecEnv)
+        params:       Simulation configuration dict
+        jobs_json:    JSON string of job list
+        num_cpu:      Total number of workers (used to compute port = base_port + rank)
+        base_port:    Starting port for gRPC servers
+        log_dir:      Directory for this worker's monitor.csv (default: /tmp/grpc_worker_{rank})
+    """
+    import subprocess as _subprocess
+    import time as _time
+    import socket as _socket
+    from grpc_cloudsimplus.envs.grpc_singledc import GrpcSingleDC
+
+    port = base_port + rank
+
+    def _start_java():
+        # Spawn a dedicated Java JVM for this worker
+        jar_path = os.environ.get(
+            "CLOUDSIM_GATEWAY_JAR",
+            "/app/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-0.1.0.jar",
+        )
+        java_cmd = [
+            "java", "-jar", jar_path,
+            "--grpc", str(port),
+            "-Dlog.level=INFO",
+        ]
+        proc = _subprocess.Popen(
+            java_cmd,
+            stdout=_subprocess.DEVNULL,
+            stderr=_subprocess.STDOUT,
+            env={**os.environ, "JAVA_TOOL_OPTIONS": "-XX:+UseSerialGC"},
+        )
+
+        # Wait for server to be ready (TCP socket check)
+        deadline = _time.time() + 60
+        import socket as _socket
+        while _time.time() < deadline:
+            if proc.poll() is not None:
+                raise RuntimeError(
+                    f"Java gRPC server (port {port}) exited with code {proc.returncode}"
+                )
+            sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+            try:
+                sock.settimeout(1)
+                sock.connect(("localhost", port))
+                sock.close()
+                break
+            except Exception:
+                sock.close()
+                _time.sleep(0.5)
+
+        return proc
+
+    def _init():
+        # Start the Java JVM for this worker
+        proc = _start_java()
+        try:
+            # Create the GrpcSingleDC - this connects via gRPC
+            # No Monitor wrapper here - VecMonitor at DummyVecEnv level handles logging
+            env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+        except Exception:
+            proc.terminate()
+            proc.wait()
+            raise
+        # Attach cleanup so env.close() also stops the JVM
+        env._java_proc = proc
+        return env
+
+    return _init
+
+
+def _make_grpc_factory(rank, params, jobs_json, base_port):
+    """
+    Create a factory function for a gRPC worker with specific rank.
+    Each factory creates its own gRPC connection and Java JVM.
+    """
+    def _factory():
+        env = _create_grpc_env_for_rank(rank, params, jobs_json, base_port)
+        return env
+    return _factory
+
+
+class ParallelBatchDummyVecEnv:
+    """
+    Wraps a DummyVecEnv of GrpcSingleDC envs.
+
+    Overrides step() to fire all 16 gRPC calls in parallel using a ThreadPoolExecutor,
+    then return individual results as SB3 expects. This overlaps the 16 sequential
+    roundtrips into a single parallel batch — ~16x fewer gRPC roundtrips in wall-clock time.
+
+    Since each GrpcSingleDC env connects to its own Java JVM (separate process),
+    the calls are independent and truly parallel on the Java side.
+    """
+
+    def __init__(self, env_fns, num_envs=None):
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        self._inner = DummyVecEnv(env_fns)
+        self._num_envs = self._inner.num_envs
+        self._executor = ThreadPoolExecutor(max_workers=self._num_envs)
+        self._as_completed = as_completed
+        # Cache method references for speed
+        self._inner_reset = self._inner.reset
+        self._inner_get_attr = self._inner.get_attr
+        self._inner_method = self._inner.env_method
+        self._inner_close = self._inner.close
+        self._inner_seed = self._inner.seed
+        self._inner_env_is_wrapped = getattr(self._inner, 'env_is_wrapped', lambda: False)
+
+    @property
+    def num_envs(self):
+        return self._num_envs
+
+    def reset(self, seed=None):
+        # DummyVecEnv.reset() does not accept seed; seed is set via seed() instead
+        return self._inner_reset()
+
+    def step(self, actions):
+        """
+        Fire all env.step() calls in parallel, then return results one-by-one
+        to match SB3's expected (obs, reward, done, info) format per env.
+        """
+        futures = []
+        for i in range(self._num_envs):
+            action_i = actions[i] if hasattr(actions, '__iter__') else actions
+            futures.append(self._executor.submit(self._inner.envs[i].step, action_i))
+
+        obss, rewards, dones, infos = [], [], [], []
+        for f in futures:
+            obs, reward, done, info = f.result()
+            obss.append(obs)
+            rewards.append(reward)
+            dones.append(done)
+            infos.append(info)
+
+        # DummyVecEnv stacks them into arrays
+        return self._stack_results(obss, rewards, dones, infos)
+
+    def _stack_results(self, obss, rewards, dones, infos):
+        import numpy as np
+        # Stack observations
+        if isinstance(obss[0], dict):
+            stacked = {}
+            for key in obss[0]:
+                vals = [o[key] for o in obss]
+                stacked[key] = np.stack(vals)
+            obs = stacked
+        else:
+            obs = np.stack(obss)
+        rewards = np.array(rewards, dtype=np.float32)
+        dones = np.array(dones, dtype=bool)
+        return obs, rewards, dones, infos
+
+    def get_attr(self, name, indices=None):
+        return self._inner_get_attr(name, indices)
+
+    def env_method(self, method_name, *method_args, **method_kwargs):
+        return self._inner_method(method_name, *method_args, **method_kwargs)
+
+    def close(self):
+        self._executor.shutdown(wait=False)
+        self._inner_close()
+
+    def seed(self, seed=None):
+        return self._inner_seed(seed)
+
+    def env_is_wrapped(self, wrapper_class=None):
+        return self._inner.env_is_wrapped(wrapper_class)
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+
+def vectorize_env(env, algorithm, use_grpc=False, num_cpu=None, params=None, jobs_json=None):
+    """
+    Wrap an environment for vectorized training.
+
+    Args:
+        env:        A single Gymnasium environment instance (can be None for gRPC mode)
+        algorithm:  SB3 algorithm name (e.g., "PPO", "A2C")
+        use_grpc:   If True, use SubprocVecEnv with gRPC (requires params + jobs_json).
+                    If False, use legacy single-env mode.
+        num_cpu:    Number of parallel workers (only used when use_grpc=True).
+                    Defaults to min(16, os.cpu_count()).
+        params:     Simulation params dict (required when use_grpc=True)
+        jobs_json:  JSON string of job list (required when use_grpc=True)
+    """
+    from stable_baselines3.common.vec_env import VecMonitor
+
+    num_cpu = num_cpu or min(16, os.cpu_count() or 8)
+    base_port = params.get("grpc_base_port", 50051) if params else 50051
+
+    if use_grpc:
+        # Use ParallelBatchDummyVecEnv: ThreadPoolExecutor fires all 16 gRPC calls
+        # in parallel, overlapping the per-call roundtrip latency.
+        env_fns = [_make_grpc_factory(i, params, jobs_json, base_port) for i in range(num_cpu)]
+        env = ParallelBatchDummyVecEnv(env_fns, num_envs=num_cpu)
+        env = VecMonitor(env, params.get("log_dir", "/tmp/grpc_monitor"))
+    elif algorithm == "A2C":
         env = SubprocVecEnv([lambda: env], start_method="fork")
     else:
         env = DummyVecEnv([lambda: env])
+    return env
 
 
 def get_suitable_device(algorithm):
@@ -187,6 +473,8 @@ def create_kwargs_with_algorithm_params(env, params):
             mean=np.zeros(n_actions), sigma=params["action_noise"] * np.ones(n_actions)
         )
         algorithm_kwargs["action_noise"] = action_noise
+
+    return algorithm_kwargs
 
 
 def create_policy_from_obs_space_type(observation_space):

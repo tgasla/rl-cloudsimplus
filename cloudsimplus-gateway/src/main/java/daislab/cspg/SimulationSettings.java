@@ -50,6 +50,7 @@ public class SimulationSettings {
     private final int maxEpisodeLength;
     private final String vmAllocationPolicy;
     private final String algorithm;
+    private final boolean sendObservationTreeArray;
 
     public SimulationSettings(final Map<String, Object> params) {
         timestepInterval = (double) params.get("timestep_interval");
@@ -84,6 +85,9 @@ public class SimulationSettings {
         maxEpisodeLength = (int) params.get("max_episode_length");
         vmAllocationPolicy = (String) params.get("vm_allocation_policy");
         algorithm = (String) params.get("algorithm");
+        sendObservationTreeArray = params.containsKey("send_observation_tree_array")
+                ? (boolean) params.get("send_observation_tree_array")
+                : true;
     }
 
     public String printSettings() {
@@ -246,6 +250,10 @@ public class SimulationSettings {
 
     public String getAlgorithm() {
         return algorithm;
+    }
+
+    public boolean getSendObservationTreeArray() {
+        return sendObservationTreeArray;
     }
 
     public int getSizeMultiplier(final String type) {

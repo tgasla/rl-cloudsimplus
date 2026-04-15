@@ -8,6 +8,9 @@ from io import BytesIO
 import torch
 import sys
 
+# Fix module import path so 'train', 'test', 'transfer' are found
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ""))
+
 import importlib
 from utils.misc import dict_from_config
 
@@ -98,10 +101,11 @@ def main():
 
     try:
         module = importlib.import_module(params["mode"])
-    except ModuleNotFoundError:
-        print(
-            f"Mode {params['mode']} was not found. Available modes are: 'train', 'transfer', 'test'."
-        )
+    except ModuleNotFoundError as e:
+        print(f"ERROR: Mode '{params['mode']}' not found. Import error: {e}")
+        print(f"sys.path = {sys.path[:3]}")
+        print(f"Files in /mgr/mnt: {os.listdir('/mgr/mnt')}")
+        raise
     func = getattr(module, params["mode"])
     func(params)
 

@@ -231,3 +231,5 @@ config.yml
 
 **.png
 **.pdf
+
+*.omc/

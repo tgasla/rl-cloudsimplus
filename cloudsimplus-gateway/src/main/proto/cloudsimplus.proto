@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package daislab.cspg;
+
+option java_multiple_files = true;
+option java_package = "daislab.cspg.grpc";
+option java_outer_classname = "CloudSimProto";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared / Nested Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+message Observation {
+  repeated int32 infrastructure_observation = 1; // flattened tree array
+  int32 job_cores_waiting_observation = 2;
+}
+
+message StepInfo {
+  double job_wait_reward = 1;
+  double running_vm_cores_reward = 2;
+  double unutilized_vm_cores_reward = 3;
+  double invalid_reward = 4;
+  bool is_valid = 5;
+  repeated double job_wait_time = 6;
+  double unutilized_vm_core_ratio = 7;
+  repeated int32 observation_tree_array = 8;
+  int32 host_affected = 9;
+  int32 cores_changed = 10;
+}
+
+message StepResult {
+  Observation observation = 1;
+  double reward = 2;
+  bool terminated = 3;
+  bool truncated = 4;
+  StepInfo info = 5;
+}
+
+message ResetResult {
+  Observation observation = 1;
+  StepInfo info = 2;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CloudSim Service (one per worker process, handles one simulation ID)
+// ─────────────────────────────────────────────────────────────────────────────
+
+service CloudSimService {
+  // Creates a new simulation and returns its string identifier.
+  // params is a JSON string containing all SimulationSettings fields.
+  // jobs is a JSON string array of CloudletDescriptor objects.
+  rpc createSimulation(CreateRequest) returns (CreateResponse);
+
+  // Resets the simulation identified by sim_id with an optional seed.
+  rpc reset(ResetRequest) returns (ResetResult);
+
+  // Executes one simulation step with the given action.
+  // action: [action_type, host_id, vm_index, vm_type]
+  rpc step(StepRequest) returns (StepResult);
+
+  // Batch step — send N (simId, action) pairs in one RPC
+  rpc batchStep(BatchStepRequest) returns (BatchStepResponse);
+
+  // Tears down the simulation identified by sim_id.
+  rpc close(CloseRequest) returns (CloseResponse);
+
+  // Optional: debug / render endpoint
+  rpc render(RenderRequest) returns (RenderResponse);
+
+  // Health check
+  rpc ping(PingRequest) returns (PongResponse);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Message Definitions
+// ─────────────────────────────────────────────────────────────────────────────
+
+message CreateRequest {
+  string params_json = 1;  // JSON string of Map<String, Object>
+  string jobs_json = 2;     // JSON string of List<CloudletDescriptor>
+}
+
+message CreateResponse {
+  string sim_id = 1;
+}
+
+message ResetRequest {
+  string sim_id = 1;
+  int64 seed = 2;
+}
+
+message StepRequest {
+  string sim_id = 1;
+  repeated int32 action = 2;  // [action_type, host_id, vm_index, vm_type]
+}
+
+// Batch step — send N (simId, action) pairs in one RPC for 1/N roundtrip overhead
+message BatchStepRequest {
+  message StepItem {
+    string sim_id = 1;
+    repeated int32 action = 2;
+  }
+  repeated StepItem items = 1;
+}
+
+message BatchStepResponse {
+  repeated StepResult results = 1;
+}
+
+message CloseRequest {
+  string sim_id = 1;
+}
+
+message CloseResponse {}
+
+message RenderRequest {
+  string sim_id = 1;
+}
+
+message RenderResponse {
+  string render_data_json = 1;
+}
+
+message PingRequest {}
+
+message PongResponse {
+  bool alive = 1;
+}

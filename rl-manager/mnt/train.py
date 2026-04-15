@@ -15,6 +15,7 @@ from utils.misc import (
     create_kwargs_with_algorithm_params,
     create_policy_from_obs_space_type,
 )
+from grpc_cloudsimplus.envs.grpc_singledc import GrpcSingleDC
 
 
 def train(params):
@@ -24,15 +25,28 @@ def train(params):
     # Read jobs
     job_trace_path = os.path.join("mnt", "traces", f"{params['job_trace_filename']}")
     jobs = csv_to_cloudlet_descriptor(job_trace_path)
+    jobs_json = json.dumps(jobs)
 
-    # Create and wrap the environment
-    env = gym.make("SingleDC-v0", params=params, jobs_as_json=json.dumps(jobs))
-    # Monitor needs the environment to have a render_mode set
-    # If render_mode is None, it will give a warning.
-    #   add info_keywords if needed
-    # If log_dir is None, it will not log anything
-    env = Monitor(env, params["log_dir"])
-    env = vectorize_env(env)
+    # Determine whether to use gRPC vectorized training
+    use_grpc = params.get("use_grpc", False)
+    num_cpu = params.get("num_cpu", None)
+
+    if use_grpc:
+        # vectorize_env creates DummyVecEnv with workers that each spawn their own JVM
+        # Each worker computes its own spaces from params (deterministic, no gRPC needed)
+        env = vectorize_env(
+            None,
+            algorithm,
+            use_grpc=True,
+            num_cpu=num_cpu,
+            params=params,
+            jobs_json=jobs_json,
+        )
+    else:
+        # Legacy Py4J mode
+        env = gym.make("SingleDC-v0", params=params, jobs_as_json=jobs_json)
+        env = Monitor(env, params["log_dir"])
+        env = vectorize_env(env, algorithm)
 
     device = get_suitable_device(params["algorithm"])
 
@@ -45,7 +59,8 @@ def train(params):
 
     maybe_freeze_weights(model, params)
 
-    callback = create_callback(params["save_experiment"], params["log_dir"])
+    callback = create_callback(params["save_experiment"], params["log_dir"],
+                             params.get("send_observation_tree_array", True))
     logger = create_logger(params["save_experiment"], params["log_dir"])
     model.set_logger(logger)
 

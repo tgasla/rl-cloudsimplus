@@ -12,6 +12,11 @@ else
     exit 1
 fi
 
+# Get host UID/GID dynamically for file ownership
+HOST_UID=$(id -u)
+HOST_GID=$(id -g)
+export HOST_UID HOST_GID
+
 # Detect the number of replicas
 NUM_EXPERIMENTS=$(grep -o "$GREP_FLAG" '^experiment_\d+' "$CONFIG_FILE" | wc -l)
 

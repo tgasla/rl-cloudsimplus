@@ -46,7 +46,7 @@ public class SimulationStepInfo {
 
     public SimulationStepInfo(final double[] rewards, final List<Double> jobWaitTime,
             final double unutilizedVmCoreRatio, final int[] observationTreeArray,
-            final int hostAffected, final int coresChanged) {
+            final int hostAffected, final int coresChanged, final boolean includeTreeArray) {
         this.jobWaitReward = rewards[1];
         this.runningVmCoresReward = rewards[2];
         this.unutilizedVmCoresReward = rewards[3];
@@ -57,7 +57,7 @@ public class SimulationStepInfo {
         this.jobWaitTime = jobWaitTime;
         this.unutilizedVmCoreRatio = unutilizedVmCoreRatio;
         this.valid = this.invalidReward == 0 ? true : false;
-        this.observationTreeArray = observationTreeArray;
+        this.observationTreeArray = includeTreeArray ? observationTreeArray : new int[1];
         this.hostAffected = hostAffected;
         this.coresChanged = coresChanged;
         // this.dotString = dotString;
@@ -119,12 +119,22 @@ public class SimulationStepInfo {
         return gson.toJson(jobWaitTime);
     }
 
+    public List<Double> getJobWaitTime() {
+        return jobWaitTime;
+    }
+
     public double getUnutilizedVmCoreRatio() {
         return unutilizedVmCoreRatio;
     }
 
     public String getObservationTreeArrayAsJson() {
         return gson.toJson(observationTreeArray);
+    }
+
+    public List<Integer> getObservationTreeArrayAsList() {
+        List<Integer> list = new ArrayList<>(observationTreeArray.length);
+        for (int v : observationTreeArray) list.add(v);
+        return list;
     }
     // public String getDotString() {
     // return dotString;

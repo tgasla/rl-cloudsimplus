@@ -103,9 +103,13 @@ public class WrappedSimulation {
                     initialJobsDescriptors.size());
         }
 
+        final int[] treeArray = settings.getSendObservationTreeArray()
+                ? getInfrastructureObservation()
+                : new int[0];
         SimulationStepInfo info = new SimulationStepInfo(rewards,
                 cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
-                getInfrastructureObservation(), actionResult[0], actionResult[1]);
+                treeArray, actionResult[0], actionResult[1],
+                settings.getSendObservationTreeArray());
 
         Observation observation =
                 new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
@@ -224,7 +228,7 @@ public class WrappedSimulation {
         final int hostsNum = settings.getHostsCount();
         final int vmsNum = getRunningVmsCount().intValue();
         final int jobsNum = getRunningCloudletsCount().intValue();
-        final int[] treeArray = new int[2 + 2 * hostsNum + 2 * vmsNum + 2 * jobsNum];
+        final int[] treeArray = new int[2 * (1 + hostsNum + vmsNum + jobsNum)];
 
         final int totalDatacenterCores = (int) settings.getDatacenterCores();
         final List<Host> hostList = cloudSimProxy.getDatacenter().getHostList();

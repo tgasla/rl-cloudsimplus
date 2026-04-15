@@ -1,24 +1,28 @@
-MANAGER_VERSION=0.10
+MANAGER_VERSION=0.11
 GATEWAY_VERSION=2.0.0
 GRADLE_VERSION=8.5
 
 CONFIG_FILE=config.yml
 get_yaml_value = $(shell grep -A 20 '^globals:' $(CONFIG_FILE) | grep -m 1 '^ *$(1):' | sed 's/^ *$(1): //')
 
-build: build-tensorboard build-gateway
+build: build-tensorboard build-gateway build-manager
 
 build-tensorboard:
 	docker build -t tensorboard tensorboard
 
+build-manager:
+	docker buildx build --load -t manager:$(MANAGER_VERSION) -f rl-manager/Dockerfile .
+
 build-gateway:
 	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=$(call get_yaml_value,java_log_level) -Dlog.destination=$(call get_yaml_value,java_log_destination) -Djunit.output.show=$(call get_yaml_value,junit_output_show)
-	cd cloudsimplus-gateway && ./gradlew dockerBuildImage
+	cp cloudsimplus-gateway/build/libs/cloudsimplus-gateway-0.1.0.jar cloudsimplus-gateway/src/main/docker/
+	docker buildx build --load -t gateway:2.0.0 -f cloudsimplus-gateway/src/main/docker/Dockerfile cloudsimplus-gateway/src/main/docker
 
 run-tensorboard:
-	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 80:6006 tensorboard
+	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 6006:6006 tensorboard
 
 run:
-	ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) RUN_MODE=$(call get_yaml_value,run_mode) scripts/run_docker.sh
+	COMPOSE_BAKE=true ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) RUN_MODE=$(call get_yaml_value,run_mode) scripts/run_docker.sh
 
 clean-gateway:
 	cd cloudsimplus-gateway && ./gradlew clean

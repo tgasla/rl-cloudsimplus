@@ -11,6 +11,8 @@ plugins {
   id 'java'
   id 'application'
   id 'com.bmuschko.docker-java-application' version '9.4.0'
+  id 'com.google.protobuf' version '0.9.4'
+  id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 //https://stackoverflow.com/questions/29593500/how-can-i-set-the-compileoptions-for-my-gradle-java-plugin
@@ -78,6 +80,23 @@ repositories {
     mavenCentral()
 }
 
+// Protobuf / gRPC configuration
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.25.3'
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.62.2'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
 // In this section you declare the dependencies for your production and test code
 dependencies {
     // The production code uses the SLF4J logging API at compile time
@@ -88,7 +107,14 @@ dependencies {
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
     implementation 'com.google.code.gson:gson:2.11.0'
 
-    testImplementation 'commons-io:commons-io:2.18.1'
+    // gRPC
+    implementation 'io.grpc:grpc-netty-shaded:1.62.2'
+    implementation 'io.grpc:grpc-protobuf:1.62.2'
+    implementation 'io.grpc:grpc-stub:1.62.2'
+    implementation 'com.google.protobuf:protobuf-java:3.25.3'
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
+
+    testImplementation 'commons-io:commons-io:2.15.1'
     testImplementation 'org.hamcrest:hamcrest:3.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.3'
@@ -100,15 +126,15 @@ application {
     mainClass.set('daislab.cspg.Main')
 }
 
-docker {
-    url = 'unix:///var/run/docker.sock'
-    javaApplication {
-        baseImage = 'amazoncorretto:21-alpine'
-        images = [dockerImageTag]
-        ports = []
-        jvmArgs = ["-Xms1G", "-Xmx8G"]
-    }
+// Build a shadow/fat JAR so Python subprocess can run it standalone
+shadowJar {
+    archiveBaseName.set('cloudsimplus-gateway')
+    archiveVersion.set('0.1.0')
+    archiveClassifier.set('')
 }
+
+// Skip the docker plugin's image building - we build it manually
+// to avoid conflicts between Main and GrpcServer main classes
 
 // You can add environment variables either here or in the docker-compose.yml
 // dockerCreateDockerfile {

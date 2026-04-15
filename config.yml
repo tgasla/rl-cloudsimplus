@@ -1,1 +1,76 @@
-# copy content of config.template.yml here
+# train_model_dir: applicable only if mode == [transfer|test]
+# globals.java_log_destination: [none, stdout, file, stdout-file] - if file, logs are written to a file, if stdout-file, logs are written to both stdout and a file
+# globals.junit_output_show: [true, false] - if true, junit test results are printed to stdout
+# globals.java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
+# seed: random or any integer
+# base_log_dir: parent directory for all logs
+# experiment_type_dir: parent directory for a set of experiments
+# experiment_name: name of the experiment
+# mode: [train, test, transfer]
+# vm_allocation_policy: [rl, rule-based]
+# algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
+# use_grpc: [true, false] - if true, uses SubprocVecEnv with parallel Java JVMs (recommended for speed)
+# num_cpu: number of parallel gRPC workers (only used when use_grpc=true). Default: 16
+
+# globals.run_mode: [batch, serial]
+
+# if you make any changes in java_log_level, java_log_destination or java_output_show,
+#  you need to execute make build-gateway for the changes to take effect
+globals:
+    attached: true
+    gpu: false
+    java_log_level: INFO
+    java_log_destination: none
+    junit_output_show: false
+    run_mode: serial
+
+common:
+    seed: 1234
+    timestep_interval: 1.0
+    initial_s_vm_count: 0
+    initial_m_vm_count: 0
+    initial_l_vm_count: 0
+    max_episode_length: 100
+    vm_startup_delay: 0.0
+    vm_shutdown_delay: 0.0
+    split_large_jobs: true
+    clear_created_lists: true
+    host_ram: 65536
+    host_storage: 100000
+    host_bw: 50000
+    small_vm_ram: 8192
+    small_vm_storage: 4000
+    small_vm_bw: 1000
+    paying_for_the_full_hour: false
+    small_vm_hourly_cost: 0.086
+    save_experiment: true
+    base_log_dir: logs
+    mode: train
+    vm_allocation_policy: rl
+    algorithm: MaskablePPO
+    max_hosts: 32
+    host_pes: 16
+    host_count: 16
+    host_pe_mips: 50000
+    max_job_pes: 8
+    medium_vm_multiplier: 2
+    large_vm_multiplier: 4
+    small_vm_pes: 2
+    job_trace_filename: three_60max_8maxcores.csv
+    timesteps: 1000000          # 1M timesteps (recommended minimum for RL learning)
+    n_rollout_steps: 2048      # per-worker rollout steps
+    reward_job_wait_coef: 0.25
+    reward_running_vm_cores_coef: 0.25
+    reward_unutilized_vm_cores_coef: 0.25
+    reward_invalid_coef: 0.25
+    # gRPC vectorized training settings
+    use_grpc: true              # set to true to enable parallel Java JVM workers
+    num_cpu: 1               # number of parallel gRPC workers (safe for your 28-thread machine)
+    # Set to false to disable sending tree array observation (faster gRPC communication)
+    send_observation_tree_array: false
+
+experiment_1:
+    experiment_type_dir: grpc_test
+    experiment_name: box_space_new_length_1cpu
+    vm_allocation_policy: rl
+    algorithm: MaskablePPO
