@@ -9,21 +9,21 @@ RUN groupadd -g ${HOST_GID} appgroup && useradd -m -u ${HOST_UID} -g appgroup ap
 
 WORKDIR /mgr
 
-RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.1 sb3-contrib==2.4.0 \
-    tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2 \
-    grpcio==1.80.0 grpcio-tools==1.80.0 protobuf==6.33.6
+RUN pip3 install --upgrade pip==26.0.1 && pip3 install stable-baselines3==2.8.0 sb3-contrib==2.8.0 \
+    tensorboard==2.20.0 tqdm==4.67.3 rich==15.0.0 pyyaml==6.0.3 pycurl==7.45.7 scikit-learn==1.8.0 \
+    grpcio==1.80.0 protobuf==7.34.1
 
 COPY --chown=appuser:appgroup rl-manager/grpc_cloudsimplus grpc_cloudsimplus
 
 RUN pip3 install -e grpc_cloudsimplus
 RUN apt update \
     && apt install -yqq wget \
-    # Eclipse Temurin Java 21 (reliable direct download URL)
-    && wget -q "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.6%2B7/OpenJDK21U-jdk_x64_linux_hotspot_21.0.6_7.tar.gz" -O /tmp/jdk21.tar.gz \
-    && tar -xzf /tmp/jdk21.tar.gz -C /opt \
-    && mv /opt/jdk-21* /opt/java \
+    # Eclipse Temurin Java 25 (reliable direct download URL)
+    && wget -q "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_linux_hotspot_25.0.2_10.tar.gz" -O /tmp/jdk25.tar.gz \
+    && tar -xzf /tmp/jdk25.tar.gz -C /opt \
+    && mv /opt/jdk-25* /opt/java \
     && ln -sf /opt/java/bin/java /usr/local/bin/java \
-    && rm /tmp/jdk21.tar.gz \
+    && rm /tmp/jdk25.tar.gz \
     && apt purge --auto-remove -yqq wget \
     && apt autoremove -yqq --purge \
     && apt clean \

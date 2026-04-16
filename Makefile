@@ -1,5 +1,5 @@
 MANAGER_VERSION=0.11
-GRADLE_VERSION=8.5
+GRADLE_VERSION=9.1.0
 
 CONFIG_FILE=config.yml
 get_yaml_value = $(shell grep -A 20 '^globals:' $(CONFIG_FILE) | grep -m 1 '^ *$(1):' | sed 's/^ *$(1): //')

@@ -12,7 +12,7 @@ plugins {
   id 'application'
   id 'com.bmuschko.docker-java-application' version '9.4.0'
   id 'com.google.protobuf' version '0.9.4'
-  id 'com.github.johnrengelman.shadow' version '8.1.1'
+  id 'com.gradleup.shadow' version '9.4.1'
 }
 
 //https://stackoverflow.com/questions/29593500/how-can-i-set-the-compileoptions-for-my-gradle-java-plugin
@@ -24,8 +24,8 @@ tasks.withType(JavaCompile) {
 
 task configureLogging {
     doLast {
-        def logLevel = System.getProperty('log.level')?.trim().toUpperCase() ?: 'INFO'
-        def logDestination = System.getProperty('log.destination')?.trim()?.toLowerCase() ?: 'none'
+        def logLevel = System.getProperty('log.level', '')?.trim()?.toUpperCase() ?: 'INFO'
+        def logDestination = System.getProperty('log.destination', '')?.trim()?.toLowerCase() ?: 'none'
 
         def logbackFile = file('src/main/resources/logback.xml')
         if (!logbackFile.exists()) {
@@ -100,26 +100,26 @@ protobuf {
 // In this section you declare the dependencies for your production and test code
 dependencies {
     // The production code uses the SLF4J logging API at compile time
-    implementation 'org.cloudsimplus:cloudsimplus:8.5.5'
-    implementation 'org.slf4j:slf4j-api:2.0.16'
+    implementation 'org.cloudsimplus:cloudsimplus:8.5.7'
+    implementation 'org.slf4j:slf4j-api:2.0.17'
     implementation 'net.sf.py4j:py4j:0.10.9.7'
-    implementation 'ch.qos.logback:logback-classic:1.5.12'
-    implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
-    implementation 'com.google.code.gson:gson:2.11.0'
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
+    implementation 'ch.qos.logback:logback-classic:1.5.32'
+    implementation 'org.apache.commons:commons-collections4:4.5.0'
+    implementation 'com.google.code.gson:gson:2.13.1'
+    compileOnly 'org.projectlombok:lombok:1.18.44'
+    annotationProcessor 'org.projectlombok:lombok:1.18.44'
 
     // gRPC
-    implementation 'io.grpc:grpc-netty-shaded:1.62.2'
-    implementation 'io.grpc:grpc-protobuf:1.62.2'
-    implementation 'io.grpc:grpc-stub:1.62.2'
-    implementation 'com.google.protobuf:protobuf-java:3.25.3'
+    implementation 'io.grpc:grpc-netty-shaded:1.80.0'
+    implementation 'io.grpc:grpc-protobuf:1.80.0'
+    implementation 'io.grpc:grpc-stub:1.80.0'
+    implementation 'com.google.protobuf:protobuf-java:4.34.1'
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
 
-    testImplementation 'commons-io:commons-io:2.15.1'
+    testImplementation 'commons-io:commons-io:2.16.1'
     testImplementation 'org.hamcrest:hamcrest:3.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:6.0.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.0.2'
 }
 
 def dockerImageTag = 'gateway:2.0.0'
@@ -148,6 +148,7 @@ shadowJar {
 // }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
