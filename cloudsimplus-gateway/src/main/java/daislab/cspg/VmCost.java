@@ -1,5 +1,6 @@
 package daislab.cspg;
 
+import lombok.Getter;
 import org.cloudsimplus.vms.Vm;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ public class VmCost {
 
     private final double perIterationSmallVmCost;
 
+    @Getter
     private List<Vm> createdVms = new ArrayList<>();
     private double iterationsInHour;
     private SimulationSettings settings;

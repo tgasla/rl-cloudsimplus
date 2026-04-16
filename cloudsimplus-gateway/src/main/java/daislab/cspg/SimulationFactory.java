@@ -28,7 +28,7 @@ public class SimulationFactory {
 
         final SimulationSettings settings = new SimulationSettings(params);
 
-        LOGGER.info("Simulation settings dump\n{}", settings.printSettings());
+        LOGGER.info("Simulation settings dump\n{}", settings);
 
         List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
 

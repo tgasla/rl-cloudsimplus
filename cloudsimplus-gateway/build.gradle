@@ -106,6 +106,8 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.5.12'
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
     implementation 'com.google.code.gson:gson:2.11.0'
+    compileOnly 'org.projectlombok:lombok:1.18.36'
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
     // gRPC
     implementation 'io.grpc:grpc-netty-shaded:1.62.2'

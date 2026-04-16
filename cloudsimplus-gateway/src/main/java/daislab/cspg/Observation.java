@@ -1,20 +1,11 @@
 package daislab.cspg;
 
+import lombok.Value;
+
+@Value
 public class Observation {
-    private final int[] infrastructureObservation;
-    private final int jobCoresWaitingObservation;
+    int[] infrastructureObservation;
+    int jobCoresWaitingObservation;
 
-    public Observation(final int[] infrastructureObservation,
-            final int jobCoresWaitingObservation) {
-        this.infrastructureObservation = infrastructureObservation;
-        this.jobCoresWaitingObservation = jobCoresWaitingObservation;
-    }
-
-    public int[] getInfrastructureObservation() {
-        return infrastructureObservation;
-    }
-
-    public int getJobCoresWaitingObservation() {
-        return jobCoresWaitingObservation;
-    }
+    // Lombok generates: all-args constructor, getters, equals, hashCode, toString
 }

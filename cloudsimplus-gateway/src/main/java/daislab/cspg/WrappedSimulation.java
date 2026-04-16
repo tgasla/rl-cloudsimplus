@@ -103,13 +103,13 @@ public class WrappedSimulation {
                     initialJobsDescriptors.size());
         }
 
-        final int[] treeArray = settings.getSendObservationTreeArray()
+        final int[] treeArray = settings.isSendObservationTreeArray()
                 ? getInfrastructureObservation()
                 : new int[0];
         SimulationStepInfo info = new SimulationStepInfo(rewards,
                 cloudSimProxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
                 treeArray, actionResult[0], actionResult[1],
-                settings.getSendObservationTreeArray());
+                settings.isSendObservationTreeArray());
 
         Observation observation =
                 new Observation(getInfrastructureObservation(), getJobCoresWaitingObservation());
