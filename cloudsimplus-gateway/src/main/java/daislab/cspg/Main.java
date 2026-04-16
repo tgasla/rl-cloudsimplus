@@ -2,61 +2,33 @@ package daislab.cspg;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import py4j.CallbackClient;
-import py4j.GatewayServer;
-import java.net.InetAddress;
-import java.util.concurrent.Executors;
 
+/**
+ * CloudSim gRPC Server bootstrap.
+ * Starts a Java JVM that runs CloudSim simulations, accessed remotely via gRPC.
+ *
+ * Usage: java daislab.cspg.Main --grpc <port>
+ *   port  - TCP port to listen on (default: 50051)
+ */
 public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class.getSimpleName());
 
     public static void main(String[] args) throws Exception {
-        if (args.length > 0 && "--grpc".equals(args[0])) {
-            // gRPC mode: start GrpcServer instead of Py4J GatewayServer
-            int port = args.length > 1 ? Integer.parseInt(args[1]) : 50051;
-            LOGGER.info("Starting in gRPC mode on port {}", port);
-            GrpcServer grpcServer = new GrpcServer(port);
-            grpcServer.start();
-            grpcServer.blockUntilShutdown();
-        } else {
-            // Py4J mode (default, backwards-compatible)
-            MultiSimulationEnvironment simulationEnvironment = new MultiSimulationEnvironment();
-            InetAddress all = InetAddress.getByName("0.0.0.0");
-            // DEFAULT_PORT = 25333
-            GatewayServer gatewayServer =
-                    new GatewayServer(simulationEnvironment, GatewayServer.DEFAULT_PORT, all,
-                            GatewayServer.DEFAULT_CONNECT_TIMEOUT, GatewayServer.DEFAULT_READ_TIMEOUT,
-                            null, new CallbackClient(GatewayServer.DEFAULT_PYTHON_PORT, all));
-            LOGGER.info(
-                    "Starting server: " + gatewayServer.getAddress() + " " + gatewayServer.getPort());
-            gatewayServer.start();
-            simulationEnvironment.setGatewayServer(gatewayServer);
-
-            // Keep the main thread alive
-            Thread.currentThread().join();
+        int port = 50051;
+        if (args.length > 1 && "--grpc".equals(args[0])) {
+            port = Integer.parseInt(args[1]);
         }
+
+        LOGGER.info("Starting CloudSim gRPC server on port {}", port);
+        GrpcServer grpcServer = new GrpcServer(port);
+        grpcServer.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            LOGGER.info("Shutdown hook triggered");
+            grpcServer.stop();
+        }));
+
+        grpcServer.blockUntilShutdown();
     }
-
-    public static void initiateShutdown(final GatewayServer gatewayServer) {
-        try {
-            Thread.sleep(2000); // wait for 2 seconds
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LOGGER.error("Interrupted", e);
-        }
-        Executors.newSingleThreadExecutor().execute(() -> {
-            try {
-                // Shutdown the Py4J gateway
-                gatewayServer.shutdown();
-                LOGGER.info("Gateway server shut down.");
-
-                // Terminate the JVM
-                System.exit(0);
-            } catch (Exception e) {
-                LOGGER.error("Error during shutdown", e);
-            }
-        });
-    }
-
 }

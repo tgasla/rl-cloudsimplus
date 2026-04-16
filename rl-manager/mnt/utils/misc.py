@@ -387,35 +387,27 @@ class ParallelBatchDummyVecEnv:
         return getattr(self._inner, name)
 
 
-def vectorize_env(env, algorithm, use_grpc=False, num_cpu=None, params=None, jobs_json=None):
+def vectorize_env(env, algorithm, num_cpu=None, params=None, jobs_json=None):
     """
     Wrap an environment for vectorized training.
 
     Args:
         env:        A single Gymnasium environment instance (can be None for gRPC mode)
         algorithm:  SB3 algorithm name (e.g., "PPO", "A2C")
-        use_grpc:   If True, use SubprocVecEnv with gRPC (requires params + jobs_json).
-                    If False, use legacy single-env mode.
-        num_cpu:    Number of parallel workers (only used when use_grpc=True).
-                    Defaults to min(16, os.cpu_count()).
-        params:     Simulation params dict (required when use_grpc=True)
-        jobs_json:  JSON string of job list (required when use_grpc=True)
+        num_cpu:    Number of parallel workers. Defaults to min(16, os.cpu_count()).
+        params:     Simulation params dict
+        jobs_json:  JSON string of job list
     """
     from stable_baselines3.common.vec_env import VecMonitor
 
     num_cpu = num_cpu or min(16, os.cpu_count() or 8)
     base_port = params.get("grpc_base_port", 50051) if params else 50051
 
-    if use_grpc:
-        # Use ParallelBatchDummyVecEnv: ThreadPoolExecutor fires all 16 gRPC calls
-        # in parallel, overlapping the per-call roundtrip latency.
-        env_fns = [_make_grpc_factory(i, params, jobs_json, base_port) for i in range(num_cpu)]
-        env = ParallelBatchDummyVecEnv(env_fns, num_envs=num_cpu)
-        env = VecMonitor(env, params.get("log_dir", "/tmp/grpc_monitor"))
-    elif algorithm == "A2C":
-        env = SubprocVecEnv([lambda: env], start_method="fork")
-    else:
-        env = DummyVecEnv([lambda: env])
+    # Use ParallelBatchDummyVecEnv: ThreadPoolExecutor fires all 16 gRPC calls
+    # in parallel, overlapping the per-call roundtrip latency.
+    env_fns = [_make_grpc_factory(i, params, jobs_json, base_port) for i in range(num_cpu)]
+    env = ParallelBatchDummyVecEnv(env_fns, num_envs=num_cpu)
+    env = VecMonitor(env, params.get("log_dir", "/tmp/grpc_monitor"))
     return env
 
 

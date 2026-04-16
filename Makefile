@@ -1,22 +1,19 @@
 MANAGER_VERSION=0.11
-GATEWAY_VERSION=2.0.0
 GRADLE_VERSION=8.5
 
 CONFIG_FILE=config.yml
 get_yaml_value = $(shell grep -A 20 '^globals:' $(CONFIG_FILE) | grep -m 1 '^ *$(1):' | sed 's/^ *$(1): //')
 
-build: build-tensorboard build-gateway build-manager
+build: build-gateway build-manager
 
-build-tensorboard:
-	docker build -t tensorboard tensorboard
+build-gateway:
+	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=$(call get_yaml_value,java_log_level) -Dlog.destination=$(call get_yaml_value,java_log_destination) -Djunit.output.show=$(call get_yaml_value,junit_output_show)
 
 build-manager:
 	docker build -t manager:$(MANAGER_VERSION) -f rl-manager/Dockerfile .
 
-build-gateway:
-	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=$(call get_yaml_value,java_log_level) -Dlog.destination=$(call get_yaml_value,java_log_destination) -Djunit.output.show=$(call get_yaml_value,junit_output_show)
-	cp cloudsimplus-gateway/build/libs/cloudsimplus-gateway-0.1.0.jar cloudsimplus-gateway/src/main/docker/
-	docker build -t gateway:2.0.0 -f cloudsimplus-gateway/src/main/docker/Dockerfile cloudsimplus-gateway/src/main/docker
+build-tensorboard:
+	docker build -t tensorboard tensorboard
 
 run-tensorboard:
 	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 6006:6006 tensorboard
@@ -41,6 +38,4 @@ get-gradle:
 clear-gradle:
 	cd ~/.gradle && rm -rf *
 
-.PHONY: build build-compose-images build-tensorboard build-gateway \
-	build-manager upgrade-gradle run-tensorboard run-cpu \
-	run-gpu clean-gateway wipe-logs stop
+.PHONY: build build-tensorboard build-gateway build-manager run-tensorboard clean-gateway wipe-logs stop

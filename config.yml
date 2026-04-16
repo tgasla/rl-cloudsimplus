@@ -9,15 +9,14 @@
 # mode: [train, test, transfer]
 # vm_allocation_policy: [rl, rule-based]
 # algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
-# use_grpc: [true, false] - if true, uses SubprocVecEnv with parallel Java JVMs (recommended for speed)
-# num_cpu: number of parallel gRPC workers (only used when use_grpc=true). Default: 16
+# num_cpu: number of parallel gRPC workers. Default: 16
 
 # globals.run_mode: [batch, serial]
 
 # if you make any changes in java_log_level, java_log_destination or java_output_show,
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: false
+    attached: true
     gpu: false
     java_log_level: INFO
     java_log_destination: none
@@ -60,15 +59,13 @@ common:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    # gRPC vectorized training settings
-    use_grpc: true              # set to true to enable parallel Java JVM workers
     num_cpu: 16               # number of parallel gRPC workers (safe for your 28-thread machine)
     # Set to false to disable sending tree array observation (faster gRPC communication)
     send_observation_tree_array: false
 
 experiment_1:
     mode: train
-    experiment_type_dir: attached_test
+    experiment_type_dir: debug
     experiment_name: test1
     vm_allocation_policy: rl
     algorithm: MaskablePPO

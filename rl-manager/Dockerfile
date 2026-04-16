@@ -13,10 +13,9 @@ RUN pip3 install --upgrade pip==24.3.1 && pip3 install stable-baselines3==2.4.1 
     tensorboard==2.18.0 tqdm==4.67.1 rich==13.9.4 pyyaml==6.0.2 pycurl==7.45.3 scikit-learn==1.5.2 \
     grpcio==1.80.0 grpcio-tools==1.80.0 protobuf==6.33.6
 
-COPY --chown=appuser:appgroup rl-manager/gym_cloudsimplus gym_cloudsimplus
 COPY --chown=appuser:appgroup rl-manager/grpc_cloudsimplus grpc_cloudsimplus
 
-RUN pip3 install -e gym_cloudsimplus && pip3 install -e grpc_cloudsimplus
+RUN pip3 install -e grpc_cloudsimplus
 RUN apt update \
     && apt install -yqq wget \
     # Eclipse Temurin Java 21 (reliable direct download URL)

@@ -1,8 +1,5 @@
 import os
 import json
-import gymnasium as gym
-import gym_cloudsimplus  # noqa: F401
-from stable_baselines3.common.monitor import Monitor
 
 from utils.trace_utils import csv_to_cloudlet_descriptor
 from utils.misc import (
@@ -15,7 +12,6 @@ from utils.misc import (
     create_kwargs_with_algorithm_params,
     create_policy_from_obs_space_type,
 )
-from grpc_cloudsimplus.envs.grpc_singledc import GrpcSingleDC
 
 
 def train(params):
@@ -27,26 +23,16 @@ def train(params):
     jobs = csv_to_cloudlet_descriptor(job_trace_path)
     jobs_json = json.dumps(jobs)
 
-    # Determine whether to use gRPC vectorized training
-    use_grpc = params.get("use_grpc", False)
+    # vectorize_env creates DummyVecEnv with workers that each spawn their own JVM
+    # Each worker computes its own spaces from params (deterministic, no gRPC needed)
     num_cpu = params.get("num_cpu", None)
-
-    if use_grpc:
-        # vectorize_env creates DummyVecEnv with workers that each spawn their own JVM
-        # Each worker computes its own spaces from params (deterministic, no gRPC needed)
-        env = vectorize_env(
-            None,
-            algorithm,
-            use_grpc=True,
-            num_cpu=num_cpu,
-            params=params,
-            jobs_json=jobs_json,
-        )
-    else:
-        # Legacy Py4J mode
-        env = gym.make("SingleDC-v0", params=params, jobs_as_json=jobs_json)
-        env = Monitor(env, params["log_dir"])
-        env = vectorize_env(env, algorithm)
+    env = vectorize_env(
+        None,
+        algorithm,
+        num_cpu=num_cpu,
+        params=params,
+        jobs_json=jobs_json,
+    )
 
     device = get_suitable_device(params["algorithm"])
 

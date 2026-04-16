@@ -1,7 +1,5 @@
 import os
 import json
-import gymnasium as gym
-import gym_cloudsimplus  # noqa: F401
 from stable_baselines3.common.monitor import Monitor
 
 from utils.misc import (
@@ -27,25 +25,18 @@ def transfer(params, jobs):
 
     algorithm = get_algorithm(params["algorithm"], params["vm_allocation_policy"])
 
-    use_grpc = params.get("use_grpc", False)
     num_cpu = params.get("num_cpu", None)
     jobs_json = json.dumps(jobs)
 
-    if use_grpc:
-        # gRPC mode: use GrpcSingleDC directly for space setup; vectorize_env spawns real workers
-        dummy_env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=50051)
-        env = Monitor(dummy_env, params["log_dir"])
-        env = vectorize_env(
-            env, algorithm,
-            use_grpc=True,
-            num_cpu=num_cpu,
-            params=params,
-            jobs_json=jobs_json,
-        )
-    else:
-        env = gym.make("SingleDC-v0", params=params, jobs=jobs)
-        env = Monitor(env, params["log_dir"])
-        env = vectorize_env(env, algorithm)
+    # gRPC mode: use GrpcSingleDC directly for space setup; vectorize_env spawns real workers
+    dummy_env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=50051)
+    env = Monitor(dummy_env, params["log_dir"])
+    env = vectorize_env(
+        env, algorithm,
+        num_cpu=num_cpu,
+        params=params,
+        jobs_json=jobs_json,
+    )
 
     # Change any model parameters you want here
     custom_objects = create_kwargs_with_algorithm_params(env, params)

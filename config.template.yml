@@ -61,10 +61,7 @@ common:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    # gRPC vectorized training (recommended for speed)
-    # Set use_grpc: true to enable SubprocVecEnv with parallel Java JVMs
-    # num_cpu defaults to min(16, cpu_count) if not specified
-    use_grpc: false
+    # num_cpu: number of parallel gRPC workers. Defaults to min(16, cpu_count)
     num_cpu: 16
     send_observation_tree_array: false
 
