@@ -1,6 +1,11 @@
 #!/bin/bash
+exec </dev/null
 
 CONFIG_FILE="config.yml"
+
+# Export UID and GID for docker build args
+export HOST_UID=$(id -u)
+export HOST_GID=$(id -g)
 
 # Detect the correct grep flag based on OS
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -11,11 +16,6 @@ else
     echo "Unsupported OS: $OSTYPE"
     exit 1
 fi
-
-# Get host UID/GID dynamically for file ownership
-HOST_UID=$(id -u)
-HOST_GID=$(id -g)
-export HOST_UID HOST_GID
 
 # Detect the number of replicas
 NUM_EXPERIMENTS=$(grep -o "$GREP_FLAG" '^experiment_\d+' "$CONFIG_FILE" | wc -l)
@@ -59,34 +59,43 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
     # Run the docker compose command based on ATTACHED flag
     if [ "$RUN_MODE" = "batch" ]; then
-        RUN_MODE="batch" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" docker compose $PROFILE_OPTION up --scale $SCALE_OPTION --build --remove-orphans -d
+        RUN_MODE="batch" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" \
+            docker compose $PROFILE_OPTION up --scale $SCALE_OPTION \
+            --build --remove-orphans -d
         if [ "$ATTACHED" = true ]; then
             echo "Attaching to logs of all containers for batch mode..."
-            docker-compose logs -f
+            docker compose logs -f
         fi
 
     elif [ "$RUN_MODE" = "serial" ]; then
         for i in $(seq 1 $NUM_EXPERIMENTS); do
             # Start all containers
-            RUN_MODE="serial" EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" docker compose $PROFILE_OPTION up --build --remove-orphans -d
+            RUN_MODE="serial" EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" \
+                docker compose $PROFILE_OPTION up --build --remove-orphans -d
 
-            # Get the container name for the manager service
-            MANAGER_CONTAINER_NAME=$(docker compose ps -q $MANAGER_SERVICE)
+            # Get the container ID for the manager service
+            MANAGER_CONTAINER_ID=$(docker compose ps -q "$MANAGER_SERVICE")
 
-            if [ -z "$MANAGER_CONTAINER_NAME" ]; then
+            if [ -z "$MANAGER_CONTAINER_ID" ]; then
                 echo "Error: No running manager container found for experiment $i."
                 exit 1
             fi
 
             if [ "$ATTACHED" = true ]; then
-                # Attach only to the manager container logs
-                echo "Attaching to logs of manager container (ID: $MANAGER_CONTAINER_NAME) for experiment $i..."
-                docker logs -f "$MANAGER_CONTAINER_NAME"
+                if [ "$NUM_EXPERIMENTS" -gt 1 ]; then
+                    # Attach only to the manager container logs
+                    echo "Attaching to logs of manager container for experiment $i..."
+                    docker compose logs -f "$MANAGER_SERVICE"
+                else
+                    # Attach to all container logs
+                    echo "Attaching to all container logs for experiment $i..."
+                    docker compose logs -f
+                fi
+            else
+                # Wait for the manager container to finish (using docker wait with container ID)
+                echo "Waiting for container $MANAGER_CONTAINER_ID to finish for experiment $i..."
+                docker wait "$MANAGER_CONTAINER_ID"
             fi
-
-            # Wait for the manager container to stop (use container ID directly)
-            echo "Waiting for the manager container (ID: $MANAGER_CONTAINER_NAME) to complete..."
-            docker wait "$MANAGER_CONTAINER_NAME"
 
             # Cleanup after the experiment
             cleanup_experiment
