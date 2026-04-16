@@ -50,10 +50,12 @@ class CloudSimGrpcClient:
 
     def step(self, sim_id: str, action) -> Tuple[Dict, float, bool, bool, Dict]:
         """Execute one step. Returns (obs, reward, terminated, truncated, info)."""
+        # print(f"[DEBUG] step() called: sim_id={sim_id}, action={action}, action_len={len(action)}")
         request = cloudsimplus_pb2.StepRequest(
             sim_id=sim_id,
             action=action,
         )
+        # print(f"[DEBUG] StepRequest created: sim_id={request.sim_id}, action_size={len(request.action)}, action_bytes={bytes(request.action).hex()}")
         response = self._stub.step(request)
         obs = self._convert_observation(response.observation)
         info = self._convert_step_info(response.info)

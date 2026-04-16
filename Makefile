@@ -11,12 +11,12 @@ build-tensorboard:
 	docker build -t tensorboard tensorboard
 
 build-manager:
-	docker buildx build --load -t manager:$(MANAGER_VERSION) -f rl-manager/Dockerfile .
+	docker build -t manager:$(MANAGER_VERSION) -f rl-manager/Dockerfile .
 
 build-gateway:
 	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=$(call get_yaml_value,java_log_level) -Dlog.destination=$(call get_yaml_value,java_log_destination) -Djunit.output.show=$(call get_yaml_value,junit_output_show)
 	cp cloudsimplus-gateway/build/libs/cloudsimplus-gateway-0.1.0.jar cloudsimplus-gateway/src/main/docker/
-	docker buildx build --load -t gateway:2.0.0 -f cloudsimplus-gateway/src/main/docker/Dockerfile cloudsimplus-gateway/src/main/docker
+	docker build -t gateway:2.0.0 -f cloudsimplus-gateway/src/main/docker/Dockerfile cloudsimplus-gateway/src/main/docker
 
 run-tensorboard:
 	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 6006:6006 tensorboard

@@ -11,9 +11,9 @@ services:
     image: manager:0.11
     # container_name: manager # disabled to allow multiple instances
     environment: # passing defaults to avoid warnings
-      - EXPERIMENT_ID=${EXPERIMENT_ID:-""}
-      - RUN_MODE=${RUN_MODE:-""}
-      - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-""}
+      - EXPERIMENT_ID=${EXPERIMENT_ID:-1}
+      - RUN_MODE=${RUN_MODE:-serial}
+      - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-1}
       - CUBLAS_WORKSPACE_CONFIG=:4096:8
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
     build:
@@ -22,8 +22,7 @@ services:
       args:
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
-    # For gRPC vectorized mode: mount the JAR so Python workers can spawn JVMs
-    # For Py4J legacy mode: depends on gateway service
+    # Volume mounts for hot code reload — no rebuild needed when source changes
     volumes:
       - ./config.yml:/mgr/config.yml
       - ./rl-manager/mnt:/mgr/mnt

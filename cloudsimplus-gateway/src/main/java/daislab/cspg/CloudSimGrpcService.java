@@ -22,6 +22,11 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
     private static final Logger LOGGER =
             LoggerFactory.getLogger(CloudSimGrpcService.class.getSimpleName());
 
+    public CloudSimGrpcService() {
+        System.err.println("UUUUU CloudSimGrpcService CONSTRUCTOR called UUUUU");
+        LOGGER.info("UUUUU CloudSimGrpcService CONSTRUCTOR called UUUUU");
+    }
+
     private final Map<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
     private final SimulationFactory simulationFactory = new SimulationFactory();
     private final Gson gson = new Gson();
@@ -91,12 +96,43 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
     @Override
     public void step(StepRequest request, StreamObserver<StepResult> responseObserver) {
         String simId = request.getSimId();
+        int actionSize = request.getActionList().size();
+        String actionStr = request.getActionList().toString();
+        LOGGER.info("YYYYY step ENTRY simId={}, actionList.size={}, actionList={}", simId, actionSize, actionStr);
+        System.err.println("YYYYY step ENTRY simId=" + simId + " actionSize=" + actionSize + " actionList=" + actionStr);
         try {
             WrappedSimulation simulation = getValidSimulation(simId);
+            if (request.getActionList().isEmpty()) {
+                String errMsg = "ZZZZZ ACTION_LIST_EMPTY_ZZZZZ simId=" + simId;
+                System.err.println(errMsg);
+                responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
+                        .withDescription(errMsg)
+                        .asRuntimeException());
+                return;
+            }
             int[] actionArray = new int[request.getActionList().size()];
             for (int i = 0; i < actionArray.length; i++) {
-                actionArray[i] = request.getActionList().get(i);
+                Object element = request.getActionList().get(i);
+                if (element == null) {
+                    String errMsg = "ZZZZZ ACTION_LIST_HAS_NULL_ZZZZZ simId=" + simId + " index=" + i;
+                    System.err.println(errMsg);
+                    responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
+                            .withDescription(errMsg)
+                            .asRuntimeException());
+                    return;
+                }
+                actionArray[i] = ((Number) element).intValue();
             }
+            // Extra safety: if we got here with wrong size, fail explicitly
+            if (actionArray.length < 4) {
+                String errMsg = "ZZZZZ ACTION_ARRAY_TOO_SHORT_ZZZZZ simId=" + simId + " len=" + actionArray.length;
+                System.err.println(errMsg);
+                responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
+                        .withDescription(errMsg)
+                        .asRuntimeException());
+                return;
+            }
+            LOGGER.info("YYYYY step PROCEEDING simId={}, actionArray.length={}", simId, actionArray.length);
 
             SimulationStepResult javaResult = simulation.step(actionArray);
 
@@ -122,10 +158,10 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
     @Override
     public void batchStep(BatchStepRequest request,
             StreamObserver<BatchStepResponse> responseObserver) {
-        try {
-            BatchStepResponse.Builder responseBuilder = BatchStepResponse.newBuilder();
-            for (BatchStepRequest.StepItem item : request.getItemsList()) {
-                String simId = item.getSimId();
+        BatchStepResponse.Builder responseBuilder = BatchStepResponse.newBuilder();
+        for (BatchStepRequest.StepItem item : request.getItemsList()) {
+            String simId = item.getSimId();
+            try {
                 WrappedSimulation simulation = getValidSimulation(simId);
                 int[] actionArray = new int[item.getActionList().size()];
                 for (int i = 0; i < actionArray.length; i++) {
@@ -139,16 +175,18 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
                         .setTruncated(javaResult.isTruncated())
                         .setInfo(convertStepInfo(javaResult.getInfo()))
                         .build());
+            } catch (Exception e) {
+                LOGGER.error("batchStep item failed for simId={}: {}", simId, e.getMessage());
+                // Return a "truncated" result to indicate failure for this item
+                // without failing the entire batch
+                responseBuilder.addResults(StepResult.newBuilder()
+                        .setTerminated(false)
+                        .setTruncated(true)
+                        .build());
             }
-            responseObserver.onNext(responseBuilder.build());
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            LOGGER.error("Error in batchStep", e);
-            responseObserver.onError(
-                    io.grpc.Status.INTERNAL
-                            .withDescription(e.getMessage())
-                            .asRuntimeException());
         }
+        responseObserver.onNext(responseBuilder.build());
+        responseObserver.onCompleted();
     }
 
     @Override

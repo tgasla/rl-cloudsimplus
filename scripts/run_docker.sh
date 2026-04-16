@@ -50,9 +50,11 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
     if [ "$GPU" = true ]; then
         SCALE_OPTION="manager-cuda=$NUM_EXPERIMENTS"
         PROFILE_OPTION="--profile cuda"
+        MANAGER_SERVICE="manager-cuda"
     else
         SCALE_OPTION="manager=$NUM_EXPERIMENTS"
         PROFILE_OPTION=""
+        MANAGER_SERVICE="manager"
     fi
 
     # Run the docker compose command based on ATTACHED flag
@@ -68,23 +70,23 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
             # Start all containers
             RUN_MODE="serial" EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" docker compose $PROFILE_OPTION up --build --remove-orphans -d
 
-            # Get the container ID for the manager container
-            MANAGER_CONTAINER_ID=$(docker ps --filter "name=manager" --filter "status=running" -q)
+            # Get the container name for the manager service
+            MANAGER_CONTAINER_NAME=$(docker compose ps -q $MANAGER_SERVICE)
 
-            if [ -z "$MANAGER_CONTAINER_ID" ]; then
+            if [ -z "$MANAGER_CONTAINER_NAME" ]; then
                 echo "Error: No running manager container found for experiment $i."
                 exit 1
             fi
 
             if [ "$ATTACHED" = true ]; then
                 # Attach only to the manager container logs
-                echo "Attaching to logs of manager container (ID: $MANAGER_CONTAINER_ID) for experiment $i..."
-                docker logs -f "$MANAGER_CONTAINER_ID"
+                echo "Attaching to logs of manager container (ID: $MANAGER_CONTAINER_NAME) for experiment $i..."
+                docker logs -f "$MANAGER_CONTAINER_NAME"
             fi
 
-            # Wait for the manager container to stop
-            echo "Waiting for the manager container (ID: $MANAGER_CONTAINER_ID) to complete..."
-            docker compose wait "$MANAGER_CONTAINER_ID"
+            # Wait for the manager container to stop (use container ID directly)
+            echo "Waiting for the manager container (ID: $MANAGER_CONTAINER_NAME) to complete..."
+            docker wait "$MANAGER_CONTAINER_NAME"
 
             # Cleanup after the experiment
             cleanup_experiment

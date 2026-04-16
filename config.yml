@@ -17,7 +17,7 @@
 # if you make any changes in java_log_level, java_log_destination or java_output_show,
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: true
+    attached: false
     gpu: false
     java_log_level: INFO
     java_log_destination: none
@@ -45,9 +45,6 @@ common:
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
-    mode: train
-    vm_allocation_policy: rl
-    algorithm: MaskablePPO
     max_hosts: 32
     host_pes: 16
     host_count: 16
@@ -58,19 +55,20 @@ common:
     small_vm_pes: 2
     job_trace_filename: three_60max_8maxcores.csv
     timesteps: 1000000          # 1M timesteps (recommended minimum for RL learning)
-    n_rollout_steps: 2048      # per-worker rollout steps
+    n_rollout_steps: 128      # per-worker rollout steps
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
     # gRPC vectorized training settings
     use_grpc: true              # set to true to enable parallel Java JVM workers
-    num_cpu: 1               # number of parallel gRPC workers (safe for your 28-thread machine)
+    num_cpu: 16               # number of parallel gRPC workers (safe for your 28-thread machine)
     # Set to false to disable sending tree array observation (faster gRPC communication)
     send_observation_tree_array: false
 
 experiment_1:
-    experiment_type_dir: grpc_test
-    experiment_name: box_space_new_length_1cpu
+    mode: train
+    experiment_type_dir: attached_test
+    experiment_name: test1
     vm_allocation_policy: rl
     algorithm: MaskablePPO

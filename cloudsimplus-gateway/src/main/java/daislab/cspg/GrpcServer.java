@@ -24,11 +24,14 @@ public class GrpcServer {
     private final CloudSimGrpcService service;
 
     public GrpcServer(int port) {
+        System.err.println("VVVVV GrpcServer constructor called VVVVV");
         service = new CloudSimGrpcService();
+        System.err.println("VVVVV CloudSimGrpcService created VVVVV");
         server = NettyServerBuilder
                 .forPort(port)
                 .addService(service)
                 .build();
+        System.err.println("VVVVV NettyServerBuilder created VVVVV");
     }
 
     public void start() throws IOException {

@@ -159,14 +159,26 @@ public class WrappedSimulation {
 
         final boolean isValid;
 
-        LOGGER.info("{}: Timestep: {}, Action: [{}, {}, {}, {}]", clock(), currentStep, action[0],
-                action[1], action[2], action[3]);
+        LOGGER.info("XXXXXXXXXX ACTION_DEBUG XXXXXXXXXX: action.length={}", action.length);
+        LOGGER.info("{}: Timestep: {}, Action: [{}, {}, {}, {}]", clock(), currentStep,
+                action.length > 0 ? action[0] : -1,
+                action.length > 1 ? action[1] : -1,
+                action.length > 2 ? action[2] : -1,
+                action.length > 3 ? action[3] : -1);
 
         // [action, hostId, vmId, type]
         // action = {0: do nothing, 1: create vm, 2: destroy vm}
         // id = {hostId to place new vm (when action = 1), vmId to terminate (when
         // action = 2)
         // type = {0: small, 1: medium, 2: large} (relevant only when action = 1)
+
+        if (action == null || action.length < 4) {
+            String msg = "ZZZZZ WRAPPED_SIM_ACTION_INVALID_ZZZZZ action=" +
+                    (action == null ? "null" : "length=" + action.length);
+            System.err.println(msg);
+            LOGGER.warn(msg);
+            return new int[] {-1, 0};
+        }
 
         if (action[0] == 1) {
             final int hostId = action[1];
@@ -182,6 +194,10 @@ public class WrappedSimulation {
         else if (action[0] == 2) {
             final int vmIndex = action[2];
             List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+            if (vmIndex < 0 || vmIndex >= vmList.size()) {
+                LOGGER.warn("destroy VM action invalid: vmIndex={} but only {} VMs running", vmIndex, vmList.size());
+                return new int[] {-1, 0};
+            }
             Vm vm = vmList.get(vmIndex);
             int hostId = (int) vm.getHost().getId();
             int vmCores = (int) vm.getPesNumber();
