@@ -184,13 +184,17 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
     java_cmd = [
         "java", "-jar", jar_path,
         "--grpc", str(port),
-        "-Dlog.level=INFO",
+        "-Dlog.level=" + os.environ.get("JAVA_LOG_LEVEL", "INFO"),
         f"-Dexperiment.id={experiment_id}",
         f"-Dlog.destination={log_dest}",
     ]
+    # When log_dest includes stdout, inherit Java's stdout so it reaches
+    # the container's stdout (visible via docker compose logs). Otherwise
+    # suppress it — file logging is handled by logback.
+    java_stdout = None if ("stdout" in log_dest) else _subprocess.DEVNULL
     proc = _subprocess.Popen(
         java_cmd,
-        stdout=_subprocess.DEVNULL,
+        stdout=java_stdout,
         stderr=_subprocess.STDOUT,
         env={**os.environ, "JAVA_TOOL_OPTIONS": "-XX:+UseSerialGC"},
     )
@@ -257,13 +261,13 @@ def make_grpc_env(rank, params, jobs_json, num_cpu, base_port=50051, log_dir=Non
         java_cmd = [
             "java", "-jar", jar_path,
             "--grpc", str(port),
-            "-Dlog.level=INFO",
+            "-Dlog.level=" + os.environ.get("JAVA_LOG_LEVEL", "INFO"),
             f"-Dexperiment.id={experiment_id}",
             f"-Dlog.destination={log_dest}",
         ]
         proc = _subprocess.Popen(
             java_cmd,
-            stdout=_subprocess.DEVNULL,
+            stdout=None if ("stdout" in log_dest) else _subprocess.DEVNULL,
             stderr=_subprocess.STDOUT,
             env={**os.environ, "JAVA_TOOL_OPTIONS": "-XX:+UseSerialGC"},
         )

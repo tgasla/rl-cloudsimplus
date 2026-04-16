@@ -9,7 +9,7 @@ GATEWAY_VERSION := $(shell grep "gatewayVersion" versions.gradle | sed "s/.*gate
 build: build-gateway build-manager
 
 build-gateway:
-	cd cloudsimplus-gateway && ./gradlew build --warning-mode all -Dlog.level=$(call get_yaml_value,java_log_level) -Dlog.destination=$(call get_yaml_value,java_log_destination) -Djunit.output.show=$(call get_yaml_value,junit_output_show)
+	cd cloudsimplus-gateway && ./gradlew build --warning-mode all
 
 build-manager:
 	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) -f rl-manager/Dockerfile .

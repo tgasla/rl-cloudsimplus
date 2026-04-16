@@ -17,12 +17,21 @@ else
     exit 1
 fi
 
+# Read a value from the globals section of config.yml
+get_yaml_value() {
+    grep -A 20 '^globals:' "$CONFIG_FILE" | grep -m 1 "^ *$1:" | sed 's/^ *//' | sed 's/.*: //'
+}
+
 # Detect the number of replicas
 NUM_EXPERIMENTS=$(grep -o "$GREP_FLAG" '^experiment_\d+' "$CONFIG_FILE" | wc -l)
 
 # Set ATTACHED and GPU flags with default values if not provided
 ATTACHED=${ATTACHED:-false}
 GPU=${GPU:-false}
+
+# Read java log destination from config.yml (not overridden by ATTACHED)
+JAVA_LOG_DEST=$(get_yaml_value "java_log_destination")
+JAVA_LOG_LEVEL=$(get_yaml_value "java_log_level")
 
 cleanup_experiment() {
     # Stop the experiment containers
@@ -47,18 +56,16 @@ cleanup_experiment() {
 if [ $NUM_EXPERIMENTS -gt 0 ]; then
     # Determine the Docker command based on the GPU flag
     if [ "$GPU" = true ]; then
-        SCALE_OPTION="manager-cuda=$NUM_EXPERIMENTS"
         PROFILE_OPTION="--profile cuda"
         MANAGER_SERVICE="manager-cuda"
     else
-        SCALE_OPTION="manager=$NUM_EXPERIMENTS"
         PROFILE_OPTION=""
         MANAGER_SERVICE="manager"
     fi
 
     for i in $(seq 1 $NUM_EXPERIMENTS); do
         # Start all containers
-        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" \
+        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" \
             docker compose $PROFILE_OPTION up --build --remove-orphans -d
 
         # Get the container ID for the manager service
