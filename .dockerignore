@@ -1,0 +1,35 @@
+# Bytecode
+**/__pycache__
+**/*.py[co]
+**/*.pyc
+
+# pip editable install artifacts
+**/*.egg-info/
+
+# Build artifacts
+**/build/
+**/dist/
+**/target/
+**/.gradle/
+
+# Logs
+**/logs/
+
+# IDE
+**/.idea/
+**/.vscode/
+
+# Git
+**/.git/
+
+# Docker
+**/Dockerfile
+**/.docker/
+
+# Python
+**/*.egg
+**/.eggs/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -5,6 +5,17 @@
 - [x] **Fix `send_observation_tree_array` flag propagation** — flag was set in config but never reached the Python callback, so CSV files were always written. Fixed: flag now flows config.yml → train.py/transfer.py → create_callback → callback constructor → guards all write/append sites.
 - [x] **Guard tree array computation in Java** — when flag=false, SimulationStepInfo no longer calls `getInfrastructureObservation()` (was computing full tree then throwing it away). RL's `infr_state` (Observation object) still always computed — correct behavior.
 - [x] **Use `shadowJar` for fat JAR** — `./gradlew shadowJar` not `jar`; `make build-gateway` now works correctly.
+- [x] **Remove Py4J** — `use_grpc` config key, Py4J gym env, and all Py4J-related code fully removed.
+- [x] **Remove batch/parallel mode** — `run_mode: serial` only; `run_mode: batch` and all orchestration code removed.
+- [x] **Lombok migration** — `@Value`, `@Getter`, `@Setter` annotations applied to SimulationSettings, SimulationStepInfo, SimulationStepResult, SimulationResetResult, Observation, CloudletDescriptor; replaced 30+ boilerplate getter methods.
+- [x] **All System.out/err replaced with SLF4J** — no raw print statements remain in Java source.
+- [x] **Remove `MultiSimulationEnvironment.java`** — referenced deleted Py4J `GatewayServer`; file deleted.
+- [x] **Fix `configureLogging` NPE** — `System.getProperty()` with null default caused NPE on missing property; fixed with `?.trim()?.toUpperCase() ?: 'INFO'`.
+- [x] **Upgrade shadow plugin** — `com.bmuschko.docker-java-application` built-in shadow incompatible with Gradle 9; switched to `com.gradleup.shadow:9.4.1`.
+- [x] **JDK 25 toolchain** — foojay resolver auto-provisions JDK 25; no local JDK installation required.
+- [x] **Centralized version management** — `versions.gradle` is single source of truth for managerVersion, gatewayVersion, gradleVersion.
+- [x] **Docker reproducibility** — `.dockerignore` excludes bytecode and build artifacts; `pip install --no-deps` prevents layer conflicts on rebuild.
+- [x] **Per-experiment Java logs** — `Main.java` generates `logback.xml` at runtime pointing to `logs/experiment_${EXPERIMENT_ID}/`; `misc.py` passes `experiment.id` and `log.destination` as `-D` properties to JVM.
 
 ## Optimizations
 

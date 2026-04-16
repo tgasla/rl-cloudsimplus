@@ -19,6 +19,16 @@ from utils.rl_algorithm_support_flags import (
 )
 
 
+def _gateway_version():
+    """Read gatewayVersion from versions.gradle at runtime."""
+    try:
+        with open("/mgr/versions.gradle") as f:
+            match = re.search(r"gatewayVersion\s*=\s*['\"]([^'\"]+)['\"]", f.read())
+            return match.group(1) if match else "0.1.0"
+    except FileNotFoundError:
+        return "0.1.0"
+
+
 def get_host_count_from_train_dir(train_model_dir):
     # Regular expression to match the number before "hosts" or "nodes", optionally delimited by an underscore
     match = re.search(r"(\d+)_?(hosts|nodes)", train_model_dir)
@@ -163,14 +173,20 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
     port = base_port + rank
 
     # Start Java JVM
+    # CLOUDSIM_GATEWAY_JAR env var overrides the default path.
+    # The versioned filename must match shadowJar output; rebuild after bumping gatewayVersion.
     jar_path = os.environ.get(
         "CLOUDSIM_GATEWAY_JAR",
-        "/app/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-0.1.0.jar",
+        "/app/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-" + _gateway_version() + ".jar",
     )
+    experiment_id = os.environ.get("EXPERIMENT_ID", "default")
+    log_dest = os.environ.get("JAVA_LOG_DESTINATION", "stdout")
     java_cmd = [
         "java", "-jar", jar_path,
         "--grpc", str(port),
         "-Dlog.level=INFO",
+        f"-Dexperiment.id={experiment_id}",
+        f"-Dlog.destination={log_dest}",
     ]
     proc = _subprocess.Popen(
         java_cmd,
@@ -234,12 +250,16 @@ def make_grpc_env(rank, params, jobs_json, num_cpu, base_port=50051, log_dir=Non
         # Spawn a dedicated Java JVM for this worker
         jar_path = os.environ.get(
             "CLOUDSIM_GATEWAY_JAR",
-            "/app/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-0.1.0.jar",
+            "/app/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-" + _gateway_version() + ".jar",
         )
+        experiment_id = os.environ.get("EXPERIMENT_ID", "default")
+        log_dest = os.environ.get("JAVA_LOG_DESTINATION", "stdout")
         java_cmd = [
             "java", "-jar", jar_path,
             "--grpc", str(port),
             "-Dlog.level=INFO",
+            f"-Dexperiment.id={experiment_id}",
+            f"-Dlog.destination={log_dest}",
         ]
         proc = _subprocess.Popen(
             java_cmd,

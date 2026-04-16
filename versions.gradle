@@ -1,0 +1,7 @@
+// Centralized version definitions for all components.
+// Bump version here — all other files reference these values.
+ext {
+    managerVersion = '0.11'
+    gatewayVersion = '0.1.0'
+    gradleVersion = '9.1.0'
+}

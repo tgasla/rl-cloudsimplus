@@ -15,58 +15,15 @@ plugins {
   id 'com.gradleup.shadow' version '9.4.1'
 }
 
+// Read versions from root versions.gradle (two levels up: cloudsimplus-gateway/build.gradle → repo root)
+apply from: new File(rootDir, '../versions.gradle')
+
 //https://stackoverflow.com/questions/29593500/how-can-i-set-the-compileoptions-for-my-gradle-java-plugin
 tasks.withType(JavaCompile) {
     configure(options) {
         options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked' << '-Xdiags:verbose'
     }
 }
-
-task configureLogging {
-    doLast {
-        def logLevel = System.getProperty('log.level', '')?.trim()?.toUpperCase() ?: 'INFO'
-        def logDestination = System.getProperty('log.destination', '')?.trim()?.toLowerCase() ?: 'none'
-
-        def logbackFile = file('src/main/resources/logback.xml')
-        if (!logbackFile.exists()) {
-            logger.warn 'Logback configuration file not found.'
-            return
-        }
-
-        // Read the logback.xml content
-        def logbackConfig = logbackFile.text
-
-        // Update the log level
-        logbackConfig = logbackConfig.replaceAll('<root level="\\w*">', "<root level=\"$logLevel\">")
-
-        // Remove everything between <root level="INFO"> and </root>
-        logbackConfig = logbackConfig.replaceAll(/<root level="\w*">[\s\S]*<\/root>/, "<root level=\"$logLevel\">\n</root>")
-
-        def newAppenderRefs = ""
-        if (logDestination == "file") {
-            newAppenderRefs = '\t<appender-ref ref="FILE" />\n'
-        }
-        // if (logDestination == "stdout") {
-        //     newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n'
-        // } else if (logDestination == "file") {
-        //     newAppenderRefs = '\t<appender-ref ref="FILE" />\n'
-        // } else if (logDestination == "stdout-file") {
-        //     newAppenderRefs = '\t<appender-ref ref="STDOUT" />\n\t<appender-ref ref="FILE" />\n'
-        // }
-        // Note: If "none" is selected, we leave the <root> section empty
-
-        // Insert the new appender-refs between <root> and </root>
-        logbackConfig = logbackConfig.replaceAll("</root>", newAppenderRefs + "</root>")
-
-        // Write the modified configuration back to the file
-        logbackFile.write(logbackConfig)
-
-        logger.lifecycle "Logging level set to $logLevel, output set to $logDestination"
-    
-    }
-}
-
-build.dependsOn configureLogging
 
 test {
     useJUnitPlatform()
@@ -83,11 +40,11 @@ repositories {
 // Protobuf / gRPC configuration
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.25.3'
+        artifact = 'com.google.protobuf:protoc:4.34.1'
     }
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.62.2'
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.80.0'
         }
     }
     generateProtoTasks {
@@ -102,7 +59,6 @@ dependencies {
     // The production code uses the SLF4J logging API at compile time
     implementation 'org.cloudsimplus:cloudsimplus:8.5.7'
     implementation 'org.slf4j:slf4j-api:2.0.17'
-    implementation 'net.sf.py4j:py4j:0.10.9.7'
     implementation 'ch.qos.logback:logback-classic:1.5.32'
     implementation 'org.apache.commons:commons-collections4:4.5.0'
     implementation 'com.google.code.gson:gson:2.13.1'
@@ -122,8 +78,6 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.0.2'
 }
 
-def dockerImageTag = 'gateway:2.0.0'
-
 application {
     mainClass.set('daislab.cspg.Main')
 }
@@ -131,7 +85,7 @@ application {
 // Build a shadow/fat JAR so Python subprocess can run it standalone
 shadowJar {
     archiveBaseName.set('cloudsimplus-gateway')
-    archiveVersion.set('0.1.0')
+    archiveVersion.set(gatewayVersion)
     archiveClassifier.set('')
 }
 

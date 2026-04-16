@@ -15,7 +15,7 @@ RUN pip3 install --upgrade pip==26.0.1 && pip3 install stable-baselines3==2.8.0 
 
 COPY --chown=appuser:appgroup rl-manager/grpc_cloudsimplus grpc_cloudsimplus
 
-RUN pip3 install -e grpc_cloudsimplus
+RUN pip3 install --no-deps -e grpc_cloudsimplus
 RUN apt update \
     && apt install -yqq wget \
     # Eclipse Temurin Java 25 (reliable direct download URL)
