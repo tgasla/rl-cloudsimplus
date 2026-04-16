@@ -159,12 +159,7 @@ public class WrappedSimulation {
 
         final boolean isValid;
 
-        LOGGER.info("XXXXXXXXXX ACTION_DEBUG XXXXXXXXXX: action.length={}", action.length);
-        LOGGER.info("{}: Timestep: {}, Action: [{}, {}, {}, {}]", clock(), currentStep,
-                action.length > 0 ? action[0] : -1,
-                action.length > 1 ? action[1] : -1,
-                action.length > 2 ? action[2] : -1,
-                action.length > 3 ? action[3] : -1);
+        LOGGER.debug("Timestep: {}, Action: length={}", currentStep, action.length);
 
         // [action, hostId, vmId, type]
         // action = {0: do nothing, 1: create vm, 2: destroy vm}
@@ -173,9 +168,8 @@ public class WrappedSimulation {
         // type = {0: small, 1: medium, 2: large} (relevant only when action = 1)
 
         if (action == null || action.length < 4) {
-            String msg = "ZZZZZ WRAPPED_SIM_ACTION_INVALID_ZZZZZ action=" +
+            String msg = "Invalid action: " +
                     (action == null ? "null" : "length=" + action.length);
-            System.err.println(msg);
             LOGGER.warn(msg);
             return new int[] {-1, 0};
         }

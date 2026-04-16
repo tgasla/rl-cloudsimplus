@@ -4,7 +4,6 @@ services:
     # container_name: manager # disabled to allow multiple instances
     environment: # passing defaults to avoid warnings
       - EXPERIMENT_ID=${EXPERIMENT_ID:-1}
-      - RUN_MODE=${RUN_MODE:-serial}
       - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-1}
       - CUBLAS_WORKSPACE_CONFIG=:4096:8
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True

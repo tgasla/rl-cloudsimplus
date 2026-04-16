@@ -10,8 +10,6 @@
 # vm_allocation_policy: [rl, rule-based]
 # algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
 
-# globals.run_mode: [batch, serial]
-
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
@@ -20,7 +18,6 @@ globals:
     java_log_level: INFO
     java_log_destination: none
     junit_output_show: false
-    run_mode: serial
 
 common:
     seed: 1234

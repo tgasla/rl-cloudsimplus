@@ -23,8 +23,7 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
             LoggerFactory.getLogger(CloudSimGrpcService.class.getSimpleName());
 
     public CloudSimGrpcService() {
-        System.err.println("UUUUU CloudSimGrpcService CONSTRUCTOR called UUUUU");
-        LOGGER.info("UUUUU CloudSimGrpcService CONSTRUCTOR called UUUUU");
+        LOGGER.info("CloudSimGrpcService constructor called");
     }
 
     private final Map<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
@@ -32,9 +31,6 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
     private final Gson gson = new Gson();
     private final Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
 
-    private String runMode = "serial";
-    private int experimentsFinishedCount = 0;
-    private int numExperiments = 1;
     private volatile boolean shutdownRequested = false;
 
     @Override
@@ -97,14 +93,12 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
     public void step(StepRequest request, StreamObserver<StepResult> responseObserver) {
         String simId = request.getSimId();
         int actionSize = request.getActionList().size();
-        String actionStr = request.getActionList().toString();
-        LOGGER.info("YYYYY step ENTRY simId={}, actionList.size={}, actionList={}", simId, actionSize, actionStr);
-        System.err.println("YYYYY step ENTRY simId=" + simId + " actionSize=" + actionSize + " actionList=" + actionStr);
+        LOGGER.debug("Step request: simId={}, actionList.size={}", simId, actionSize);
         try {
             WrappedSimulation simulation = getValidSimulation(simId);
             if (request.getActionList().isEmpty()) {
-                String errMsg = "ZZZZZ ACTION_LIST_EMPTY_ZZZZZ simId=" + simId;
-                System.err.println(errMsg);
+                String errMsg = "Action list is empty for simId=" + simId;
+                LOGGER.error(errMsg);
                 responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
                         .withDescription(errMsg)
                         .asRuntimeException());
@@ -114,8 +108,8 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
             for (int i = 0; i < actionArray.length; i++) {
                 Object element = request.getActionList().get(i);
                 if (element == null) {
-                    String errMsg = "ZZZZZ ACTION_LIST_HAS_NULL_ZZZZZ simId=" + simId + " index=" + i;
-                    System.err.println(errMsg);
+                    String errMsg = "Action list has null element at index=" + i + " for simId=" + simId;
+                    LOGGER.error(errMsg);
                     responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
                             .withDescription(errMsg)
                             .asRuntimeException());
@@ -123,16 +117,14 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
                 }
                 actionArray[i] = ((Number) element).intValue();
             }
-            // Extra safety: if we got here with wrong size, fail explicitly
             if (actionArray.length < 4) {
-                String errMsg = "ZZZZZ ACTION_ARRAY_TOO_SHORT_ZZZZZ simId=" + simId + " len=" + actionArray.length;
-                System.err.println(errMsg);
+                String errMsg = "Action array too short: length=" + actionArray.length + " for simId=" + simId;
+                LOGGER.error(errMsg);
                 responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
                         .withDescription(errMsg)
                         .asRuntimeException());
                 return;
             }
-            LOGGER.info("YYYYY step PROCEEDING simId={}, actionArray.length={}", simId, actionArray.length);
 
             SimulationStepResult javaResult = simulation.step(actionArray);
 
@@ -200,14 +192,12 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
                 simulation.close();
             }
 
-            experimentsFinishedCount++;
-            LOGGER.debug("Simulation {} closed. {} simulations still running. "
-                    + "Experiments finished: {}/{}",
-                    simId, simulations.size(), experimentsFinishedCount, numExperiments);
-
-            if (simulations.isEmpty() && experimentsFinishedCount >= numExperiments) {
-                LOGGER.info("All experiments finished. Signaling shutdown.");
+            if (simulations.isEmpty()) {
+                LOGGER.info("Simulation {} closed. No simulations remaining. Signaling shutdown.", simId);
                 shutdownRequested = true;
+            } else {
+                LOGGER.debug("Simulation {} closed. {} simulations still running.",
+                        simId, simulations.size());
             }
 
             responseObserver.onNext(CloseResponse.newBuilder().build());

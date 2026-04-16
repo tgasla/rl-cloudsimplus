@@ -6,10 +6,16 @@ import org.cloudsimplus.cloudlets.CloudletExecution;
 import org.cloudsimplus.schedulers.MipsShare;
 import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerAbstract;
 import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerSpaceShared;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Field;
 import java.util.List;
 
 class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
+
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(OptimizedCloudletScheduler.class);
 
     @Override
     protected double cloudletSubmitInternal(final CloudletExecution cle,
@@ -72,7 +78,7 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
                 cloudletReturnedList.clear();
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to clear cloudlet returned list", e);
         }
     }
 }
