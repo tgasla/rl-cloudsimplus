@@ -98,7 +98,12 @@ class GrpcSingleDC(gym.Env):
             shape=(self.infr_obs_length,),
             dtype=np.int16,
         )
-        self.job_cores_waiting_obs_space = spaces.Discrete(self.large_vm_pes + 1)
+        self.job_cores_waiting_obs_space = spaces.Box(
+            low=0,
+            high=self.large_vm_pes + 1,
+            shape=(1,),
+            dtype=np.int16,
+        )
         self.observation_space = spaces.Dict(
             {
                 "infr_state": self.infr_obs_space,

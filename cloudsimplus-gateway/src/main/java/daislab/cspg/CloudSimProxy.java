@@ -387,16 +387,20 @@ public class CloudSimProxy {
         return true;
     }
 
+    private double calculateStartTime() {
+        if (firstStep) {
+            return settings.getMinTimeBetweenEvents();
+        }
+        return Math.max(clock() - settings.getTimestepInterval(), 0);
+    }
+
     double calculateTargetTime() {
         // if first step we have already done 0.1 and we need to finish the first step at 1
         // else, just add 1 to the current time
-        final double targetTime;
         if (firstStep) {
-            targetTime = settings.getTimestepInterval();
-        } else {
-            targetTime = clock() + settings.getTimestepInterval();
+            return settings.getTimestepInterval();
         }
-        return targetTime;
+        return clock() + settings.getTimestepInterval();
     }
 
     public void runOneTimestep() {
@@ -404,11 +408,11 @@ public class CloudSimProxy {
         ensureSimulationIsRunning();
         jobsFinishedWaitTimeLastTimestep.clear();
         List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
-        clearListsIfNeeded();
-        proceedClockTo(targetTime);
+        maybeClearLists();
         tryToSubmitJobs(jobsToSubmitList);
+        proceedClockTo(targetTime);
         if (shouldPrintStats()) {
-            printStats();
+            printCloudletStatus();
         }
         if (firstStep) {
             firstStep = false;
@@ -451,7 +455,7 @@ public class CloudSimProxy {
      * these lists in the current environment because they are only used in CloudSimPlus when a VM
      * is being upscaled, which is not performed in this environment.
      */
-    private void clearListsIfNeeded() {
+    private void maybeClearLists() {
         if (settings.isClearCreatedLists()) {
             broker.getCloudletCreatedList().clear();
             // broker.getVmCreatedList().clear();
@@ -473,7 +477,7 @@ public class CloudSimProxy {
      * <li>Number of jobs that have arrived but are not yet running.</li>
      * </ul>
      */
-    public void printStats() {
+    public void printCloudletStatus() {
         // Contradictory to the previous functions which are called before the clock is
         // procceded,
         // this function is called after the clock is procceded. So, we need to
@@ -484,17 +488,16 @@ public class CloudSimProxy {
         // called in
         // WrappedSimulation.java:calculateReward() function after the clock is
         // procceded.
-        final double startTime = clock() - settings.getTimestepInterval();
+        final double startTime = calculateStartTime();
 
         LOGGER.info("[{} - {}]: All jobs: {} ", startTime, clock(), inputJobs.size());
-        Map<Cloudlet.Status, Integer> countByStatus = new HashMap<>();
+        Map<Cloudlet.Status, List<Long>> jobsByStatus = new HashMap<>();
         for (Cloudlet c : inputJobs) {
             final Cloudlet.Status status = c.getStatus();
-            int count = countByStatus.getOrDefault(status, 0);
-            countByStatus.put(status, count + 1);
+            jobsByStatus.computeIfAbsent(status, k -> new ArrayList<>()).add(c.getId());
         }
 
-        for (Map.Entry<Cloudlet.Status, Integer> e : countByStatus.entrySet()) {
+        for (Map.Entry<Cloudlet.Status, List<Long>> e : jobsByStatus.entrySet()) {
             LOGGER.info("[{} - {}]: {}: {}", startTime, clock(), e.getKey().toString(),
                     e.getValue());
         }
@@ -615,30 +618,30 @@ public class CloudSimProxy {
      */
     private void tryToSubmitJobs(final List<Cloudlet> cloudletList) {
         final List<Cloudlet> jobsToSubmit = new ArrayList<>();
-        final double startTime = clock() - settings.getTimestepInterval();
+        final double now = clock();
+        final double targetTime = calculateTargetTime();
 
-        LOGGER.info("[{} - {}]: Will try to submit {} jobs", startTime, clock(),
+        LOGGER.info("[{} - {}]: Will try to submit {} jobs", now, targetTime,
                 cloudletList.size());
-        LOGGER.info("[{} - {}]: VMs created: {}", startTime, clock(),
-                broker.getVmCreatedList().size());
-        LOGGER.info("[{} - {}]: VMs running: {}", startTime, clock(),
+        // LOGGER.info("[{} - {}]: VMs created: {}", startTime, clock(),
+        //         broker.getVmCreatedList().size());
+        LOGGER.info("[{} - {}]: VMs running: {}", now, targetTime,
                 broker.getVmExecList().size());
         for (Cloudlet cloudlet : cloudletList) {
-
             // Do not schedule cloudlet if there are no suitable vms to run it
             if (!isAnyVmSuitableForCloudlet(cloudlet)) {
-                LOGGER.debug("[{} - {}]: Could not submit job {}, no suitable vm found", startTime,
-                        clock(), cloudlet.getId());
+                LOGGER.debug("[{} - {}]: Could not submit job {}, no suitable vm found", now,
+                        targetTime, cloudlet.getId());
                 continue;
             }
             // here we calculate how much time the job needs to be submitted
-            cloudlet.setSubmissionDelay(Math.max(cloudlet.getSubmissionDelay() - clock(), 0));
+            cloudlet.setSubmissionDelay(Math.max(cloudlet.getSubmissionDelay() - now, 0));
             jobsToSubmit.add(cloudlet);
         }
 
         if (!jobsToSubmit.isEmpty()) {
             jobQueue.removeAll(jobsToSubmit);
-            LOGGER.info("[{} - {}]: Submitting {} jobs", startTime, clock(), jobsToSubmit.size());
+            LOGGER.info("[{} - {}]: Submitting {} jobs", now, targetTime, jobsToSubmit.size());
             submitCloudletList(jobsToSubmit);
         }
     }
