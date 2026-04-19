@@ -1,0 +1,27 @@
+{
+  "code-block-style": {
+    "style": "fenced"
+  },
+  "code-fence-style": {
+    "style": "backtick"
+  },
+  "emphasis-style": {
+    "style": "asterisk"
+  },
+  "fenced-code-language": {
+    "allowed_languages": [ "bash", "HTML", "markdown", "text" ],
+    "language_only": true
+  },
+  "html": {
+    "allowed_elements": [ "a", "b", "div", "details", "p" ]
+  },
+  "line-length": {
+    "line_length": 250,
+    "code_blocks": false,
+    "headings": false,
+    "tables": false
+  },
+  "bullet": {
+    "indent": 4
+  }
+}

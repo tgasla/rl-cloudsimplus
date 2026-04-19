@@ -1,0 +1,82 @@
+# train_model_dir: applicable only if mode == [transfer|test]
+# globals.java_log_destination: [none, stdout, file, stdout-file] - if file, logs are written to a file, if stdout-file, logs are written to both stdout and a file
+# globals.junit_output_show: [true, false] - if true, junit test results are printed to stdout
+# globals.java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
+# seed: random or any integer
+# base_log_dir: parent directory for all logs
+# experiment_dir: parent directory for a set of experiments
+# experiment_name: name of the experiment
+# mode: [train, test, transfer]
+# vm_allocation_policy: [rl, rule-based]
+# cloudlet_to_dc_assignment_policy: [earliest-shortest-to-most-free-dc, random-to-most-free-dc, earliest-most-critical-to-nearest-dc, rl]
+# cloudlet_to_vm_assignment_policy: [most-free-cores]
+# algorithm: [any stable-baselines3 or sb3-contrib algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
+
+# globals.run_mode: [batch, serial]
+
+# if you make any changes in java_log_leve, java_log_destination or java_output_show, 
+#  you need to execute make build-gateway for the changes to take effect
+globals:
+    attached: false
+    gpu: true
+    java_log_level: INFO
+    java_log_destination: none
+    junit_output_show: false
+    run_mode: serial
+
+common:
+  timestep_interval: 1.0
+  min_time_between_events: 0.1
+  max_episode_length: 150
+  split_large_jobs: true
+  clear_created_lists: false
+  vm_startup_delay: 0.0
+  vm_shutdown_delay: 0.0
+  paying_for_the_full_hour: false
+  save_experiment: true
+  base_log_dir: logs
+  batch_size: 64
+  vm_allocation_policy: bestfit
+  cloudlet_to_dc_assignment_policy:  earliest-most-critical-to-nearest-dc
+  cloudlet_to_vm_assignment_policy: most-free-cores
+  state_space_type: dcid-dctype-freevmpes-per-host
+  autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
+  autoencoder_infr_obs_latent_dim: 32
+  freeze_inactive_input_layer_weights: false # keep false if autoencoder or embeddings are used
+  max_datacenters: 6
+  max_datacenter_types: 3
+  max_hosts: 40
+  max_host_pes: 64
+  max_jobs_waiting: 50
+  max_job_pes: 16
+  max_job_delay_sensitivity_levels: 3
+  max_job_deadline: 20
+  timesteps: 2048
+  n_rollout_steps: 2048
+  reward_jobs_placed_coef: 0.333
+  reward_quality_coef: 0.333
+  reward_deadline_violation_coef: 0.333
+  seed: 1234
+  algorithm: PPO
+  mode: train
+
+# experiment_1:
+#   datacenters:
+#     !include datacenters_b.yml
+#   experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
+#   experiment_name: env_b
+#   job_trace_filename: euromlsys_jobs_first_50.csv
+
+experiment_1:
+  datacenters:
+    !include datacenters_a.yml
+  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
+  experiment_name: env_a
+  job_trace_filename: euromlsys_jobs_first_50.csv
+
+experiment_2:
+  datacenters:
+    !include datacenters_c.yml
+  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
+  experiment_name: env_c
+  job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
