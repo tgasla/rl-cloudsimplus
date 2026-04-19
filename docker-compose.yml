@@ -7,6 +7,8 @@ services:
       - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-1}
       - CUBLAS_WORKSPACE_CONFIG=:4096:8
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+      - JAVA_LOG_DESTINATION=${JAVA_LOG_DESTINATION:-stdout}
+      - JAVA_LOG_LEVEL=${JAVA_LOG_LEVEL:-INFO}
     build:
       context: .
       dockerfile: rl-manager/Dockerfile

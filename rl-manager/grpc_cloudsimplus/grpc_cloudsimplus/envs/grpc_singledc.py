@@ -175,9 +175,14 @@ class GrpcSingleDC(gym.Env):
     def _get_observation(self, raw_obs: dict) -> dict:
         infr_obs = np.array(raw_obs["infr_state"], dtype=np.int16)
         infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
+        # Pad job_cores_waiting_state to (1,) so VecEnv stacking produces (n_envs, 1)
+        raw_jcw = raw_obs["job_cores_waiting_state"]
+        jcw = np.array(raw_jcw, dtype=np.int16)
+        if jcw.shape == ():  # scalar 0D
+            jcw = jcw.reshape(1)
         return {
             "infr_state": infr_obs,
-            "job_cores_waiting_state": raw_obs["job_cores_waiting_state"],
+            "job_cores_waiting_state": jcw,
         }
 
     # ── Gymnasium API ─────────────────────────────────────────────────────────

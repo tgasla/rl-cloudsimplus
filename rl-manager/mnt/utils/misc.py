@@ -352,7 +352,8 @@ class ParallelBatchDummyVecEnv:
         return self._num_envs
 
     def reset(self, seed=None):
-        # DummyVecEnv.reset() does not accept seed; seed is set via seed() instead
+        # DummyVecEnv.reset() returns an OrderedDict of stacked observations.
+        # Return just the obs dict (not a tuple) to match what _setup_learn expects.
         return self._inner_reset()
 
     def step(self, actions):
@@ -431,7 +432,18 @@ def vectorize_env(env, algorithm, num_cpu=None, params=None, jobs_json=None):
     # in parallel, overlapping the per-call roundtrip latency.
     env_fns = [_make_grpc_factory(i, params, jobs_json, base_port) for i in range(num_cpu)]
     env = ParallelBatchDummyVecEnv(env_fns, num_envs=num_cpu)
-    env = VecMonitor(env, params.get("log_dir", "/tmp/grpc_monitor"))
+
+    # Subclass VecMonitor to fix reset() — ppo_mask expects (obs,) but
+    # VecMonitor.reset() returns (obs, info) tuple from the underlying vec env.
+    # We intercept here so _setup_learn gets just obs.
+    class _VecMonitor(VecMonitor):
+        def reset(self):
+            obs = self.venv.reset()
+            self.episode_returns = np.zeros(self.num_envs, dtype=np.float32)
+            self.episode_lengths = np.zeros(self.num_envs, dtype=np.int32)
+            return obs
+
+    env = _VecMonitor(env, params.get("log_dir", "/tmp/grpc_monitor"))
     return env
 
 

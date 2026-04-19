@@ -85,7 +85,7 @@ public class Main {
             </configuration>
             """, logDir, logDir, logLevel, rootSection);
 
-        Path logbackFile = Files.createTempFile("logback-", ".xml");
+        Path logbackFile = logDir.resolve("logback-generated.xml");
         Files.writeString(logbackFile, logbackXml);
         System.setProperty("logback.configurationFile", logbackFile.toString());
 

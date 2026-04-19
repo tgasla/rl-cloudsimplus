@@ -87,6 +87,8 @@ shadowJar {
     archiveBaseName.set('cloudsimplus-gateway')
     archiveVersion.set(gatewayVersion)
     archiveClassifier.set('')
+    // Exclude logback.xml from dependencies so our generated config is the only one
+    exclude 'logback.xml'
 }
 
 // Skip the docker plugin's image building - we build it manually

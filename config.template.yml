@@ -10,8 +10,8 @@
 # vm_allocation_policy: [rl, rule-based]
 # algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
 
-# if you make any changes in java_log_leve, java_log_destination or java_output_show, 
-#  you need to execute make build-gateway for the changes to take effect
+# java_log_level and java_log_destination: changes take effect at runtime — no rebuild needed.
+# junit_output_show: requires make build-gateway to rebuild (Java test output).
 globals:
     attached: true
     gpu: true
