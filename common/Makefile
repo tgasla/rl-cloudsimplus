@@ -1,41 +1,45 @@
-CONFIG_FILE=config.yml
+# paper=main or paper=euromlsys — defaults to main
+PAPER ?= main
+PAPER_DIR := papers/$(PAPER)
+
+CONFIG_FILE := $(PAPER_DIR)/config.yml
 get_yaml_value = $(shell grep -A 20 '^globals:' $(CONFIG_FILE) | grep -m 1 '^ *$(1):' | sed 's/^ *$(1): //')
 
 # Read versions from versions.gradle — single source of truth
-GRADLE_VERSION := $(shell grep "gradleVersion" versions.gradle | sed "s/.*gradleVersion = '\([^']*\)'.*/\1/")
-MANAGER_VERSION := $(shell grep "managerVersion" versions.gradle | sed "s/.*managerVersion = '\([^']*\)'.*/\1/")
-GATEWAY_VERSION := $(shell grep "gatewayVersion" versions.gradle | sed "s/.*gatewayVersion = '\([^']*\)'.*/\1/")
+GRADLE_VERSION := $(shell grep "gradleVersion" $(PAPER_DIR)/versions.gradle | sed "s/.*gradleVersion = '\([^']*\)'.*/\1/")
+MANAGER_VERSION := $(shell grep "managerVersion" $(PAPER_DIR)/versions.gradle | sed "s/.*managerVersion = '\([^']*\)'.*/\1/")
+GATEWAY_VERSION := $(shell grep "gatewayVersion" $(PAPER_DIR)/versions.gradle | sed "s/.*gatewayVersion = '\([^']*\)'.*/\1/")
 
 build: build-gateway build-manager
 
 build-gateway:
-	cd cloudsimplus-gateway && ./gradlew build --warning-mode all
+	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew build --warning-mode all
 
 build-manager:
-	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) -f rl-manager/Dockerfile .
+	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) -f $(PAPER_DIR)/rl-manager/Dockerfile $(PAPER_DIR)
 
 build-tensorboard:
-	docker build -t tensorboard tensorboard
+	docker build -t tensorboard $(PAPER_DIR)/tensorboard
 
 run-tensorboard:
-	docker run --rm --name tensorboard -d -v ./logs/:/logs/ -p 6006:6006 tensorboard
+	docker run --rm --name tensorboard -d -v $(PAPER_DIR)/logs/:/logs/ -p 6006:6006 tensorboard
 
 run:
-	COMPOSE_BAKE=true ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) scripts/run_docker.sh
+	COMPOSE_BAKE=true ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(PAPER) $(PAPER_DIR)/scripts/run_docker.sh
 
 clean-gateway:
-	cd cloudsimplus-gateway && ./gradlew clean
+	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew clean
 
 wipe-logs:
-	cd logs && rm -rf *
+	rm -rf $(PAPER_DIR)/logs/*
 
 stop:
-	docker compose down --remove-orphans
+	cd $(PAPER_DIR) && docker compose down --remove-orphans
 	docker system prune -f
 	docker system prune --volumes -f
 
 get-gradle:
-	cd cloudsimplus-gateway && ./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
+	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
 
 clear-gradle:
 	cd ~/.gradle && rm -rf *

@@ -1,7 +1,9 @@
 #!/bin/bash
 exec </dev/null
 
-CONFIG_FILE="config.yml"
+PAPER=${PAPER:-main}
+PAPER_DIR="papers/$PAPER"
+CONFIG_FILE="$PAPER_DIR/config.yml"
 
 # Export UID and GID for docker build args
 export HOST_UID=$(id -u)
@@ -35,10 +37,10 @@ JAVA_LOG_LEVEL=$(get_yaml_value "java_log_level")
 
 cleanup_experiment() {
     # Stop the experiment containers
-    docker compose down --remove-orphans
+    docker compose -f "$PAPER_DIR/docker-compose.yml" down --remove-orphans
     if [ $? -ne 0 ]; then
         echo "Error stopping containers. Retrying..."
-        docker compose down --remove-orphans
+        docker compose -f "$PAPER_DIR/docker-compose.yml" down --remove-orphans
     fi
 
     # Remove volumes and networks
@@ -66,10 +68,10 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
     for i in $(seq 1 $NUM_EXPERIMENTS); do
         # Start all containers
         EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" \
-            docker compose $PROFILE_OPTION up --build --remove-orphans -d
+            docker compose -f "$PAPER_DIR/docker-compose.yml" $PROFILE_OPTION up --build --remove-orphans -d
 
         # Get the container ID for the manager service
-        MANAGER_CONTAINER_ID=$(docker compose ps -q "$MANAGER_SERVICE")
+        MANAGER_CONTAINER_ID=$(docker compose -f "$PAPER_DIR/docker-compose.yml" ps -q "$MANAGER_SERVICE")
 
         if [ -z "$MANAGER_CONTAINER_ID" ]; then
             echo "Error: No running manager container found for experiment $i."
@@ -80,11 +82,11 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
             if [ "$NUM_EXPERIMENTS" -gt 1 ]; then
                 # Attach only to the manager container logs
                 echo "Attaching to logs of manager container for experiment $i..."
-                docker compose logs -f "$MANAGER_SERVICE"
+                docker compose -f "$PAPER_DIR/docker-compose.yml" logs -f "$MANAGER_SERVICE"
             else
                 # Attach to all container logs
                 echo "Attaching to all container logs for experiment $i..."
-                docker compose logs -f
+                docker compose -f "$PAPER_DIR/docker-compose.yml" logs -f
             fi
         else
             # Wait for the manager container to finish (using docker wait with container ID)
