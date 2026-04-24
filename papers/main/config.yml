@@ -17,7 +17,7 @@ globals:
     attached: true
     gpu: false
     java_log_level: INFO
-    java_log_destination: none
+    java_log_destination: stdout-file
     junit_output_show: false
 
 common:

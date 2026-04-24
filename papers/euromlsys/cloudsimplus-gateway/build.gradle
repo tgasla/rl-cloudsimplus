@@ -6,7 +6,7 @@ plugins {
 }
 
 // Read versions from common/versions.gradle (three levels up: gateway/build.gradle → papers/euromlsys → repo root → common)
-apply from: new File(rootDir, '../../common/versions.gradle')
+apply from: new File(rootDir, '../../../common/versions.gradle')
 
 //https://stackoverflow.com/questions/29593500/how-can-i-set-the-compileoptions-for-my-gradle-java-plugin
 tasks.withType(JavaCompile) {
@@ -22,6 +22,7 @@ test {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
@@ -42,7 +43,14 @@ protobuf {
 }
 
 dependencies {
-    implementation 'org.cloudsimplus:cloudsimplus:8.5.7'
+    // Use -PuseSnapshot=true with ./gradlew build to use CloudSim Plus 9.0.0-SNAPSHOT
+    // from mavenLocal() (built with make update-cloudsimplus from Git master)
+    def useSnapshot = project.hasProperty('useSnapshot') && project.property('useSnapshot').toBoolean()
+    if (useSnapshot) {
+        implementation 'org.cloudsimplus:cloudsimplus:9.0.0-SNAPSHOT'
+    } else {
+        implementation 'org.cloudsimplus:cloudsimplus:8.5.7'
+    }
     implementation 'org.slf4j:slf4j-api:2.0.17'
     implementation 'ch.qos.logback:logback-classic:1.5.32'
     implementation 'org.apache.commons:commons-collections4:4.5.0'

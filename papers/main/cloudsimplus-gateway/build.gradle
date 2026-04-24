@@ -34,6 +34,7 @@ test {
 
 // In this section you declare where to find the dependencies of your project
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
@@ -57,7 +58,14 @@ protobuf {
 // In this section you declare the dependencies for your production and test code
 dependencies {
     // The production code uses the SLF4J logging API at compile time
-    implementation 'org.cloudsimplus:cloudsimplus:8.5.7'
+    // Use -PuseSnapshot=true with ./gradlew build to use CloudSim Plus 9.0.0-SNAPSHOT
+    // from mavenLocal() (built with make update-cloudsimplus from Git master)
+    def useSnapshot = project.hasProperty('useSnapshot') && project.property('useSnapshot').toBoolean()
+    if (useSnapshot) {
+        implementation 'org.cloudsimplus:cloudsimplus:9.0.0-SNAPSHOT'
+    } else {
+        implementation 'org.cloudsimplus:cloudsimplus:8.5.7'
+    }
     implementation 'org.slf4j:slf4j-api:2.0.17'
     implementation 'ch.qos.logback:logback-classic:1.5.32'
     implementation 'org.apache.commons:commons-collections4:4.5.0'
