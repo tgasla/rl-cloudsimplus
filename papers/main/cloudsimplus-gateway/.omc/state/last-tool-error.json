@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"rm -rf build .gradle && ./gradlew :shadowJar --rerun-tasks 2>&1\",\"timeout\":180000}",
-  "error": "Exit code 1\nCalculating task graph as no cached configuration is available for tasks: :shadowJar\n\n> Configure project :\nshowStandardStreams set to false\n\n> Task :protobufDummy UP-TO-DATE\n> Task :extractProto\n> Task :processResources\n> Task :extractIncludeProto\n> Task :generateProto\n\n> Task :compileJava FAILED\n/home/taslanidis/git/rl-cloudsimplus/papers/main/cloudsimplus-gateway/src/main/java/daislab/cspg/Main.java:104: error: cannot find symbol\n            loggerContext.configureByResource(logba...",
-  "timestamp": "2026-04-24T19:44:38.380Z",
-  "retry_count": 1
-}

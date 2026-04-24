@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"ls -la /home/taslanidis/git/rl-cloudsimplus/papers/main/rl-manager/logs/debug/test1/csp* 2>/dev/null && cat /home/taslanidis/git/rl-cloudsimplus/papers/main/rl-manager/logs/debug/test1/jav...",
-  "error": "Exit code 2",
-  "timestamp": "2026-04-24T19:37:16.858Z",
-  "retry_count": 1
-}
