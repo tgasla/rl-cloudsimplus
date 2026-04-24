@@ -6,9 +6,9 @@ CONFIG_FILE := $(PAPER_DIR)/config.yml
 get_yaml_value = $(shell grep -A 20 '^globals:' $(CONFIG_FILE) | grep -m 1 '^ *$(1):' | sed 's/^ *$(1): //')
 
 # Read versions from versions.gradle — single source of truth
-GRADLE_VERSION := $(shell grep "gradleVersion" $(PAPER_DIR)/versions.gradle | sed "s/.*gradleVersion = '\([^']*\)'.*/\1/")
-MANAGER_VERSION := $(shell grep "managerVersion" $(PAPER_DIR)/versions.gradle | sed "s/.*managerVersion = '\([^']*\)'.*/\1/")
-GATEWAY_VERSION := $(shell grep "gatewayVersion" $(PAPER_DIR)/versions.gradle | sed "s/.*gatewayVersion = '\([^']*\)'.*/\1/")
+GRADLE_VERSION := $(shell grep "gradleVersion" common/versions.gradle | sed "s/.*gradleVersion = '\([^']*\)'.*/\1/")
+MANAGER_VERSION := $(shell grep "managerVersion" common/versions.gradle | sed "s/.*managerVersion = '\([^']*\)'.*/\1/")
+GATEWAY_VERSION := $(shell grep "gatewayVersion" common/versions.gradle | sed "s/.*gatewayVersion = '\([^']*\)'.*/\1/")
 
 build: build-gateway build-manager
 
@@ -16,7 +16,7 @@ build-gateway:
 	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew build --warning-mode all
 
 build-manager:
-	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) -f $(PAPER_DIR)/rl-manager/Dockerfile $(PAPER_DIR)
+	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) -f common/rl-manager/Dockerfile .
 
 build-tensorboard:
 	docker build -t tensorboard $(PAPER_DIR)/tensorboard
@@ -25,7 +25,7 @@ run-tensorboard:
 	docker run --rm --name tensorboard -d -v $(PAPER_DIR)/logs/:/logs/ -p 6006:6006 tensorboard
 
 run:
-	COMPOSE_BAKE=true ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(PAPER) $(PAPER_DIR)/scripts/run_docker.sh
+	PAPER_DIR=$(PAPER_DIR) COMPOSE_BAKE=true ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(PAPER) common/scripts/run_docker.sh
 
 clean-gateway:
 	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew clean
@@ -34,7 +34,7 @@ wipe-logs:
 	rm -rf $(PAPER_DIR)/logs/*
 
 stop:
-	cd $(PAPER_DIR) && docker compose down --remove-orphans
+	docker compose -f common/docker-compose.yml down --remove-orphans
 	docker system prune -f
 	docker system prune --volumes -f
 

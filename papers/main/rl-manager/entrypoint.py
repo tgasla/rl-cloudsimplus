@@ -1,0 +1,122 @@
+import os
+import json
+import yaml
+import pycurl
+import random
+import shutil
+import numpy as np
+from io import BytesIO
+import torch
+import sys
+
+# Fix module import path so 'train', 'test', 'transfer' are found
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ""))
+
+import importlib
+from utils.misc import dict_from_config
+
+CONFIG_FILE = "config.yml"
+
+
+def _find_replica_id(hostname):
+    response_buffer = BytesIO()
+    # Define the socket path and container URL
+    unix_socket_path = "/run/docker.sock"
+    container_url = f"http://docker/containers/{hostname}/json"
+
+    # Initialize a cURL object
+    curl = pycurl.Curl()
+
+    # Set cURL options
+    curl.setopt(pycurl.UNIX_SOCKET_PATH, unix_socket_path)
+    curl.setopt(pycurl.URL, container_url)
+    curl.setopt(pycurl.WRITEFUNCTION, response_buffer.write)
+    curl.perform()
+    curl.close()
+
+    response_data = response_buffer.getvalue().decode("utf-8")
+    replica_id = json.loads(response_data)["Name"].split("-")[-1]
+    return replica_id
+
+
+def set_seed_for_all(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True, warn_only=True)
+    # torch.cuda.synchronize()
+    # torch.backends.cudnn.enabled = False
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["PYTHONHASHSEED"] = str(seed)
+
+
+def write_seed_to_file(seed, log_dir, filename="seed.txt"):
+    """
+    Creates a text file and writes the given seed number to it.
+
+    Parameters:
+        seed (int): The seed number to write.
+        filename (str): The name of the file to create or overwrite. Default is 'seed.txt'.
+    """
+    filepath = os.path.join(log_dir, filename)
+    try:
+        with open(filepath, "w") as file:
+            file.write(str(seed))
+    except Exception as e:
+        print(f"An error occurred while writing to the file: {e}")
+
+
+def main():
+    num_experiments = int(os.getenv("NUM_EXPERIMENTS"))
+    experiment_id = os.getenv("EXPERIMENT_ID")
+
+    # Load raw config to access globals (java_log_destination, java_log_level)
+    with open(CONFIG_FILE, "r") as f:
+        raw_config = yaml.safe_load(f)
+
+    params = dict_from_config(experiment_id, CONFIG_FILE)
+    params.update(num_experiments=num_experiments)
+    if params["seed"] == "random":
+        params["seed"] = np.random.randint(0, sys.maxsize)
+    else:
+        set_seed_for_all(params["seed"])
+
+    params["log_dir"] = None
+    if params["save_experiment"]:
+        params["log_dir"] = os.path.join(
+            params["base_log_dir"],
+            params["experiment_type_dir"],
+            params["experiment_name"],
+        )
+        # Create folder if needed
+        os.makedirs(params["log_dir"], exist_ok=True)
+        # Make a copy of the config file in the log directory
+        shutil.copy(CONFIG_FILE, params["log_dir"])
+        write_seed_to_file(params["seed"], params["log_dir"])
+
+    # Propagate java log settings from config to environment so Java subprocess sees them
+    globals_cfg = raw_config.get("globals", {})
+    if "java_log_destination" in globals_cfg:
+        os.environ["JAVA_LOG_DESTINATION"] = globals_cfg["java_log_destination"]
+    if "java_log_level" in globals_cfg:
+        os.environ["JAVA_LOG_LEVEL"] = globals_cfg["java_log_level"]
+
+    try:
+        module = importlib.import_module(params["mode"])
+    except ModuleNotFoundError as e:
+        print(f"ERROR: Mode '{params['mode']}' not found. Import error: {e}")
+        print(f"sys.path = {sys.path[:3]}")
+        print(f"Files in /mgr: {os.listdir('/mgr')}")
+        raise
+
+    func = getattr(module, params["mode"])
+    func(params)
+
+
+if __name__ == "__main__":
+    main()

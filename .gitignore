@@ -223,13 +223,6 @@ gradle-app.setting
 # Log directories
 logs/
 
-notebooks/data/
+.claude/
 
-plots/
-
-config.yml
-
-**.png
-**.pdf
-
-*.omc/
+.omc/

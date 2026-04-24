@@ -8,6 +8,7 @@ CONFIG_FILE="$PAPER_DIR/config.yml"
 # Export UID and GID for docker build args
 export HOST_UID=$(id -u)
 export HOST_GID=$(id -g)
+export PAPER_DIR="$PAPER_DIR"
 
 # Detect the correct grep flag based on OS
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -35,12 +36,20 @@ GPU=${GPU:-false}
 JAVA_LOG_DEST=$(get_yaml_value "java_log_destination")
 JAVA_LOG_LEVEL=$(get_yaml_value "java_log_level")
 
+# Pre-create log directories to avoid permission issues with volume mounts
+LOG_BASE_DIR="$PAPER_DIR/rl-manager/logs"
+EXPERIMENT_TYPE_DIR=$(grep -A 5 "^experiment_1:" "$CONFIG_FILE" | grep "^ *experiment_type_dir:" | sed 's/.*: //')
+EXPERIMENT_NAME=$(grep -A 5 "^experiment_1:" "$CONFIG_FILE" | grep "^ *experiment_name:" | sed 's/.*: //')
+if [ -n "$EXPERIMENT_TYPE_DIR" ] && [ -n "$EXPERIMENT_NAME" ]; then
+    mkdir -p "$LOG_BASE_DIR/$EXPERIMENT_TYPE_DIR/$EXPERIMENT_NAME"
+fi
+
 cleanup_experiment() {
     # Stop the experiment containers
-    docker compose -f "$PAPER_DIR/docker-compose.yml" down --remove-orphans
+    docker compose -f common/docker-compose.yml down --remove-orphans
     if [ $? -ne 0 ]; then
         echo "Error stopping containers. Retrying..."
-        docker compose -f "$PAPER_DIR/docker-compose.yml" down --remove-orphans
+        docker compose -f common/docker-compose.yml down --remove-orphans
     fi
 
     # Remove volumes and networks
@@ -67,11 +76,11 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
     for i in $(seq 1 $NUM_EXPERIMENTS); do
         # Start all containers
-        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" \
-            docker compose -f "$PAPER_DIR/docker-compose.yml" $PROFILE_OPTION up --build --remove-orphans -d
+        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" PAPER_DIR="$PAPER_DIR" \
+            docker compose -f common/docker-compose.yml $PROFILE_OPTION up --build --remove-orphans -d
 
         # Get the container ID for the manager service
-        MANAGER_CONTAINER_ID=$(docker compose -f "$PAPER_DIR/docker-compose.yml" ps -q "$MANAGER_SERVICE")
+        MANAGER_CONTAINER_ID=$(docker compose -f common/docker-compose.yml ps -q "$MANAGER_SERVICE")
 
         if [ -z "$MANAGER_CONTAINER_ID" ]; then
             echo "Error: No running manager container found for experiment $i."
@@ -82,11 +91,11 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
             if [ "$NUM_EXPERIMENTS" -gt 1 ]; then
                 # Attach only to the manager container logs
                 echo "Attaching to logs of manager container for experiment $i..."
-                docker compose -f "$PAPER_DIR/docker-compose.yml" logs -f "$MANAGER_SERVICE"
+                docker compose -f common/docker-compose.yml logs -f "$MANAGER_SERVICE"
             else
                 # Attach to all container logs
                 echo "Attaching to all container logs for experiment $i..."
-                docker compose -f "$PAPER_DIR/docker-compose.yml" logs -f
+                docker compose -f common/docker-compose.yml logs -f
             fi
         else
             # Wait for the manager container to finish (using docker wait with container ID)

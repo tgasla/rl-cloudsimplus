@@ -1,28 +1,37 @@
 services:
   manager: &cpu
     image: manager:0.11
-    # container_name: manager # disabled to allow multiple instances
+    container_name: manager
     environment: # passing defaults to avoid warnings
       - EXPERIMENT_ID=${EXPERIMENT_ID:-1}
       - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-1}
       - CUBLAS_WORKSPACE_CONFIG=:4096:8
+      - CUDA_LAUNCH_BLOCKING=1
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
       - JAVA_LOG_DESTINATION=${JAVA_LOG_DESTINATION:-stdout}
       - JAVA_LOG_LEVEL=${JAVA_LOG_LEVEL:-INFO}
     build:
-      context: .
-      dockerfile: rl-manager/Dockerfile
+      context: rl-manager
       args:
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
-    # Volume mounts for hot code reload — no rebuild needed when source changes
+        PAPER_DIR: ${PAPER_DIR:-main}
     volumes:
-      - ./config.yml:/mgr/config.yml
-      - ./rl-manager/mnt:/mgr/mnt
-      - ./logs:/mgr/logs
-      - ./cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
+      - ../${PAPER_DIR:-main}/rl-manager/entrypoint.py:/mgr/entrypoint.py
+      - ./rl-manager/utils:/mgr/utils
+      - ./rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus
+      - ./rl-manager/startup.sh:/common/rl-manager/startup.sh
+      - ./traces:/mgr/traces
+      - ../${PAPER_DIR:-main}/rl-manager/logs:/mgr/logs
+      - ../${PAPER_DIR:-main}/rl-manager/callbacks:/mgr/callbacks
+      - ../${PAPER_DIR:-main}/config.yml:/mgr/config.yml
+      - ../${PAPER_DIR:-main}/rl-manager/train.py:/mgr/train.py
+      - ../${PAPER_DIR:-main}/rl-manager/transfer.py:/mgr/transfer.py
+      - ../${PAPER_DIR:-main}/rl-manager/test.py:/mgr/test.py
+      - ../${PAPER_DIR:-main}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
+      - ../${PAPER_DIR:-main}/cloudsimplus-gateway/src/main/proto:/papers/main/cloudsimplus-gateway/src/main/proto:ro
       - /run/docker.sock:/run/docker.sock:ro
-    command: python mnt/entrypoint.py
+    command: bash /common/rl-manager/startup.sh
 
   manager-cuda:
     <<: *cpu

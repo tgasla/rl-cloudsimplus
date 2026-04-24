@@ -1,0 +1,403 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1777030229093,
+  "projectRoot": "/home/taslanidis/git/rl-cloudsimplus",
+  "techStack": {
+    "languages": [
+      {
+        "name": "C/C++",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "Makefile"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "make build",
+    "testCommand": "make test",
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "common": {
+      "path": "common",
+      "purpose": null,
+      "fileCount": 6,
+      "lastAccessed": 1777030229089,
+      "keyFiles": [
+        "LICENSE",
+        "Makefile",
+        "README.md",
+        "docker-compose.yml",
+        "versions.gradle"
+      ]
+    },
+    "logs": {
+      "path": "logs",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1777030229089,
+      "keyFiles": []
+    },
+    "papers": {
+      "path": "papers",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1777030229089,
+      "keyFiles": []
+    },
+    "trace_tools": {
+      "path": "trace_tools",
+      "purpose": null,
+      "fileCount": 6,
+      "lastAccessed": 1777030229089,
+      "keyFiles": [
+        "add_noise_to_trace.py",
+        "trace-plotter-stacked.py",
+        "trace_generator.py",
+        "trace_modifier.py",
+        "trace_plotter.py"
+      ]
+    },
+    "common/docs": {
+      "path": "common/docs",
+      "purpose": "Documentation",
+      "fileCount": 1,
+      "lastAccessed": 1777030229090,
+      "keyFiles": [
+        "architecture.md"
+      ]
+    },
+    "common/scripts": {
+      "path": "common/scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 1,
+      "lastAccessed": 1777030229093,
+      "keyFiles": [
+        "run_docker.sh"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "rl-manager/mnt/utils/misc.py",
+      "accessCount": 131,
+      "lastAccessed": 1776615216298,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/CloudSimGrpcService.java",
+      "accessCount": 70,
+      "lastAccessed": 1776355791934,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/mnt/train.py",
+      "accessCount": 54,
+      "lastAccessed": 1776611125249,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 43,
+      "lastAccessed": 1776359865223,
+      "type": "directory"
+    },
+    {
+      "path": "Makefile",
+      "accessCount": 43,
+      "lastAccessed": 1777032636817,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/grpc_cloudsimplus/grpc_cloudsimplus/envs/grpc_singledc.py",
+      "accessCount": 40,
+      "lastAccessed": 1776613378237,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/Dockerfile",
+      "accessCount": 37,
+      "lastAccessed": 1776615207738,
+      "type": "file"
+    },
+    {
+      "path": "scripts/run_docker.sh",
+      "accessCount": 37,
+      "lastAccessed": 1776616153371,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/WrappedSimulation.java",
+      "accessCount": 35,
+      "lastAccessed": 1776355806968,
+      "type": "file"
+    },
+    {
+      "path": "docker-compose.yml",
+      "accessCount": 32,
+      "lastAccessed": 1776615638939,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/mnt/callbacks/save_on_best_training_reward_callback.py",
+      "accessCount": 29,
+      "lastAccessed": 1776175923119,
+      "type": "file"
+    },
+    {
+      "path": "config.yml",
+      "accessCount": 27,
+      "lastAccessed": 1776617015316,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg",
+      "accessCount": 26,
+      "lastAccessed": 1776350131067,
+      "type": "directory"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/Main.java",
+      "accessCount": 24,
+      "lastAccessed": 1776616569885,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/grpc_cloudsimplus/grpc_cloudsimplus/grpc_client.py",
+      "accessCount": 23,
+      "lastAccessed": 1776275797847,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/mnt/entrypoint.py",
+      "accessCount": 19,
+      "lastAccessed": 1776364285555,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/SimulationSettings.java",
+      "accessCount": 17,
+      "lastAccessed": 1776352043645,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/mnt/transfer.py",
+      "accessCount": 15,
+      "lastAccessed": 1776350753232,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager",
+      "accessCount": 15,
+      "lastAccessed": 1776359892235,
+      "type": "directory"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/SimulationStepInfo.java",
+      "accessCount": 13,
+      "lastAccessed": 1776351615245,
+      "type": "file"
+    },
+    {
+      "path": "config.template.yml",
+      "accessCount": 13,
+      "lastAccessed": 1776617022322,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/docker/Dockerfile",
+      "accessCount": 11,
+      "lastAccessed": 1776287946922,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/proto/cloudsimplus.proto",
+      "accessCount": 10,
+      "lastAccessed": 1776278553893,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/GrpcServer.java",
+      "accessCount": 9,
+      "lastAccessed": 1776350170959,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java",
+      "accessCount": 8,
+      "lastAccessed": 1776355911789,
+      "type": "directory"
+    },
+    {
+      "path": "rl-manager/mnt",
+      "accessCount": 8,
+      "lastAccessed": 1776412037329,
+      "type": "directory"
+    },
+    {
+      "path": "rl-manager/grpc_cloudsimplus",
+      "accessCount": 8,
+      "lastAccessed": 1776412045225,
+      "type": "directory"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/Observation.java",
+      "accessCount": 7,
+      "lastAccessed": 1776351761261,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/grpc_cloudsimplus/grpc_cloudsimplus/cloudsimplus_pb2_grpc.py",
+      "accessCount": 6,
+      "lastAccessed": 1776271774041,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/gym_cloudsimplus/gym_cloudsimplus/envs/singledc.py",
+      "accessCount": 6,
+      "lastAccessed": 1776347518332,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/SimulationFactory.java",
+      "accessCount": 6,
+      "lastAccessed": 1776352093714,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/grpc_cloudsimplus/grpc_cloudsimplus/envs/__init__.py",
+      "accessCount": 5,
+      "lastAccessed": 1776178048052,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/MultiSimulationEnvironment.java",
+      "accessCount": 5,
+      "lastAccessed": 1776350137128,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/SimulationStepResult.java",
+      "accessCount": 5,
+      "lastAccessed": 1776351759163,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/VmCost.java",
+      "accessCount": 5,
+      "lastAccessed": 1776351829979,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/grpc_cloudsimplus/pyproject.toml",
+      "accessCount": 5,
+      "lastAccessed": 1776363591016,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/grpc_cloudsimplus/grpc_cloudsimplus/subprocess_utils.py",
+      "accessCount": 4,
+      "lastAccessed": 1776363491518,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/mnt/test.py",
+      "accessCount": 3,
+      "lastAccessed": 1776101807103,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/mnt/callbacks",
+      "accessCount": 3,
+      "lastAccessed": 1776120145402,
+      "type": "directory"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/CloudSimProxy.java",
+      "accessCount": 3,
+      "lastAccessed": 1776166494219,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/SimulationResetResult.java",
+      "accessCount": 3,
+      "lastAccessed": 1776351760209,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src/main/java/daislab/cspg/CloudletDescriptor.java",
+      "accessCount": 3,
+      "lastAccessed": 1776351762309,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/gym_cloudsimplus/gym_cloudsimplus/__init__.py",
+      "accessCount": 2,
+      "lastAccessed": 1776099884707,
+      "type": "file"
+    },
+    {
+      "path": "cloudsimplus-gateway/src",
+      "accessCount": 2,
+      "lastAccessed": 1776105440144,
+      "type": "directory"
+    },
+    {
+      "path": "rl-manager/grpc_cloudsimplus/grpc_cloudsimplus/__init__.py",
+      "accessCount": 2,
+      "lastAccessed": 1776178047999,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/gym_cloudsimplus/gym_cloudsimplus/envs/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776098998632,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/gym_cloudsimplus/setup.py",
+      "accessCount": 1,
+      "lastAccessed": 1776098998645,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/mnt/utils/trace_utils.py",
+      "accessCount": 1,
+      "lastAccessed": 1776099024495,
+      "type": "file"
+    },
+    {
+      "path": "rl-manager/grpc_cloudsimplus/grpc_cloudsimplus",
+      "accessCount": 1,
+      "lastAccessed": 1776106227401,
+      "type": "directory"
+    },
+    {
+      "path": "logs/grpc_test/grpc_test_run1/config.yml",
+      "accessCount": 1,
+      "lastAccessed": 1776109569173,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

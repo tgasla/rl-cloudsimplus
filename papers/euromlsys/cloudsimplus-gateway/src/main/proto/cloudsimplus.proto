@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package daislab.cspg;
+
+option java_multiple_files = true;
+option java_package = "daislab.cspg.grpc";
+option java_outer_classname = "CloudSimProto";
+
+message Observation {
+  repeated int32 infrastructure_observation = 1;
+  repeated int32 jobs_waiting_observation = 2;
+}
+
+message StepInfo {
+  int32 jobs_waiting = 1;
+  int32 jobs_placed = 2;
+  double jobs_placed_ratio = 3;
+  double quality_ratio = 4;
+  double deadline_violation_ratio = 5;
+  repeated double job_wait_time = 6;
+}
+
+message StepResult {
+  Observation observation = 1;
+  double reward = 2;
+  bool terminated = 3;
+  bool truncated = 4;
+  StepInfo info = 5;
+}
+
+message ResetResult {
+  Observation observation = 1;
+  StepInfo info = 2;
+}
+
+service CloudSimService {
+  rpc createSimulation(CreateRequest) returns (CreateResponse);
+  rpc reset(ResetRequest) returns (ResetResult);
+  rpc step(StepRequest) returns (StepResult);
+  rpc batchStep(BatchStepRequest) returns (BatchStepResponse);
+  rpc close(CloseRequest) returns (CloseResponse);
+  rpc render(RenderRequest) returns (RenderResponse);
+  rpc ping(PingRequest) returns (PongResponse);
+}
+
+message CreateRequest {
+  string params_json = 1;
+  string jobs_json = 2;
+}
+
+message CreateResponse {
+  string sim_id = 1;
+}
+
+message ResetRequest {
+  string sim_id = 1;
+  int64 seed = 2;
+}
+
+message StepRequest {
+  string sim_id = 1;
+  repeated int32 action = 2;
+}
+
+message BatchStepRequest {
+  message StepItem {
+    string sim_id = 1;
+    repeated int32 action = 2;
+  }
+  repeated StepItem items = 1;
+}
+
+message BatchStepResponse {
+  repeated StepResult results = 1;
+}
+
+message CloseRequest {
+  string sim_id = 1;
+}
+
+message CloseResponse {}
+
+message RenderRequest {
+  string sim_id = 1;
+}
+
+message RenderResponse {
+  string render_data_json = 1;
+}
+
+message PingRequest {}
+
+message PongResponse {
+  bool alive = 1;
+}
