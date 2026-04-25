@@ -1,29 +1,41 @@
+"""VmManagementEnv — VM lifecycle management RL environment.
+
+Inherits from CloudSimBaseEnv which provides all shared gRPC wiring.
+Concrete domain-specific implementation for VM management problem:
+- Tree-array infrastructure observation
+- [action_type, host_id, vm_id, vm_type] action space
+- VM lifecycle control (create S/M/L VMs, destroy VMs, no-op)
+"""
+
 import gymnasium as gym
 import numpy as np
-
 from gymnasium import spaces
-from ..cloud_sim_grpc_client import CloudSimGrpcClient
+
+from .base import CloudSimBaseEnv
 
 
-# Based on https://gymnasium.farama.org/api/env/
-class GrpcSingleDC(gym.Env):
+class VmManagementEnv(CloudSimBaseEnv):
     """
-    Gymnasium environment that bridges Stable Baselines3 to CloudSim Plus via gRPC.
+    VM management Gymnasium environment bridging Stable Baselines3 to
+    CloudSim Plus via gRPC.
 
-    Unlike the Py4J-based SingleDC, each instance connects to its own gRPC server
-    running in a dedicated Java JVM subprocess. This enables true parallel simulation
-    when used with SubprocVecEnv.
+    The agent controls VM lifecycle: create small/medium/large VMs on hosts,
+    destroy existing VMs. Observation is a tree-array of the infrastructure
+    (DC → hosts → VMs → jobs).
 
-    Args:
-        params:        Simulation configuration dict (same as SingleDC)
-        jobs_as_json: JSON string of CloudletDescriptor list
-        host:          Hostname of the gRPC server (default: localhost)
-        port:          TCP port of the gRPC server (default: 50051)
-        render_mode:   Gymnasium render mode (default: "ansi")
+    Action space: MultiDiscrete([3, max_hosts, max_vms, 3])
+        [action_type, host_id, vm_id, vm_type]
+        action_type: 0=noop, 1=create, 2=destroy
+        vm_type: 0=small, 1=medium, 2=large
+
+    Inherits from CloudSimBaseEnv:
+        - gRPC client (_client)
+        - _sim_id, _rl_problem
+        - reset(), step(), close(), ping()
+        - _pad_observation()
     """
 
-    metadata = {"render_modes": ["human", "ansi"]}
-    VM_CORES = [2, 4, 8]
+    VM_CORES = [2, 4, 8]  # small, medium, large
 
     def __init__(
         self,
@@ -33,15 +45,13 @@ class GrpcSingleDC(gym.Env):
         port: int = 50051,
         render_mode: str = "ansi",
     ):
-        super(GrpcSingleDC, self).__init__()
-        self.params = params
+        # Initialize base class (sets up _client, _sim_id=None, _rl_problem=None)
+        super().__init__(params, jobs_as_json, host, port, render_mode)
 
-        # gRPC client - connects to its own Java JVM
-        self._client = CloudSimGrpcClient(host=host, port=port)
-        self._sim_id = None
+        # Domain-specific RL problem type
         self._rl_problem = "vm_management"
 
-        # ── Mirror all fields from SingleDC ──────────────────────────────────
+        # ── Domain-specific fields ─────────────────────────────────────────────
         self.vm_allocation_policy = params["vm_allocation_policy"]
         self.host_count = params["host_count"]
         self.host_pes = params["host_pes"]
@@ -60,6 +70,11 @@ class GrpcSingleDC(gym.Env):
         self.max_vms = self.max_hosts * int(self.host_pes) // int(self.small_vm_pes)
         self.max_jobs = self.max_hosts * int(self.host_pes) // self.min_job_pes
 
+        # VM tracking for action masks
+        self.host_cores_utilized = None  # initialized in reset()
+        self.vms_running = 0
+
+        # ── Action space ──────────────────────────────────────────────────────
         self.action_space = spaces.MultiDiscrete(
             np.array(
                 [
@@ -71,24 +86,8 @@ class GrpcSingleDC(gym.Env):
             )
         )
 
-        # self.infr_obs_length = max_tree_nodes = (1 + self.max_hosts + self.max_vms + self.max_jobs)
-        # with the term "node" i refer to a tree node which can be a DC, a host, a VM or a job
-        # the node that has the most pes is the DC because it aggregates all the hosts's pes
-        # we do (max_pes_per_node + 1) because the DC can have 0 pes as well.
-        # So, these are the different possible values a tree node can take in the infrastructure length,
-        # 0, 1, 2, ..., max_pes_per_node -> max_pes_per_node + 1 distinct values
-        # we multiply by np.ones(self.infr_obs_length) a vector of ones with the same length as the
-        # infrastructure length.
-        # So, the vector will look like self.infr_obs_space = [max_pes_per_node + 1, max_pes_per_node + 1, ..., max_pes_per_node + 1]
-        # where each element is the number of pes of a node in the infrastructure or the number of children of a node in the infrastructure.
-        # Here, I forgot to add the number of children of a node in the infrastructure.
-        # So in reality the self.infr_obs_length should be 2 * (1 + self.max_hosts + self.max_vms + self.max_jobs)
-        # because the infrastruture state is eventually a pre-order traversal of the tree of nodes, writing the pes of a node first,
-        # and then the number of children of that node.
-        # Now, the maximum value for all elements in the vector is max_pes_per_node + 1. This, assumes that always:
-        # 1. The number of children of a node is less than or equal to max_pes_per_node.
-        # 2. The number of pes of a node is less than or equal to max_pes_per_node.
-        # Corrected below!:
+        # ── Observation spaces ─────────────────────────────────────────────────
+        # Tree-array: 2 * (1 + max_hosts + max_vms + max_jobs) values
         max_tree_nodes = 1 + self.max_hosts + self.max_vms + self.max_jobs
         self.infr_obs_length = 2 * max_tree_nodes
 
@@ -118,14 +117,24 @@ class GrpcSingleDC(gym.Env):
             )
         self.render_mode = render_mode
 
-        # ── Create simulation ───────────────────────────────────────────────
+        # ── Create simulation (CloudSimBaseEnv has _client and _sim_id ready) ─
         import json
         from utils.misc import _params_to_java_format
         java_params = _params_to_java_format(params)
-        self._sim_id = self._client.create_simulation(json.dumps(java_params), jobs_as_json)
+        self._sim_id = self._client.create_simulation(
+            json.dumps(java_params), jobs_as_json
+        )
 
-    # ── Action masking ────────────────────────────────────────────────────────
+    # ── CloudSimBaseEnv abstract methods ───────────────────────────────────────
+
+    def _detect_rl_problem(self) -> str:
+        return "vm_management"
+
     def action_masks(self) -> list[bool]:
+        """Action mask for VM management action space."""
+        if self.host_cores_utilized is None:
+            return [True] * (3 + self.max_hosts + self.max_vms + 3)
+
         host_cores_utilized_sum = np.sum(self.host_cores_utilized)
         current_max_vms = self.host_count * int(self.host_pes) // int(self.small_vm_pes)
 
@@ -168,15 +177,8 @@ class GrpcSingleDC(gym.Env):
         masks = [action_type_mask, host_mask, vm_mask, vm_type_mask]
         return [item for sublist in masks for item in sublist]
 
-    # ── Observation helpers ───────────────────────────────────────────────────
-    def _pad_observation(self, obs, target_dim: int) -> np.ndarray:
-        if len(obs) >= target_dim:
-            return np.array(obs[:target_dim], dtype=np.int16)
-        padded = np.zeros(target_dim, dtype=np.int16)
-        padded[: len(obs)] = obs
-        return padded
-
     def _get_observation(self, raw_obs: dict) -> dict:
+        """Convert raw gRPC observation to VM management gymnasium obs dict."""
         infr_obs = np.array(raw_obs["infr_state"], dtype=np.int16)
         infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
         # Pad job_cores_waiting_state to (1,) so VecEnv stacking produces (n_envs, 1)
@@ -189,40 +191,34 @@ class GrpcSingleDC(gym.Env):
             "job_cores_waiting_state": jcw,
         }
 
-    # ── Gymnasium API ─────────────────────────────────────────────────────────
+    def _parse_step_info(self, raw_info: dict) -> dict:
+        """Convert raw gRPC step info to VM management info dict."""
+        return {
+            "job_wait_reward": raw_info.get("job_wait_reward", 0.0),
+            "running_vm_cores_reward": raw_info.get("running_vm_cores_reward", 0.0),
+            "unutilized_vm_cores_reward": raw_info.get("unutilized_vm_cores_reward", 0.0),
+            "invalid_reward": raw_info.get("invalid_reward", 0.0),
+            "is_valid": raw_info.get("is_valid", True),
+            "host_affected": raw_info.get("host_affected", 0),
+            "cores_changed": raw_info.get("cores_changed", 0),
+        }
+
+    # ── reset() override — needs VM tracking init ──────────────────────────────
     def reset(self, seed=None, options=None):
-        super(GrpcSingleDC, self).reset()
-        self.current_step = 0
+        """Reset the simulation. Also re-initializes VM tracking state."""
+        obs, info = super().reset(seed=seed, options=options)
+        # Initialize VM tracking after base reset (base calls gRPC reset)
         self.host_cores_utilized = np.zeros(self.max_hosts, dtype=np.int32)
         self.vms_running = 0
-
-        if seed is None:
-            seed = 0
-
-        raw_result = self._client.reset(self._sim_id, seed, rl_problem=self._rl_problem)
-        obs = self._get_observation(raw_result.get("observation", {}))
-        info = raw_result.get("info", {})
         return obs, info
 
+    # ── step() override — needs VM tracking update ────────────────────────────
     def step(self, action):
-        self.current_step += 1
-
-        # gRPC expects a plain list of ints
-        action_list = action.tolist() if hasattr(action, "tolist") else list(action)
-
-        result = self._client.step(self._sim_id, action_list, rl_problem=self._rl_problem)
-
-        obs = self._get_observation(result.get("observation", {}))
-        reward = result.get("reward", 0.0)
-        terminated = result.get("terminated", False)
-        truncated = result.get("truncated", False)
-        info = result.get("info", {})
-
-        if self.render_mode == "human":
-            self.render()
-
-        # Update VM tracking for action masks
+        """Execute one step. Also updates VM tracking for action masks."""
+        obs, reward, terminated, truncated, info = super().step(action)
+        # Update VM tracking for next action mask
         if info.get("is_valid"):
+            action_list = action.tolist() if hasattr(action, "tolist") else list(action)
             if action_list[0] == 1:  # create VM
                 host_id = action_list[1]
                 vm_type = action_list[3]
@@ -232,26 +228,12 @@ class GrpcSingleDC(gym.Env):
                 host_id = info["host_affected"]
                 self.host_cores_utilized[host_id] -= info["cores_changed"]
                 self.vms_running -= 1
-
         return obs, reward, terminated, truncated, info
 
-    def render(self):
-        if self.render_mode is None:
-            gym.logger.warn("render_mode not set")
-            return
-        # gRPC render not yet implemented on the Java side
-        if self.render_mode == "human":
-            print("Render (gRPC): not yet implemented")
-        elif self.render_mode == "ansi":
-            return "Render not yet implemented"
-
-    def close(self):
-        if self._sim_id is not None:
-            self._client.close(self._sim_id)
-        self._client.close_channel()
-        # Stop the Java JVM subprocess spawned by this worker
-        if hasattr(self, "_java_proc") and self._java_proc is not None:
-            proc = self._java_proc
-            if proc.poll() is None:
-                proc.terminate()
-                proc.wait(timeout=10)
+    def _pad_observation(self, obs, target_dim: int) -> np.ndarray:
+        """Pad observation array to target dimension."""
+        if len(obs) >= target_dim:
+            return np.array(obs[:target_dim], dtype=np.int16)
+        padded = np.zeros(target_dim, dtype=np.int16)
+        padded[: len(obs)] = obs
+        return padded

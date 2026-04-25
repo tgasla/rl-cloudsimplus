@@ -43,8 +43,9 @@ class GrpcMultiDC(gym.Env):
         self.render_mode = render_mode
 
         # gRPC client - connects to its own Java JVM
-        self._client = CloudSimGrpcClient(host=host, port=port, paper="euromlsys")
+        self._client = CloudSimGrpcClient(host=host, port=port)
         self._sim_id = None
+        self._rl_problem = "job_placement"
 
         # ── Extract params ──────────────────────────────────────────────────
         self.max_datacenters = params["max_datacenters"]
@@ -180,7 +181,7 @@ class GrpcMultiDC(gym.Env):
         if seed is None:
             seed = 0
 
-        raw_result = self._client.reset(self._sim_id, seed)
+        raw_result = self._client.reset(self._sim_id, seed, rl_problem=self._rl_problem)
         raw_obs = raw_result.get("observation", {})
         raw_info = raw_result.get("info", {})
         obs = self._get_observation(raw_obs)
@@ -207,7 +208,7 @@ class GrpcMultiDC(gym.Env):
         # gRPC expects a plain list of ints
         action_list = action.tolist() if hasattr(action, "tolist") else list(action)
 
-        result = self._client.step(self._sim_id, action_list)
+        result = self._client.step(self._sim_id, action_list, rl_problem=self._rl_problem)
         raw_obs = result.get("observation", {})
         reward = result.get("reward", 0.0)
         terminated = result.get("terminated", False)

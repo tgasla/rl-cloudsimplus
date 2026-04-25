@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,11 +25,10 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
         LOGGER.info("CloudSimGrpcService constructor called");
     }
 
-    private final Map<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
     private final SimulationFactory simulationFactory = new SimulationFactory();
     private final Gson gson = new Gson();
     private final Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
-
     private volatile boolean shutdownRequested = false;
 
     @Override
@@ -43,9 +41,11 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
             Map<String, Object> params = gson.fromJson(request.getParamsJson(), mapType);
             // Defensively coerce any Number values to their target types to avoid
             // ClassCastException when Gson returns Double instead of Integer
-            coerceNumericParams(params);
+            GrpcServiceHelper.coerceNumericParams(params);
+            // Convert Map back to JSON string for SimulationFactory (which parses JSON internally)
+            String paramsJson = gson.toJson(params);
             WrappedSimulation simulation =
-                    simulationFactory.create(params, request.getJobsJson());
+                    simulationFactory.create(paramsJson, request.getJobsJson());
             String identifier = simulation.getIdentifier();
             simulations.put(identifier, simulation);
 
@@ -186,7 +186,7 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
         String simId = request.getSimId();
         LOGGER.info("gRPC close called for {}", simId);
         try {
-            validateIdentifier(simId);
+            getValidSimulation(simId); // validates simId exists
             WrappedSimulation simulation = simulations.remove(simId);
             if (simulation != null) {
                 simulation.close();
@@ -290,33 +290,5 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
 
     private static java.util.List<Integer> convertIntArray(java.util.List<Integer> list) {
         return list;
-    }
-
-    /**
-     * Defensively coerce any Number values in the params map to the type that
-     * SimulationSettings expects (int or boolean). Gson parses all numbers as
-     * Double by default when the map target is {@code Map<String, Object>},
-     * causing ClassCastException on int casts.
-     */
-    private static void coerceNumericParams(Map<String, Object> params) {
-        for (Map.Entry<String, Object> entry : params.entrySet()) {
-            Object value = entry.getValue();
-            if (value instanceof Number) {
-                Number num = (Number) value;
-                String key = entry.getKey();
-                if (key.endsWith("_count") || key.endsWith("_pes") || key.endsWith("_length")
-                        || key.equals("max_hosts") || key.equals("host_pes")
-                        || key.equals("small_vm_pes") || key.equals("medium_vm_multiplier")
-                        || key.equals("large_vm_multiplier") || key.equals("initial_s_vm_count")
-                        || key.equals("initial_m_vm_count") || key.equals("initial_l_vm_count")
-                        || key.equals("max_episode_length") || key.equals("max_job_pes")
-                        || key.equals("host_pe_mips") || key.equals("host_ram")
-                        || key.equals("host_storage") || key.equals("host_bw")
-                        || key.equals("small_vm_ram") || key.equals("small_vm_storage")
-                        || key.equals("small_vm_bw")) {
-                    entry.setValue(num.intValue());
-                }
-            }
-        }
     }
 }

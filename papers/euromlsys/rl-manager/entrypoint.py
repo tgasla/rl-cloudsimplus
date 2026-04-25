@@ -151,6 +151,14 @@ def main():
         shutil.copy(CONFIG_FILE, params["log_dir"])
         _write_seed_to_file(params["seed"], params["log_dir"])
 
+    # Propagate java log settings from config to environment so Java subprocess sees them
+    raw_config = dict_from_config(experiment_id, CONFIG_FILE)
+    globals_cfg = raw_config.get("globals", {})
+    if "java_log_destination" in globals_cfg:
+        os.environ["JAVA_LOG_DESTINATION"] = globals_cfg["java_log_destination"]
+    if "java_log_level" in globals_cfg:
+        os.environ["JAVA_LOG_LEVEL"] = globals_cfg["java_log_level"]
+
     try:
         module = importlib.import_module(params["mode"])
     except ModuleNotFoundError as e:

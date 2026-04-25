@@ -163,7 +163,7 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
         String simId = request.getSimId();
         LOGGER.info("gRPC close called for {}", simId);
         try {
-            validateIdentifier(simId);
+            getValidSimulation(simId); // validates simId exists
             WrappedSimulation simulation = simulations.remove(simId);
             if (simulation != null) {
                 simulation.close();

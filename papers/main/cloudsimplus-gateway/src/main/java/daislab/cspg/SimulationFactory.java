@@ -8,27 +8,40 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class SimulationFactory {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(SimulationFactory.class.getSimpleName());
 
-    private static final Type cloudletDescriptors =
+    private static final Type cloudletDescriptorsType =
             new TypeToken<List<CloudletDescriptor>>() {}.getType();
 
     private static final Gson gson = new Gson();
 
-    private int created = 0;
+    private int simulationsRunning = 0;
 
-    public synchronized WrappedSimulation create(final Map<String, Object> params,
+    public synchronized WrappedSimulation create(final String paramsAsJson,
             final String jobsAsJson) {
-        String identifier = "Sim" + created++;
+        String identifier = "Sim" + simulationsRunning++;
 
-        final SimulationSettings settings = new SimulationSettings(params);
+        // Parse JSON params to Map, then use SimulationSettingsBuilder for unified
+        // problem-type-aware settings with safe defaults for inactive fields
+        com.google.gson.JsonParser parser = new com.google.gson.JsonParser();
+        com.google.gson.JsonElement elem = parser.parse(paramsAsJson);
+        java.util.Map<String, Object> paramsMap = new java.util.HashMap<>();
+        if (elem.isJsonObject()) {
+            for (java.util.Map.Entry<String, com.google.gson.JsonElement> e : elem.getAsJsonObject().entrySet()) {
+                Object value = e.getValue().isJsonNull() ? null : e.getValue().getAsNumber();
+                paramsMap.put(e.getKey(), value);
+            }
+        }
 
-        LOGGER.info("Simulation settings dump\n{}", settings);
+        // Use SimulationSettingsBuilder for unified problem-type-aware settings
+        SimulationSettings settings =
+                (SimulationSettings) SimulationSettingsBuilder.build(paramsMap);
+
+        LOGGER.info("Simulation settings dump:\n{}", settings);
 
         List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
 
@@ -40,6 +53,18 @@ public class SimulationFactory {
         return new WrappedSimulation(identifier, settings, jobs);
     }
 
+    private List<CloudletDescriptor> loadJobsFromJson(final String jobsAsJson) {
+        List<CloudletDescriptor> jobList = new ArrayList<>();
+        LOGGER.info(jobsAsJson);
+        final List<CloudletDescriptor> deserialized =
+                gson.fromJson(jobsAsJson, cloudletDescriptorsType);
+        for (CloudletDescriptor cloudletDescriptor : deserialized) {
+            jobList.add(cloudletDescriptor);
+        }
+        LOGGER.info("Deserialized {} jobs", jobList.size());
+        return jobList;
+    }
+
     private List<CloudletDescriptor> splitLargeJobs(final List<CloudletDescriptor> jobs,
             final int maxJobPes) {
         List<CloudletDescriptor> splitted = new ArrayList<>();
@@ -49,53 +74,20 @@ public class SimulationFactory {
             int splitCount = Math.max(1, (jobPesNumber + maxJobPes - 1) / maxJobPes);
             int normalSplitPesNumber = jobPesNumber / splitCount;
             long totalMi = cloudletDescriptor.getMi();
-            // long normalSplitMi = totalMi / splitCount;
 
-            // Distribute the PEs for each split part
             for (int i = 0; i < splitCount; i++) {
-                // Last split might have different MI and PES due to remainder
-                // long miForThisSplit = (i < splitCount - 1)
-                // ? normalSplitMi
-                // : totalMi - (normalSplitMi * (splitCount - 1));
-                // uncomment the 4 previous lines if you want the splitting algorithm to split
-                // the MIs of jobs also
                 long miForThisSplit = totalMi;
                 int pesForThisSplit = (i < splitCount - 1) ? normalSplitPesNumber
                         : jobPesNumber - (normalSplitPesNumber * (splitCount - 1));
                 CloudletDescriptor splittedDescriptor = new CloudletDescriptor(splittedId++,
                         cloudletDescriptor.getSubmissionDelay(),
-                        // we divide by the pesNumber because cloudSimPlus do not parallelize jobs
-                        // :) so we artificially do it here.
                         miForThisSplit / pesForThisSplit, pesForThisSplit);
 
-                splitted.add(ensureMinValues(splittedDescriptor));
+                splitted.add(splittedDescriptor);
             }
         }
 
         LOGGER.info("Splitted: {} into {}", jobs.size(), splitted.size());
         return splitted;
-    }
-
-    private List<CloudletDescriptor> loadJobsFromJson(final String jobsAsJson) {
-        List<CloudletDescriptor> jobList = new ArrayList<>();
-        LOGGER.info(jobsAsJson);
-        final List<CloudletDescriptor> deserialized =
-                gson.fromJson(jobsAsJson, cloudletDescriptors);
-
-        for (CloudletDescriptor cloudletDescriptor : deserialized) {
-            jobList.add(ensureMinValues(cloudletDescriptor));
-        }
-
-        LOGGER.info("Deserialized {} jobs", jobList.size());
-
-        return jobList;
-    }
-
-    private CloudletDescriptor ensureMinValues(final CloudletDescriptor cloudletDescriptor) {
-        final long mi = Math.max(1, cloudletDescriptor.getMi());
-        final long cloudletDelay = Math.max(0, cloudletDescriptor.getSubmissionDelay());
-        final int pesNumber = Math.max(1, cloudletDescriptor.getCores());
-
-        return new CloudletDescriptor(cloudletDescriptor.getJobId(), cloudletDelay, mi, pesNumber);
     }
 }

@@ -18,7 +18,7 @@ globals:
     attached: true
     gpu: false
     java_log_level: INFO
-    java_log_destination: file
+    java_log_destination: none
     junit_output_show: false
     num_cpu: 16
 

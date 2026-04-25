@@ -16,3 +16,7 @@ include 'services:webservice'
 */
 
 rootProject.name = 'cloudsimplus-gateway'
+
+include ':common-cloudsimplus-gateway-shared'
+def commonPath = new File(rootDir, '../../../common/cloudsimplus-gateway-shared').getCanonicalPath()
+project(':common-cloudsimplus-gateway-shared').projectDir = new File(commonPath)

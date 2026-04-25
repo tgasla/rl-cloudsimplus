@@ -58,6 +58,9 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.44'
     annotationProcessor 'org.projectlombok:lombok:1.18.44'
 
+    // Shared module for unified SimulationSettings builder
+    implementation project(':common-cloudsimplus-gateway-shared')
+
     // gRPC
     implementation 'io.grpc:grpc-netty-shaded:1.80.0'
     implementation 'io.grpc:grpc-protobuf:1.80.0'

@@ -509,8 +509,10 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
             _time.sleep(0.5)
 
     from gym_cloudsimplus.envs import GrpcSingleDC, GrpcMultiDC
-    # Use MultiDC if cloudlet_to_dc_assignment_policy is set (euromlsys uses this)
-    if params.get("cloudlet_to_dc_assignment_policy"):
+    from gym_cloudsimplus.cloud_sim_grpc_client import _detect_rl_problem
+    # Use _detect_rl_problem to dispatch to domain-named envs
+    rl_problem = _detect_rl_problem(params)
+    if rl_problem == "job_placement":
         env = GrpcMultiDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
     else:
         env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
