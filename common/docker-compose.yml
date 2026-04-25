@@ -17,17 +17,17 @@ services:
         HOST_GID: ${HOST_GID:-1000}
         PAPER_DIR: ${PAPER_DIR:-main}
     volumes:
-      - ../${PAPER_DIR:-main}/rl-manager/entrypoint.py:/mgr/entrypoint.py
       - ./rl-manager/utils:/mgr/utils
       - ./rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus
       - ./rl-manager/startup.sh:/common/rl-manager/startup.sh
       - ./traces:/mgr/traces
+      - ./rl-manager/train.py:/mgr/train.py
+      - ./rl-manager/transfer.py:/mgr/transfer.py
+      - ../${PAPER_DIR:-main}/rl-manager/entrypoint.py:/mgr/entrypoint.py
       - ../${PAPER_DIR:-main}/rl-manager/logs:/mgr/logs
       - ../${PAPER_DIR:-main}/rl-manager/callbacks:/mgr/callbacks
       - ../${PAPER_DIR:-main}/config.yml:/mgr/config.yml
-      - ../${PAPER_DIR:-main}/rl-manager/train.py:/mgr/train.py
-      - ../${PAPER_DIR:-main}/rl-manager/transfer.py:/mgr/transfer.py
-      - ../${PAPER_DIR:-main}/rl-manager/test.py:/mgr/test.py
+      - ./rl-manager/test.py:/mgr/test.py
       - ../${PAPER_DIR:-main}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
       - ../${PAPER_DIR:-main}/cloudsimplus-gateway/src/main/proto:/papers/main/cloudsimplus-gateway/src/main/proto:ro
       - /run/docker.sock:/run/docker.sock:ro

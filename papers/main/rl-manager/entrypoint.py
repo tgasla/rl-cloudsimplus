@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ""))
 
 import importlib
 from utils.misc import dict_from_config
+from utils.trace_utils import csv_to_cloudlet_descriptor
 
 CONFIG_FILE = "config.yml"
 
@@ -80,6 +81,11 @@ def main():
         raw_config = yaml.safe_load(f)
 
     params = dict_from_config(experiment_id, CONFIG_FILE)
+
+    # Read job trace once here, pass to train/transfer/test
+    job_trace_path = os.path.join("traces", params["job_trace_filename"])
+    jobs = csv_to_cloudlet_descriptor(job_trace_path)
+
     params.update(num_experiments=num_experiments)
     if params["seed"] == "random":
         params["seed"] = np.random.randint(0, sys.maxsize)
@@ -115,7 +121,7 @@ def main():
         raise
 
     func = getattr(module, params["mode"])
-    func(params)
+    func(params, jobs)
 
 
 if __name__ == "__main__":

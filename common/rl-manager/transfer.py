@@ -1,6 +1,5 @@
 import os
 import json
-from stable_baselines3.common.monitor import Monitor
 
 from utils.misc import (
     create_kwargs_with_algorithm_params,
@@ -13,7 +12,6 @@ from utils.misc import (
     maybe_load_replay_buffer,
     get_host_count_from_train_dir,
 )
-from gym_cloudsimplus.envs.gym_multidc import MultiDC
 
 
 def transfer(params, jobs):
@@ -25,14 +23,13 @@ def transfer(params, jobs):
 
     algorithm = get_algorithm(params["algorithm"], params["vm_allocation_policy"])
 
-    num_cpu = params.get("num_cpu", None)
+    num_cpu = params.get("num_cpu", 16)
     jobs_json = json.dumps(jobs)
 
-    # gRPC mode: use GrpcSingleDC directly for space setup; vectorize_env spawns real workers
-    dummy_env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=50051)
-    env = Monitor(dummy_env, params["log_dir"])
+    # vectorize_env spawns gRPC workers with Java JVMs (ParallelBatchDummyVecEnv)
     env = vectorize_env(
-        env, algorithm,
+        None,
+        algorithm,
         num_cpu=num_cpu,
         params=params,
         jobs_json=jobs_json,

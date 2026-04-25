@@ -17,7 +17,7 @@ globals:
     attached: true
     gpu: false
     java_log_level: INFO
-    java_log_destination: stdout-file
+    java_log_destination: none
     junit_output_show: false
 
 common:
@@ -59,10 +59,17 @@ common:
     num_cpu: 16               # number of parallel gRPC workers (safe for your 28-thread machine)
     # Set to false to disable sending tree array observation (faster gRPC communication)
     send_observation_tree_array: false
+    # Feature extractor: 'default' uses standard MLP, 'custom' uses CustomFeatureExtractor
+    feature_extractor: default
+    features_dim: 64
+    embedding_size: 32
+    hidden_dim: 128
+    adaptation_bottleneck: false
 
 experiment_1:
-    mode: train
+    mode: test
     experiment_type_dir: debug
-    experiment_name: test1
+    experiment_name: test1_test
+    train_model_dir: debug/test1
     vm_allocation_policy: rl
     algorithm: MaskablePPO

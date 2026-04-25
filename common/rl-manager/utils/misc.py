@@ -505,8 +505,8 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
             sock.close()
             _time.sleep(0.5)
 
-    from gym_cloudsimplus.envs import SingleDC
-    env = SingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+    from gym_cloudsimplus.envs import GrpcSingleDC
+    env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
     env._java_proc = proc
     return env
 
@@ -565,8 +565,8 @@ def make_grpc_env(rank, params, jobs_json, num_cpu, base_port=50051, log_dir=Non
     def _init():
         proc = _start_java()
         try:
-            from gym_cloudsimplus.envs import SingleDC
-            env = SingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+            from gym_cloudsimplus.envs import GrpcSingleDC
+            env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
         except Exception:
             proc.terminate()
             proc.wait()
