@@ -23,18 +23,19 @@ services:
       - ./traces:/mgr/traces
       - ./rl-manager/train.py:/mgr/train.py
       - ./rl-manager/transfer.py:/mgr/transfer.py
+      - ./rl-manager/test.py:/mgr/test.py
       - ../${PAPER_DIR:-main}/rl-manager/entrypoint.py:/mgr/entrypoint.py
       - ../${PAPER_DIR:-main}/rl-manager/logs:/mgr/logs
-      - ../${PAPER_DIR:-main}/rl-manager/callbacks:/mgr/callbacks
+      - ./rl-manager/callbacks:/mgr/callbacks
       - ../${PAPER_DIR:-main}/config.yml:/mgr/config.yml
-      - ./rl-manager/test.py:/mgr/test.py
       - ../${PAPER_DIR:-main}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
-      - ../${PAPER_DIR:-main}/cloudsimplus-gateway/src/main/proto:/papers/main/cloudsimplus-gateway/src/main/proto:ro
+      - ../${PAPER_DIR:-main}/topologies:/mgr/topologies:ro
       - /run/docker.sock:/run/docker.sock:ro
     command: bash /common/rl-manager/startup.sh
 
   manager-cuda:
     <<: *cpu
+    container_name: manager-cuda
     profiles: ["cuda"]
     deploy:
       resources:

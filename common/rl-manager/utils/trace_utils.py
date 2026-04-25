@@ -20,7 +20,7 @@ def as_cloudlet_descriptor_dict(job_id, submit_time, mi, required_cores):
 
 def csv_to_cloudlet_descriptor(filename):
     """
-    Load jobs from a CSV with columns: job_id, arrival_time, mi, allocated_cores.
+    Load jobs from a CSV with columns: job_id, arrival_time, mi, required_cores, location, ...
     Returns list of cloudlet descriptors with base schema.
     """
     jobs = []
@@ -32,6 +32,12 @@ def csv_to_cloudlet_descriptor(filename):
             int(df.mi[i]),
             int(df.required_cores[i]),
         )
+        # Handle optional location field for euromlsys-style traces
+        if "location" in df.columns:
+            cloudlet["location"] = df.location[i]
+        # Handle optional delay_sensitivity field
+        if "delay_sensitivity" in df.columns:
+            cloudlet["delaySensitivity"] = df.delay_sensitivity[i]
         jobs.append(cloudlet)
     return jobs
 

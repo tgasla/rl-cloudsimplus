@@ -38,13 +38,15 @@ def _params_to_java_format(params):
     Convert Python snake_case params to Java camelCase format.
     This is needed because the Java SimulationSettings uses camelCase field names
     (via Gson parsing which respects JavaBean conventions).
-    Also keeps original snake_case keys for the Python environment.
+    Adds camelCase versions while KEEPING original snake_case keys for Python env.
     """
     java_params = dict(params)
     for key, value in params.items():
         if '_' in key:
             java_key = _snake_to_camel(key)
             java_params[java_key] = value
+            # Important: do NOT remove the original snake_case key
+            # Python environment (singledc.py) still needs it
     return java_params
 
 
@@ -505,8 +507,12 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
             sock.close()
             _time.sleep(0.5)
 
-    from gym_cloudsimplus.envs import GrpcSingleDC
-    env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+    from gym_cloudsimplus.envs import GrpcSingleDC, GrpcMultiDC
+    # Use MultiDC if cloudlet_to_dc_assignment_policy is set (euromlsys uses this)
+    if params.get("cloudlet_to_dc_assignment_policy"):
+        env = GrpcMultiDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+    else:
+        env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
     env._java_proc = proc
     return env
 

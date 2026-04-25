@@ -25,7 +25,7 @@ run-tensorboard:
 	docker run --rm --name tensorboard -d -v $(PAPER_DIR)/logs/:/logs/ -p 6006:6006 tensorboard
 
 run:
-	PAPER_DIR=$(PAPER_DIR) COMPOSE_BAKE=true ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(PAPER) common/scripts/run_docker.sh
+	PAPER_DIR=$(PAPER_DIR) ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(PAPER) common/scripts/run_docker.sh
 
 clean-gateway:
 	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew clean

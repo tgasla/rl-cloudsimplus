@@ -99,7 +99,10 @@ class GrpcMultiDC(gym.Env):
             gym.logger.warn("Invalid render mode. Allowed: ['human', 'ansi']")
 
         # ── Create simulation ───────────────────────────────────────────────
-        self._sim_id = self._client.create_simulation(params, jobs_as_json)
+        import json
+        from utils.misc import _params_to_java_format
+        java_params = _params_to_java_format(params)
+        self._sim_id = self._client.create_simulation(json.dumps(java_params), jobs_as_json)
 
     # ── Action masking ────────────────────────────────────────────────────────
     def action_masks(self) -> list[bool]:
@@ -177,7 +180,9 @@ class GrpcMultiDC(gym.Env):
         if seed is None:
             seed = 0
 
-        raw_obs, raw_info = self._client.reset(self._sim_id, seed)
+        raw_result = self._client.reset(self._sim_id, seed)
+        raw_obs = raw_result.get("observation", {})
+        raw_info = raw_result.get("info", {})
         obs = self._get_observation(raw_obs)
         info = self._parse_step_info(raw_info)
         return obs, info
@@ -202,9 +207,12 @@ class GrpcMultiDC(gym.Env):
         # gRPC expects a plain list of ints
         action_list = action.tolist() if hasattr(action, "tolist") else list(action)
 
-        raw_obs, reward, terminated, truncated, raw_info = self._client.step(
-            self._sim_id, action_list
-        )
+        result = self._client.step(self._sim_id, action_list)
+        raw_obs = result.get("observation", {})
+        reward = result.get("reward", 0.0)
+        terminated = result.get("terminated", False)
+        truncated = result.get("truncated", False)
+        raw_info = result.get("info", {})
 
         obs = self._get_observation(raw_obs)
         info = self._parse_step_info(raw_info)

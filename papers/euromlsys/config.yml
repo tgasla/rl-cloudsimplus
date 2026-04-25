@@ -61,20 +61,20 @@ common:
   mode: train
 
 experiment_1:
-  datacenters: !include topologies/datacenters_a.yml
+  datacenters: !include topologies/euromlsys_a.yml
   experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
   experiment_name: env_a
   job_trace_filename: euromlsys_jobs_first_50.csv
 
 experiment_2:
-  datacenters: !include topologies/datacenters_b.yml
+  datacenters: !include topologies/euromlsys_b.yml
   experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
   experiment_name: env_a
   job_trace_filename: euromlsys_jobs_first_50.csv
 
 experiment_3:
   mode: transfer
-  datacenters: !include topologies/datacenters_a.yml
+  datacenters: !include topologies/euromlsys_a.yml
   experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
   experiment_name: env_a_transfer
   train_model_dir: euromlsys/earliest-most-critical-to-nearest-dc/env_a
@@ -82,7 +82,7 @@ experiment_3:
 
 experiment_4:
   mode: test
-  datacenters: !include topologies/datacenters_a.yml
+  datacenters: !include topologies/euromlsys_a.yml
   experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
   experiment_name: env_a_test
   train_model_dir: euromlsys/earliest-most-critical-to-nearest-dc/env_a
