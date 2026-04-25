@@ -36,14 +36,6 @@ GPU=${GPU:-false}
 JAVA_LOG_DEST=$(get_yaml_value "java_log_destination")
 JAVA_LOG_LEVEL=$(get_yaml_value "java_log_level")
 
-# Pre-create log directories to avoid permission issues with volume mounts
-LOG_BASE_DIR="$PAPER_DIR/rl-manager/logs"
-EXPERIMENT_TYPE_DIR=$(grep -A 5 "^experiment_1:" "$CONFIG_FILE" | grep "^ *experiment_type_dir:" | sed 's/.*: //')
-EXPERIMENT_NAME=$(grep -A 5 "^experiment_1:" "$CONFIG_FILE" | grep "^ *experiment_name:" | sed 's/.*: //')
-if [ -n "$EXPERIMENT_TYPE_DIR" ] && [ -n "$EXPERIMENT_NAME" ]; then
-    mkdir -p "$LOG_BASE_DIR/$EXPERIMENT_TYPE_DIR/$EXPERIMENT_NAME"
-fi
-
 cleanup_experiment() {
     # Stop the experiment containers
     docker compose -f common/docker-compose.yml down --remove-orphans

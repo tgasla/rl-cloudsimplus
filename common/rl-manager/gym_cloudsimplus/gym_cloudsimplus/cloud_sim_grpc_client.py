@@ -1,24 +1,42 @@
 """CloudSim gRPC Client wrapper using generated protobuf stubs."""
 import grpc
-from . import cloudsimplus_pb2 as pb2
-from . import cloudsimplus_pb2_grpc as pb2_grpc
 
 
 class CloudSimGrpcClient:
-    """Wrapper around CloudSimServiceStub for CloudSim Plus gRPC communication."""
+    """Wrapper around CloudSimServiceStub for CloudSim Plus gRPC communication.
 
-    def __init__(self, host="localhost", port=50051):
+    Supports both 'main' (single-DC with reward metrics) and 'euromlsys' (multi-DC with jobs ratios)
+    paper architectures by dynamically loading the correct protobuf definitions.
+    """
+
+    def __init__(self, host="localhost", port=50051, paper="euromlsys"):
+        self.paper = paper
         self.channel = grpc.insecure_channel(f"{host}:{port}")
+
+        if paper == "main":
+            from .protos.main import cloudsimplus_pb2 as pb2
+            from .protos.main import cloudsimplus_pb2_grpc as pb2_grpc
+        else:
+            from .protos.euromlsys import cloudsimplus_pb2 as pb2
+            from .protos.euromlsys import cloudsimplus_pb2_grpc as pb2_grpc
+
+        self.pb2 = pb2
         self.stub = pb2_grpc.CloudSimServiceStub(self.channel)
 
     def create_simulation(self, params_json: str, jobs_json: str) -> str:
         """Create a new simulation, returns sim_id."""
-        request = pb2.CreateRequest(params_json=params_json, jobs_json=jobs_json)
+        request = self.pb2.CreateRequest(params_json=params_json, jobs_json=jobs_json)
         response = self.stub.createSimulation(request)
         return response.sim_id
 
     def _step_info_to_dict(self, info):
-        """Convert StepInfo protobuf to dict."""
+        """Convert StepInfo protobuf to dict. Paper-specific implementation."""
+        if self.paper == "main":
+            return self._step_info_to_dict_main(info)
+        return self._step_info_to_dict_euromlsys(info)
+
+    def _step_info_to_dict_main(self, info):
+        """Convert StepInfo for main paper."""
         if not info:
             return {}
         return {
@@ -34,31 +52,62 @@ class CloudSimGrpcClient:
             "cores_changed": info.cores_changed if hasattr(info, 'cores_changed') else 0,
         }
 
+    def _step_info_to_dict_euromlsys(self, info):
+        """Convert StepInfo for euromlsys paper."""
+        if not info:
+            return {}
+        return {
+            "jobs_waiting": info.jobs_waiting if hasattr(info, 'jobs_waiting') else 0,
+            "jobs_placed": info.jobs_placed if hasattr(info, 'jobs_placed') else 0,
+            "jobs_placed_ratio": info.jobs_placed_ratio if hasattr(info, 'jobs_placed_ratio') else 0.0,
+            "quality_ratio": info.quality_ratio if hasattr(info, 'quality_ratio') else 0.0,
+            "deadline_violation_ratio": info.deadline_violation_ratio if hasattr(info, 'deadline_violation_ratio') else 0.0,
+            "job_wait_time": list(info.job_wait_time) if hasattr(info, 'job_wait_time') else [],
+        }
+
     def reset(self, sim_id: str, seed: int = None) -> dict:
         """Reset simulation, returns observation dict."""
-        request = pb2.ResetRequest(sim_id=sim_id, seed=seed if seed else 0)
+        request = self.pb2.ResetRequest(sim_id=sim_id, seed=seed if seed else 0)
         response = self.stub.reset(request)
         obs = response.observation
+        if self.paper == "main":
+            return {
+                "observation": {
+                    "infr_state": list(obs.infrastructure_observation) if hasattr(obs, 'infrastructure_observation') else [],
+                    "job_cores_waiting_state": obs.job_cores_waiting_observation if hasattr(obs, 'job_cores_waiting_observation') else 0,
+                },
+                "info": self._step_info_to_dict(response.info),
+            }
+        # euromlsys
         return {
             "observation": {
-                "infr_state": list(obs.infrastructure_observation) if hasattr(obs, 'infrastructure_observation') else [],
-                "job_cores_waiting_state": obs.job_cores_waiting_observation if hasattr(obs, 'job_cores_waiting_observation') else 0,
+                "infrastructure_observation": list(obs.infrastructure_observation) if hasattr(obs, 'infrastructure_observation') else [],
+                "jobs_waiting_observation": list(obs.jobs_waiting_observation) if hasattr(obs, 'jobs_waiting_observation') else [],
             },
             "info": self._step_info_to_dict(response.info),
         }
 
     def step(self, sim_id: str, action) -> dict:
-        """Execute one step, returns (obs, reward, terminated, truncated, info)."""
-        request = pb2.StepRequest(
-            sim_id=sim_id,
-            action=action,
-        )
+        """Execute one step."""
+        request = self.pb2.StepRequest(sim_id=sim_id, action=action)
         response = self.stub.step(request)
         obs = response.observation
+        if self.paper == "main":
+            return {
+                "observation": {
+                    "infr_state": list(obs.infrastructure_observation) if hasattr(obs, 'infrastructure_observation') else [],
+                    "job_cores_waiting_state": obs.job_cores_waiting_observation if hasattr(obs, 'job_cores_waiting_observation') else 0,
+                },
+                "reward": response.reward if hasattr(response, 'reward') else 0.0,
+                "terminated": response.terminated if hasattr(response, 'terminated') else False,
+                "truncated": response.truncated if hasattr(response, 'truncated') else False,
+                "info": self._step_info_to_dict(response.info),
+            }
+        # euromlsys
         return {
             "observation": {
-                "infr_state": list(obs.infrastructure_observation) if hasattr(obs, 'infrastructure_observation') else [],
-                "job_cores_waiting_state": obs.job_cores_waiting_observation if hasattr(obs, 'job_cores_waiting_observation') else 0,
+                "infrastructure_observation": list(obs.infrastructure_observation) if hasattr(obs, 'infrastructure_observation') else [],
+                "jobs_waiting_observation": list(obs.jobs_waiting_observation) if hasattr(obs, 'jobs_waiting_observation') else [],
             },
             "reward": response.reward if hasattr(response, 'reward') else 0.0,
             "terminated": response.terminated if hasattr(response, 'terminated') else False,
@@ -69,10 +118,10 @@ class CloudSimGrpcClient:
     def batch_step(self, sim_id: str, actions) -> list:
         """Batch step for multiple actions."""
         items = [
-            pb2.BatchStepRequest.StepItem(sim_id=sim_id, action=a)
+            self.pb2.BatchStepRequest.StepItem(sim_id=sim_id, action=a)
             for a in actions
         ]
-        batch_request = pb2.BatchStepRequest(items=items)
+        batch_request = self.pb2.BatchStepRequest(items=items)
         response = self.stub.batchStep(batch_request)
         return [
             {
@@ -90,7 +139,7 @@ class CloudSimGrpcClient:
 
     def close(self, sim_id: str):
         """Close simulation."""
-        request = pb2.CloseRequest(sim_id=sim_id)
+        request = self.pb2.CloseRequest(sim_id=sim_id)
         self.stub.close(request)
 
     def close_channel(self):
@@ -100,7 +149,7 @@ class CloudSimGrpcClient:
     def ping(self) -> bool:
         """Health check."""
         try:
-            request = pb2.PingRequest()
+            request = self.pb2.PingRequest()
             response = self.stub.ping(request)
             return response.pong
         except grpc.RpcError:

@@ -12,17 +12,15 @@
 # cloudlet_to_vm_assignment_policy: [most-free-cores]
 # algorithm: [any stable-baselines3 or sb3-contrib algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
 
-# globals.run_mode: [batch, serial]
-
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: false
-    gpu: true
+    attached: true
+    gpu: false
     java_log_level: INFO
-    java_log_destination: none
+    java_log_destination: file
     junit_output_show: false
-    run_mode: serial
+    num_cpu: 16
 
 common:
   timestep_interval: 1.0
@@ -37,7 +35,8 @@ common:
   base_log_dir: logs
   batch_size: 64
   vm_allocation_policy: bestfit
-  cloudlet_to_dc_assignment_policy:  earliest-most-critical-to-nearest-dc
+  # cloudlet_to_dc_assignment_policy:  earliest-most-critical-to-nearest-dc
+  cloudlet_to_dc_assignment_policy: rl
   cloudlet_to_vm_assignment_policy: most-free-cores
   state_space_type: dcid-dctype-freevmpes-per-host
   autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
@@ -58,32 +57,18 @@ common:
   reward_deadline_violation_coef: 0.333
   seed: 1234
   algorithm: PPO
-  mode: train
 
 experiment_1:
+  mode: train
   datacenters: !include topologies/euromlsys_a.yml
-  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-  experiment_name: env_a
+  experiment_dir: euromlsys
+  experiment_name: env_a_train
   job_trace_filename: euromlsys_jobs_first_50.csv
 
-experiment_2:
-  datacenters: !include topologies/euromlsys_b.yml
-  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-  experiment_name: env_a
-  job_trace_filename: euromlsys_jobs_first_50.csv
-
-experiment_3:
-  mode: transfer
-  datacenters: !include topologies/euromlsys_a.yml
-  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-  experiment_name: env_a_transfer
-  train_model_dir: euromlsys/earliest-most-critical-to-nearest-dc/env_a
-  job_trace_filename: euromlsys_jobs_first_50.csv
-
-experiment_4:
-  mode: test
-  datacenters: !include topologies/euromlsys_a.yml
-  experiment_dir: euromlsys/earliest-most-critical-to-nearest-dc
-  experiment_name: env_a_test
-  train_model_dir: euromlsys/earliest-most-critical-to-nearest-dc/env_a
-  job_trace_filename: euromlsys_jobs_first_50.csv
+# experiment_2:
+#   mode: transfer
+#   datacenters: !include topologies/euromlsys_b.yml
+#   experiment_dir: euromlsys
+#   experiment_name: env_a_to_b_transfer
+#   train_model_dir: euromlsys/env_a_train
+#   job_trace_filename: euromlsys_jobs_first_50.csv

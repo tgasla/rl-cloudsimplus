@@ -37,7 +37,7 @@ class GrpcSingleDC(gym.Env):
         self.params = params
 
         # gRPC client - connects to its own Java JVM
-        self._client = CloudSimGrpcClient(host=host, port=port)
+        self._client = CloudSimGrpcClient(host=host, port=port, paper="main")
         self._sim_id = None
 
         # ── Mirror all fields from SingleDC ──────────────────────────────────

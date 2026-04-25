@@ -1,190 +1,338 @@
-## Installation
+# CloudSim-RL
 
+Reinforcement learning training system for cloud resource allocation. Bridges **Java CloudSim Plus** (the simulator) with **Python Stable-Baselines3** (the RL agent) via **gRPC**.
 
-### 1. Install Docker
+## Architecture Overview
 
-<https://docs.docker.com/get-docker/> 
-
- > [!WARNING]
- > If you install Docker Desktop for MacOS, make sure you are giving enough memory in your containers by going to <b> Settings... > Resources </b> and increasing the Memory Limit
-
-### 2. Install Docker Compose
-
-<https://docs.docker.com/compose/install/>
-
-### 3. Install Java OpenJDK 21
-
-- For Debian, install the openjdk-21-jdk and openjdk-21-jre packages
-
-```bash
-sudo apt install openjdk-21-jdk openjdk-21-jre
+```
+┌─────────────────────────────────────────────────────────┐
+│                  Docker Container (manager)             │
+│                                                         │
+│  ┌─────────────────┐    gRPC     ┌──────────────────┐ │
+│  │  Python RL      │◄──────────► │  Java CloudSim    │ │
+│  │  Stable-Baselines3 │  JSON   │  Plus Gateway     │ │
+│  │  (train/transfer/test) │     │  (Simulation)     │ │
+│  └─────────────────┘            └──────────────────┘  │
+│         ▲                              ▲               │
+│         │         pip install -e       │               │
+│  Volume mount (code changes auto-picked up)            │
+└─────────────────────────────────────────────────────────┘
 ```
 
-- For MacOS, use [brew](https://brew.sh/)
+- **Python side**: RL training with Stable-Baselines3, communicates via gRPC
+- **Java side**: CloudSim Plus simulation running in a JVM subprocess
+- **Paper support**: `main` (single-DC) and `euromlsys` (multi-DC) have separate proto definitions and gRPC clients
+
+---
+
+## Quick Start
 
 ```bash
-brew install openjdk@21
+# 1. Build everything from scratch
+make clean-all paper=euromlsys
+make build paper=euromlsys
+
+# 2. Run experiment
+make run paper=euromlsys
 ```
 
-<!--
-or you can also try Azul Zulu
+---
 
-`https://www.azul.com/downloads/?version=java-21-lts#zulu`
+## Make Commands Reference
 
--->
+### Build Commands
 
-### 4. Set the JAVA_HOME environment variable to the right path
+| Command | When to Use |
+|---------|-------------|
+| `make build paper=<paper>` | Build Docker image AND Java gateway JAR. Needed after clean or when infrastructure changes. |
+| `make build-gateway paper=<paper>` | Build only the Java gateway JAR (`build/libs/*.jar`). Use when you changed Java code. |
+| `make build-manager paper=<paper>` | Build only the Docker manager image. Rarely needed separately. |
+| `make build-tensorboard paper=<paper>` | Build the TensorBoard visualization image. |
 
-> [!IMPORTANT]  
-> The exact path may vary (distro, arch, etc.)
+### Run Commands
 
-- For Linux
+| Command | Description |
+|---------|-------------|
+| `make run paper=<paper>` | Run experiment(s). Reads config from `papers/<paper>/config.yml` |
+| `make run-tensorboard paper=<paper>` | Start TensorBoard dashboard at [http://localhost:6006](http://localhost:6006) |
+
+### Cleanup Commands
+
+| Command | Description |
+|---------|-------------|
+| `make stop` | Stop running containers, remove networks |
+| `make clean-all paper=<paper>` | Full cleanup: stop containers, remove images, clean gradle build, wipe logs |
+| `make wipe-logs paper=<paper>` | Delete all logs for the paper |
+| `make clean-gateway paper=<paper>` | Clean only the Java gradle build |
+
+### Utility Commands
+
+| Command | Description |
+|---------|-------------|
+| `make check-gateway-deps paper=<paper>` | Show CloudSim Plus dependency version |
+| `make check-gateway-jar paper=<paper>` | Show built JAR path and version |
+| `make get-gradle paper=<paper>` | Download correct Gradle version for wrapper |
+| `make update-cloudsimplus` | Pull latest CloudSim Plus from Git master, publish to local maven |
+
+---
+
+## The `paper=` Argument
+
+The project supports multiple research papers with different configurations:
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-<arch>
+paper=main       # Single-DC RL (VmAllocationPolicy=rl), reward-based metrics
+paper=euromlsys  # Multi-DC RL (cloudlet_to_dc_assignment_policy=rl), placement ratio metrics
 ```
 
-- For MacOS
-  - Follow brew instructions or visit [here](https://medium.com/@manvendrapsingh/installing-many-jdk-versions-on-macos-dfc177bc8c2b) for more details.
+Each paper has its own:
+- `papers/<paper>/config.yml` — experiment configuration
+- `papers/<paper>/topologies/` — datacenter topology definitions
+- `papers/<paper>/rl-manager/entrypoint.py` — paper-specific entry point
+- `papers/<paper>/cloudsimplus-gateway/` — Java gateway source code
+- `papers/<paper>/traces/` — job trace CSV files
 
-<!--
-```bash
-echo 'export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"' >> ~/.zshrc
-```
--->
+The default paper is `main`.
 
-> [!NOTE]
-> This command will make your default Java version 21.
+---
 
-<!--
-export JAVA_HOME=/usr/libexec/java_home
--->
+## Code Change Workflow
 
-<!--
-### 1.5 Select the correct Gradle version
-
-Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
-
-`cloudsimplus_gateway/gradlew wrapper --gradle-version 8.6 --distribution-type all`
--->
-
-<!--
-- For Zulu
-
-    `export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home`
-
-- For OpenJDK downloaded using brew
-
-  You can ask brew where OpenJDK Java was installed
-
-  `brew info openjdk@21`
-
-  and then add the given path to your shell profile
-  
-  `export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home`
--->
-
-<!--
-### 1.5 Select the correct Gradle version
-
-Head to the `cloudsimplus_gateway` that contains the `gradlew` file and run wrapper
-
-`cloudsimplus_gateway/gradlew wrapper --gradle-version 8.6 --distribution-type all`
--->
-
-## Building the TensorBoard, Gateway, and RL Manager images
+### Python Code Changes
+**No rebuild needed.** Python code is volume-mounted into the container and reinstalled at runtime:
 
 ```bash
-make build
+# Just run — volume mounts pick up changes automatically
+make run paper=euromlsys
 ```
 
-> [!NOTE]  
-> It is often useful to rebuild images one at a time, especially when a change is made only in a specific application part.
-> For example, when we change the gateway code, we must rebuild the image before running the application.
-> Optionally, when building, we can specify the log level of the messages printed in stdout and a log file.
-> If the log level environment variable is not set, the log level is set to INFO by default.
+The `startup.sh` script runs `pip install --no-deps -e /mgr/gym_cloudsimplus` on container start, installing from the mounted source.
+
+### Java Code Changes
+**Rebuild the gateway JAR:**
 
 ```bash
-[LOG_LEVEL=TRACE|DEBUG|INFO|WARN|ERROR] make build-gateway
+make build-gateway paper=euromlsys   # Build JAR
+make run paper=euromlsys             # Run (JAR is mounted via :ro volume)
 ```
 
-## Starting the TensorBoard dashboard
-
-The project consists of three docker images. The gateway and manager images contain the main application and are the docker compose services we need for every experiment we want to run.
-The TensorBoard image is the UI endpoint and helps us keep track of the experiment's progress. Because we do not want to shut down the visualization dashboard every time we want to stop an experiment,
-the TensorBoard image is not a docker compose service and can be started as a standalone docker container by using the following command (TODO: consider changing it):
+### Configuration Changes (config.yml)
+**No rebuild needed.** Config is read at runtime:
 
 ```bash
-make run-tensorboard
+# Just run with new config
+make run paper=euromlsys
 ```
 
-> [!NOTE]
-> You can check that the TensorBoard dashboard is running by visiting [http://localhost](http://localhost).
+### Environment Variables (java_log_level, java_log_destination)
+**No rebuild needed.** These are passed via docker-compose environment variables to the Java subprocess at runtime.
 
-## Editing the experiment configuration file
+---
 
-To run an experiment, first edit the configuration file config.yml.
+## Image Volume Mounts
 
-The configuration file contains two sections: the 'common' section and the 'experiment' section. This is because we may run multiple different experiments in parallel.
-- The parameters that all experiments have in common are specified under the common section, and those that are unique among the experiments are defined under the experiment_{id} section
-  - If a parameter is specified in both the common and experiment sections, the common one is ignored, and the experiment one takes effect.
-- To run multiple experiments in parallel, add as many experiment areas as you want, specifying the corresponding parameters for each experiment.
-- Each experiment should have a unique experiment id, and each section should be written as experiment_{id}. Use ids starting by 1 and increment by 1.
+The Docker setup uses volume mounts so code changes take effect without rebuilding:
 
-There are three experiment modes: train, transfer, and test. When transfer or test modes are specified, an additional 'train_model_dir' key for an experiment should be defined, with the directory name in which the trained agent model should be used.
+```yaml
+# docker-compose.yml volumes (relevant mounts)
+- ./rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus    # Python gRPC client (mounted, not copied)
+- ./rl-manager/startup.sh:/common/rl-manager/startup.sh   # Startup script
+- ../${PAPER_DIR}/rl-manager/entrypoint.py:/mgr/entrypoint.py  # Paper entrypoint
+- ../${PAPER_DIR}/config.yml:/mgr/config.yml            # Config file
+- ../${PAPER_DIR}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro  # JAR (read-only)
+```
 
-## Running an experiment
+**Important**: The JAR is mounted `:ro` (read-only) because it's built once via `make build-gateway`. Python code is mounted live so edits to `gym_cloudsimplus/` take effect immediately without rebuild.
 
-After editing the configuration file, run the following command to start the experiment(s).
+---
+
+## Configuration File (config.yml)
+
+Each paper has its own `papers/<paper>/config.yml` with two sections:
+
+### globals (container-level settings)
+```yaml
+globals:
+    attached: true          # true=attach terminal to output, false=run detached
+    gpu: false              # true=use CUDA GPU
+    java_log_level: INFO    # Java logging level
+    java_log_destination: file  # none|stdout|file|stdout-file
+    num_cpu: 16             # Number of parallel simulation workers
+```
+
+### common (experiment parameters)
+Shared across all experiments in the config:
+- `seed`: random or integer
+- `timesteps`, `n_rollout_steps`: RL training parameters
+- `save_experiment`: save model/checkpoints
+- `base_log_dir`: parent log directory
+- `vm_allocation_policy`: rl | bestfit | rule-based
+- `algorithm`: PPO, MaskablePPO, A2C, etc.
+
+### experiment_{id} (per-experiment overrides)
+```yaml
+experiment_1:
+    mode: train              # train | transfer | test
+    experiment_dir: euromlsys
+    experiment_name: env_a_train
+    datacenters: !include topologies/euromlsys_a.yml
+    job_trace_filename: euromlsys_jobs_first_50.csv
+```
+
+- `mode`: train (new training), transfer (fine-tune from checkpoint), test (eval only)
+- When mode=transfer or mode=test, add `train_model_dir` pointing to trained model directory
+
+---
+
+## Experiment Modes
+
+| Mode | Description |
+|------|-------------|
+| `train` | Train RL agent from scratch |
+| `transfer` | Continue training from a saved model (transfer learning) |
+| `test` | Evaluate trained model without training |
+
+```yaml
+# Train example
+experiment_1:
+    mode: train
+    experiment_dir: euromlsys
+    experiment_name: env_a_train
+
+# Transfer example
+experiment_2:
+    mode: transfer
+    experiment_dir: euromlsys
+    experiment_name: env_b_transfer
+    train_model_dir: euromlsys/env_a_train  # Load from this directory
+
+# Test example
+experiment_3:
+    mode: test
+    experiment_dir: euromlsys
+    experiment_name: env_b_eval
+    train_model_dir: euromlsys/env_a_train
+```
+
+---
+
+## Multi-Experiment Runs
+
+The `config.yml` can define multiple experiments (`experiment_1`, `experiment_2`, etc.). The `run_docker.sh` script detects all experiments and runs them sequentially.
 
 ```bash
-make run
+# With 2 experiments in config.yml, this runs:
+# 1. Experiment 1 → cleanup → Experiment 2 → cleanup
+make run paper=euromlsys
 ```
 
-## CUDA GPU support
+Each experiment:
+1. Starts container(s)
+2. Runs to completion (or timeout)
+3. Cleans up containers
+4. Proceeds to next experiment
 
-There is also support to run the experiments in CUDA GPUs.
-  - You need to have [CUDA](https://developer.nvidia.com/cuda-downloads) and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your system.
-  - Restart the docker daemon if you just downloaded the cuda-container-toolkit.
+---
 
-> [!WARNING]
-> If after installing nvidia-container-toolkit you still cannot access GPU in the container, follow the steps below:
-> 1) Edit the /etc/Nvidia-container-runtime/config.toml file changing the no-cgroups to false.
-> 2) Restart the docker daemon using: sudo systemctl restart docker
-> 3) Test by running sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
-
-<!--
-- The `--build` flag also builds the manager image
-- The `-d` flag runs the app in detached mode (runs in the background)
-
-If, after running the app, you want to start a second manager (to run a second experiment simultaneously), you need to run:
+## GPU Support (CUDA)
 
 ```bash
-docker compose run [--build] [-d | --detach] manager
+# Build with CUDA support
+make build paper=euromlsys GPU=true
+
+# Run with GPU
+make run paper=euromlsys GPU=true
 ```
--->
 
-## Stopping the application
+Requirements:
+- CUDA installed on host
+- `nvidia-container-toolkit` installed
+- Edit `/etc/nvidia-container-runtime/config.toml` setting `no-cgroups = false` if GPU not detected
+- Restart docker daemon: `sudo systemctl restart docker`
 
-If you want to stop the application and clear all the dangling containers and volumes, run the following command:
+---
 
+## Reproducibility Checklist
+
+### Clean build from scratch:
 ```bash
-make stop
+make clean-all paper=euromlsys   # Wipe everything
+make build paper=euromlsys       # Fresh build
+make run paper=euromlsys         # Run
 ```
 
-<!--
-If you also want to clear docker unused data, use the following command:
-
+### Daily development (Python-only changes):
 ```bash
-docker system prune [-f | --force]
+make run paper=euromlsys         # No build needed
 ```
--->
+
+### After Java changes:
+```bash
+make build-gateway paper=euromlsys  # Rebuild JAR only
+make run paper=euromlsys              # Run
+```
+
+### Full reset:
+```bash
+make clean-all paper=euromlsys
+make build paper=euromlsys
+make run paper=euromlsys
+```
+
+---
+
+## Log Output
+
+Training metrics are printed in real-time when `attached: true`:
+
+```
+manager  | |    ep_jobs_placed_ratio        | 0.148     |
+manager  | |    ep_deadline_violation_ratio | 0.765     |
+manager  | |    ep_quality_ratio            | 0.587     |
+manager  | |    ep_total_rew                | -0.471    |
+```
+
+Logs are saved to `papers/<paper>/rl-manager/logs/<experiment_dir>/<experiment_name>/`.
+
+Java simulation logs (`csp.current.log`) go to the same log directory (controlled by `java_log_destination`).
+
+---
+
+## Troubleshooting
+
+### "No such file or directory" for JAR
+The JAR must exist before running. If missing:
+```bash
+make build-gateway paper=euromlsys
+```
+
+### Permission errors on logs/
+```bash
+make wipe-logs paper=euromlsys   # Wipe then retry
+```
+
+### Container build failures
+```bash
+make clean-all paper=euromlsys   # Full reset
+make build paper=euromlsys       # Rebuild
+```
+
+### Java gRPC server not starting
+Check that the JAR exists at the mounted path. Check container logs for Java exceptions.
+
+---
+
+## Requirements
+
+- **Docker** and **Docker Compose** (no local Java/Python required)
+- Optional GPU: CUDA + nvidia-container-toolkit
+
+---
 
 ## Acknowledgements
 
-- This project uses the [CloudSim Plus](http://cloudsimplus.org/) framework, a full-featured, highly extensible, and easy-to-use Java 17+ framework for modeling and simulating cloud computing infrastructure and services. The source code is available [here](https://github.com/manoelcampos/cloudsim-plus).
-
-- The code was based on the work done by [pkoperek](https://github.com/pkoperek) in the following projects:
+- [CloudSim Plus](http://cloudsimplus.org/) — discrete event simulation framework
+- Based on work by [pkoperek](https://github.com/pkoperek):
   - [cloudsimplus-gateway](https://github.com/pkoperek/cloudsimplus-gateway)
   - [gym_cloudsimplus](https://github.com/pkoperek/gym_cloudsimplus)
   - [dqn_cloudsimplus](https://github.com/pkoperek/dqn_cloudsimplus)

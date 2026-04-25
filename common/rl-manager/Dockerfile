@@ -32,9 +32,6 @@ RUN apt update \
     /usr/share/doc \
     /usr/share/doc-base
 
-COPY --chown=appuser:appgroup gym_cloudsimplus gym_cloudsimplus
-RUN pip install --no-deps -e gym_cloudsimplus
-
 # Switch to non-root user for running the application
 USER appuser
 

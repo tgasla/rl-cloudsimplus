@@ -477,12 +477,13 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
     java_cmd = [
         "java",
         "-Dlog.level=" + log_level,
-        f"-Dlog.destination={log_dest}",
+        "-Dlog.destination=" + log_dest,
+        f"-Dexperiment.id={experiment_id}",
         "-jar", jar_path,
         "--grpc", str(port),
     ]
     if sim_log_dir:
-        java_cmd.insert(3, f"-Dlog.simDir={sim_log_dir}")
+        java_cmd.insert(5, f"-Dlog.simDir={sim_log_dir}")
     # When log_dest=file: stdout goes to DEVNULL, stderr goes to STDOUT (captured by Python)
     # When log_dest=stdout: both go to inherited (visible in docker logs)
     java_stdout = None if ("stdout" in log_dest) else _subprocess.DEVNULL
@@ -540,13 +541,19 @@ def make_grpc_env(rank, params, jobs_json, num_cpu, base_port=50051, log_dir=Non
         )
         experiment_id = os.environ.get("EXPERIMENT_ID", "default")
         log_dest = os.environ.get("JAVA_LOG_DESTINATION", "stdout")
+        log_level = os.environ.get("JAVA_LOG_LEVEL", "INFO")
+        sim_log_dir = os.environ.get("JAVA_SIM_LOG_DIR", "")
+        # -D properties MUST come before -jar, otherwise they go to program's args[] instead of JVM
         java_cmd = [
-            "java", "-jar", jar_path,
-            "--grpc", str(port),
-            "-Dlog.level=" + os.environ.get("JAVA_LOG_LEVEL", "INFO"),
+            "java",
+            "-Dlog.level=" + log_level,
+            "-Dlog.destination=" + log_dest,
             f"-Dexperiment.id={experiment_id}",
-            f"-Dlog.destination={log_dest}",
+            "-jar", jar_path,
+            "--grpc", str(port),
         ]
+        if sim_log_dir:
+            java_cmd.insert(5, f"-Dlog.simDir={sim_log_dir}")
         proc = _subprocess.Popen(
             java_cmd,
             stdout=None if ("stdout" in log_dest) else _subprocess.DEVNULL,

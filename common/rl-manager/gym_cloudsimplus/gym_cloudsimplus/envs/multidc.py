@@ -43,7 +43,7 @@ class GrpcMultiDC(gym.Env):
         self.render_mode = render_mode
 
         # gRPC client - connects to its own Java JVM
-        self._client = CloudSimGrpcClient(host=host, port=port)
+        self._client = CloudSimGrpcClient(host=host, port=port, paper="euromlsys")
         self._sim_id = None
 
         # ── Extract params ──────────────────────────────────────────────────
@@ -241,20 +241,13 @@ class GrpcMultiDC(gym.Env):
             Parsed info dict
         """
         return {
-            "jobsWaiting": raw_info.get("jobs_waiting", 0),
-            "jobsPlaced": raw_info.get("jobs_placed", 0),
-            "jobsPlacedRatio": raw_info.get("jobs_placed_ratio", 0.0),
-            "qualityRatio": raw_info.get("quality_ratio", 0.0),
-            "deadlineViolationRatio": raw_info.get("deadline_violation_ratio", 0.0),
-            "jobWaitTime": raw_info.get("job_wait_time", []),
-            "isValid": raw_info.get("is_valid", True),
-            # Snake case keys for callback compatibility
             "jobs_waiting": raw_info.get("jobs_waiting", 0),
             "jobs_placed": raw_info.get("jobs_placed", 0),
             "jobs_placed_ratio": raw_info.get("jobs_placed_ratio", 0.0),
             "quality_ratio": raw_info.get("quality_ratio", 0.0),
             "deadline_violation_ratio": raw_info.get("deadline_violation_ratio", 0.0),
             "job_wait_time": raw_info.get("job_wait_time", []),
+            "is_valid": raw_info.get("is_valid", True),
         }
 
     def render(self):

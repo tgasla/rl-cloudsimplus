@@ -4,7 +4,7 @@
 # globals.java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
 # seed: random or any integer
 # base_log_dir: parent directory for all logs
-# experiment_type_dir: parent directory for a set of experiments
+# experiment_dir: parent directory for a set of experiments
 # experiment_name: name of the experiment
 # mode: [train, test, transfer]
 # vm_allocation_policy: [rl, rule-based]
@@ -14,10 +14,11 @@
 # junit_output_show: requires make build-gateway to rebuild (Java test output).
 globals:
     attached: true
-    gpu: true
+    gpu: false
     java_log_level: INFO
     java_log_destination: none
     junit_output_show: false
+    num_cpu: 16
 
 common:
     seed: 1234
@@ -58,12 +59,10 @@ common:
     reward_running_vm_cores_coef: 0.25
     reward_unutilized_vm_cores_coef: 0.25
     reward_invalid_coef: 0.25
-    # num_cpu: number of parallel gRPC workers. Defaults to min(16, cpu_count)
-    num_cpu: 16
     send_observation_tree_array: false
 
 experiment_1:
-    experiment_type_dir: testing
+    experiment_dir: testing
     experiment_name: test1
     vm_allocation_policy: rl
     algorithm: MaskablePPO

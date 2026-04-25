@@ -16,7 +16,9 @@ build-gateway:
 	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew build $(ARGS)
 
 build-manager:
-	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) -f common/rl-manager/Dockerfile common/rl-manager/
+	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) \
+		--build-arg PAPER_DIR=$(PAPER) \
+		-f common/rl-manager/Dockerfile common/rl-manager/
 
 build-tensorboard:
 	docker build -t tensorboard $(PAPER_DIR)/tensorboard
@@ -35,13 +37,13 @@ wipe-logs:
 
 stop:
 	docker compose -f common/docker-compose.yml down --remove-orphans
-	docker system prune -f
-	docker system prune --volumes -f
+# 	docker system prune -f
+# 	docker system prune --volumes -f
 
 # Clean all state: containers, volumes, images, gradle builds
 clean-all: stop
-	docker rmi -f $$(docker images -q 'manager:*' 2>/dev/null) 2>/dev/null || true
-	docker rmi -f $$(docker images -q 'gateway:*' 2>/dev/null) 2>/dev/null || true
+	docker rmi -f $$(docker images -q 'manager*' 2>/dev/null) 2>/dev/null || true
+	docker rmi -f $$(docker images -q 'gateway*' 2>/dev/null) 2>/dev/null || true
 	docker rmi -f $$(docker images -q 'tensorboard*' 2>/dev/null) 2>/dev/null || true
 	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew clean 2>/dev/null || true
 	rm -rf $(PAPER_DIR)/rl-manager/logs/*
