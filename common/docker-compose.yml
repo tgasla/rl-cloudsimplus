@@ -25,11 +25,11 @@ services:
       - ./rl-manager/transfer.py:/mgr/transfer.py
       - ./rl-manager/test.py:/mgr/test.py
       - ../${PAPER_DIR:-main}/rl-manager/entrypoint.py:/mgr/entrypoint.py
-      - ../${PAPER_DIR:-main}/rl-manager/logs:/mgr/logs
+      - ../common/logs:/mgr/logs
       - ./rl-manager/callbacks:/mgr/callbacks
       - ../${PAPER_DIR:-main}/config.yml:/mgr/config.yml
       - ../${PAPER_DIR:-main}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
-      - ../${PAPER_DIR:-main}/topologies:/mgr/topologies:ro
+      - ../common/topologies:/mgr/topologies:ro
       - /run/docker.sock:/run/docker.sock:ro
     command: bash /common/rl-manager/startup.sh
 
