@@ -9,7 +9,10 @@ import lombok.Value;
  * Safe defaults are pre-injected by SimulationSettingsBuilder for inactive fields.
  */
 @Value
-public class SimulationSettingsVmManagement {
+public class SimulationSettingsVmManagement implements ISimulationSettings {
+    // params map stored for reconstruction of paper-specific SimulationSettings
+    Map<String, Object> params;
+
     double minTimeBetweenEvents;
     double timestepInterval;
     int initialSVmCount;
@@ -65,6 +68,7 @@ public class SimulationSettingsVmManagement {
     boolean freezeInactiveInputLayerWeights;
 
     public SimulationSettingsVmManagement(Map<String, Object> params) {
+        this.params = params;
         minTimeBetweenEvents = getDouble(params, "min_time_between_events", 0.1);
         timestepInterval = getDouble(params, "timestep_interval", 1.0);
         initialSVmCount = getInt(params, "initial_s_vm_count", 0);

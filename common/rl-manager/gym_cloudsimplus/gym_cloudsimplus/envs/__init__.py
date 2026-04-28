@@ -1,6 +1,8 @@
 from .base import CloudSimBaseEnv
 from .vm_management import VmManagementEnv  # noqa: F401
 from .job_placement import JobPlacementEnv  # noqa: F401
+from .singledc import GrpcSingleDC  # noqa: F401
+from .multidc import GrpcMultiDC  # noqa: F401
 
 import gymnasium
 

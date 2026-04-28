@@ -5,7 +5,7 @@
 GYM_DIR="/mgr/gym_cloudsimplus"
 if [ -d "$GYM_DIR" ]; then
     echo "Installing gym_cloudsimplus from volume-mounted source: $GYM_DIR"
-    pip install --no-deps -e "$GYM_DIR" 2>&1 | tail -5
+    (cd "$GYM_DIR" && pip install --no-deps . 2>&1 | tail -5)
     echo "gym_cloudsimplus installed/updated."
 fi
 

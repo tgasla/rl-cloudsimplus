@@ -24,24 +24,20 @@ public class SimulationSettingsBuilder {
     private SimulationSettingsBuilder() {} // static factory only
 
     /**
-     * Build SimulationSettings from params map.
-     * Detects RL problem type and pre-injects defaults for inactive fields.
-     */
-    /**
      * Build settings from params map.
      * Detects RL problem type and pre-injects defaults for inactive fields.
-     * @return SimulationSettingsVmManagement or SimulationSettingsJobPlacement
+     * @return ISimulationSettings (SimulationSettingsVmManagement or SimulationSettingsJobPlacement)
      */
-    public static Object build(Map<String, Object> params) {
+    public static ISimulationSettings build(Map<String, Object> params) {
         String rlProblem = detectRlProblem(params);
         return build(params, rlProblem);
     }
 
     /**
      * Build settings from params map with explicit RL problem type.
-     * @return SimulationSettingsVmManagement or SimulationSettingsJobPlacement
+     * @return ISimulationSettings (SimulationSettingsVmManagement or SimulationSettingsJobPlacement)
      */
-    public static Object build(Map<String, Object> params, String rlProblem) {
+    public static ISimulationSettings build(Map<String, Object> params, String rlProblem) {
         // Pre-inject defaults for inactive problem type so inactive fields are never null
         Map<String, Object> filled = new HashMap<>(params);
 

@@ -10,7 +10,10 @@ import lombok.Value;
  * Safe defaults are pre-injected by SimulationSettingsBuilder for inactive fields.
  */
 @Value
-public class SimulationSettingsJobPlacement {
+public class SimulationSettingsJobPlacement implements ISimulationSettings {
+    // params map stored for reconstruction of paper-specific SimulationSettings
+    Map<String, Object> params;
+
     String runMode;
     int numExperiments;
     double minTimeBetweenEvents;
@@ -67,6 +70,7 @@ public class SimulationSettingsJobPlacement {
     boolean sendObservationTreeArray;
 
     public SimulationSettingsJobPlacement(Map<String, Object> params) {
+        this.params = params;
         runMode = getStr(params, "run_mode", "train");
         numExperiments = getInt(params, "num_experiments", 1);
         minTimeBetweenEvents = getDouble(params, "min_time_between_events", 0.1);
