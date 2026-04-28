@@ -32,24 +32,43 @@ public class SimulationFactory {
         java.util.Map<String, Object> paramsMap = new java.util.HashMap<>();
         if (elem.isJsonObject()) {
             for (java.util.Map.Entry<String, com.google.gson.JsonElement> e : elem.getAsJsonObject().entrySet()) {
-                Object value = e.getValue().isJsonNull() ? null : e.getValue().getAsNumber();
+                com.google.gson.JsonElement val = e.getValue();
+                Object value;
+                if (val.isJsonNull()) {
+                    value = null;
+                } else if (val.isJsonPrimitive()) {
+                    com.google.gson.JsonPrimitive prim = val.getAsJsonPrimitive();
+                    if (prim.isNumber()) {
+                        value = prim.getAsNumber();
+                    } else if (prim.isBoolean()) {
+                        value = prim.getAsBoolean();
+                    } else {
+                        value = prim.getAsString();
+                    }
+                } else {
+                    value = val.toString();
+                }
                 paramsMap.put(e.getKey(), value);
             }
         }
 
         // Use SimulationSettingsBuilder for unified problem-type-aware settings
-        SimulationSettings settings =
-                (SimulationSettings) SimulationSettingsBuilder.build(paramsMap);
+        // and problem-type detection. Builder returns ISimulationSettings (vm or job placement).
+        ISimulationSettings iSettings = SimulationSettingsBuilder.build(paramsMap);
 
-        LOGGER.info("Simulation settings dump:\n{}", settings);
+        LOGGER.info("Simulation settings dump:\n{}", iSettings);
 
         List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
 
-        if (settings.isSplitLargeJobs()) {
+        if (iSettings.isSplitLargeJobs()) {
             LOGGER.info("Splitting large jobs");
-            jobs = splitLargeJobs(jobs, settings.getMaxJobPes());
+            jobs = splitLargeJobs(jobs, iSettings.getMaxJobPes());
         }
 
+        // Reconstruct paper-specific SimulationSettings from paramsMap
+        // Use paper-specific SimulationSettings constructor with the builder's filled params map
+        // (which has safe defaults for all fields pre-injected by SimulationSettingsBuilder)
+        SimulationSettings settings = new SimulationSettings(iSettings.getParams());
         return new WrappedSimulation(identifier, settings, jobs);
     }
 

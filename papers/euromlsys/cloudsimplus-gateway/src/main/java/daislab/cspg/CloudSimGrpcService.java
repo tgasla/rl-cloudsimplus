@@ -6,8 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * gRPC service implementation for euromlsys multi-DC simulation.
@@ -21,10 +19,8 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
         LOGGER.info("CloudSimGrpcService constructor called");
     }
 
-    private final Map<String, WrappedSimulation> simulations = new ConcurrentHashMap<>();
+    private final GrpcServiceDelegate delegate = new GrpcServiceDelegate();
     private final SimulationFactory simulationFactory = new SimulationFactory();
-
-    private volatile boolean shutdownRequested = false;
 
     @Override
     public void createSimulation(
@@ -36,7 +32,7 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
             WrappedSimulation simulation =
                     simulationFactory.create(request.getParamsJson(), request.getJobsJson());
             String identifier = simulation.getIdentifier();
-            simulations.put(identifier, simulation);
+            delegate.putSimulation(identifier, simulation);
 
             CreateResponse response = CreateResponse.newBuilder()
                     .setSimId(identifier)
@@ -58,7 +54,7 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
         String simId = request.getSimId();
         LOGGER.info("gRPC reset called for {}", simId);
         try {
-            WrappedSimulation simulation = getValidSimulation(simId);
+            WrappedSimulation simulation = (WrappedSimulation) delegate.getValidSimulation(simId);
             SimulationResetResult javaResult = simulation.reset(request.getSeed());
 
             ResetResult grpcResult = ResetResult.newBuilder()
@@ -82,27 +78,16 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
         String simId = request.getSimId();
         LOGGER.debug("Step request: simId={}, actionList.size={}", simId, request.getActionList().size());
         try {
-            WrappedSimulation simulation = getValidSimulation(simId);
-            if (request.getActionList().isEmpty()) {
-                String errMsg = "Action list is empty for simId=" + simId;
-                LOGGER.error(errMsg);
+            WrappedSimulation simulation = (WrappedSimulation) delegate.getValidSimulation(simId);
+            int[] actionArray;
+            try {
+                actionArray = delegate.parseActionArray(request.getActionList(), simId);
+            } catch (IllegalArgumentException e) {
+                LOGGER.error(e.getMessage());
                 responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
-                        .withDescription(errMsg)
+                        .withDescription(e.getMessage())
                         .asRuntimeException());
                 return;
-            }
-            int[] actionArray = new int[request.getActionList().size()];
-            for (int i = 0; i < actionArray.length; i++) {
-                Object element = request.getActionList().get(i);
-                if (element == null) {
-                    String errMsg = "Action list has null element at index=" + i + " for simId=" + simId;
-                    LOGGER.error(errMsg);
-                    responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
-                            .withDescription(errMsg)
-                            .asRuntimeException());
-                    return;
-                }
-                actionArray[i] = ((Number) element).intValue();
             }
 
             SimulationStepResult javaResult = simulation.step(actionArray);
@@ -133,11 +118,8 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
         for (BatchStepRequest.StepItem item : request.getItemsList()) {
             String simId = item.getSimId();
             try {
-                WrappedSimulation simulation = getValidSimulation(simId);
-                int[] actionArray = new int[item.getActionList().size()];
-                for (int i = 0; i < actionArray.length; i++) {
-                    actionArray[i] = item.getActionList().get(i);
-                }
+                WrappedSimulation simulation = (WrappedSimulation) delegate.getValidSimulation(simId);
+                int[] actionArray = delegate.parseActionArray(item.getActionList(), simId);
                 SimulationStepResult javaResult = simulation.step(actionArray);
                 responseBuilder.addResults(StepResult.newBuilder()
                         .setObservation(convertObservation(javaResult.getObservation()))
@@ -163,18 +145,18 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
         String simId = request.getSimId();
         LOGGER.info("gRPC close called for {}", simId);
         try {
-            getValidSimulation(simId); // validates simId exists
-            WrappedSimulation simulation = simulations.remove(simId);
+            delegate.validateIdentifier(simId); // validates simId exists
+            WrappedSimulation simulation = (WrappedSimulation) delegate.removeSimulation(simId);
             if (simulation != null) {
                 simulation.close();
             }
 
-            if (simulations.isEmpty()) {
+            if (delegate.isSimulationsEmpty()) {
                 LOGGER.info("Simulation {} closed. No simulations remaining. Signaling shutdown.", simId);
-                shutdownRequested = true;
+                delegate.requestShutdown();
             } else {
                 LOGGER.debug("Simulation {} closed. {} simulations still running.",
-                        simId, simulations.size());
+                        simId, delegate.simulationCount());
             }
 
             responseObserver.onNext(CloseResponse.newBuilder().build());
@@ -191,7 +173,7 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
     @Override
     public void render(RenderRequest request, StreamObserver<RenderResponse> responseObserver) {
         try {
-            WrappedSimulation simulation = getValidSimulation(request.getSimId());
+            WrappedSimulation simulation = (WrappedSimulation) delegate.getValidSimulation(request.getSimId());
             String renderData = simulation.render();
             responseObserver.onNext(
                     RenderResponse.newBuilder()
@@ -214,19 +196,7 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
     }
 
     boolean isShutdownRequested() {
-        return shutdownRequested;
-    }
-
-    private WrappedSimulation getValidSimulation(String simId) {
-        validateIdentifier(simId);
-        return simulations.get(simId);
-    }
-
-    private void validateIdentifier(String simId) {
-        if (!simulations.containsKey(simId)) {
-            throw new IllegalArgumentException(
-                    "Simulation with identifier: " + simId + " not found!");
-        }
+        return delegate.isShutdownRequested();
     }
 
     private static daislab.cspg.grpc.Observation convertObservation(Observation obs) {

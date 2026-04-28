@@ -3,17 +3,25 @@ package daislab.cspg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 public class SimulationFactory {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(SimulationFactory.class.getSimpleName());
+
+    private static final Gson gson = new Gson();
+    private static final Type cloudletDescriptorsType =
+            new TypeToken<List<CloudletDescriptor>>() {}.getType();
 
     private int simulationsRunning = 0;
 
@@ -29,8 +37,15 @@ public class SimulationFactory {
             JsonElement val = e.getValue();
             if (val.isJsonNull()) {
                 paramsMap.put(e.getKey(), null);
+            } else if (val.isJsonArray()) {
+                // Parse datacenter arrays properly
+                if ("datacenters".equals(e.getKey())) {
+                    Type listType = new TypeToken<List<Map<String, Object>>>() {}.getType();
+                    paramsMap.put(e.getKey(), gson.fromJson(val, listType));
+                } else {
+                    paramsMap.put(e.getKey(), gson.fromJson(val, List.class));
+                }
             } else if (val.isJsonPrimitive()) {
-                // Try to get as Number first for numeric params, otherwise as String
                 try { paramsMap.put(e.getKey(), val.getAsNumber()); }
                 catch (Exception ex) { paramsMap.put(e.getKey(), val.getAsString()); }
             } else {
@@ -39,18 +54,23 @@ public class SimulationFactory {
         }
 
         // Use SimulationSettingsBuilder for unified problem-type-aware settings
-        SimulationSettings settings =
-                (SimulationSettings) SimulationSettingsBuilder.build(paramsMap);
+        // and problem-type detection. After extracting the interface methods we need,
+        // fall back to the paper-specific constructor.
+        ISimulationSettings iSettings = SimulationSettingsBuilder.build(paramsMap);
 
-        LOGGER.info("Simulation settings dump:\n{}", settings);
+        LOGGER.info("Simulation settings dump:\n{}", iSettings);
 
         List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
 
-        if (settings.isSplitLargeJobs()) {
+        if (iSettings.isSplitLargeJobs()) {
             LOGGER.info("Splitting large jobs");
-            jobs = splitLargeJobs(jobs, settings.getMaxJobPes());
+            jobs = splitLargeJobs(jobs, iSettings.getMaxJobPes());
         }
 
+        // Use paper-specific SimulationSettings constructor with the params map
+        // Use paper-specific SimulationSettings constructor with the builder's filled params map
+        // (which has safe defaults for all fields pre-injected by SimulationSettingsBuilder)
+        SimulationSettings settings = new SimulationSettings(iSettings.getParams());
         return new WrappedSimulation(identifier, settings, jobs);
     }
 
@@ -98,16 +118,17 @@ public class SimulationFactory {
         com.google.gson.JsonArray arr = JsonParser.parseString(jobsAsJson).getAsJsonArray();
         for (int i = 0; i < arr.size(); i++) {
             com.google.gson.JsonObject obj = arr.get(i).getAsJsonObject();
-            jobList.add(new CloudletDescriptor(
-                    obj.get("job_id").getAsInt(),
-                    obj.get("submission_delay").getAsLong(),
-                    obj.get("mi").getAsLong(),
-                    obj.get("cores").getAsInt(),
-                    obj.has("location") ? obj.get("location").getAsInt() : 0,
-                    obj.has("delay_sensitivity") ? obj.get("delay_sensitivity").getAsInt() : 0,
-                    obj.has("deadline") ? obj.get("deadline").getAsInt() : Integer.MAX_VALUE));
+            int jid = obj.has("jobId") && !obj.get("jobId").isJsonNull() ? obj.get("jobId").getAsInt() : 0;
+            long subDel = obj.has("submissionDelay") && !obj.get("submissionDelay").isJsonNull() ? obj.get("submissionDelay").getAsLong() : 0L;
+            long mi = obj.has("mi") && !obj.get("mi").isJsonNull() ? obj.get("mi").getAsLong() : 0L;
+            int cores = obj.has("cores") && !obj.get("cores").isJsonNull() ? obj.get("cores").getAsInt() : 1;
+            int loc = obj.has("location") && !obj.get("location").isJsonNull() ? obj.get("location").getAsInt() : 0;
+            int sens = obj.has("delaySensitivity") && !obj.get("delaySensitivity").isJsonNull() ? obj.get("delaySensitivity").getAsInt() : 0;
+            int dl = obj.has("deadline") && !obj.get("deadline").isJsonNull() ? obj.get("deadline").getAsInt() : 999999999;
+            jobList.add(new CloudletDescriptor(jid, subDel, mi, cores, loc, sens, dl));
         }
         LOGGER.info("Deserialized {} jobs", jobList.size());
         return jobList;
     }
-}
+
+    }

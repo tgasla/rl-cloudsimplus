@@ -456,7 +456,7 @@ def _init_grpc_subproc(rank, params, jobs_json, base_port):
 
 def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
     """
-    Create a GrpcSingleDC env in the current process, starting a Java JVM first.
+    Create a VmManagementEnv in the current process, starting a Java JVM first.
     Must be called from within the subprocess after fork/spawn.
     """
     import subprocess as _subprocess
@@ -508,14 +508,14 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
             sock.close()
             _time.sleep(0.5)
 
-    from gym_cloudsimplus.envs import GrpcSingleDC, GrpcMultiDC
+    from gym_cloudsimplus.envs import VmManagementEnv, JobPlacementEnv
     from gym_cloudsimplus.cloud_sim_grpc_client import _detect_rl_problem
     # Use _detect_rl_problem to dispatch to domain-named envs
     rl_problem = _detect_rl_problem(params)
     if rl_problem == "job_placement":
-        env = GrpcMultiDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+        env = JobPlacementEnv(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
     else:
-        env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+        env = VmManagementEnv(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
     env._java_proc = proc
     return env
 
@@ -580,8 +580,8 @@ def make_grpc_env(rank, params, jobs_json, num_cpu, base_port=50051, log_dir=Non
     def _init():
         proc = _start_java()
         try:
-            from gym_cloudsimplus.envs import GrpcSingleDC
-            env = GrpcSingleDC(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+            from gym_cloudsimplus.envs import VmManagementEnv
+            env = VmManagementEnv(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
         except Exception:
             proc.terminate()
             proc.wait()
@@ -602,7 +602,7 @@ def _make_grpc_factory(rank, params, jobs_json, base_port):
 
 class ParallelBatchDummyVecEnv:
     """
-    Wraps a DummyVecEnv of GrpcSingleDC envs.
+    Wraps a DummyVecEnv of VmManagementEnv/JobPlacementEnv envs.
 
     Overrides step() to fire all gRPC calls in parallel using a ThreadPoolExecutor,
     then return individual results as SB3 expects.

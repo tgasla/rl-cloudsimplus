@@ -6,16 +6,39 @@ option java_multiple_files = true;
 option java_package = "daislab.cspg.grpc";
 option java_outer_classname = "CloudSimProto";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared / Nested Types
-// ─────────────────────────────────────────────────────────────────────────────
+// Unified proto for both VM_MANAGEMENT (main) and JOB_PLACEMENT (euromlsys) RL problems.
+//
+// Field mapping:
+//   field 1: infrastructure_observation     -- main ONLY (tree array, via TreeArray.java)
+//   field 2: job_cores_waiting_observation -- main ONLY (scalar)
+//   field 3: flat_infrastructure_observation -- euromlsys ONLY (per-host [dc_id, dc_type, free_vmpes])
+//   field 4: jobs_waiting_observation       -- euromlsys ONLY (per-job [cores, loc, sens, deadline])
+//
+// unused field numbers: 5-7
+//
+// Both RL problems write to the Observation fields relevant to them;
+// irrelevant fields are empty/zero. The Python env or Java service reads
+// only the fields relevant to the current rl_problem.
 
 message Observation {
-  repeated int32 infrastructure_observation = 1; // flattened tree array
-  int32 job_cores_waiting_observation = 2;
+  repeated int32 infrastructure_observation = 1;       // main: tree array (TreeArray.java)
+  int32 job_cores_waiting_observation = 2;             // main: scalar count
+  repeated int32 flat_infrastructure_observation = 3; // euromlsys: [dc_id, dc_type, free_vmpes] per host
+  repeated int32 jobs_waiting_observation = 4;          // euromlsys: [cores, location, sens, deadline] per job
 }
 
+// StepInfo field mapping:
+//   VM_MANAGEMENT (main) fields: job_wait_reward(1), running_vm_cores_reward(2),
+//     unutilized_vm_cores_reward(3), invalid_reward(4), is_valid(5), job_wait_time(6),
+//     unutilized_vm_core_ratio(7), observation_tree_array(8), host_affected(9), cores_changed(10)
+//   JOB_PLACEMENT (euromlsys) fields: jobs_waiting(1), jobs_placed(2), jobs_placed_ratio(3),
+//     quality_ratio(4), deadline_violation_ratio(5), job_wait_time(6)
+//
+// Both sets of fields are in the same StepInfo message. RL problem not relevant to
+// the current problem type gets 0/false/empty values.
+
 message StepInfo {
+  // -- VM_MANAGEMENT fields (main paper) --
   double job_wait_reward = 1;
   double running_vm_cores_reward = 2;
   double unutilized_vm_cores_reward = 3;
@@ -26,6 +49,13 @@ message StepInfo {
   repeated int32 observation_tree_array = 8;
   int32 host_affected = 9;
   int32 cores_changed = 10;
+
+  // -- JOB_PLACEMENT fields (euromlsys paper) --
+  int32 jobs_waiting = 11;
+  int32 jobs_placed = 12;
+  double jobs_placed_ratio = 13;
+  double quality_ratio = 14;
+  double deadline_violation_ratio = 15;
 }
 
 message StepResult {
@@ -41,43 +71,19 @@ message ResetResult {
   StepInfo info = 2;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CloudSim Service (one per worker process, handles one simulation ID)
-// ─────────────────────────────────────────────────────────────────────────────
-
 service CloudSimService {
-  // Creates a new simulation and returns its string identifier.
-  // params is a JSON string containing all SimulationSettings fields.
-  // jobs is a JSON string array of CloudletDescriptor objects.
   rpc createSimulation(CreateRequest) returns (CreateResponse);
-
-  // Resets the simulation identified by sim_id with an optional seed.
   rpc reset(ResetRequest) returns (ResetResult);
-
-  // Executes one simulation step with the given action.
-  // action: [action_type, host_id, vm_index, vm_type]
   rpc step(StepRequest) returns (StepResult);
-
-  // Batch step — send N (simId, action) pairs in one RPC
   rpc batchStep(BatchStepRequest) returns (BatchStepResponse);
-
-  // Tears down the simulation identified by sim_id.
   rpc close(CloseRequest) returns (CloseResponse);
-
-  // Optional: debug / render endpoint
   rpc render(RenderRequest) returns (RenderResponse);
-
-  // Health check
   rpc ping(PingRequest) returns (PongResponse);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Message Definitions
-// ─────────────────────────────────────────────────────────────────────────────
-
 message CreateRequest {
-  string params_json = 1;  // JSON string of Map<String, Object>
-  string jobs_json = 2;     // JSON string of List<CloudletDescriptor>
+  string params_json = 1;
+  string jobs_json = 2;
 }
 
 message CreateResponse {
@@ -91,10 +97,9 @@ message ResetRequest {
 
 message StepRequest {
   string sim_id = 1;
-  repeated int32 action = 2;  // [action_type, host_id, vm_index, vm_type]
+  repeated int32 action = 2;
 }
 
-// Batch step — send N (simId, action) pairs in one RPC for 1/N roundtrip overhead
 message BatchStepRequest {
   message StepItem {
     string sim_id = 1;

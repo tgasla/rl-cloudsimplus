@@ -56,42 +56,63 @@ public class SimulationSettings {
     boolean sendObservationTreeArray;
 
     public SimulationSettings(final Map<String, Object> params) {
-        minTimeBetweenEvents = 0.1;
-        timestepInterval = (double) params.get("timestep_interval");
-        initialSVmCount = (int) params.get("initial_s_vm_count");
-        initialMVmCount = (int) params.get("initial_m_vm_count");
-        initialLVmCount = (int) params.get("initial_l_vm_count");
+        minTimeBetweenEvents = getDouble(params, "min_time_between_events", 0.1);
+        timestepInterval = getDouble(params, "timestep_interval", 1.0);
+        initialSVmCount = getInt(params, "initial_s_vm_count", 0);
+        initialMVmCount = getInt(params, "initial_m_vm_count", 0);
+        initialLVmCount = getInt(params, "initial_l_vm_count", 0);
         initialVmCounts = new int[] {initialSVmCount, initialMVmCount, initialLVmCount};
-        splitLargeJobs = (boolean) params.get("split_large_jobs");
-        maxJobPes = (int) params.get("max_job_pes");
-        smallVmHourlyCost = (double) params.get("small_vm_hourly_cost");
-        maxHosts = (int) params.get("max_hosts");
-        hostsCount = (int) params.get("host_count");
-        hostPeMips = (int) params.get("host_pe_mips");
-        hostPes = (int) params.get("host_pes");
-        hostRam = (int) params.get("host_ram");
-        hostStorage = (int) params.get("host_storage");
-        hostBw = (int) params.get("host_bw");
-        smallVmPes = (int) params.get("small_vm_pes");
-        smallVmRam = (int) params.get("small_vm_ram");
-        smallVmStorage = (int) params.get("small_vm_storage");
-        smallVmBw = (int) params.get("small_vm_bw");
-        mediumVmMultiplier = (int) params.get("medium_vm_multiplier");
-        largeVmMultiplier = (int) params.get("large_vm_multiplier");
-        vmStartupDelay = (double) params.get("vm_startup_delay");
-        vmShutdownDelay = (double) params.get("vm_shutdown_delay");
-        payingForTheFullHour = (boolean) params.get("paying_for_the_full_hour");
-        clearCreatedLists = (boolean) params.get("clear_created_lists");
-        rewardJobWaitCoef = (double) params.get("reward_job_wait_coef");
-        rewardRunningVmCoresCoef = (double) params.get("reward_running_vm_cores_coef");
-        rewardUnutilizedVmCoresCoef = (double) params.get("reward_unutilized_vm_cores_coef");
-        rewardInvalidCoef = (double) params.get("reward_invalid_coef");
-        maxEpisodeLength = (int) params.get("max_episode_length");
-        vmAllocationPolicy = (String) params.get("vm_allocation_policy");
-        algorithm = (String) params.get("algorithm");
-        sendObservationTreeArray = params.containsKey("send_observation_tree_array")
-                ? (boolean) params.get("send_observation_tree_array")
-                : true;
+        splitLargeJobs = getBool(params, "split_large_jobs", false);
+        maxJobPes = getInt(params, "max_job_pes", 16);
+        smallVmHourlyCost = getDouble(params, "small_vm_hourly_cost", 0.0);
+        maxHosts = getInt(params, "max_hosts", 10);
+        hostsCount = getInt(params, "host_count", getInt(params, "hosts_count", 0));
+        hostPeMips = getInt(params, "host_pe_mips", 0);
+        hostPes = getInt(params, "host_pes", 0);
+        hostRam = getInt(params, "host_ram", 0);
+        hostStorage = getInt(params, "host_storage", 0);
+        hostBw = getInt(params, "host_bw", 0);
+        smallVmPes = getInt(params, "small_vm_pes", 0);
+        smallVmRam = getInt(params, "small_vm_ram", 0);
+        smallVmStorage = getInt(params, "small_vm_storage", 0);
+        smallVmBw = getInt(params, "small_vm_bw", 0);
+        mediumVmMultiplier = getInt(params, "medium_vm_multiplier", 0);
+        largeVmMultiplier = getInt(params, "large_vm_multiplier", 0);
+        vmStartupDelay = getDouble(params, "vm_startup_delay", 0.0);
+        vmShutdownDelay = getDouble(params, "vm_shutdown_delay", 0.0);
+        payingForTheFullHour = getBool(params, "paying_for_the_full_hour", false);
+        clearCreatedLists = getBool(params, "clear_created_lists", false);
+        rewardJobWaitCoef = getDouble(params, "reward_job_wait_coef", 0.25);
+        rewardRunningVmCoresCoef = getDouble(params, "reward_running_vm_cores_coef", 0.25);
+        rewardUnutilizedVmCoresCoef = getDouble(params, "reward_unutilized_vm_cores_coef", 0.25);
+        rewardInvalidCoef = getDouble(params, "reward_invalid_coef", 0.25);
+        maxEpisodeLength = getInt(params, "max_episode_length", 150);
+        vmAllocationPolicy = getStr(params, "vm_allocation_policy", "rl");
+        algorithm = getStr(params, "algorithm", "PPO");
+        sendObservationTreeArray = getBool(params, "send_observation_tree_array", true);
+    }
+
+    private static int getInt(Map<String, Object> m, String k, int def) {
+        Object v = m.get(k);
+        if (v == null) return def;
+        if (v instanceof Number) return ((Number) v).intValue();
+        try { return Integer.parseInt(v.toString()); } catch (Exception e) { return def; }
+    }
+    private static double getDouble(Map<String, Object> m, String k, double def) {
+        Object v = m.get(k);
+        if (v == null) return def;
+        if (v instanceof Number) return ((Number) v).doubleValue();
+        try { return Double.parseDouble(v.toString()); } catch (Exception e) { return def; }
+    }
+    private static boolean getBool(Map<String, Object> m, String k, boolean def) {
+        Object v = m.get(k);
+        if (v == null) return def;
+        if (v instanceof Boolean) return (Boolean) v;
+        return Boolean.parseBoolean(v.toString());
+    }
+    private static String getStr(Map<String, Object> m, String k, String def) {
+        Object v = m.get(k);
+        return v == null ? def : v.toString();
     }
 
     // Lombok generates: all-args constructor, getters, equals, hashCode, toString

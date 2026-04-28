@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 // import com.google.gson.Gson;
 
+
 public class WrappedSimulation {
     private final Logger LOGGER = LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
 
@@ -52,6 +53,10 @@ public class WrappedSimulation {
     private int bestEpisodeReward;
     private int currentEpisodeReward;
     private int jobsPlacedThisTimestep;
+    private double lastReward = 0.0;
+    private final IStateExtractor stateExtractor;
+    private final IActionDecoder actionDecoder;
+    private final IRewardCalculator rewardCalculator;
     // private final MetricsStorage metricsStorage;
     // private final SimulationHistory simulationHistory;
     // private final int maxVms;
@@ -81,6 +86,10 @@ public class WrappedSimulation {
         // vmMetricsCount, jobMetricsCount, maxHosts, maxVms, maxJobsCount);
 
         LOGGER.info("Creating simulation: {}", identifier);
+
+        this.stateExtractor = new JobPlacementStateExtractor(this);
+        this.actionDecoder = new JobPlacementActionDecoder(this);
+        this.rewardCalculator = new JobPlacementRewardCalculator(this);
     }
 
     // public void resetEpisodeStats() {
@@ -177,6 +186,7 @@ public class WrappedSimulation {
         boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
 
         double reward = calculateReward(ratios[0], ratios[1], ratios[2]);
+        this.lastReward = reward;
 
         this.currentEpisodeReward += reward;
 
@@ -1405,5 +1415,31 @@ public class WrappedSimulation {
 
     public double clock() {
         return cloudSimProxy.clock();
+    }
+
+    public double getLastReward() {
+        return lastReward;
+    }
+
+    // ── RL Interface Implementations ────────────────────────────────────────
+
+    public static class JobPlacementStateExtractor implements IStateExtractor {
+        private final WrappedSimulation sim;
+        JobPlacementStateExtractor(WrappedSimulation sim) { this.sim = sim; }
+        @Override public int[] extractState() { return sim.getInfrastructureObservation(); }
+    }
+
+    public static class JobPlacementActionDecoder implements IActionDecoder {
+        private final WrappedSimulation sim;
+        JobPlacementActionDecoder(WrappedSimulation sim) { this.sim = sim; }
+        @Override public int[] decodeAction(int[] action) { return action; }
+    }
+
+    public static class JobPlacementRewardCalculator implements IRewardCalculator {
+        private final WrappedSimulation sim;
+        JobPlacementRewardCalculator(WrappedSimulation sim) { this.sim = sim; }
+        @Override public double[] calculateReward(boolean isValid) {
+            return new double[]{sim.getLastReward()};
+        }
     }
 }

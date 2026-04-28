@@ -5,6 +5,7 @@ import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,12 +22,19 @@ public class WrappedSimulation {
     private CloudSimProxy cloudSimProxy;
     private int currentStep;
 
+    private final IStateExtractor stateExtractor;
+    private final IActionDecoder actionDecoder;
+    private final IRewardCalculator rewardCalculator;
+
     public WrappedSimulation(final String identifier, final SimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
         this.identifier = identifier;
         this.settings = settings;
         initialJobsDescriptors = jobs;
         LOGGER.info("Creating simulation: {}", identifier);
+        this.stateExtractor = new VmManagementStateExtractor(this);
+        this.actionDecoder = new VmManagementActionDecoder(this);
+        this.rewardCalculator = new VmManagementRewardCalculator(this);
     }
 
     private int getJobCoresWaitingObservation() {
@@ -324,5 +332,25 @@ public class WrappedSimulation {
 
     public double clock() {
         return cloudSimProxy.clock();
+    }
+
+    // ── RL Interface Implementations ────────────────────────────────────────
+
+    public static class VmManagementStateExtractor implements IStateExtractor {
+        private final WrappedSimulation sim;
+        VmManagementStateExtractor(WrappedSimulation sim) { this.sim = sim; }
+        @Override public int[] extractState() { return sim.getInfrastructureObservation(); }
+    }
+
+    public static class VmManagementActionDecoder implements IActionDecoder {
+        private final WrappedSimulation sim;
+        VmManagementActionDecoder(WrappedSimulation sim) { this.sim = sim; }
+        @Override public int[] decodeAction(int[] action) { return sim.executeCustomAction(action); }
+    }
+
+    public static class VmManagementRewardCalculator implements IRewardCalculator {
+        private final WrappedSimulation sim;
+        VmManagementRewardCalculator(WrappedSimulation sim) { this.sim = sim; }
+        @Override public double[] calculateReward(boolean isValid) { return sim.calculateReward(isValid); }
     }
 }
