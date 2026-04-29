@@ -226,3 +226,6 @@ logs/
 .claude/
 
 *.omc/
+# Auto-copied proto files during build (canonical is common/proto/unified/)
+papers/main/cloudsimplus-gateway/src/main/proto/
+papers/euromlsys/cloudsimplus-gateway/src/main/proto/

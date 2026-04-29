@@ -76,6 +76,23 @@ make check-gateway-deps paper=<paper>   # Show CloudSim Plus version
 
 **Important**: Python code is volume-mounted and reinstalled at container startup via `pip install -e`. No Docker rebuild needed for Python changes.
 
+## Build System
+
+Gradle wrapper lives in `common/cloudsimplus-gateway-shared/` — **single source of truth for building both papers' Java gateways**. Papers no longer have their own gradle wrappers.
+
+**Proto file consolidation:**
+- **Canonical proto:** `common/proto/unified/cloudsimplus.proto` — edit here to update the proto
+- Both papers need local copies in `papers/*/cloudsimplus-gateway/src/main/proto/` for the gradle protobuf plugin
+- On every `make build-gateway`, the Makefile copies the canonical proto to the target paper's `src/main/proto/` directory before building
+
+**Build commands only — never cd into gateway directories:**
+```bash
+make build-gateway paper=main      # copies proto → builds papers/main/cloudsimplus-gateway JAR
+make build-gateway paper=euromlsys # copies proto → builds papers/euromlsys/cloudsimplus-gateway JAR
+```
+
+**Versions:** `common/versions.gradle` is the single source of truth for managerVersion, gatewayVersion, gradleVersion. Used by both Makefile and papers' build.gradle.
+
 ## Papers
 
 The project supports multiple paper architectures:
@@ -83,7 +100,7 @@ The project supports multiple paper architectures:
 - `paper=main` — Single-DC RL with VmAllocationPolicy=rl, reward-based metrics
 - `paper=euromlsys` — Multi-DC RL with cloudlet_to_dc_assignment_policy=rl, placement ratio metrics
 
-Each paper has its own proto definitions in `protos/main/` and `protos/euromlsys/`, gRPC client selection in `cloud_sim_grpc_client.py`, and environment classes (`GrpcSingleDC` vs `GrpcMultiDC`).
+Each paper has its own gRPC client selection in `cloud_sim_grpc_client.py`, and environment classes (`GrpcSingleDC` vs `GrpcMultiDC`). Proto definition lives in `common/proto/unified/cloudsimplus.proto` (single source, copied to papers during build).
 
 ## Architecture Notes
 

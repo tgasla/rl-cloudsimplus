@@ -12,8 +12,14 @@ GATEWAY_VERSION := $(shell grep "gatewayVersion" common/versions.gradle | sed "s
 
 build: build-gateway build-manager
 
+# Canonical proto source is common/proto/unified/cloudsimplus.proto
+# Both papers need a local copy in src/main/proto/ for gradle protobuf plugin
+CANONICAL_PROTO = common/proto/unified/cloudsimplus.proto
+
 build-gateway:
-	cd common/cloudsimplus-gateway-shared && ./gradlew -p $(shell pwd)/$(PAPER_DIR)/cloudsimplus-gateway build $(ARGS)
+	@mkdir -p $(PAPER_DIR)/cloudsimplus-gateway/src/main/proto
+	@cp -p $(CANONICAL_PROTO) $(PAPER_DIR)/cloudsimplus-gateway/src/main/proto/
+	cd common/cloudsimplus-gateway-shared && ./gradlew :$(PAPER):build $(ARGS)
 
 build-manager:
 	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) \
@@ -30,7 +36,7 @@ run:
 	PAPER_DIR="$(PAPER)" ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(PAPER) bash common/scripts/run_docker.sh
 
 clean-gateway:
-	cd common/cloudsimplus-gateway-shared && ./gradlew -p $(shell pwd)/$(PAPER_DIR)/cloudsimplus-gateway clean 2>/dev/null || true
+	cd common/cloudsimplus-gateway-shared && ./gradlew :$(PAPER):clean 2>/dev/null || true
 
 wipe-logs:
 	rm -rf $(PAPER_DIR)/logs/*
@@ -45,7 +51,7 @@ clean-all: stop
 	docker rmi -f $$(docker images -q 'manager*' 2>/dev/null) 2>/dev/null || true
 	docker rmi -f $$(docker images -q 'gateway*' 2>/dev/null) 2>/dev/null || true
 	docker rmi -f $$(docker images -q 'tensorboard*' 2>/dev/null) 2>/dev/null || true
-	cd common/cloudsimplus-gateway-shared && ./gradlew -p $(shell pwd)/$(PAPER_DIR)/cloudsimplus-gateway clean 2>/dev/null || true
+	cd common/cloudsimplus-gateway-shared && ./gradlew :$(PAPER):clean 2>/dev/null || true
 	rm -rf $(PAPER_DIR)/rl-manager/logs/*
 
 get-gradle:
@@ -65,7 +71,7 @@ clear-gradle:
 
 check-gateway-deps:
 	@echo "=== CloudSim Plus dependency for paper: $(PAPER) ==="
-	@cd common/cloudsimplus-gateway-shared && ./gradlew -p $(shell pwd)/$(PAPER_DIR)/cloudsimplus-gateway :dependencies $(ARGS) 2>&1 | grep "org.cloudsimplus"
+	@cd common/cloudsimplus-gateway-shared && ./gradlew :$(PAPER):dependencies $(ARGS) 2>&1 | grep "org.cloudsimplus"
 
 check-gateway-jar:
 	@JAR=$$(ls $(PAPER_DIR)/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-*.jar 2>/dev/null | head -1); \

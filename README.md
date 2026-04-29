@@ -21,7 +21,7 @@ Reinforcement learning training system for cloud resource allocation. Bridges **
 
 - **Python side**: RL training with Stable-Baselines3, communicates via gRPC
 - **Java side**: CloudSim Plus simulation running in a JVM subprocess
-- **Paper support**: `main` (single-DC) and `euromlsys` (multi-DC) have separate proto definitions and gRPC clients
+- **Paper support**: `main` (single-DC) and `euromlsys` (multi-DC) share proto definitions from `common/proto/unified/` (copied to papers during build) and use a shared Gradle wrapper at `common/cloudsimplus-gateway-shared/`
 
 ---
 
@@ -91,6 +91,11 @@ Each paper has its own:
 - `papers/<paper>/rl-manager/entrypoint.py` — paper-specific entry point
 - `papers/<paper>/cloudsimplus-gateway/` — Java gateway source code
 - `papers/<paper>/traces/` — job trace CSV files
+
+**Shared infrastructure (no per-paper copies):**
+- Proto definition: `common/proto/unified/cloudsimplus.proto` — single source, copied to papers during build
+- Gradle wrapper: `common/cloudsimplus-gateway-shared/gradlew` — used for all gateway builds
+- Version definitions: `common/versions.gradle` — single source for all components
 
 The default paper is `main`.
 
