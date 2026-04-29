@@ -21,7 +21,7 @@ Reinforcement learning training system for cloud resource allocation. Bridges **
 
 - **Python side**: RL training with Stable-Baselines3, communicates via gRPC
 - **Java side**: CloudSim Plus simulation running in a JVM subprocess
-- **Paper support**: `main` (single-DC) and `euromlsys` (multi-DC) share proto definitions from `common/proto/unified/` (copied to papers during build) and use a shared Gradle wrapper at `common/cloudsimplus-gateway-shared/`
+- **Domain support**: `vm-management` (single-DC) and `job-placement` (multi-DC) share proto definitions from `common/proto/unified/` (copied to domains during build) and use a shared Gradle wrapper at `common/cloudsimplus-gateway-shared/`
 
 ---
 
@@ -29,11 +29,11 @@ Reinforcement learning training system for cloud resource allocation. Bridges **
 
 ```bash
 # 1. Build everything from scratch
-make clean-all paper=euromlsys
-make build paper=euromlsys
+make clean-all domain=job-placement
+make build domain=job-placement
 
 # 2. Run experiment
-make run paper=euromlsys
+make run domain=job-placement
 ```
 
 ---
@@ -44,60 +44,60 @@ make run paper=euromlsys
 
 | Command | When to Use |
 |---------|-------------|
-| `make build paper=<paper>` | Build Docker image AND Java gateway JAR. Needed after clean or when infrastructure changes. |
-| `make build-gateway paper=<paper>` | Build only the Java gateway JAR (`build/libs/*.jar`). Use when you changed Java code. |
-| `make build-manager paper=<paper>` | Build only the Docker manager image. Rarely needed separately. |
-| `make build-tensorboard paper=<paper>` | Build the TensorBoard visualization image. |
+| `make build domain=<domain>` | Build Docker image AND Java gateway JAR. Needed after clean or when infrastructure changes. |
+| `make build-gateway domain=<domain>` | Build only the Java gateway JAR (`build/libs/*.jar`). Use when you changed Java code. |
+| `make build-manager domain=<domain>` | Build only the Docker manager image. Rarely needed separately. |
+| `make build-tensorboard domain=<domain>` | Build the TensorBoard visualization image. |
 
 ### Run Commands
 
 | Command | Description |
 |---------|-------------|
-| `make run paper=<paper>` | Run experiment(s). Reads config from `papers/<paper>/config.yml` |
-| `make run-tensorboard paper=<paper>` | Start TensorBoard dashboard at [http://localhost:6006](http://localhost:6006) |
+| `make run domain=<domain>` | Run experiment(s). Reads config from `domain/<domain>/config.yml` |
+| `make run-tensorboard domain=<domain>` | Start TensorBoard dashboard at [http://localhost:6006](http://localhost:6006) |
 
 ### Cleanup Commands
 
 | Command | Description |
 |---------|-------------|
 | `make stop` | Stop running containers, remove networks |
-| `make clean-all paper=<paper>` | Full cleanup: stop containers, remove images, clean gradle build, wipe logs |
-| `make wipe-logs paper=<paper>` | Delete all logs for the paper |
-| `make clean-gateway paper=<paper>` | Clean only the Java gradle build |
+| `make clean-all domain=<domain>` | Full cleanup: stop containers, remove images, clean gradle build, wipe logs |
+| `make wipe-logs domain=<domain>` | Delete all logs for the domain |
+| `make clean-gateway domain=<domain>` | Clean only the Java gradle build |
 
 ### Utility Commands
 
 | Command | Description |
 |---------|-------------|
-| `make check-gateway-deps paper=<paper>` | Show CloudSim Plus dependency version |
-| `make check-gateway-jar paper=<paper>` | Show built JAR path and version |
-| `make get-gradle paper=<paper>` | Download correct Gradle version for wrapper |
+| `make check-gateway-deps domain=<domain>` | Show CloudSim Plus dependency version |
+| `make check-gateway-jar domain=<domain>` | Show built JAR path and version |
+| `make get-gradle domain=<domain>` | Download correct Gradle version for wrapper |
 | `make update-cloudsimplus` | Pull latest CloudSim Plus from Git master, publish to local maven |
 
 ---
 
-## The `paper=` Argument
+## The `domain=` Argument
 
-The project supports multiple research papers with different configurations:
+The project supports multiple RL problem domains:
 
 ```bash
-paper=main       # Single-DC RL (VmAllocationPolicy=rl), reward-based metrics
-paper=euromlsys  # Multi-DC RL (cloudlet_to_dc_assignment_policy=rl), placement ratio metrics
+domain=vm-management  # Single-DC RL (VmAllocationPolicy=rl), reward-based metrics
+domain=job-placement   # Multi-DC RL (cloudlet_to_dc_assignment_policy=rl), placement ratio metrics
 ```
 
-Each paper has its own:
-- `papers/<paper>/config.yml` — experiment configuration
-- `papers/<paper>/topologies/` — datacenter topology definitions
-- `papers/<paper>/rl-manager/entrypoint.py` — paper-specific entry point
-- `papers/<paper>/cloudsimplus-gateway/` — Java gateway source code
-- `papers/<paper>/traces/` — job trace CSV files
+Each domain has its own:
+- `domain/<domain>/config.yml` — experiment configuration
+- `domain/<domain>/topologies/` — datacenter topology definitions
+- `domain/<domain>/rl-manager/entrypoint.py` — domain-specific entry point
+- `domain/<domain>/cloudsimplus-gateway/` — Java gateway source code
+- `domain/<domain>/traces/` — job trace CSV files
 
-**Shared infrastructure (no per-paper copies):**
-- Proto definition: `common/proto/unified/cloudsimplus.proto` — single source, copied to papers during build
+**Shared infrastructure (no per-domain copies):**
+- Proto definition: `common/proto/unified/cloudsimplus.proto` — single source, copied to domains during build
 - Gradle wrapper: `common/cloudsimplus-gateway-shared/gradlew` — used for all gateway builds
 - Version definitions: `common/versions.gradle` — single source for all components
 
-The default paper is `main`.
+The default domain is `vm-management`.
 
 ---
 
@@ -108,7 +108,7 @@ The default paper is `main`.
 
 ```bash
 # Just run — volume mounts pick up changes automatically
-make run paper=euromlsys
+make run domain=job-placement
 ```
 
 The `startup.sh` script runs `pip install --no-deps -e /mgr/gym_cloudsimplus` on container start, installing from the mounted source.
@@ -117,8 +117,8 @@ The `startup.sh` script runs `pip install --no-deps -e /mgr/gym_cloudsimplus` on
 **Rebuild the gateway JAR:**
 
 ```bash
-make build-gateway paper=euromlsys   # Build JAR
-make run paper=euromlsys             # Run (JAR is mounted via :ro volume)
+make build-gateway domain=job-placement   # Build JAR
+make run domain=job-placement             # Run (JAR is mounted via :ro volume)
 ```
 
 ### Configuration Changes (config.yml)
@@ -126,7 +126,7 @@ make run paper=euromlsys             # Run (JAR is mounted via :ro volume)
 
 ```bash
 # Just run with new config
-make run paper=euromlsys
+make run domain=job-placement
 ```
 
 ### Environment Variables (java_log_level, java_log_destination)
@@ -142,9 +142,9 @@ The Docker setup uses volume mounts so code changes take effect without rebuildi
 # docker-compose.yml volumes (relevant mounts)
 - ./rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus    # Python gRPC client (mounted, not copied)
 - ./rl-manager/startup.sh:/common/rl-manager/startup.sh   # Startup script
-- ../${PAPER_DIR}/rl-manager/entrypoint.py:/mgr/entrypoint.py  # Paper entrypoint
-- ../${PAPER_DIR}/config.yml:/mgr/config.yml            # Config file
-- ../${PAPER_DIR}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro  # JAR (read-only)
+- ../${DOMAIN_DIR}/rl-manager/entrypoint.py:/mgr/entrypoint.py  # Domain entrypoint
+- ../${DOMAIN_DIR}/config.yml:/mgr/config.yml            # Config file
+- ../${DOMAIN_DIR}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro  # JAR (read-only)
 ```
 
 **Important**: The JAR is mounted `:ro` (read-only) because it's built once via `make build-gateway`. Python code is mounted live so edits to `gym_cloudsimplus/` take effect immediately without rebuild.
@@ -153,7 +153,7 @@ The Docker setup uses volume mounts so code changes take effect without rebuildi
 
 ## Configuration File (config.yml)
 
-Each paper has its own `papers/<paper>/config.yml` with two sections:
+Each domain has its own `domain/<domain>/config.yml` with two sections:
 
 ### globals (container-level settings)
 ```yaml
@@ -178,10 +178,10 @@ Shared across all experiments in the config:
 ```yaml
 experiment_1:
     mode: train              # train | transfer | test
-    experiment_dir: euromlsys
+    experiment_dir: job_placement
     experiment_name: env_a_train
-    datacenters: !include topologies/euromlsys_a.yml
-    job_trace_filename: euromlsys_jobs_first_50.csv
+    datacenters: !include topologies/job_placement_a.yml
+    job_trace_filename: job_placement_jobs_first_50.csv
 ```
 
 - `mode`: train (new training), transfer (fine-tune from checkpoint), test (eval only)
@@ -201,22 +201,22 @@ experiment_1:
 # Train example
 experiment_1:
     mode: train
-    experiment_dir: euromlsys
+    experiment_dir: job_placement
     experiment_name: env_a_train
 
 # Transfer example
 experiment_2:
     mode: transfer
-    experiment_dir: euromlsys
+    experiment_dir: job_placement
     experiment_name: env_b_transfer
-    train_model_dir: euromlsys/env_a_train  # Load from this directory
+    train_model_dir: job_placement/env_a_train  # Load from this directory
 
 # Test example
 experiment_3:
     mode: test
-    experiment_dir: euromlsys
+    experiment_dir: job_placement
     experiment_name: env_b_eval
-    train_model_dir: euromlsys/env_a_train
+    train_model_dir: job_placement/env_a_train
 ```
 
 ---
@@ -228,7 +228,7 @@ The `config.yml` can define multiple experiments (`experiment_1`, `experiment_2`
 ```bash
 # With 2 experiments in config.yml, this runs:
 # 1. Experiment 1 → cleanup → Experiment 2 → cleanup
-make run paper=euromlsys
+make run domain=job-placement
 ```
 
 Each experiment:
@@ -243,10 +243,10 @@ Each experiment:
 
 ```bash
 # Build with CUDA support
-make build paper=euromlsys GPU=true
+make build domain=job-placement GPU=true
 
 # Run with GPU
-make run paper=euromlsys GPU=true
+make run domain=job-placement GPU=true
 ```
 
 Requirements:
@@ -261,27 +261,27 @@ Requirements:
 
 ### Clean build from scratch:
 ```bash
-make clean-all paper=euromlsys   # Wipe everything
-make build paper=euromlsys       # Fresh build
-make run paper=euromlsys         # Run
+make clean-all domain=job-placement   # Wipe everything
+make build domain=job-placement       # Fresh build
+make run domain=job-placement         # Run
 ```
 
 ### Daily development (Python-only changes):
 ```bash
-make run paper=euromlsys         # No build needed
+make run domain=job-placement         # No build needed
 ```
 
 ### After Java changes:
 ```bash
-make build-gateway paper=euromlsys  # Rebuild JAR only
-make run paper=euromlsys              # Run
+make build-gateway domain=job-placement  # Rebuild JAR only
+make run domain=job-placement              # Run
 ```
 
 ### Full reset:
 ```bash
-make clean-all paper=euromlsys
-make build paper=euromlsys
-make run paper=euromlsys
+make clean-all domain=job-placement
+make build domain=job-placement
+make run domain=job-placement
 ```
 
 ---
@@ -297,7 +297,7 @@ manager  | |    ep_quality_ratio            | 0.587     |
 manager  | |    ep_total_rew                | -0.471    |
 ```
 
-Logs are saved to `papers/<paper>/rl-manager/logs/<experiment_dir>/<experiment_name>/`.
+Logs are saved to `domain/<domain>/rl-manager/logs/<experiment_dir>/<experiment_name>/`.
 
 Java simulation logs (`csp.current.log`) go to the same log directory (controlled by `java_log_destination`).
 
@@ -308,18 +308,18 @@ Java simulation logs (`csp.current.log`) go to the same log directory (controlle
 ### "No such file or directory" for JAR
 The JAR must exist before running. If missing:
 ```bash
-make build-gateway paper=euromlsys
+make build-gateway domain=job-placement
 ```
 
 ### Permission errors on logs/
 ```bash
-make wipe-logs paper=euromlsys   # Wipe then retry
+make wipe-logs domain=job-placement   # Wipe then retry
 ```
 
 ### Container build failures
 ```bash
-make clean-all paper=euromlsys   # Full reset
-make build paper=euromlsys       # Rebuild
+make clean-all domain=job-placement   # Full reset
+make build domain=job-placement       # Rebuild
 ```
 
 ### Java gRPC server not starting

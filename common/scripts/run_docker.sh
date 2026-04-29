@@ -1,9 +1,9 @@
 #!/bin/bash
 exec </dev/null
 
-PAPER=${PAPER:-main}
-HOST_PAPER_DIR="papers/$PAPER"
-CONFIG_FILE="$HOST_PAPER_DIR/config.yml"
+DOMAIN=${DOMAIN:-vm-management}
+HOST_DOMAIN_DIR="domain/$DOMAIN"
+CONFIG_FILE="$HOST_DOMAIN_DIR/config.yml"
 
 # Export UID and GID for docker build args
 export HOST_UID=$(id -u)
@@ -67,7 +67,7 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
     for i in $(seq 1 $NUM_EXPERIMENTS); do
         # Start all containers
-        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" PAPER_DIR="$PAPER" \
+        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" PAPER_DIR="$DOMAIN" \
             docker compose -f common/docker-compose.yml $PROFILE_OPTION up --build --remove-orphans -d
 
         echo "DEBUG: Container started, checking mounted config.yml"

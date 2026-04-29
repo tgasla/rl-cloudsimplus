@@ -1,11 +1,11 @@
-# Root Makefile — delegates to common/Makefile with paper selection
-# Usage: make run paper=main    (default)
-#        make run paper=euromlsys
-#        make build paper=main
+# Root Makefile — delegates to common/Makefile with domain selection
+# Usage: make run domain=vm-management  (default)
+#        make run domain=job-placement
+#        make build domain=vm-management
 
-PAPER := $(or $(paper),main)
+DOMAIN := $(or $(domain),vm-management)
 
-$(info Using paper=$(PAPER))
+$(info Using domain=$(DOMAIN))
 
 # Delegate everything to common/Makefile
 include common/Makefile

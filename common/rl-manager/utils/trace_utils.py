@@ -8,7 +8,7 @@ def trace_to_csv(jobs: pd.DataFrame, filename="data.csv"):
 def as_cloudlet_descriptor_dict(job_id, submit_time, mi, required_cores):
     """
     Base cloudlet descriptor with the common fields.
-    Subclasses/papers can extend this with additional fields.
+    Subclasses/domains can extend this with additional fields.
     """
     return {
         "jobId": job_id,
@@ -32,7 +32,7 @@ def csv_to_cloudlet_descriptor(filename):
             int(df.mi[i]),
             int(df.required_cores[i]),
         )
-        # Handle optional location field for euromlsys-style traces
+        # Handle optional location field for job-placement-style traces
         if "location" in df.columns:
             cloudlet["location"] = df.location[i]
         # Handle optional delay_sensitivity field

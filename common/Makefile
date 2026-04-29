@@ -1,8 +1,8 @@
-# paper=main or paper=euromlsys — defaults to main
-PAPER ?= main
-PAPER_DIR := papers/$(PAPER)
+# domain=vm-management or domain=job-placement — defaults to vm-management
+DOMAIN ?= vm-management
+DOMAIN_DIR := domain/$(DOMAIN)
 
-CONFIG_FILE := $(PAPER_DIR)/config.yml
+CONFIG_FILE := $(DOMAIN_DIR)/config.yml
 get_yaml_value = $(shell grep -A 20 '^globals:' $(CONFIG_FILE) | grep -m 1 '^ *$(1):' | sed 's/^ *$(1): //')
 
 # Read versions from versions.gradle — single source of truth
@@ -17,30 +17,30 @@ CANONICAL_PROTO = common/proto/unified/cloudsimplus.proto
 CANONICAL_BUILD = common/cloudsimplus-gateway-shared/gateway-build.gradle
 
 build-gateway:
-	@mkdir -p $(PAPER_DIR)/cloudsimplus-gateway/src/main/proto
-	@cp -p $(CANONICAL_PROTO) $(PAPER_DIR)/cloudsimplus-gateway/src/main/proto/
-	@cp -p $(CANONICAL_BUILD) $(PAPER_DIR)/cloudsimplus-gateway/build.gradle
-	cd common/cloudsimplus-gateway-shared && ./gradlew :$(PAPER):build $(ARGS)
+	@mkdir -p $(DOMAIN_DIR)/cloudsimplus-gateway/src/main/proto
+	@cp -p $(CANONICAL_PROTO) $(DOMAIN_DIR)/cloudsimplus-gateway/src/main/proto/
+	@cp -p $(CANONICAL_BUILD) $(DOMAIN_DIR)/cloudsimplus-gateway/build.gradle
+	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):build $(ARGS)
 
 build-manager:
 	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) \
-		--build-arg PAPER_DIR=$(PAPER) \
+		--build-arg PAPER_DIR=$(DOMAIN) \
 		-f common/rl-manager/Dockerfile common/rl-manager/
 
 build-tensorboard:
-	docker build -t tensorboard $(PAPER_DIR)/tensorboard
+	docker build -t tensorboard $(DOMAIN_DIR)/tensorboard
 
 run-tensorboard:
-	docker run --rm --name tensorboard -d -v $(PAPER_DIR)/logs/:/logs/ -p 6006:6006 tensorboard
+	docker run --rm --name tensorboard -d -v $(DOMAIN_DIR)/logs/:/logs/ -p 6006:6006 tensorboard
 
 run:
-	PAPER_DIR="$(PAPER)" ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(PAPER) bash common/scripts/run_docker.sh
+	PAPER_DIR="$(DOMAIN)" ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(DOMAIN) bash common/scripts/run_docker.sh
 
 clean-gateway:
-	cd common/cloudsimplus-gateway-shared && ./gradlew :$(PAPER):clean 2>/dev/null || true
+	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):clean 2>/dev/null || true
 
 wipe-logs:
-	rm -rf $(PAPER_DIR)/logs/*
+	rm -rf $(DOMAIN_DIR)/logs/*
 
 stop:
 	docker compose -f common/docker-compose.yml down --remove-orphans
@@ -52,8 +52,8 @@ clean-all: stop
 	docker rmi -f $$(docker images -q 'manager*' 2>/dev/null) 2>/dev/null || true
 	docker rmi -f $$(docker images -q 'gateway*' 2>/dev/null) 2>/dev/null || true
 	docker rmi -f $$(docker images -q 'tensorboard*' 2>/dev/null) 2>/dev/null || true
-	cd common/cloudsimplus-gateway-shared && ./gradlew :$(PAPER):clean 2>/dev/null || true
-	rm -rf $(PAPER_DIR)/rl-manager/logs/*
+	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):clean 2>/dev/null || true
+	rm -rf $(DOMAIN_DIR)/rl-manager/logs/*
 
 get-gradle:
 	cd common/cloudsimplus-gateway-shared && ./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
@@ -71,11 +71,11 @@ clear-gradle:
 	cd ~/.gradle && rm -rf *
 
 check-gateway-deps:
-	@echo "=== CloudSim Plus dependency for paper: $(PAPER) ==="
-	@cd common/cloudsimplus-gateway-shared && ./gradlew :$(PAPER):dependencies $(ARGS) 2>&1 | grep "org.cloudsimplus"
+	@echo "=== CloudSim Plus dependency for domain: $(DOMAIN) ==="
+	@cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):dependencies $(ARGS) 2>&1 | grep "org.cloudsimplus"
 
 check-gateway-jar:
-	@JAR=$$(ls $(PAPER_DIR)/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-*.jar 2>/dev/null | head -1); \
+	@JAR=$$(ls $(DOMAIN_DIR)/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-*.jar 2>/dev/null | head -1); \
 	if [ -f "$$JAR" ]; then \
 		echo "JAR: $$JAR"; \
 		unzip -p "$$JAR" META-INF/maven/org.cloudsimplus/cloudsimplus/pom.properties 2>/dev/null | grep version; \

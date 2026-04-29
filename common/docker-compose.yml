@@ -15,7 +15,7 @@ services:
       args:
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
-        PAPER_DIR: ${PAPER_DIR:-main}
+        PAPER_DIR: ${PAPER_DIR:-vm-management}
     volumes:
       - ./rl-manager/utils:/mgr/utils
       - ./rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus
@@ -27,8 +27,8 @@ services:
       - ./rl-manager/entrypoint.py:/mgr/entrypoint.py
       - ../common/logs:/mgr/logs
       - ./rl-manager/callbacks:/mgr/callbacks
-      - ../papers/${PAPER_DIR:-main}/config.yml:/mgr/config.yml
-      - ../papers/${PAPER_DIR:-main}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
+      - ../domain/${PAPER_DIR:-vm-management}/config.yml:/mgr/config.yml
+      - ../domain/${PAPER_DIR:-vm-management}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
       - ../common/topologies:/mgr/topologies:ro
       - /run/docker.sock:/run/docker.sock:ro
     command: bash /common/rl-manager/startup.sh

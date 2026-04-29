@@ -1,5 +1,5 @@
 // CloudSim-RL Gateway build file — shared library module (java-library)
-// Used as: implementation project(':') from :main and :euromlsys papers
+// Used as: implementation project(':') from :vm-management and :job-placement domains
 plugins {
   id 'java-library'
   id 'com.google.protobuf' version '0.9.6'
