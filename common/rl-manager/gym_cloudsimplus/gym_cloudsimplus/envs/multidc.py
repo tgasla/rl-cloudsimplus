@@ -101,9 +101,7 @@ class GrpcMultiDC(gym.Env):
 
         # ── Create simulation ───────────────────────────────────────────────
         import json
-        from utils.misc import _params_to_java_format
-        java_params = _params_to_java_format(params)
-        self._sim_id = self._client.create_simulation(json.dumps(java_params), jobs_as_json)
+        self._sim_id = self._client.create_simulation(json.dumps(params), jobs_as_json)
 
     # ── Action masking ────────────────────────────────────────────────────────
     def action_masks(self) -> list[bool]:

@@ -2,13 +2,12 @@
 exec </dev/null
 
 PAPER=${PAPER:-main}
-PAPER_DIR="papers/$PAPER"
-CONFIG_FILE="$PAPER_DIR/config.yml"
+HOST_PAPER_DIR="papers/$PAPER"
+CONFIG_FILE="$HOST_PAPER_DIR/config.yml"
 
 # Export UID and GID for docker build args
 export HOST_UID=$(id -u)
 export HOST_GID=$(id -g)
-export PAPER_DIR="$PAPER_DIR"
 
 # Detect the correct grep flag based on OS
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -68,8 +67,10 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
     for i in $(seq 1 $NUM_EXPERIMENTS); do
         # Start all containers
-        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" PAPER_DIR="$PAPER_DIR" \
+        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" PAPER_DIR="$PAPER" \
             docker compose -f common/docker-compose.yml $PROFILE_OPTION up --build --remove-orphans -d
+
+        echo "DEBUG: Container started, checking mounted config.yml"
 
         # Get the container ID for the manager service
         MANAGER_CONTAINER_ID=$(docker compose -f common/docker-compose.yml ps -q "$MANAGER_SERVICE")

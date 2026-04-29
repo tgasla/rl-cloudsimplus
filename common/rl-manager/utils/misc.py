@@ -25,31 +25,6 @@ from utils.rl_algorithm_support_flags import (
 )
 
 
-# ─── Param auto-translation (avoids duplicate Python/Java param definitions) ───
-
-def _snake_to_camel(snake_str):
-    """Convert snake_case to camelCase."""
-    components = snake_str.split('_')
-    return components[0] + ''.join(x.title() for x in components[1:])
-
-
-def _params_to_java_format(params):
-    """
-    Convert Python snake_case params to Java camelCase format.
-    This is needed because the Java SimulationSettings uses camelCase field names
-    (via Gson parsing which respects JavaBean conventions).
-    Adds camelCase versions while KEEPING original snake_case keys for Python env.
-    """
-    java_params = dict(params)
-    for key, value in params.items():
-        if '_' in key:
-            java_key = _snake_to_camel(key)
-            java_params[java_key] = value
-            # Important: do NOT remove the original snake_case key
-            # Python environment (singledc.py) still needs it
-    return java_params
-
-
 # ─── Gateway version resolution ─────────────────────────────────────────────
 
 def _gateway_version():
@@ -64,15 +39,145 @@ def _gateway_version():
 
 # ─── Config parsing ─────────────────────────────────────────────────────────
 
+def _include_constructor(loader, node):
+    filename = os.path.join(
+        os.path.dirname(loader.stream.name), loader.construct_scalar(node)
+    )
+    with open(filename, "r") as f:
+        return yaml.load(f, Loader=yaml.FullLoader)
+
+
+class _Datacenter:
+    def __init__(self, name, dc_type, amount, hosts, connect_to):
+        self.name = name
+        self.dc_type = dc_type
+        self.amount = amount
+        self.hosts = hosts if isinstance(hosts, list) else [hosts] if hosts else []
+        self.connect_to = connect_to if isinstance(connect_to, list) else [connect_to] if connect_to else []
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "type": self.dc_type,
+            "amount": self.amount,
+            "hosts": [h.to_dict() if hasattr(h, 'to_dict') else h for h in self.hosts],
+            "connect_to": self.connect_to,
+        }
+
+
+class _Host:
+    def __init__(self, amount, pes, pe_mips, ram, storage, bw, vms):
+        self.amount = amount
+        self.pes = pes
+        self.pe_mips = pe_mips
+        self.ram = ram
+        self.storage = storage
+        self.bw = bw
+        self.vms = vms if isinstance(vms, list) else [vms] if vms else []
+
+    def to_dict(self):
+        return {
+            "amount": self.amount, "pes": self.pes, "pe_mips": self.pe_mips,
+            "ram": self.ram, "storage": self.storage, "bw": self.bw,
+            "vms": [v.to_dict() if hasattr(v, 'to_dict') else v for v in self.vms],
+        }
+
+
+class _Vm:
+    def __init__(self, amount, pes, pe_mips, ram, size, bw):
+        self.amount = amount
+        self.pes = pes
+        self.pe_mips = pe_mips
+        self.ram = ram
+        self.size = size
+        self.bw = bw
+
+    def to_dict(self):
+        return {
+            "amount": self.amount, "pes": self.pes, "pe_mips": self.pe_mips,
+            "ram": self.ram, "size": self.size, "bw": self.bw,
+        }
+
+
+def _datacenter_constructor(loader, node):
+    fields = loader.construct_mapping(node)
+    return _Datacenter(
+        name=fields["name"], dc_type=fields["type"], amount=fields["amount"],
+        hosts=fields.get("hosts", []), connect_to=fields.get("connect_to", []),
+    )
+
+
+def _host_constructor(loader, node):
+    fields = loader.construct_mapping(node)
+    return _Host(
+        amount=fields["amount"], pes=fields["pes"], pe_mips=fields["pe_mips"],
+        ram=fields["ram"], storage=fields["storage"], bw=fields["bw"],
+        vms=fields.get("vms", []),
+    )
+
+
+def _vm_constructor(loader, node):
+    fields = loader.construct_mapping(node)
+    return _Vm(
+        amount=fields["amount"], pes=fields["pes"], pe_mips=fields["pe_mips"],
+        ram=fields["ram"], size=fields["size"], bw=fields["bw"],
+    )
+
+
+def _register_yaml_constructors():
+    yaml.add_constructor("!include", _include_constructor)
+    yaml.add_constructor("!datacenter", _datacenter_constructor)
+    yaml.add_constructor("!host", _host_constructor)
+    yaml.add_constructor("!vm", _vm_constructor)
+
+
 def dict_from_config(replica_id, config):
+    _register_yaml_constructors()
     with open(config, "r") as file:
-        config = yaml.safe_load(file)
+        config = yaml.load(file, Loader=yaml.Loader)
     params = {**config["common"], **config[f"experiment_{replica_id}"]}
     return params
 
 
-def datacenter_constructor(_, node) -> dict:
-    return node.value
+# ─── Datacenter translation helpers (for euromlsys job_placement) ───────────
+
+_sensitivity_mapping = {"tolerant": 0, "moderate": 1, "critical": 2}
+
+
+def _get_sensitivity_level(sensitivity_str: str) -> int:
+    return _sensitivity_mapping[sensitivity_str]
+
+
+def _get_dc_idx_by_name(name: str, datacenters: list[dict]) -> int:
+    for idx, dc in enumerate(datacenters):
+        if dc["name"] == name:
+            return idx
+    raise ValueError(f"Datacenter with name {name} not found in datacenters list.")
+
+
+def _check_datacenters_unique(datacenters: list[dict]) -> None:
+    names = [dc["name"] for dc in datacenters]
+    if len(names) != len(set(names)):
+        raise ValueError("Datacenters must have unique names.")
+
+
+def _translate_connect_to_names_to_idx(datacenters: list[dict]) -> list[dict]:
+    for dc in datacenters:
+        connect_to_idx = [_get_dc_idx_by_name(c, datacenters) for c in dc.get("connect_to", [])]
+        dc["connect_to"] = connect_to_idx
+    return datacenters
+
+
+def _translate_job_location_names_to_idx(jobs: list[dict], datacenters: list) -> list[dict]:
+    for job in jobs:
+        job["location"] = _get_dc_idx_by_name(job["location"], datacenters)
+    return jobs
+
+
+def _translate_sensitivity_str_to_levels(jobs: list[dict]) -> list[dict]:
+    for job in jobs:
+        job["delaySensitivity"] = _get_sensitivity_level(job["delaySensitivity"])
+    return jobs
 
 
 # ─── Logger & callback ───────────────────────────────────────────────────────

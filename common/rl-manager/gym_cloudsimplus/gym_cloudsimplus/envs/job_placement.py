@@ -101,10 +101,8 @@ class JobPlacementEnv(CloudSimBaseEnv):
 
         # ── Create simulation (CloudSimBaseEnv has _client and _sim_id ready) ─
         import json
-        from utils.misc import _params_to_java_format
-        java_params = _params_to_java_format(params)
         self._sim_id = self._client.create_simulation(
-            json.dumps(java_params), jobs_as_json
+            json.dumps(params), jobs_as_json
         )
 
     # ── CloudSimBaseEnv abstract methods ───────────────────────────────────────

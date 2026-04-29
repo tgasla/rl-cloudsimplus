@@ -13,7 +13,7 @@ GATEWAY_VERSION := $(shell grep "gatewayVersion" common/versions.gradle | sed "s
 build: build-gateway build-manager
 
 build-gateway:
-	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew build $(ARGS)
+	cd common/cloudsimplus-gateway-shared && ./gradlew -p $(shell pwd)/$(PAPER_DIR)/cloudsimplus-gateway build $(ARGS)
 
 build-manager:
 	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) \
@@ -27,10 +27,10 @@ run-tensorboard:
 	docker run --rm --name tensorboard -d -v $(PAPER_DIR)/logs/:/logs/ -p 6006:6006 tensorboard
 
 run:
-	PAPER_DIR=$(PAPER_DIR) ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(PAPER) common/scripts/run_docker.sh
+	PAPER_DIR="$(PAPER)" ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(PAPER) bash common/scripts/run_docker.sh
 
 clean-gateway:
-	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew clean
+	cd common/cloudsimplus-gateway-shared && ./gradlew -p $(shell pwd)/$(PAPER_DIR)/cloudsimplus-gateway clean 2>/dev/null || true
 
 wipe-logs:
 	rm -rf $(PAPER_DIR)/logs/*
@@ -45,15 +45,14 @@ clean-all: stop
 	docker rmi -f $$(docker images -q 'manager*' 2>/dev/null) 2>/dev/null || true
 	docker rmi -f $$(docker images -q 'gateway*' 2>/dev/null) 2>/dev/null || true
 	docker rmi -f $$(docker images -q 'tensorboard*' 2>/dev/null) 2>/dev/null || true
-	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew clean 2>/dev/null || true
+	cd common/cloudsimplus-gateway-shared && ./gradlew -p $(shell pwd)/$(PAPER_DIR)/cloudsimplus-gateway clean 2>/dev/null || true
 	rm -rf $(PAPER_DIR)/rl-manager/logs/*
 
 get-gradle:
-	cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
+	cd common/cloudsimplus-gateway-shared && ./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
 
 # Pull latest CloudSim Plus from Git master, build and publish to local maven repo
 # After this, use: make build-gateway ARGS="-PuseSnapshot=true"
-# Or run from papers/euromlsys or papers/main with: ./gradlew build -PuseSnapshot=true
 update-cloudsimplus:
 	@if [ ! -d "/tmp/cloudsimplus" ]; then \
 		git clone --depth 1 https://github.com/cloudsimplus/cloudsimplus.git /tmp/cloudsimplus; \
@@ -66,7 +65,7 @@ clear-gradle:
 
 check-gateway-deps:
 	@echo "=== CloudSim Plus dependency for paper: $(PAPER) ==="
-	@cd $(PAPER_DIR)/cloudsimplus-gateway && ./gradlew :dependencies $(ARGS) 2>&1 | grep "org.cloudsimplus"
+	@cd common/cloudsimplus-gateway-shared && ./gradlew -p $(shell pwd)/$(PAPER_DIR)/cloudsimplus-gateway :dependencies $(ARGS) 2>&1 | grep "org.cloudsimplus"
 
 check-gateway-jar:
 	@JAR=$$(ls $(PAPER_DIR)/cloudsimplus-gateway/build/libs/cloudsimplus-gateway-*.jar 2>/dev/null | head -1); \

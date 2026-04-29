@@ -51,7 +51,7 @@ common:
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
   timesteps: 2048
-  n_rollout_steps: 2048
+  n_rollout_steps: 128
   reward_jobs_placed_coef: 0.333
   reward_quality_coef: 0.333
   reward_deadline_violation_coef: 0.333

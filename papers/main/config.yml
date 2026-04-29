@@ -50,7 +50,7 @@ common:
     large_vm_multiplier: 4
     small_vm_pes: 2
     job_trace_filename: three_60max_8maxcores.csv
-    timesteps: 1024         # 1M timesteps (recommended minimum for RL learning)
+    timesteps: 2048         # 1M timesteps (recommended minimum for RL learning)
     n_rollout_steps: 128      # per-worker rollout steps. So, total rollout steps are x num_cpu
     reward_job_wait_coef: 0.25
     reward_running_vm_cores_coef: 0.25
