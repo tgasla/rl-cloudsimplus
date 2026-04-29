@@ -12,13 +12,14 @@ GATEWAY_VERSION := $(shell grep "gatewayVersion" common/versions.gradle | sed "s
 
 build: build-gateway build-manager
 
-# Canonical proto source is common/proto/unified/cloudsimplus.proto
-# Both papers need a local copy in src/main/proto/ for gradle protobuf plugin
+# Canonical sources in common/
 CANONICAL_PROTO = common/proto/unified/cloudsimplus.proto
+CANONICAL_BUILD = common/cloudsimplus-gateway-shared/gateway-build.gradle
 
 build-gateway:
 	@mkdir -p $(PAPER_DIR)/cloudsimplus-gateway/src/main/proto
 	@cp -p $(CANONICAL_PROTO) $(PAPER_DIR)/cloudsimplus-gateway/src/main/proto/
+	@cp -p $(CANONICAL_BUILD) $(PAPER_DIR)/cloudsimplus-gateway/build.gradle
 	cd common/cloudsimplus-gateway-shared && ./gradlew :$(PAPER):build $(ARGS)
 
 build-manager:

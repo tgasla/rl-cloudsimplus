@@ -226,6 +226,9 @@ logs/
 .claude/
 
 *.omc/
+# Auto-copied build files during build (canonical is common/cloudsimplus-gateway-shared/gateway-build.gradle)
+papers/main/cloudsimplus-gateway/build.gradle
+papers/euromlsys/cloudsimplus-gateway/build.gradle
 # Auto-copied proto files during build (canonical is common/proto/unified/)
 papers/main/cloudsimplus-gateway/src/main/proto/
 papers/euromlsys/cloudsimplus-gateway/src/main/proto/
