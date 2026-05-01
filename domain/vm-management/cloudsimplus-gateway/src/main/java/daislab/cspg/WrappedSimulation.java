@@ -162,7 +162,7 @@ public class WrappedSimulation {
         return runningCloudletCount;
     }
 
-    private int[] executeCustomAction(final int[] action) {
+    int[] executeCustomAction(final int[] action) {
         // returns [hostId, coresChanged]
 
         final boolean isValid;
@@ -242,7 +242,7 @@ public class WrappedSimulation {
         return ((double) cloudSimProxy.getAllocatedCores()) / settings.getTotalHostCores();
     }
 
-    private int[] getInfrastructureObservation() {
+    int[] getInfrastructureObservation() {
         final int hostsNum = settings.getHostsCount();
         final int vmsNum = getRunningVmsCount().intValue();
         final int jobsNum = getRunningCloudletsCount().intValue();
@@ -273,7 +273,7 @@ public class WrappedSimulation {
         return treeArray;
     }
 
-    private double[] calculateReward(final boolean isValid) {
+    double[] calculateReward(final boolean isValid) {
         double[] rewards = new double[5];
         /*
          * reward is the negative cost of running the infrastructure minus any penalties from jobs
@@ -334,23 +334,4 @@ public class WrappedSimulation {
         return cloudSimProxy.clock();
     }
 
-    // ── RL Interface Implementations ────────────────────────────────────────
-
-    public static class VmManagementStateExtractor implements IStateExtractor {
-        private final WrappedSimulation sim;
-        VmManagementStateExtractor(WrappedSimulation sim) { this.sim = sim; }
-        @Override public int[] extractState() { return sim.getInfrastructureObservation(); }
-    }
-
-    public static class VmManagementActionDecoder implements IActionDecoder {
-        private final WrappedSimulation sim;
-        VmManagementActionDecoder(WrappedSimulation sim) { this.sim = sim; }
-        @Override public int[] decodeAction(int[] action) { return sim.executeCustomAction(action); }
-    }
-
-    public static class VmManagementRewardCalculator implements IRewardCalculator {
-        private final WrappedSimulation sim;
-        VmManagementRewardCalculator(WrappedSimulation sim) { this.sim = sim; }
-        @Override public double[] calculateReward(boolean isValid) { return sim.calculateReward(isValid); }
-    }
 }

@@ -124,7 +124,7 @@ class JobPlacementEnv(CloudSimBaseEnv):
     def _get_observation(self, raw_obs: dict) -> dict:
         """Convert raw gRPC observation to job placement gymnasium obs dict."""
         # Infrastructure: [dc_id-1, dc_type_id, free_vmpes] per host
-        raw_infr = raw_obs.get("infrastructure_observation", [])
+        raw_infr = raw_obs.get("flat_infrastructure_state", [])
         infr_obs = np.array(raw_infr, dtype=np.int16)
         infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
 

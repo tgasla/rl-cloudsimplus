@@ -1092,7 +1092,7 @@ public class WrappedSimulation {
     // return result;
     // }
 
-    private int[] getInfrastructureObservation() {
+    int[] getInfrastructureObservation() {
         switch (settings.getStateSpaceType()) {
             case "dcid-dctype-freevmpes-per-host":
                 return getInfraObsDcIdDcTypeFreeVmPesPerHost();
@@ -1421,25 +1421,4 @@ public class WrappedSimulation {
         return lastReward;
     }
 
-    // ── RL Interface Implementations ────────────────────────────────────────
-
-    public static class JobPlacementStateExtractor implements IStateExtractor {
-        private final WrappedSimulation sim;
-        JobPlacementStateExtractor(WrappedSimulation sim) { this.sim = sim; }
-        @Override public int[] extractState() { return sim.getInfrastructureObservation(); }
     }
-
-    public static class JobPlacementActionDecoder implements IActionDecoder {
-        private final WrappedSimulation sim;
-        JobPlacementActionDecoder(WrappedSimulation sim) { this.sim = sim; }
-        @Override public int[] decodeAction(int[] action) { return action; }
-    }
-
-    public static class JobPlacementRewardCalculator implements IRewardCalculator {
-        private final WrappedSimulation sim;
-        JobPlacementRewardCalculator(WrappedSimulation sim) { this.sim = sim; }
-        @Override public double[] calculateReward(boolean isValid) {
-            return new double[]{sim.getLastReward()};
-        }
-    }
-}
