@@ -23,36 +23,9 @@ public class WrappedSimulation
             final List<CloudletDescriptor> jobs) {
         super(identifier, settings, jobs, null, null, null);
         this.simSettings = (SimulationSettings) settings;
-        this.stateExtractor = new VmManagementStateExtractor();
-        this.actionDecoder = new VmManagementActionDecoder();
-        this.rewardCalculator = new VmManagementRewardCalculator();
-    }
-
-    // ============== VmManagementStateExtractor (private inner class) ==============
-
-    private class VmManagementStateExtractor implements IStateExtractor {
-        @Override
-        public int[] extractState() {
-            return WrappedSimulation.this.getInfrastructureObservation();
-        }
-    }
-
-    // ============== VmManagementActionDecoder (private inner class) ==============
-
-    private class VmManagementActionDecoder implements IActionDecoder {
-        @Override
-        public int[] decodeAction(int[] action) {
-            return WrappedSimulation.this.executeCustomAction(action);
-        }
-    }
-
-    // ============== VmManagementRewardCalculator (private inner class) ==============
-
-    private class VmManagementRewardCalculator implements IRewardCalculator {
-        @Override
-        public double calculateReward() {
-            return WrappedSimulation.this.calculateReward(true)[0];
-        }
+        this.stateExtractor = new VmManagementStateExtractor(this);
+        this.actionDecoder = new VmManagementActionDecoder(this);
+        this.rewardCalculator = new VmManagementRewardCalculator(this);
     }
 
     // ============== Abstract method implementations ==============

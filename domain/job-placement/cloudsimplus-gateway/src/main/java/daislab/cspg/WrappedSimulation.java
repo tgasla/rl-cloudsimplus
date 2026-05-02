@@ -12,15 +12,16 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 // import com.google.gson.Gson;
 
 
-public class WrappedSimulation implements IWrappedSimulation {
-    private final Logger LOGGER = LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
+public class WrappedSimulation
+        extends WrappedSimulationBase<Observation, SimulationStepInfo, SimulationStepResult, SimulationResetResult>
+        implements IWrappedSimulation {
 
-    private final List<CloudletDescriptor> initialJobsDescriptors;
+    // Concrete settings reference for domain-specific access
+    private final SimulationSettings simSettings;
+
     // private final List<String> metricsNames = Arrays.asList(
     // "hostCoresAllocatedToVmsRatio"
     // "avgCpuUtilization",
@@ -46,17 +47,10 @@ public class WrappedSimulation implements IWrappedSimulation {
     // private static final int jobMetricsCount = 6;
 
     // private final Gson gson = new Gson();
-    private final String identifier;
-    private final SimulationSettings settings;
-    private CloudSimProxy cloudSimProxy;
-    private int currentStep;
     private int bestEpisodeReward;
     private int currentEpisodeReward;
     private int jobsPlacedThisTimestep;
     private double lastReward = 0.0;
-    private final IStateExtractor stateExtractor;
-    private final IActionDecoder actionDecoder;
-    private final IRewardCalculator rewardCalculator;
     // private final MetricsStorage metricsStorage;
     // private final SimulationHistory simulationHistory;
     // private final int maxVms;
@@ -69,9 +63,8 @@ public class WrappedSimulation implements IWrappedSimulation {
 
     public WrappedSimulation(final String identifier, final ISimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
-        this.identifier = identifier;
-        this.settings = (SimulationSettings) settings;
-        initialJobsDescriptors = jobs;
+        super(identifier, settings, jobs, null, null, null);
+        this.simSettings = (SimulationSettings) settings;
         bestEpisodeReward = -Integer.MAX_VALUE;
 
         // simulationHistory = new SimulationHistory();
@@ -97,65 +90,71 @@ public class WrappedSimulation implements IWrappedSimulation {
     // resetEpRunningVmsCountMax();
     // }
 
-    public void close() {
-        LOGGER.info("Terminating simulation...");
-        if (cloudSimProxy.isRunning()) {
-            cloudSimProxy.terminate();
-        }
+    // ============== Abstract method implementations ==============
+
+    @Override
+    protected ICloudSimProxy createCloudSimProxy(List<Cloudlet> cloudlets) {
+        return new CloudSimProxy(simSettings, cloudlets);
     }
 
-    public String render() {
-        // Map<String, double[]> renderedEnv = new HashMap<>();
-        // for (int i = 0; i < metricsNames.size(); i++) {
-        // renderedEnv.put(
-        // metricsNames.get(i),
-        // metricsStorage.metricValuesAsPrimitives(metricsNames.get(i))
-        // );
-        // }
-        // return gson.toJson(renderedEnv)
-        return "";
+    @Override
+    protected int[] extractSecondaryObservation() {
+        return getJobsWaitingObservation();
     }
 
-    public void validateSimulationReset() {
-        if (cloudSimProxy == null) {
-            throw new IllegalStateException(
-                    "Simulation not reset! Please call the reset() function before calling step!");
-        }
+    @Override
+    protected Observation buildObservation(int[] infraObs, int[] secondaryObs) {
+        return new Observation(infraObs, 0, secondaryObs);
     }
 
+    @Override
+    protected SimulationStepInfo buildResetStepInfo() {
+        return new SimulationStepInfo();
+    }
+
+    @Override
+    protected SimulationStepInfo buildStepInfo(int[] actionResult, boolean terminated, boolean truncated) {
+        // step() is overridden — this method is never called from the base template
+        throw new UnsupportedOperationException("jp uses overridden step()");
+    }
+
+    @Override
+    protected SimulationResetResult buildResetResult(Observation observation, SimulationStepInfo info) {
+        return new SimulationResetResult(observation, info);
+    }
+
+    @Override
+    protected SimulationStepResult buildStepResult(Observation observation, double reward,
+            boolean terminated, boolean truncated, SimulationStepInfo info) {
+        return new SimulationStepResult(observation, reward, terminated, truncated, info);
+    }
+
+    // ============== Override reset() to reset episode counters ==============
+
+    @Override
     public SimulationResetResult reset(final long seed) {
         // ignoring seed for now
-        LOGGER.info("Reset initiated");
-        LOGGER.info("job count: " + initialJobsDescriptors.size());
-        // LOGGER.info(settings.getCloudletToDcAssignmentPolicy());
-
-        this.currentStep = 0;
         this.currentEpisodeReward = 0;
         // resetEpisodeStats(); // TEMPORARILY DISABLED FOR OPTIMIZATION
         // metricsStorage.clear();
         // simulationHistory.reset();
-
-        List<Cloudlet> cloudlets = initialJobsDescriptors.stream()
-                .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
-        cloudSimProxy = new CloudSimProxy(settings, cloudlets);
-
-        SimulationStepInfo info = new SimulationStepInfo();
-
-        Observation observation = new Observation(getInfrastructureObservation(), 0, getJobsWaitingObservation());
-
-        return new SimulationResetResult(observation, info);
+        return super.reset(seed);
     }
 
+    // ============== Override step() for jp-specific action/reward flow ==============
+
+    @Override
     public SimulationStepResult step(final int[] action) {
         validateSimulationReset();
         currentStep++;
         LOGGER.info("Step {} starting", currentStep);
+        CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
 
         final double[] ratios = executeCustomCloudletToDcAction(action);
 
-        final double targetTime = cloudSimProxy.calculateTargetTime();
-        final List<Cloudlet> jobsToSubmit = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
-        final int jobsWaiting = jobsToSubmit.size();
+        final double targetTime = proxy.calculateTargetTime();
+        final int jobsWaiting = proxy.getJobsToSubmitAtThisTimestep(targetTime).size();
+
         // switch (settings.getVmAllocationPolicy()) {
         // case "rl", "fromfile" -> {
         // ratios = executeCustomVmManagementAction(action);
@@ -168,7 +167,7 @@ public class WrappedSimulation implements IWrappedSimulation {
         // final boolean isValid = actionResult[0] != -1;
         // final boolean isValid = true;
 
-        cloudSimProxy.runOneTimestep();
+        proxy.runOneTimestep();
 
         // Temporarily disabled for optimization. Do not create the dot string from the
         // tree array
@@ -181,12 +180,11 @@ public class WrappedSimulation implements IWrappedSimulation {
         // updateMetrics();
         ////////////////////////
 
-        boolean terminated = !cloudSimProxy.isRunning();
-        boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
+        boolean terminated = !proxy.isRunning();
+        boolean truncated = !terminated && (currentStep >= simSettings.getMaxEpisodeLength());
 
         double reward = calculateReward(ratios[0], ratios[1], ratios[2]);
         this.lastReward = reward;
-
         this.currentEpisodeReward += reward;
 
         // TEMPORARILY DISABLED FOR OPTIMIZATION
@@ -194,10 +192,10 @@ public class WrappedSimulation implements IWrappedSimulation {
 
         LOGGER.info("Step {} finished", currentStep);
         LOGGER.debug("Terminated: {}, Truncated: {}", terminated, truncated);
-        LOGGER.debug("Length of future events queue: {}", cloudSimProxy.getNumberOfFutureEvents());
+        LOGGER.debug("Length of future events queue: {}", proxy.getNumberOfFutureEvents());
         if (terminated || truncated) {
             LOGGER.info("Simulation ended. Jobs finished: {}/{}",
-                    cloudSimProxy.getBroker().getCloudletFinishedList().size(),
+                    proxy.getBroker().getCloudletFinishedList().size(),
                     initialJobsDescriptors.size());
             if (currentEpisodeReward > bestEpisodeReward) {
                 bestEpisodeReward = currentEpisodeReward;
@@ -220,17 +218,17 @@ public class WrappedSimulation implements IWrappedSimulation {
         // getUnutilizedVmCoreRatio(),
         // getInfrastructureObservation());
 
-        final List<Double> jobWaitTime = cloudSimProxy.getFinishedJobsWaitTimeLastTimestep();
-
         SimulationStepInfo info = new SimulationStepInfo(jobsWaiting, this.jobsPlacedThisTimestep,
-                ratios[0], ratios[1], ratios[2], jobWaitTime);
+                ratios[0], ratios[1], ratios[2], proxy.getFinishedJobsWaitTimeLastTimestep());
 
-        // Observation observation =
-        // new Observation(getInfrastructureObservation(),
-        // getJobCoresWaitingObservation());
-        Observation observation = new Observation(getInfrastructureObservation(), 0, getJobsWaitingObservation());
+        int[] infraObs = stateExtractor.extractState();
+        int[] secondaryObs = extractSecondaryObservation();
+        return buildStepResult(buildObservation(infraObs, secondaryObs), reward, terminated, truncated, info);
+    }
 
-        return new SimulationStepResult(observation, reward, terminated, truncated, info);
+    // Casts the inherited cloudSimProxy field to the concrete type used by jp
+    private CloudSimProxy proxy() {
+        return (CloudSimProxy) cloudSimProxy;
     }
 
     // private List<double[][]> getCurrentTimestepMetrics() {
@@ -253,7 +251,7 @@ public class WrappedSimulation implements IWrappedSimulation {
     // }
 
     double getUnutilizedVmCoreRatio() {
-        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+        List<Vm> vmList = proxy().getBroker().getVmExecList();
         Long unutilizedVmCores = getUnutilizedVmCores(vmList);
         Long runningVmCores = getRunningVmCores(vmList);
 
@@ -460,9 +458,9 @@ public class WrappedSimulation implements IWrappedSimulation {
     private Vm getMostFreeVmOfDcForCloudlet(final int targetDcId, final Cloudlet cloudlet) {
         long maxExpectedFreePes = 0;
         Vm mostFreeVm = Vm.NULL;
-        final double targetTime = cloudSimProxy.calculateTargetTime();
-        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
-        List<Cloudlet> cloudletList = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final double targetTime = proxy().calculateTargetTime();
+        List<Vm> vmList = proxy().getBroker().getVmExecList();
+        List<Cloudlet> cloudletList = proxy().getJobsToSubmitAtThisTimestep(targetTime);
         // Map<Vm, Long> vmUsedCoresMap = new HashMap<>();
         // for (Vm vm : vmList) {
         // vmUsedCoresMap.put(vm, 0L);
@@ -504,14 +502,13 @@ public class WrappedSimulation implements IWrappedSimulation {
         }
 
         LOGGER.debug("{}: Selecting VM {} for cloudlet {} with {} expected free cores",
-
                 clock(), mostFreeVm.getId(), cloudlet.getId(), maxExpectedFreePes);
         return mostFreeVm;
     }
 
     private double calculateQualityOfPlacement(final int dcId, final Cloudlet job) {
         final String datacenterType =
-                ((DatacenterWithType) cloudSimProxy.getDatacenterById(dcId)).getType();
+                ((DatacenterWithType) proxy().getDatacenterById(dcId)).getType();
         // jobSensitivity - 0: tolerant, 1: moderate, 2: critical
         final int jobSensitivity = ((CloudletWithLocation) job).getDelaySensitivity();
         if (jobSensitivity == 0 | datacenterType.equals("micro")
@@ -525,20 +522,20 @@ public class WrappedSimulation implements IWrappedSimulation {
     }
 
     private double[] executeCustomCloudletToDcAction(final int[] action) {
-        return switch (settings.getCloudletToDcAssignmentPolicy()) {
+        return switch (simSettings.getCloudletToDcAssignmentPolicy()) {
             case "rl" -> executeRlCloudletToDcAction(action);
             case "earliest-shortest-to-most-free-dc" -> executeEarliestShortestCloudletToMostFreeDcAction();
             case "earliest-shortest-to-nearest-dc" -> executeEarliestShortestCloudletToNearestDcAction();
             case "earliest-most-critical-to-nearest-dc" -> executeEarliestMostCriticalCloudletToNearestDcAction();
             default -> throw new IllegalArgumentException("Cloudlet-to-DC Assignment Policy"
-                    + settings.getCloudletToDcAssignmentPolicy() + " was not found!");
+                    + simSettings.getCloudletToDcAssignmentPolicy() + " was not found!");
         };
     }
 
     private List<DatacenterWithType> getOrderedDatacentersForCloudlet(Cloudlet cloudlet) {
         // Step 1: Get the datacenter list
         List<Datacenter> datacenterList =
-                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+                proxy().getSimulation().getCis().getDatacenterList();
 
         // Step 2: Get the location index from the cloudlet
         int loc = ((CloudletWithLocation) cloudlet).getLocation();
@@ -576,9 +573,9 @@ public class WrappedSimulation implements IWrappedSimulation {
     }
 
     private double[] executeEarliestShortestCloudletToNearestDcAction() {
-        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final double targetTime = proxy().calculateTargetTime();
         final List<Cloudlet> jobsWaitingList =
-                cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+                proxy().getJobsToSubmitAtThisTimestep(targetTime);
         final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
         // final List<Datacenter> datacenterList =
         // cloudSimProxy.getSimulation().getCis().getDatacenterList();
@@ -620,7 +617,7 @@ public class WrappedSimulation implements IWrappedSimulation {
 
                 if (targetVm != Vm.NULL) {
                     // Found a suitable VM
-                    cloudSimProxy.getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
+                    proxy().getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
                     jobsToProcessList.remove(selectedCloudlet);
                     jobsPlaced++;
                     quality +=
@@ -651,9 +648,9 @@ public class WrappedSimulation implements IWrappedSimulation {
     }
 
     private double[] executeEarliestMostCriticalCloudletToNearestDcAction() {
-        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final double targetTime = proxy().calculateTargetTime();
         final List<Cloudlet> jobsWaitingList =
-                cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+                proxy().getJobsToSubmitAtThisTimestep(targetTime);
         final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
         // final List<Datacenter> datacenterList =
         // cloudSimProxy.getSimulation().getCis().getDatacenterList();
@@ -698,7 +695,7 @@ public class WrappedSimulation implements IWrappedSimulation {
 
                 if (targetVm != Vm.NULL) {
                     // Found a suitable VM
-                    cloudSimProxy.getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
+                    proxy().getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
                     jobsToProcessList.remove(selectedCloudlet);
                     jobsPlaced++;
                     quality +=
@@ -729,12 +726,12 @@ public class WrappedSimulation implements IWrappedSimulation {
     }
 
     private double[] executeEarliestShortestCloudletToMostFreeDcAction() {
-        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final double targetTime = proxy().calculateTargetTime();
         final List<Cloudlet> jobsWaitingList =
-                cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+                proxy().getJobsToSubmitAtThisTimestep(targetTime);
         final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
         final List<Datacenter> datacenterList =
-                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+                proxy().getSimulation().getCis().getDatacenterList();
         final Map<Datacenter, Long> dcFreePesMap = datacenterList.stream().collect(
                 Collectors.toMap(datacenter -> datacenter, datacenter -> datacenter.getHostList()
                         .stream().flatMap(host -> host.getVmList().stream()).mapToLong(vm -> {
@@ -788,7 +785,7 @@ public class WrappedSimulation implements IWrappedSimulation {
 
                 if (targetVm != Vm.NULL) {
                     // Found a suitable VM
-                    cloudSimProxy.getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
+                    proxy().getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
                     jobsToProcessList.remove(selectedCloudlet);
                     jobsPlaced++;
                     quality +=
@@ -827,8 +824,8 @@ public class WrappedSimulation implements IWrappedSimulation {
         // alternative way is to have the agent return -1 for jobs not waiting, so you
         // return the
         // index - 1, where index is the index of the first -1 in the array
-        final double targetTime = cloudSimProxy.calculateTargetTime();
-        final List<Cloudlet> jobsToSubmit = cloudSimProxy.getJobsToSubmitAtThisTimestep(targetTime);
+        final double targetTime = proxy().calculateTargetTime();
+        final List<Cloudlet> jobsToSubmit = proxy().getJobsToSubmitAtThisTimestep(targetTime);
         final int jobsWaiting = jobsToSubmit.size();
 
         int jobsPlaced = 0;
@@ -856,7 +853,7 @@ public class WrappedSimulation implements IWrappedSimulation {
             }
             LOGGER.info("Binding Cloudlet {} to VM{}/H{}/DC{}", job.getId(), vm.getId(),
                     vm.getHost().getId(), dcId);
-            cloudSimProxy.getBroker().bindCloudletToVm(job, vm);
+            proxy().getBroker().bindCloudletToVm(job, vm);
             // or simply job.setVm(vm);
             LOGGER.info("Cloudlet {} getVm {} ", job.getId(), job.getVm().getId());
             quality += calculateQualityOfPlacement(dcId, job);
@@ -889,7 +886,7 @@ public class WrappedSimulation implements IWrappedSimulation {
         if (jobsWaiting.size() == 0) {
             return 0;
         }
-        final double targetTime = cloudSimProxy.calculateTargetTime();
+        final double targetTime = proxy().calculateTargetTime();
         final long deadlineViolations = jobsWaiting.stream()
                 .filter(job -> targetTime > job.getSubmissionDelay()
                         + ((CloudletWithLocation) job).getDeadline() && job.getVm() == Vm.NULL)
@@ -983,7 +980,7 @@ public class WrappedSimulation implements IWrappedSimulation {
     // }
 
     private boolean removeVm(final int index) {
-        if (!cloudSimProxy.removeVm(index)) {
+        if (!proxy().removeVm(index)) {
             LOGGER.debug("Removing a VM with index {} action is invalid. Ignoring.", index);
             return false;
         }
@@ -992,7 +989,7 @@ public class WrappedSimulation implements IWrappedSimulation {
 
     // adds a new vm to the host with hostid if possible
     private boolean addNewVm(final String type, final long hostId) {
-        if (!cloudSimProxy.addNewVm(type, hostId)) {
+        if (!proxy().addNewVm(type, hostId)) {
             LOGGER.warn("Adding a VM of type {} to host {} is invalid. Ignoring", type, hostId);
             return false;
         }
@@ -1000,10 +997,10 @@ public class WrappedSimulation implements IWrappedSimulation {
     }
 
     private double getWaitingJobsRatio() {
-        final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
+        final long arrivedJobsCount = proxy().getArrivedJobsCount();
 
         return arrivedJobsCount > 0
-                ? cloudSimProxy.getNotYetRunningJobsCount() / (double) arrivedJobsCount
+                ? proxy().getNotYetRunningJobsCount() / (double) arrivedJobsCount
                 : 0.0;
     }
 
@@ -1014,17 +1011,17 @@ public class WrappedSimulation implements IWrappedSimulation {
     }
 
     int[] getInfrastructureObservation() {
-        switch (settings.getStateSpaceType()) {
+        switch (simSettings.getStateSpaceType()) {
             case "dcid-dctype-freevmpes-per-host":
                 return getInfraObsDcIdDcTypeFreeVmPesPerHost();
             default:
                 throw new IllegalArgumentException(
-                        "Unexpected value: " + settings.getStateSpaceType());
+                        "Unexpected value: " + simSettings.getStateSpaceType());
         }
     }
 
     private int[] getJobsWaitingObservation() {
-        final int[] jobWaitObs = cloudSimProxy.getJobsWaitingObservation();
+        final int[] jobWaitObs = proxy().getJobsWaitingObservation();
         // 4 should not be hardcoded. Same here for python side.
         final int jobsWaiting = jobWaitObs.length / 4;
         LOGGER.info("Jobs waiting: {}", jobsWaiting);
@@ -1046,7 +1043,7 @@ public class WrappedSimulation implements IWrappedSimulation {
     // }
 
     private int getMaxVmPesAcrossAllDc() {
-        final List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+        final List<Vm> vmList = proxy().getBroker().getVmExecList();
         return vmList.stream().map(Vm::getPesNumber).reduce(0L, Math::max).intValue();
     }
 
@@ -1063,7 +1060,7 @@ public class WrappedSimulation implements IWrappedSimulation {
      * <p>
      * The method returns an array where each pair of elements represents a datacenter ID and the
      * corresponding number of free cores in that datacenter.
-     * 
+     *
      * @return an array of integers where each pair of elements represents a datacenter ID and the
      *         corresponding number of free cores in that datacenter.
      */
@@ -1071,7 +1068,7 @@ public class WrappedSimulation implements IWrappedSimulation {
         final int totalHosts = getTotalHosts();
         final int[] infrastructureObservation = new int[3 * totalHosts];
         List<Datacenter> datacenterList =
-                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+                proxy().getSimulation().getCis().getDatacenterList();
         int currentIndex = 0;
         for (Datacenter dc : datacenterList) {
             for (Host host : dc.getHostList()) {
@@ -1110,7 +1107,7 @@ public class WrappedSimulation implements IWrappedSimulation {
     private int getTotalHosts() {
         int totalHosts = 0;
         List<Datacenter> datacenterList =
-                cloudSimProxy.getSimulation().getCis().getDatacenterList();
+                proxy().getSimulation().getCis().getDatacenterList();
         for (Datacenter datacenter : datacenterList) {
             List<Host> hostList = datacenter.getHostList();
             totalHosts += hostList.size();
@@ -1228,9 +1225,9 @@ public class WrappedSimulation implements IWrappedSimulation {
          * waiting in the queue minus penalty if action was invalid
          */
 
-        final double jobsPlacedCoef = settings.getRewardJobsPlacedCoef();
-        final double qualityCoef = settings.getRewardQualityCoef();
-        final double deadlineViolationCoef = settings.getRewardDeadlineViolationCoef();
+        final double jobsPlacedCoef = simSettings.getRewardJobsPlacedCoef();
+        final double qualityCoef = simSettings.getRewardQualityCoef();
+        final double deadlineViolationCoef = simSettings.getRewardDeadlineViolationCoef();
 
         final double reward = jobsPlacedCoef * jobsPlacedRatio + qualityCoef * qualityRatio
                 - deadlineViolationCoef * deadlineViolationRatio;
@@ -1244,7 +1241,7 @@ public class WrappedSimulation implements IWrappedSimulation {
     }
 
     public SimulationSettings getSettings() {
-        return settings;
+        return simSettings;
     }
 
     // private double[] calculateReward(final boolean isValid) {
@@ -1298,20 +1295,7 @@ public class WrappedSimulation implements IWrappedSimulation {
     // return rewards;
     // }
 
-    public int getCurrentStep() {
-        return currentStep;
-    }
-
-    public String getIdentifier() {
-        return identifier;
-    }
-
-    public double clock() {
-        return cloudSimProxy.clock();
-    }
-
     public double getLastReward() {
         return lastReward;
     }
-
 }
