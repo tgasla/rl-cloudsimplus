@@ -28,7 +28,6 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
             StreamObserver<CreateResponse> responseObserver) {
         try {
             LOGGER.info("gRPC createSimulation called");
-            // euromlsys SimulationFactory.parseJson internally - pass raw JSON
             WrappedSimulation simulation =
                     simulationFactory.create(request.getParamsJson(), request.getJobsJson());
             String identifier = simulation.getIdentifier();
