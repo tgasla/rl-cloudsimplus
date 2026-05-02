@@ -13,7 +13,8 @@ import java.util.List;
  * and VM create/destroy action space.
  */
 public class WrappedSimulation
-        extends WrappedSimulationBase<Observation, SimulationStepInfo, SimulationStepResult, SimulationResetResult> {
+        extends WrappedSimulationBase<Observation, SimulationStepInfo, SimulationStepResult, SimulationResetResult>
+        implements IWrappedSimulation {
 
     // Concrete settings reference for domain-specific access
     private final SimulationSettings simSettings;

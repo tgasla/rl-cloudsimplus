@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 // import com.google.gson.Gson;
 
 
-public class WrappedSimulation {
+public class WrappedSimulation implements IWrappedSimulation {
     private final Logger LOGGER = LoggerFactory.getLogger(WrappedSimulation.class.getSimpleName());
 
     private final List<CloudletDescriptor> initialJobsDescriptors;

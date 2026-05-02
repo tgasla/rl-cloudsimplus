@@ -17,27 +17,27 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class GrpcServiceDelegate {
 
-    private final ConcurrentHashMap<String, Object> simulations = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, IWrappedSimulation> simulations = new ConcurrentHashMap<>();
     private volatile boolean shutdownRequested = false;
 
     /**
      * Returns the simulation for the given id, or null if not found.
      */
-    public Object getSimulation(String simId) {
+    public IWrappedSimulation getSimulation(String simId) {
         return simulations.get(simId);
     }
 
     /**
      * Stores a simulation under its identifier.
      */
-    public void putSimulation(String identifier, Object simulation) {
+    public void putSimulation(String identifier, IWrappedSimulation simulation) {
         simulations.put(identifier, simulation);
     }
 
     /**
      * Removes and returns the simulation for the given id.
      */
-    public Object removeSimulation(String simId) {
+    public IWrappedSimulation removeSimulation(String simId) {
         return simulations.remove(simId);
     }
 
@@ -84,7 +84,7 @@ public class GrpcServiceDelegate {
      * Returns the simulation for the given id after validating it exists.
      * @throws IllegalArgumentException if the identifier is not found
      */
-    public Object getValidSimulation(String simId) {
+    public IWrappedSimulation getValidSimulation(String simId) {
         validateIdentifier(simId);
         return simulations.get(simId);
     }

@@ -79,4 +79,6 @@ public abstract class SimulationFactoryBase {
     /** Creates a single split descriptor from an original. Domain-specific constructor call. */
     protected abstract CloudletDescriptor createSplitDescriptor(
             CloudletDescriptor original, int newId, long mi, int pes);
+
+    public abstract IWrappedSimulation create(String paramsJson, String jobsJson);
 }
