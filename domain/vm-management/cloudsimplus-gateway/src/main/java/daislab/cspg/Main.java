@@ -35,7 +35,7 @@ public class Main {
         configureLogging();
 
         LOGGER.info("Starting CloudSim gRPC server on port {}", port);
-        GrpcServer grpcServer = new GrpcServer(port);
+        GrpcServer grpcServer = new GrpcServer(port, new CloudSimGrpcService());
         grpcServer.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
