@@ -1,5 +1,6 @@
 package daislab.cspg;
 
+import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import org.slf4j.Logger;
@@ -8,20 +9,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Bootstrap class for the CloudSim gRPC server.
- * Spawns a JVM that runs the CloudSim simulations, accessed remotely via gRPC.
- */
 public class GrpcServer {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(GrpcServer.class.getSimpleName());
 
     private final Server server;
-    private final CloudSimGrpcService service;
 
-    public GrpcServer(int port) {
-        service = new CloudSimGrpcService();
+    public GrpcServer(int port, BindableService service) {
         server = NettyServerBuilder
                 .forPort(port)
                 .addService(service)
@@ -31,10 +26,6 @@ public class GrpcServer {
     public void start() throws IOException {
         server.start();
         LOGGER.info("CloudSim gRPC server started on port {}", server.getPort());
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOGGER.info("Shutdown hook triggered");
-            GrpcServer.this.stop();
-        }));
     }
 
     public void blockUntilShutdown() throws InterruptedException {
@@ -56,9 +47,5 @@ public class GrpcServer {
             }
             LOGGER.info("CloudSim gRPC server stopped");
         }
-    }
-
-    boolean isShutdownRequested() {
-        return service.isShutdownRequested();
     }
 }
