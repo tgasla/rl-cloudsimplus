@@ -1,11 +1,11 @@
 package daislab.cspg;
 
+import io.grpc.BindableService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -17,7 +17,6 @@ import java.nio.file.Path;
  *   port  - TCP port to listen on (default: 50051)
  *
  * System properties:
- *   experiment.id     - experiment identifier used to create a per-experiment log directory
  *   log.level        - logging level (default: INFO)
  *   log.destination  - stdout, file, stdout-file, or none (default: stdout)
  *   log.simDir       - directory for csp.current.log (default: logs/)
@@ -34,8 +33,14 @@ public class Main {
 
         configureLogging();
 
+        // CloudSimGrpcService is domain-specific and resolved at runtime.
+        BindableService service = (BindableService) Class
+                .forName("daislab.cspg.CloudSimGrpcService")
+                .getDeclaredConstructor()
+                .newInstance();
+
         LOGGER.info("Starting CloudSim gRPC server on port {}", port);
-        GrpcServer grpcServer = new GrpcServer(port, new CloudSimGrpcService());
+        GrpcServer grpcServer = new GrpcServer(port, service);
         grpcServer.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -80,7 +85,7 @@ public class Main {
                     </rollingPolicy>
                   </appender>
 
-                  <appender name="STDOUT" class="ch.qos.logback.core.rolling.ConsoleAppender">
+                  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
                     <encoder>
                       <pattern>%%d{HH:mm:ss.SSS} [%%thread] %%-5level %%logger{36} - %%msg%%n</pattern>
                     </encoder>
@@ -93,43 +98,39 @@ public class Main {
 
             Path logbackFile = logDir.resolve("logback-generated.xml");
             Files.writeString(logbackFile, logbackXml);
-
-            // Force logback to reconfigure using the new config file
             LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+            loggerContext.reset();
             JoranConfigurator configurator = new JoranConfigurator();
             configurator.setContext(loggerContext);
-            loggerContext.reset();
             configurator.doConfigure(logbackFile.toUri().toURL());
-
             LOGGER.info("Logging configured: level={}, destination={}, logDir={}", logLevel, logDestination, logDir);
+        } else if (writeToStdout) {
+            // Logback defaults to INFO on stdout; only reconfigure if a different level is needed.
+            if (!logLevel.equals("INFO")) {
+                String logbackXml = """
+                    <configuration>
+                      <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                        <encoder>
+                          <pattern>%%d{HH:mm:ss.SSS} [%%thread] %%-5level %%logger{36} - %%msg%%n</pattern>
+                        </encoder>
+                      </appender>
+
+                      <root level="%s">
+                        <appender-ref ref="STDOUT" />
+                      </root>
+                    </configuration>
+                    """.formatted(logLevel);
+
+                Path logDir = simDir.isEmpty() ? Path.of("logs").toAbsolutePath() : Path.of(simDir).toAbsolutePath();
+                Files.createDirectories(logDir);
+                Path logbackFile = logDir.resolve("logback-generated.xml");
+                Files.writeString(logbackFile, logbackXml);
+                System.setProperty("logback.configurationFile", logbackFile.toString());
+            }
+            LOGGER.info("Logging configured: level={}, destination={}", logLevel, logDestination);
         } else {
-            // Console-only logging (no file)
-            String logbackXml = String.format("""
-                <configuration>
-                  <appender name="STDOUT" class="ch.qos.logback.core.rolling.ConsoleAppender">
-                    <encoder>
-                      <pattern>%%d{HH:mm:ss.SSS} [%%thread] %%-5level %%logger{36} - %%msg%%n</pattern>
-                    </encoder>
-                  </appender>
-
-                  <root level="%s">
-%s                  </root>
-                </configuration>
-                """, logLevel, rootSection);
-
-            Path logDir = Path.of("logs").toAbsolutePath();
-            Files.createDirectories(logDir);
-            Path logbackFile = logDir.resolve("logback-generated.xml");
-            Files.writeString(logbackFile, logbackXml);
-
-            // Force logback to reconfigure using the new config file
-            LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-            JoranConfigurator configurator = new JoranConfigurator();
-            configurator.setContext(loggerContext);
-            loggerContext.reset();
-            configurator.doConfigure(logbackFile.toUri().toURL());
-
-            LOGGER.info("Logging configured: level={}, destination={}, logDir={}", logLevel, logDestination, logDir);
+            // none: suppress all logging.
+            LOGGER.info("Logging configured: level={}, destination={}", logLevel, logDestination);
         }
     }
 }

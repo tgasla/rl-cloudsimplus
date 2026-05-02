@@ -19,7 +19,7 @@ public class SimulationFactory {
 
     private static final Gson gson = new Gson();
     private static final Type cloudletDescriptorsType =
-            new TypeToken<List<CloudletDescriptor>>() {}.getType();
+            new TypeToken<List<CloudletDescriptorWithLocation>>() {}.getType();
 
     private int simulationsRunning = 0;
 
@@ -51,7 +51,7 @@ public class SimulationFactory {
 
         LOGGER.info("Simulation settings dump:\n{}", iSettings);
 
-        List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
+        List<CloudletDescriptorWithLocation> jobs = loadJobsFromJson(jobsAsJson);
 
         if (iSettings.isSplitLargeJobs()) {
             LOGGER.info("Splitting large jobs");
@@ -59,43 +59,35 @@ public class SimulationFactory {
         }
 
         // Use domain-specific settings directly
-        return new WrappedSimulation(identifier, iSettings, jobs);
+        return new WrappedSimulation(identifier, iSettings, new ArrayList<>(jobs));
     }
 
-    private List<CloudletDescriptor> loadJobsFromJson(final String jobsAsJson) {
-        List<CloudletDescriptor> jobList = new ArrayList<>();
+    private List<CloudletDescriptorWithLocation> loadJobsFromJson(final String jobsAsJson) {
         LOGGER.info(jobsAsJson);
-        final List<CloudletDescriptor> deserialized =
+        final List<CloudletDescriptorWithLocation> deserialized =
                 gson.fromJson(jobsAsJson, cloudletDescriptorsType);
-        for (CloudletDescriptor cloudletDescriptor : deserialized) {
-            jobList.add(cloudletDescriptor);
-        }
-        LOGGER.info("Deserialized {} jobs", jobList.size());
-        return jobList;
+        LOGGER.info("Deserialized {} jobs", deserialized.size());
+        return deserialized;
     }
 
-    private List<CloudletDescriptor> splitLargeJobs(final List<CloudletDescriptor> jobs,
-            final int maxJobPes) {
-        List<CloudletDescriptor> splitted = new ArrayList<>();
+    private List<CloudletDescriptorWithLocation> splitLargeJobs(
+            final List<CloudletDescriptorWithLocation> jobs, final int maxJobPes) {
+        List<CloudletDescriptorWithLocation> splitted = new ArrayList<>();
         int splittedId = 0;
-        for (CloudletDescriptor cloudletDescriptor : jobs) {
-            int jobPesNumber = cloudletDescriptor.getCores();
+        for (CloudletDescriptorWithLocation cdl : jobs) {
+            int jobPesNumber = cdl.getCores();
             int splitCount = Math.max(1, (jobPesNumber + maxJobPes - 1) / maxJobPes);
             int normalSplitPesNumber = jobPesNumber / splitCount;
-            long totalMi = cloudletDescriptor.getMi();
+            long totalMi = cdl.getMi();
 
             for (int i = 0; i < splitCount; i++) {
                 long miForThisSplit = totalMi;
                 int pesForThisSplit = (i < splitCount - 1) ? normalSplitPesNumber
                         : jobPesNumber - (normalSplitPesNumber * (splitCount - 1));
-                CloudletDescriptor splittedDescriptor = new CloudletDescriptor(splittedId++,
-                        cloudletDescriptor.getSubmissionDelay(),
+                splitted.add(new CloudletDescriptorWithLocation(splittedId++,
+                        cdl.getSubmissionDelay(),
                         miForThisSplit / pesForThisSplit, pesForThisSplit,
-                        cloudletDescriptor.getLocation(),
-                        cloudletDescriptor.getDelaySensitivity(),
-                        cloudletDescriptor.getDeadline());
-
-                splitted.add(splittedDescriptor);
+                        cdl.getLocation(), cdl.getDelaySensitivity(), cdl.getDeadline()));
             }
         }
 

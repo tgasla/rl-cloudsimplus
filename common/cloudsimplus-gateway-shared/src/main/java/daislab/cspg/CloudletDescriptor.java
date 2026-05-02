@@ -1,6 +1,7 @@
 package daislab.cspg;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.cloudlets.CloudletSimple;
 import org.cloudsimplus.util.DataCloudTags;
@@ -8,14 +9,15 @@ import org.cloudsimplus.utilizationmodels.UtilizationModelFull;
 
 /**
  * Base descriptor for a simulation job (cloudlet).
- * Subclasses add domain-specific fields (location, delaySensitivity, deadline for job-placement).
+ * Subclasses add domain-specific fields (e.g. location, delaySensitivity, deadline).
  */
-@Value
+@Getter
+@AllArgsConstructor
 public class CloudletDescriptor {
-    int jobId;
-    long submissionDelay;
-    long mi;
-    int cores;
+    private final int jobId;
+    private final long submissionDelay;
+    private final long mi;
+    private final int cores;
 
     /**
      * Creates the Cloudlet instance. Override in subclasses for domain-specific cloudlet types.

@@ -1,14 +1,9 @@
 package daislab.cspg;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import daislab.cspg.grpc.*;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Type;
-import java.util.Map;
 
 /**
  * gRPC service implementation that wraps MultiSimulationEnvironment's logic.
@@ -26,8 +21,6 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
 
     private final GrpcServiceDelegate delegate = new GrpcServiceDelegate();
     private final SimulationFactory simulationFactory = new SimulationFactory();
-    private final Gson gson = new Gson();
-    private final Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
 
     @Override
     public void createSimulation(
@@ -35,16 +28,8 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
             StreamObserver<CreateResponse> responseObserver) {
         try {
             LOGGER.info("gRPC createSimulation called");
-            // Parse the JSON params into a Map (what SimulationFactory expects)
-            Map<String, Object> params = gson.fromJson(request.getParamsJson(), mapType);
-            LOGGER.info("Params JSON string: [{}]", request.getParamsJson());
-            // Defensively coerce any Number values to their target types to avoid
-            // ClassCastException when Gson returns Double instead of Integer
-            GrpcServiceHelper.coerceNumericParams(params);
-            // Convert Map back to JSON string for SimulationFactory (which parses JSON internally)
-            String paramsJson = gson.toJson(params);
             WrappedSimulation simulation =
-                    simulationFactory.create(paramsJson, request.getJobsJson());
+                    simulationFactory.create(request.getParamsJson(), request.getJobsJson());
             String identifier = simulation.getIdentifier();
             delegate.putSimulation(identifier, simulation);
 
@@ -248,8 +233,7 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
                         .setIsValid(info.isValid())
                         .addAllJobWaitTime(info.getJobWaitTime())  // List<Double>
                         .setUnutilizedVmCoreRatio(info.getUnutilizedVmCoreRatio())
-                        .addAllObservationTreeArray(
-                                convertIntArray(info.getObservationTreeArrayAsList()))
+                        .addAllObservationTreeArray(info.getObservationTreeArrayAsList())
                         .setHostAffected(info.getHostAffected())
                         .setCoresChanged(info.getCoresChanged());
         return builder.build();
@@ -261,7 +245,4 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
         return list;
     }
 
-    private static java.util.List<Integer> convertIntArray(java.util.List<Integer> list) {
-        return list;
-    }
 }
