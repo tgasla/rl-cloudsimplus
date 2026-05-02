@@ -139,10 +139,10 @@ public class WrappedSimulation {
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
         cloudSimProxy = new CloudSimProxy(settings, cloudlets);
 
-        SimulationStepInfo info = new SimulationStepInfo(0, 0, 0, 0, 0, new ArrayList<>());
+        SimulationStepInfo info = new SimulationStepInfo();
 
-        Observation observation =
-                new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
+        Observation observation = new Observation(new int[0], 0, getInfrastructureObservation(),
+                getJobsWaitingObservation());
 
         return new SimulationResetResult(observation, info);
     }
@@ -180,7 +180,7 @@ public class WrappedSimulation {
         // gets telemetry data and saves it into metricsStorage
         // TEMPORARILY DISABLED FOR OPTIMIZATION
         // updateMetrics();
-        /////////////////////////////////////////////////
+        ////////////////////////
 
         boolean terminated = !cloudSimProxy.isRunning();
         boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
@@ -229,8 +229,8 @@ public class WrappedSimulation {
         // Observation observation =
         // new Observation(getInfrastructureObservation(),
         // getJobCoresWaitingObservation());
-        Observation observation =
-                new Observation(getInfrastructureObservation(), getJobsWaitingObservation());
+        Observation observation = new Observation(new int[0], 0, getInfrastructureObservation(),
+                getJobsWaitingObservation());
 
         return new SimulationStepResult(observation, reward, terminated, truncated, info);
     }
@@ -531,7 +531,6 @@ public class WrappedSimulation {
             case "rl" -> executeRlCloudletToDcAction(action);
             case "earliest-shortest-to-most-free-dc" -> executeEarliestShortestCloudletToMostFreeDcAction();
             case "earliest-shortest-to-nearest-dc" -> executeEarliestShortestCloudletToNearestDcAction();
-            case "random-to-most-free-dc" -> executeRandomCloudletToMostFreeDcAction();
             case "earliest-most-critical-to-nearest-dc" -> executeEarliestMostCriticalCloudletToNearestDcAction();
             default -> throw new IllegalArgumentException("Cloudlet-to-DC Assignment Policy"
                     + settings.getCloudletToDcAssignmentPolicy() + " was not found!");
@@ -822,10 +821,6 @@ public class WrappedSimulation {
         return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
     }
 
-    private double[] executeRandomCloudletToMostFreeDcAction() {
-        return new double[] {0.0};
-    }
-
     // this action is if the agent performs cloudlet to DC mapping
     private double[] executeRlCloudletToDcAction(final int[] action) {
         // final int[] actionSucess = new int[jobsWaitingThisTimestep];
@@ -1006,46 +1001,6 @@ public class WrappedSimulation {
         return true;
     }
 
-    // private void updateMetrics() {
-    // metricsStorage.setDatacenterMetrics(collectDatacenterMetrics());
-    // metricsStorage.setHostMetrics(collectHostMetrics());
-    // metricsStorage.setVmMetrics(collectVmMetrics());
-    // metricsStorage.setJobMetrics(collectJobMetrics());
-    // }
-
-    // private void collectMetrics() {
-    // double[] cpuPercentUsage = cloudSimProxy.getVmCpuUsage();
-    // Arrays.sort(cpuPercentUsage);
-
-    // double[] memPercentageUsage = cloudSimProxy.getVmMemoryUsage();
-    // Arrays.sort(memPercentageUsage);
-
-    // double waitingJobsRatioGlobal = getWaitingJobsRatio();
-    // double waitingJobsRatioLastTimestep = getWaitingJobsRatioLastTimestep();
-
-    // metricsStorage.updateMetric(
-    // "hostCoresAllocatedToVmsRatio",
-    // getHostCoresAllocatedToVmsRatio());
-    // metricsStorage.updateMetric(
-    // "avgCpuUtilization",
-    // safeMean(cpuPercentUsage));
-    // metricsStorage.updateMetric(
-    // "p90CpuUtilization",
-    // percentileOrZero(cpuPercentUsage, 0.90));
-    // metricsStorage.updateMetric(
-    // "avgMemoryUtilization",
-    // safeMean(memPercentageUsage));
-    // metricsStorage.updateMetric(
-    // "p90MemoryUtilization",
-    // percentileOrZero(memPercentageUsage, 0.90));
-    // metricsStorage.updateMetric(
-    // "waitingJobsRatioGlobal",
-    // waitingJobsRatioGlobal);
-    // metricsStorage.updateMetric(
-    // "waitingJobsRatioTimestep",
-    // waitingJobsRatioTimestep);
-    // }
-
     private double getWaitingJobsRatio() {
         final long arrivedJobsCount = cloudSimProxy.getArrivedJobsCount();
 
@@ -1059,38 +1014,6 @@ public class WrappedSimulation {
         // return ((double) cloudSimProxy.getAllocatedCores()) /
         // settings.getTotalHostCores();
     }
-
-    // private double[] getObservation() {
-    // return new double[] {
-    // metricsStorage.getLastMetricValue("hostCoresAllocatedToVmsRatio"),
-    // metricsStorage.getLastMetricValue("avgCpuUtilization"),
-    // metricsStorage.getLastMetricValue("p90CpuUtilization"),
-    // metricsStorage.getLastMetricValue("avgMemoryUtilization"),
-    // metricsStorage.getLastMetricValue("p90MemoryUtilization"),
-    // metricsStorage.getLastMetricValue("waitingJobsRatioGlobal"),
-    // metricsStorage.getLastMetricValue("waitingJobsRatioTimestep")
-    // };
-    // }
-
-    /**
-     * Extracts a subarray from the given matrix by selecting specific columns.
-     *
-     * @param matrix The original 2D array from which the subarray will be extracted.
-     * @param columnIndices An array of column indices to be included in the subarray.
-     * @return A 2D array containing the selected columns from the original matrix.
-     */
-    // private double[][] getVertSubarray(final double[][] matrix, final int[]
-    // columnIndices) {
-    // int numRows = matrix.length;
-    // int numCols = columnIndices.length;
-    // double[][] result = new double[numRows][numCols];
-    // for (int i = 0; i < numRows; i++) {
-    // for (int j = 0; j < numCols; j++) {
-    // result[i][j] = matrix[i][columnIndices[j]];
-    // }
-    // }
-    // return result;
-    // }
 
     int[] getInfrastructureObservation() {
         switch (settings.getStateSpaceType()) {
@@ -1381,34 +1304,6 @@ public class WrappedSimulation {
         return currentStep;
     }
 
-    // private void resetEpRunningVmsCountMax() {
-    // epRunningVmsCountMax = 0;
-    // }
-
-    // private void resetEpWaitingJobsCountMax() {
-    // epWaitingJobsCountMax = 0;
-    // }
-
-    // private long getEpRunningVmsCountMax() {
-    // return epRunningVmsCountMax;
-    // }
-
-    // private long getEpWaitingJobsCountMax() {
-    // return epWaitingJobsCountMax;
-    // }
-
-    // private void updateEpWaitingJobsCountMax(long waitingJobsCount) {
-    // if (waitingJobsCount > epWaitingJobsCountMax) {
-    // epWaitingJobsCountMax = waitingJobsCount;
-    // }
-    // }
-
-    // private void updateEpRunningVmsCountMax(long runningVms) {
-    // if (runningVms > epRunningVmsCountMax) {
-    // epRunningVmsCountMax = runningVms;
-    // }
-    // }
-
     public String getIdentifier() {
         return identifier;
     }
@@ -1421,4 +1316,4 @@ public class WrappedSimulation {
         return lastReward;
     }
 
-    }
+}

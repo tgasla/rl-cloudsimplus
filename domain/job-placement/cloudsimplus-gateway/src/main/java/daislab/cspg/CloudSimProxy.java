@@ -35,18 +35,16 @@ import java.util.stream.IntStream;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-public class CloudSimProxy {
+public class CloudSimProxy implements ICloudSimProxy {
     private final Logger LOGGER = LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
     private final SimulationSettings settings;
     private final CloudSimPlus cloudSimPlus;
     private final List<Datacenter> datacenters;
     private final DatacenterBrokerFirstFitFixed broker;
-    // private final VmCost vmCost;
     private final List<Cloudlet> inputJobs; // all jobs to keep track of statuses
     private final PriorityQueue<Cloudlet> jobQueue; // jobs to be submitted - sorted by arrival time
     private final Map<Long, Double> jobArrivalTimeMap; // map to keep track of arrival times
     private List<Double> jobsFinishedWaitTimeLastTimestep;
-    // private List<Double> jobsFinishedWaitTimes;
     private int vmsCreated;
     private boolean firstStep;
 
@@ -74,13 +72,8 @@ public class CloudSimProxy {
         LOGGER.info("cis id: {}", getSimulation().getCis().getId());
         LOGGER.info("broker id: {}", getBroker().getId());
 
-        // broker.setVmDestructionDelay(2 * settings.getMinTimeBetweenEvents()); // no
-        // need because
-        // set in createVm()
         datacenters = createDatacenters(settings.getDatacenters());
-        // vmCost = new VmCost(settings);
         jobsFinishedWaitTimeLastTimestep = new ArrayList<>();
-        // jobsFinishedWaitTimes = new ArrayList<>();
         vmsCreated = 0;
         firstStep = true;
 
@@ -1012,10 +1005,5 @@ public class CloudSimProxy {
 
     public long getNumberOfFutureEvents() {
         return cloudSimPlus.getNumberOfFutureEvents(simEvent -> true);
-    }
-
-    public double getRunningCost() {
-        // return vmCost.getVMCostPerIteration(clock());
-        return 0.0;
     }
 }

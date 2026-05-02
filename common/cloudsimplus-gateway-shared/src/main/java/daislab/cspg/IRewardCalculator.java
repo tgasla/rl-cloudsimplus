@@ -6,8 +6,7 @@ package daislab.cspg;
  */
 public interface IRewardCalculator {
     /**
-     * @param isValid whether the last action was valid
-     * @return double[] reward components — [0] is total reward, subsequent entries are breakdown
+     * @return double scalar total reward
      */
-    double[] calculateReward(boolean isValid);
+    double calculateReward();
 }

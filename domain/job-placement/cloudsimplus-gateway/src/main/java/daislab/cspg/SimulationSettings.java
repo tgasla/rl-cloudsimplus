@@ -11,13 +11,21 @@ import java.util.List;
  * safe Number-aware getters to handle Gson LazilyParsedNumber correctly.
  */
 @Data
-public class SimulationSettings {
+public class SimulationSettings implements ISimulationSettings {
     private final String runMode;
     private final int numExperiments;
     private final double minTimeBetweenEvents;
     private final double timestepInterval;
     private final boolean splitLargeJobs;
     private final int maxJobPes;
+    private final int maxEpisodeLength;
+    private final String algorithm;
+    private final String cloudletToDcAssignmentPolicy;
+    private final String cloudletToVmAssignmentPolicy;
+    private final String stateSpaceType;
+    private final String vmAllocationPolicy;
+    private final int maxJobsWaiting;
+    private final List<Map<String, Object>> datacenters;
     private final int maxHosts;
     private final double vmStartupDelay;
     private final double vmShutdownDelay;
@@ -26,14 +34,6 @@ public class SimulationSettings {
     private final double rewardJobsPlacedCoef;
     private final double rewardQualityCoef;
     private final double rewardDeadlineViolationCoef;
-    private final int maxEpisodeLength;
-    private final String vmAllocationPolicy;
-    private final String cloudletToDcAssignmentPolicy;
-    private final String cloudletToVmAssignmentPolicy;
-    private final String algorithm;
-    private final String stateSpaceType;
-    private final int maxJobsWaiting;
-    private final List<Map<String, Object>> datacenters;
 
     public SimulationSettings(final Map<String, Object> params) {
         runMode = getStr(params, "run_mode", "train");
@@ -51,13 +51,18 @@ public class SimulationSettings {
         rewardQualityCoef = getDouble(params, "reward_quality_coef", 0.333);
         rewardDeadlineViolationCoef = getDouble(params, "reward_deadline_violation_coef", 0.333);
         maxEpisodeLength = getInt(params, "max_episode_length", 150);
-        vmAllocationPolicy = getStr(params, "vm_allocation_policy", "rl");
+        algorithm = getStr(params, "algorithm", "PPO");
         cloudletToDcAssignmentPolicy = getStr(params, "cloudlet_to_dc_assignment_policy", "rl");
         cloudletToVmAssignmentPolicy = getStr(params, "cloudlet_to_vm_assignment_policy", "most-free-cores");
-        algorithm = getStr(params, "algorithm", "PPO");
         stateSpaceType = getStr(params, "state_space_type", "dcid-dctype-freevmpes-per-host");
+        vmAllocationPolicy = getStr(params, "vm_allocation_policy", "rl");
         maxJobsWaiting = getInt(params, "max_jobs_waiting", 50);
         datacenters = (List<Map<String, Object>>) params.get("datacenters");
+    }
+
+    @Override
+    public Map<String, Object> getParams() {
+        return Map.of();
     }
 
     private static int getInt(Map<String, Object> m, String k, int def) {

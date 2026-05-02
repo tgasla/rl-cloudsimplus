@@ -14,11 +14,13 @@ import java.util.Map;
  * parameter name and the second string represents the parameter value.
  */
 @Value
-public class SimulationSettings {
+public class SimulationSettings implements ISimulationSettings {
     public static final String SMALL = "S";
     public static final String MEDIUM = "M";
     public static final String LARGE = "L";
     public static final String[] VM_TYPES = {SMALL, MEDIUM, LARGE};
+
+    Map<String, Object> params; // Lombok generates getParams()
 
     double minTimeBetweenEvents;
     double timestepInterval;
@@ -56,6 +58,7 @@ public class SimulationSettings {
     boolean sendObservationTreeArray;
 
     public SimulationSettings(final Map<String, Object> params) {
+        this.params = params;
         minTimeBetweenEvents = getDouble(params, "min_time_between_events", 0.1);
         timestepInterval = getDouble(params, "timestep_interval", 1.0);
         initialSVmCount = getInt(params, "initial_s_vm_count", 0);

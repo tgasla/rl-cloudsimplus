@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 import java.util.stream.IntStream;
 import java.util.PriorityQueue;
 
-public class CloudSimProxy {
+public class CloudSimProxy implements ICloudSimProxy {
     private final Logger LOGGER = LoggerFactory.getLogger(CloudSimProxy.class.getSimpleName());
     private final SimulationSettings settings;
     private final CloudSimPlus cloudSimPlus;

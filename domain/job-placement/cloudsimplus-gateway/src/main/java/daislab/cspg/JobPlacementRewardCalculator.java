@@ -12,7 +12,7 @@ public class JobPlacementRewardCalculator implements IRewardCalculator {
     }
 
     @Override
-    public double[] calculateReward(boolean isValid) {
-        return new double[]{sim.getLastReward()};
+    public double calculateReward() {
+        return sim.getLastReward();
     }
 }

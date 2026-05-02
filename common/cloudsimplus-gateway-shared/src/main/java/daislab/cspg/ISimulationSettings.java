@@ -11,6 +11,7 @@ import java.util.Map;
 public interface ISimulationSettings {
     boolean isSplitLargeJobs();
     int getMaxJobPes();
+    int getMaxEpisodeLength();
 
     /** Return the params map used to construct this instance (for reconstruction). */
     Map<String, Object> getParams();
