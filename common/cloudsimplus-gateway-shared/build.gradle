@@ -62,11 +62,11 @@ dependencies {
     implementation 'org.apache.commons:commons-collections4:4.5.0'
     implementation 'com.google.code.gson:gson:2.13.1'
 
-    // gRPC (needed for generated protobuf code)
+    // gRPC — api so domain consumers can compile against generated stubs and StreamObserver
     implementation 'io.grpc:grpc-netty-shaded:1.80.0'
-    implementation 'io.grpc:grpc-protobuf:1.80.0'
-    implementation 'io.grpc:grpc-stub:1.80.0'
-    implementation 'com.google.protobuf:protobuf-java:4.34.1'
+    api 'io.grpc:grpc-protobuf:1.80.0'
+    api 'io.grpc:grpc-stub:1.80.0'
+    api 'com.google.protobuf:protobuf-java:4.34.1'
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
 
     testImplementation 'commons-io:commons-io:2.16.1'

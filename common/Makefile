@@ -20,8 +20,8 @@ CANONICAL_PROTO = common/proto/unified/cloudsimplus.proto
 CANONICAL_BUILD = common/cloudsimplus-gateway-shared/gateway-build.gradle
 
 build-gateway:
-	@mkdir -p $(DOMAIN_DIR)/cloudsimplus-gateway/src/main/proto
-	@cp -p $(CANONICAL_PROTO) $(DOMAIN_DIR)/cloudsimplus-gateway/src/main/proto/
+	@mkdir -p common/cloudsimplus-gateway-shared/src/main/proto
+	@cp -p $(CANONICAL_PROTO) common/cloudsimplus-gateway-shared/src/main/proto/
 	@cp -p $(CANONICAL_BUILD) $(DOMAIN_DIR)/cloudsimplus-gateway/build.gradle
 	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):build $(ARGS)
 
