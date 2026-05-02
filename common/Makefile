@@ -1,5 +1,8 @@
-# domain=vm-management or domain=job-placement — defaults to vm-management
-DOMAIN ?= vm-management
+# domain=vm-management or domain=job-placement — must be passed explicitly
+DOMAIN ?= $(shell echo $$DOMAIN)
+ifeq ($(DOMAIN),)
+$(error DOMAIN is not set. Usage: make run domain=vm-management or make run domain=job-placement)
+endif
 DOMAIN_DIR := domain/$(DOMAIN)
 
 CONFIG_FILE := $(DOMAIN_DIR)/config.yml
@@ -24,7 +27,7 @@ build-gateway:
 
 build-manager:
 	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) \
-		--build-arg PAPER_DIR=$(DOMAIN) \
+		--build-arg DOMAIN=$(DOMAIN) \
 		-f common/rl-manager/Dockerfile common/rl-manager/
 
 build-tensorboard:
@@ -34,7 +37,7 @@ run-tensorboard:
 	docker run --rm --name tensorboard -d -v $(DOMAIN_DIR)/logs/:/logs/ -p 6006:6006 tensorboard
 
 run:
-	PAPER_DIR="$(DOMAIN)" ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) PAPER=$(DOMAIN) bash common/scripts/run_docker.sh
+	DOMAIN="$(DOMAIN)" ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) bash common/scripts/run_docker.sh
 
 clean-gateway:
 	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):clean 2>/dev/null || true

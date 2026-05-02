@@ -12,7 +12,7 @@ import java.util.List;
  */
 @Data
 public class SimulationSettings implements ISimulationSettings {
-    private final String runMode;
+    private final String mode;
     private final int numExperiments;
     private final double minTimeBetweenEvents;
     private final double timestepInterval;
@@ -36,28 +36,28 @@ public class SimulationSettings implements ISimulationSettings {
     private final double rewardDeadlineViolationCoef;
 
     public SimulationSettings(final Map<String, Object> params) {
-        runMode = getStr(params, "run_mode", "train");
-        numExperiments = getInt(params, "num_experiments", 1);
-        minTimeBetweenEvents = getDouble(params, "min_time_between_events", 0.1);
-        timestepInterval = getDouble(params, "timestep_interval", 1.0);
-        splitLargeJobs = getBool(params, "split_large_jobs", false);
-        maxJobPes = getInt(params, "max_job_pes", 16);
-        maxHosts = getInt(params, "max_hosts", 40);
-        vmStartupDelay = getDouble(params, "vm_startup_delay", 0.0);
-        vmShutdownDelay = getDouble(params, "vm_shutdown_delay", 0.0);
-        payingForTheFullHour = getBool(params, "paying_for_the_full_hour", false);
-        clearCreatedLists = getBool(params, "clear_created_lists", false);
-        rewardJobsPlacedCoef = getDouble(params, "reward_jobs_placed_coef", 0.333);
-        rewardQualityCoef = getDouble(params, "reward_quality_coef", 0.333);
-        rewardDeadlineViolationCoef = getDouble(params, "reward_deadline_violation_coef", 0.333);
-        maxEpisodeLength = getInt(params, "max_episode_length", 150);
-        algorithm = getStr(params, "algorithm", "PPO");
-        cloudletToDcAssignmentPolicy = getStr(params, "cloudlet_to_dc_assignment_policy", "rl");
-        cloudletToVmAssignmentPolicy = getStr(params, "cloudlet_to_vm_assignment_policy", "most-free-cores");
-        stateSpaceType = getStr(params, "state_space_type", "dcid-dctype-freevmpes-per-host");
-        vmAllocationPolicy = getStr(params, "vm_allocation_policy", "rl");
-        maxJobsWaiting = getInt(params, "max_jobs_waiting", 50);
-        datacenters = (List<Map<String, Object>>) params.get("datacenters");
+        mode = getStr(params, "mode");
+        numExperiments = getInt(params, "num_experiments");
+        minTimeBetweenEvents = getDouble(params, "min_time_between_events");
+        timestepInterval = getDouble(params, "timestep_interval");
+        splitLargeJobs = getBool(params, "split_large_jobs");
+        maxJobPes = getInt(params, "max_job_pes");
+        maxHosts = getInt(params, "max_hosts");
+        vmStartupDelay = getDouble(params, "vm_startup_delay");
+        vmShutdownDelay = getDouble(params, "vm_shutdown_delay");
+        payingForTheFullHour = getBool(params, "paying_for_the_full_hour");
+        clearCreatedLists = getBool(params, "clear_created_lists");
+        rewardJobsPlacedCoef = getDouble(params, "reward_jobs_placed_coef");
+        rewardQualityCoef = getDouble(params, "reward_quality_coef");
+        rewardDeadlineViolationCoef = getDouble(params, "reward_deadline_violation_coef");
+        maxEpisodeLength = getInt(params, "max_episode_length");
+        algorithm = getStr(params, "algorithm");
+        cloudletToDcAssignmentPolicy = getStr(params, "cloudlet_to_dc_assignment_policy");
+        cloudletToVmAssignmentPolicy = getStr(params, "cloudlet_to_vm_assignment_policy");
+        stateSpaceType = getStr(params, "state_space_type");
+        vmAllocationPolicy = getStr(params, "vm_allocation_policy");
+        maxJobsWaiting = getInt(params, "max_jobs_waiting");
+        datacenters = (List<Map<String, Object>>) getOrNull(params, "datacenters");
     }
 
     @Override
@@ -65,26 +65,35 @@ public class SimulationSettings implements ISimulationSettings {
         return Map.of();
     }
 
-    private static int getInt(Map<String, Object> m, String k, int def) {
+    private static Object getOrNull(Map<String, Object> m, String k) {
+        return m.get(k);
+    }
+
+    private static int getInt(Map<String, Object> m, String k) {
         Object v = m.get(k);
-        if (v == null) return def;
+        if (v == null) throw new IllegalArgumentException("Missing required int parameter: " + k);
         if (v instanceof Number) return ((Number) v).intValue();
-        try { return Integer.parseInt(v.toString()); } catch (Exception e) { return def; }
+        try { return Integer.parseInt(v.toString()); } catch (Exception e) {
+            throw new IllegalArgumentException("Cannot parse int parameter '" + k + "': " + v);
+        }
     }
-    private static double getDouble(Map<String, Object> m, String k, double def) {
+    private static double getDouble(Map<String, Object> m, String k) {
         Object v = m.get(k);
-        if (v == null) return def;
+        if (v == null) throw new IllegalArgumentException("Missing required double parameter: " + k);
         if (v instanceof Number) return ((Number) v).doubleValue();
-        try { return Double.parseDouble(v.toString()); } catch (Exception e) { return def; }
+        try { return Double.parseDouble(v.toString()); } catch (Exception e) {
+            throw new IllegalArgumentException("Cannot parse double parameter '" + k + "': " + v);
+        }
     }
-    private static boolean getBool(Map<String, Object> m, String k, boolean def) {
+    private static boolean getBool(Map<String, Object> m, String k) {
         Object v = m.get(k);
-        if (v == null) return def;
+        if (v == null) throw new IllegalArgumentException("Missing required boolean parameter: " + k);
         if (v instanceof Boolean) return (Boolean) v;
         return Boolean.parseBoolean(v.toString());
     }
-    private static String getStr(Map<String, Object> m, String k, String def) {
+    private static String getStr(Map<String, Object> m, String k) {
         Object v = m.get(k);
-        return v == null ? def : v.toString();
+        if (v == null) throw new IllegalArgumentException("Missing required string parameter: " + k);
+        return v.toString();
     }
 }

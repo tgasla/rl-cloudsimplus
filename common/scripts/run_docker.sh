@@ -1,7 +1,10 @@
 #!/bin/bash
 exec </dev/null
 
-DOMAIN=${DOMAIN:-vm-management}
+if [ -z "$DOMAIN" ]; then
+    echo "ERROR: DOMAIN is not set. Usage: make run domain=vm-management or make run domain=job-placement"
+    exit 1
+fi
 HOST_DOMAIN_DIR="domain/$DOMAIN"
 CONFIG_FILE="$HOST_DOMAIN_DIR/config.yml"
 
@@ -67,7 +70,7 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
     for i in $(seq 1 $NUM_EXPERIMENTS); do
         # Start all containers
-        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" PAPER_DIR="$DOMAIN" \
+        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" DOMAIN="$DOMAIN" \
             docker compose -f common/docker-compose.yml $PROFILE_OPTION up --build --remove-orphans -d
 
         echo "DEBUG: Container started, checking mounted config.yml"

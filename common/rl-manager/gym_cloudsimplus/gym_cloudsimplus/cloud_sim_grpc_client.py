@@ -8,24 +8,19 @@ import grpc
 def _detect_rl_problem(params: dict) -> str:
     """Detect RL problem type from params dict.
 
-    Detection order:
-      1. Explicit `rl_problem` key -> use directly
-      2. `host_count` / `hosts_count` present -> VM_MANAGEMENT
-      3. `datacenters` / `max_datacenters` present -> JOB_PLACEMENT
-      4. Default: VM_MANAGEMENT (backward compatibility)
+    Requires explicit `rl_problem` key. No heuristic fallbacks — missing value is a fatal error.
     """
     explicit = params.get("rl_problem")
-    if explicit:
-        s = str(explicit).lower()
-        if s in ("vm_management", "job_placement"):
-            return s
-
-    if params.get("host_count") or params.get("hosts_count"):
-        return "vm_management"
-    if params.get("datacenters") is not None or params.get("max_datacenters") is not None:
-        return "job_placement"
-
-    return "vm_management"
+    if not explicit:
+        raise ValueError(
+            "rl_problem is not set in params. "
+            "Must be 'vm_management' or 'job_placement'. "
+            "Ensure DOMAIN env var is passed to the container."
+        )
+    s = str(explicit).lower()
+    if s not in ("vm_management", "job_placement"):
+        raise ValueError(f"rl_problem must be 'vm_management' or 'job_placement', got: {s}")
+    return s
 
 
 # ─────────────────────────────────────────────────────────────────────────────

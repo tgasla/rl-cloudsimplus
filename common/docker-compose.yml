@@ -5,6 +5,7 @@ services:
     environment: # passing defaults to avoid warnings
       - EXPERIMENT_ID=${EXPERIMENT_ID:-1}
       - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-1}
+      - DOMAIN=${DOMAIN}
       - CUBLAS_WORKSPACE_CONFIG=:4096:8
       - CUDA_LAUNCH_BLOCKING=1
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
@@ -15,7 +16,7 @@ services:
       args:
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
-        PAPER_DIR: ${PAPER_DIR:-vm-management}
+        DOMAIN: ${DOMAIN:-vm-management}
     volumes:
       - ./rl-manager/utils:/mgr/utils
       - ./rl-manager/gym_cloudsimplus:/mgr/gym_cloudsimplus
@@ -27,8 +28,8 @@ services:
       - ./rl-manager/entrypoint.py:/mgr/entrypoint.py
       - ../common/logs:/mgr/logs
       - ./rl-manager/callbacks:/mgr/callbacks
-      - ../domain/${PAPER_DIR:-vm-management}/config.yml:/mgr/config.yml
-      - ../domain/${PAPER_DIR:-vm-management}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
+      - ../domain/${DOMAIN}/config.yml:/mgr/config.yml
+      - ../domain/${DOMAIN}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
       - ../common/topologies:/mgr/topologies:ro
       - /run/docker.sock:/run/docker.sock:ro
     command: bash /common/rl-manager/startup.sh

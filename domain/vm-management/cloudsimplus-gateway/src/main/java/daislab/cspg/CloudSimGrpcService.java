@@ -37,6 +37,7 @@ public class CloudSimGrpcService extends CloudSimServiceGrpc.CloudSimServiceImpl
             LOGGER.info("gRPC createSimulation called");
             // Parse the JSON params into a Map (what SimulationFactory expects)
             Map<String, Object> params = gson.fromJson(request.getParamsJson(), mapType);
+            LOGGER.info("Params JSON string: [{}]", request.getParamsJson());
             // Defensively coerce any Number values to their target types to avoid
             // ClassCastException when Gson returns Double instead of Integer
             GrpcServiceHelper.coerceNumericParams(params);

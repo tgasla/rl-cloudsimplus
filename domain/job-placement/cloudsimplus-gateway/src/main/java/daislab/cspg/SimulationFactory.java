@@ -46,8 +46,8 @@ public class SimulationFactory {
             }
         }
 
-        // Use SimulationSettingsBuilder for unified problem-type-aware settings
-        ISimulationSettings iSettings = SimulationSettingsBuilder.build(paramsMap);
+        // Directly construct domain-specific SimulationSettings from params map.
+        ISimulationSettings iSettings = new SimulationSettings(paramsMap);
 
         LOGGER.info("Simulation settings dump:\n{}", iSettings);
 
@@ -58,9 +58,8 @@ public class SimulationFactory {
             jobs = splitLargeJobs(jobs, iSettings.getMaxJobPes());
         }
 
-        // Reconstruct paper-specific SimulationSettings from builder's filled params
-        SimulationSettings settings = new SimulationSettings(iSettings.getParams());
-        return new WrappedSimulation(identifier, settings, jobs);
+        // Use domain-specific settings directly
+        return new WrappedSimulation(identifier, iSettings, jobs);
     }
 
     private List<CloudletDescriptor> loadJobsFromJson(final String jobsAsJson) {

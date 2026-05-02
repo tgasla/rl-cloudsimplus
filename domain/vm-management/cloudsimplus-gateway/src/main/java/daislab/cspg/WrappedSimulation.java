@@ -18,10 +18,10 @@ public class WrappedSimulation
     // Concrete settings reference for domain-specific access
     private final SimulationSettings simSettings;
 
-    public WrappedSimulation(final String identifier, final SimulationSettings settings,
+    public WrappedSimulation(final String identifier, final ISimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
         super(identifier, settings, jobs, null, null, null);
-        this.simSettings = settings;
+        this.simSettings = (SimulationSettings) settings;
         this.stateExtractor = new VmManagementStateExtractor();
         this.actionDecoder = new VmManagementActionDecoder();
         this.rewardCalculator = new VmManagementRewardCalculator();
@@ -71,7 +71,7 @@ public class WrappedSimulation
 
     @Override
     protected Observation buildObservation(int[] infraObs, int[] secondaryObs) {
-        return new Observation(infraObs, secondaryObs[0], new int[0], new int[0]);
+        return new Observation(infraObs, secondaryObs[0], new int[0]);
     }
 
     @Override

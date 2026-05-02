@@ -67,10 +67,10 @@ public class WrappedSimulation {
     // private long epWaitingJobsCountMax = 0;
     // private long epRunningVmsCountMax = 0;
 
-    public WrappedSimulation(final String identifier, final SimulationSettings settings,
+    public WrappedSimulation(final String identifier, final ISimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
         this.identifier = identifier;
-        this.settings = settings;
+        this.settings = (SimulationSettings) settings;
         initialJobsDescriptors = jobs;
         bestEpisodeReward = -Integer.MAX_VALUE;
 
@@ -141,8 +141,7 @@ public class WrappedSimulation {
 
         SimulationStepInfo info = new SimulationStepInfo();
 
-        Observation observation = new Observation(new int[0], 0, getInfrastructureObservation(),
-                getJobsWaitingObservation());
+        Observation observation = new Observation(getInfrastructureObservation(), 0, getJobsWaitingObservation());
 
         return new SimulationResetResult(observation, info);
     }
@@ -229,8 +228,7 @@ public class WrappedSimulation {
         // Observation observation =
         // new Observation(getInfrastructureObservation(),
         // getJobCoresWaitingObservation());
-        Observation observation = new Observation(new int[0], 0, getInfrastructureObservation(),
-                getJobsWaitingObservation());
+        Observation observation = new Observation(getInfrastructureObservation(), 0, getJobsWaitingObservation());
 
         return new SimulationStepResult(observation, reward, terminated, truncated, info);
     }

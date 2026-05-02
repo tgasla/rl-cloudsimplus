@@ -3,16 +3,17 @@ package daislab.cspg;
 import java.util.Map;
 
 /**
- * Marker interface for simulation settings built by SimulationSettingsBuilder.
- * Both SimulationSettingsVmManagement (common) and SimulationSettingsJobPlacement
- * (common) implement this interface. Concrete type casting is done in
- * each paper's SimulationFactory.
+ * Common interface for simulation settings used by both vm-management and job-placement domains.
+ * Only exposes methods that are actually called by shared components
+ * (SimulationFactory, WrappedSimulationBase).
+ *
+ * Domain-specific accessors remain on the concrete domain SimulationSettings classes.
  */
 public interface ISimulationSettings {
+
     boolean isSplitLargeJobs();
     int getMaxJobPes();
     int getMaxEpisodeLength();
 
-    /** Return the params map used to construct this instance (for reconstruction). */
     Map<String, Object> getParams();
 }

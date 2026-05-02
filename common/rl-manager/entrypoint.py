@@ -61,6 +61,17 @@ def main():
 
     params.update(num_experiments=num_experiments)
 
+    # ── Domain → RL problem mapping ──────────────────────────────────────────
+    domain = os.getenv("DOMAIN")
+    if not domain:
+        raise ValueError("DOMAIN env var is not set. Must be 'vm-management' or 'job-placement'.")
+    if domain == "job-placement":
+        params["rl_problem"] = "job_placement"
+    elif domain == "vm-management":
+        params["rl_problem"] = "vm_management"
+    else:
+        raise ValueError(f"DOMAIN must be 'vm-management' or 'job-placement', got: {domain}")
+
     # ── euromlsys job_placement path: preprocess datacenters and jobs ──
     if "datacenters" in params:
         datacenters = [dc.to_dict() for dc in params["datacenters"]]

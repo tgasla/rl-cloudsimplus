@@ -1,9 +1,11 @@
 # Root Makefile — delegates to common/Makefile with domain selection
-# Usage: make run domain=vm-management  (default)
+# Usage: make run domain=vm-management
 #        make run domain=job-placement
-#        make build domain=vm-management
 
-DOMAIN := $(or $(domain),vm-management)
+DOMAIN := $(domain)
+ifeq ($(DOMAIN),)
+$(error DOMAIN is required. Usage: make run domain=vm-management or make run domain=job-placement)
+endif
 
 $(info Using domain=$(DOMAIN))
 
