@@ -115,15 +115,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
         };
     }
 
-    private VmAllocationPolicy defineRuleBasedVmAllocationPolicy() {
-        return switch (simSettings.getAlgorithm()) {
-            case "minimize-queue", "minimize-allocated", "minimize-unutilized" ->
-                    new VmAllocationPolicyBestFit();
-            default -> throw new IllegalArgumentException(
-                    "Unknown algorithm: " + simSettings.getAlgorithm());
-        };
-    }
-
     private List<Map<Host, List<Vm>>> createHostVmMapping(
             final List<Map<String, Object>> listOfHostMaps,
             final VmAllocationPolicy vmAllocationPolicy) {
@@ -221,11 +212,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
     int calculateTotalJobCoresWaiting() {
         return (int) getJobsToSubmitAtThisTimestep(calculateTargetTime()).stream()
                 .mapToLong(Cloudlet::getPesNumber).sum();
-    }
-
-    long calculateMaxJobCoresNeeded() {
-        return getJobsToSubmitAtThisTimestep(calculateTargetTime()).stream()
-                .mapToLong(Cloudlet::getPesNumber).max().orElse(0);
     }
 
     long getQueuedJobsCount() {

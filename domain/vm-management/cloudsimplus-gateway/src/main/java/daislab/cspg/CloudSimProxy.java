@@ -11,7 +11,6 @@ import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
 import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
-import org.cloudsimplus.allocationpolicies.VmAllocationPolicyBestFit;
 import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
@@ -98,15 +97,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
             case "rule-based" -> defineRuleBasedVmAllocationPolicy();
             default -> throw new IllegalArgumentException(
                     "Unknown VM allocation policy: " + simSettings.getVmAllocationPolicy());
-        };
-    }
-
-    private VmAllocationPolicy defineRuleBasedVmAllocationPolicy() {
-        return switch (simSettings.getAlgorithm()) {
-            case "minimize-queue", "minimize-allocated", "minimize-unutilized" ->
-                    new VmAllocationPolicyBestFit();
-            default -> throw new IllegalArgumentException(
-                    "Unknown algorithm: " + simSettings.getAlgorithm());
         };
     }
 
@@ -324,11 +314,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     int calculateJobCoresWaiting() {
         return coresRequiredForJobs(getJobsToSubmitAtThisTimestep(calculateTargetTime()));
-    }
-
-    long calculateMaxJobCoresNeeded() {
-        return getJobsToSubmitAtThisTimestep(calculateTargetTime()).stream()
-                .mapToLong(Cloudlet::getPesNumber).max().orElse(0);
     }
 
     private int coresRequiredForJobs(List<Cloudlet> jobs) {

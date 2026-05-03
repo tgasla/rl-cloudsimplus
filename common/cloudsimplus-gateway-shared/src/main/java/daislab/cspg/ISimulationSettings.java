@@ -11,6 +11,7 @@ import java.util.Map;
  */
 public interface ISimulationSettings {
 
+    String getAlgorithm();
     boolean isSplitLargeJobs();
     int getMaxJobPes();
     int getMaxEpisodeLength();

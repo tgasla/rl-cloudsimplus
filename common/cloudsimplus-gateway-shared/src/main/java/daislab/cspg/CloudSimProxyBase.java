@@ -1,5 +1,7 @@
 package daislab.cspg;
 
+import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
+import org.cloudsimplus.allocationpolicies.VmAllocationPolicyBestFit;
 import org.cloudsimplus.brokers.DatacenterBroker;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.core.CloudSimPlus;
@@ -305,6 +307,22 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
 
     public int getLastCreatedVmId() {
         return vmsCreated - 1;
+    }
+
+    // ============== Shared domain helpers ==============
+
+    protected VmAllocationPolicy defineRuleBasedVmAllocationPolicy() {
+        return switch (settings.getAlgorithm()) {
+            case "minimize-queue", "minimize-allocated", "minimize-unutilized" ->
+                    new VmAllocationPolicyBestFit();
+            default -> throw new IllegalArgumentException(
+                    "Unknown algorithm: " + settings.getAlgorithm());
+        };
+    }
+
+    long calculateMaxJobCoresNeeded() {
+        return getJobsToSubmitAtThisTimestep(calculateTargetTime()).stream()
+                .mapToLong(Cloudlet::getPesNumber).max().orElse(0);
     }
 
     // ============== Private helpers ==============
