@@ -1,0 +1,8 @@
+- amount: 1
+  hosts:
+    - amount: 16
+      pes: 16
+      pe_mips: 50000
+      ram: 65536
+      storage: 100000
+      bw: 50000

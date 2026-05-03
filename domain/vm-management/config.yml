@@ -37,15 +37,7 @@ common:
     max_hosts: 32
     max_job_pes: 8
     job_trace_filename: three_60max_8maxcores.csv
-    datacenters:
-      - amount: 1
-        hosts:
-          - amount: 16
-            pes: 16
-            pe_mips: 50000
-            ram: 65536
-            storage: 100000
-            bw: 50000
+    datacenters: !include topologies/tcc.yml
     vm_types:
       - pes: 2
         pe_mips: 50000

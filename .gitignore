@@ -220,6 +220,10 @@ gradle-app.setting
 # VSCode hidden files
 .vscode/
 
+# IDE and tool metadata
+.settings/
+.serena/
+
 # Log directories
 logs/
 
@@ -227,8 +231,5 @@ logs/
 
 *.omc/
 # Auto-copied build files during build (canonical is common/cloudsimplus-gateway-shared/gateway-build.gradle)
-domain/vm-management/cloudsimplus-gateway/build.gradle
-domain/job-placement/cloudsimplus-gateway/build.gradle
-# Auto-copied proto files during build (canonical is common/proto/unified/)
-domain/vm-management/cloudsimplus-gateway/src/main/proto/
-domain/job-placement/cloudsimplus-gateway/src/main/proto/
+domain/**/build.gradle
+domain/**/src/main/proto/
