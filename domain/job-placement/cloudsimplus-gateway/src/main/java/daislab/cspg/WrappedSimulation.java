@@ -979,23 +979,6 @@ public class WrappedSimulation
     // return true;
     // }
 
-    private boolean removeVm(final int index) {
-        if (!proxy().removeVm(index)) {
-            LOGGER.debug("Removing a VM with index {} action is invalid. Ignoring.", index);
-            return false;
-        }
-        return true;
-    }
-
-    // adds a new vm to the host with hostid if possible
-    private boolean addNewVm(final String type, final long hostId) {
-        if (!proxy().addNewVm(type, hostId)) {
-            LOGGER.warn("Adding a VM of type {} to host {} is invalid. Ignoring", type, hostId);
-            return false;
-        }
-        return true;
-    }
-
     private double getWaitingJobsRatio() {
         final long arrivedJobsCount = proxy().getArrivedJobsCount();
 

@@ -14,6 +14,9 @@ public interface ISimulationSettings {
     boolean isSplitLargeJobs();
     int getMaxJobPes();
     int getMaxEpisodeLength();
+    double getMinTimeBetweenEvents();
+    double getTimestepInterval();
+    boolean isClearCreatedLists();
 
     Map<String, Object> getParams();
 

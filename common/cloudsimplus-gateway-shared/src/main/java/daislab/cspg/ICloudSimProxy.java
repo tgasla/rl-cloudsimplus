@@ -1,5 +1,7 @@
 package daislab.cspg;
 
+import org.cloudsimplus.brokers.DatacenterBroker;
+
 /**
  * Minimal interface for RL simulation control.
  * Both domain's CloudSimProxy implementations satisfy this interface.
@@ -10,6 +12,6 @@ public interface ICloudSimProxy {
     void runOneTimestep();
     long getNumberOfFutureEvents();
     double clock();
-    Object getBroker();
+    DatacenterBroker getBroker();
     long getFinishedJobsCount();
 }
