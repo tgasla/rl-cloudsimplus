@@ -39,8 +39,7 @@ public class WrappedSimulation
     protected int[] extractSecondaryObservation() {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
         final int jobCoresWaiting = proxy.calculateJobCoresWaiting();
-        final int largeVmPes = simSettings.getSmallVmPes() * simSettings.getLargeVmMultiplier();
-        return new int[] { Math.min(jobCoresWaiting, largeVmPes) };
+        return new int[] { Math.min(jobCoresWaiting, simSettings.getMaxVmPes()) };
     }
 
     @Override
@@ -112,8 +111,8 @@ public class WrappedSimulation
         if (action[0] == 1) {
             final int hostId = action[1];
             final int vmTypeIndex = action[3];
-            final int vmCores = proxy.getVmCoreCountByType(simSettings.VM_TYPES[vmTypeIndex]);
-            boolean isValid = addNewVm(simSettings.VM_TYPES[vmTypeIndex], hostId);
+            final int vmCores = simSettings.getVmCoreCountByTypeIndex(vmTypeIndex);
+            boolean isValid = addNewVm(vmTypeIndex, hostId);
             if (!isValid) {
                 return new int[] {-1, 0};
             }
@@ -150,10 +149,10 @@ public class WrappedSimulation
         return true;
     }
 
-    private boolean addNewVm(final String type, final long hostId) {
+    private boolean addNewVm(final int typeIndex, final long hostId) {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
-        if (!proxy.addNewVm(type, hostId)) {
-            LOGGER.warn("Adding a VM of type {} to host {} is invalid. Ignoring", type, hostId);
+        if (!proxy.addNewVm(typeIndex, hostId)) {
+            LOGGER.warn("Adding type-{} VM to host {} is invalid. Ignoring", typeIndex, hostId);
             return false;
         }
         return true;
@@ -239,7 +238,7 @@ public class WrappedSimulation
 
     private double getHostCoresAllocatedToVmsRatio() {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
-        return ((double) proxy.getAllocatedCores()) / simSettings.getTotalHostCores();
+        return ((double) proxy.getAllocatedCores()) / simSettings.getDatacenterCores();
     }
 
     private Long getRunningCloudletsCount() {

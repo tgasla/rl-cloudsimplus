@@ -1,49 +1,20 @@
 package daislab.cspg;
 
 import lombok.Value;
+import java.util.List;
 import java.util.Map;
 
-/*
- * Class to describe the simulation settings. We provide two constructors.
- *
- * The first one that takes no parameters, creates the simulation by taking the settings from the
- * environment variables. If a parameter is not found as an environment variable, a default value is
- * given.
- *
- * The second one takes as a parameter a Map<String, String>. The first string represents the
- * parameter name and the second string represents the parameter value.
- */
 @Value
 public class SimulationSettings implements ISimulationSettings {
-    public static final String SMALL = "S";
-    public static final String MEDIUM = "M";
-    public static final String LARGE = "L";
-    public static final String[] VM_TYPES = {SMALL, MEDIUM, LARGE};
 
-    Map<String, Object> params; // Lombok generates getParams()
+    Map<String, Object> params;
 
     double minTimeBetweenEvents;
     double timestepInterval;
-    int initialSVmCount;
-    int initialMVmCount;
-    int initialLVmCount;
-    int[] initialVmCounts;
     boolean splitLargeJobs;
     int maxJobPes;
-    double smallVmHourlyCost;
     int maxHosts;
-    int hostsCount;
-    long hostPeMips;
-    int hostPes;
-    int hostRam;
-    int hostStorage;
-    int hostBw;
-    int smallVmPes;
-    int smallVmRam;
-    int smallVmStorage;
-    int smallVmBw;
-    int mediumVmMultiplier;
-    int largeVmMultiplier;
+    double smallVmHourlyCost;
     double vmStartupDelay;
     double vmShutdownDelay;
     boolean payingForTheFullHour;
@@ -56,31 +27,22 @@ public class SimulationSettings implements ISimulationSettings {
     String vmAllocationPolicy;
     String algorithm;
     boolean sendObservationTreeArray;
+    List<Map<String, Object>> datacenters;
+    List<Map<String, Object>> vmTypes;
 
+    // Derived from topology — computed once in constructor
+    int hostsCount;
+    long datacenterCores;
+
+    @SuppressWarnings("unchecked")
     public SimulationSettings(final Map<String, Object> params) {
         this.params = params;
         minTimeBetweenEvents = ISimulationSettings.getDouble(params, "min_time_between_events");
         timestepInterval = ISimulationSettings.getDouble(params, "timestep_interval");
-        initialSVmCount = ISimulationSettings.getInt(params, "initial_s_vm_count");
-        initialMVmCount = ISimulationSettings.getInt(params, "initial_m_vm_count");
-        initialLVmCount = ISimulationSettings.getInt(params, "initial_l_vm_count");
-        initialVmCounts = new int[] {initialSVmCount, initialMVmCount, initialLVmCount};
         splitLargeJobs = ISimulationSettings.getBool(params, "split_large_jobs");
         maxJobPes = ISimulationSettings.getInt(params, "max_job_pes");
-        smallVmHourlyCost = ISimulationSettings.getDouble(params, "small_vm_hourly_cost");
         maxHosts = ISimulationSettings.getInt(params, "max_hosts");
-        hostsCount = ISimulationSettings.getInt(params, "host_count");
-        hostPeMips = ISimulationSettings.getInt(params, "host_pe_mips");
-        hostPes = ISimulationSettings.getInt(params, "host_pes");
-        hostRam = ISimulationSettings.getInt(params, "host_ram");
-        hostStorage = ISimulationSettings.getInt(params, "host_storage");
-        hostBw = ISimulationSettings.getInt(params, "host_bw");
-        smallVmPes = ISimulationSettings.getInt(params, "small_vm_pes");
-        smallVmRam = ISimulationSettings.getInt(params, "small_vm_ram");
-        smallVmStorage = ISimulationSettings.getInt(params, "small_vm_storage");
-        smallVmBw = ISimulationSettings.getInt(params, "small_vm_bw");
-        mediumVmMultiplier = ISimulationSettings.getInt(params, "medium_vm_multiplier");
-        largeVmMultiplier = ISimulationSettings.getInt(params, "large_vm_multiplier");
+        smallVmHourlyCost = ISimulationSettings.getDouble(params, "small_vm_hourly_cost");
         vmStartupDelay = ISimulationSettings.getDouble(params, "vm_startup_delay");
         vmShutdownDelay = ISimulationSettings.getDouble(params, "vm_shutdown_delay");
         payingForTheFullHour = ISimulationSettings.getBool(params, "paying_for_the_full_hour");
@@ -93,16 +55,61 @@ public class SimulationSettings implements ISimulationSettings {
         vmAllocationPolicy = ISimulationSettings.getStr(params, "vm_allocation_policy");
         algorithm = ISimulationSettings.getStr(params, "algorithm");
         sendObservationTreeArray = ISimulationSettings.getBool(params, "send_observation_tree_array");
+        datacenters = (List<Map<String, Object>>) params.get("datacenters");
+        vmTypes = (List<Map<String, Object>>) params.get("vm_types");
+        hostsCount = computeHostsCount();
+        datacenterCores = computeDatacenterCores();
     }
 
-    public long getDatacenterCores() { return hostsCount * hostPes; }
-    public long getTotalHostCores() { return hostsCount * hostPes; }
-    public int getSizeMultiplier(final String type) {
-        return switch (type) {
-            case MEDIUM -> mediumVmMultiplier;
-            case LARGE -> largeVmMultiplier;
-            case SMALL -> 1;
-            default -> throw new IllegalArgumentException("Unexpected value: " + type);
-        };
+    public int getVmTypesCount() {
+        return vmTypes.size();
+    }
+
+    public Map<String, Object> getVmTypeConfig(final int index) {
+        return vmTypes.get(index);
+    }
+
+    public int getVmCoreCountByTypeIndex(final int index) {
+        return ((Number) vmTypes.get(index).get("pes")).intValue();
+    }
+
+    public int getMinVmPes() {
+        return ((Number) vmTypes.get(0).get("pes")).intValue();
+    }
+
+    public int getMaxVmPes() {
+        return ((Number) vmTypes.get(vmTypes.size() - 1).get("pes")).intValue();
+    }
+
+    public long getDatacenterCores() {
+        return datacenterCores;
+    }
+
+    @SuppressWarnings("unchecked")
+    private int computeHostsCount() {
+        int count = 0;
+        for (Map<String, Object> dc : datacenters) {
+            int dcAmount = ((Number) dc.getOrDefault("amount", 1)).intValue();
+            List<Map<String, Object>> hosts = (List<Map<String, Object>>) dc.get("hosts");
+            for (Map<String, Object> host : hosts) {
+                count += dcAmount * ((Number) host.get("amount")).intValue();
+            }
+        }
+        return count;
+    }
+
+    @SuppressWarnings("unchecked")
+    private long computeDatacenterCores() {
+        long cores = 0;
+        for (Map<String, Object> dc : datacenters) {
+            int dcAmount = ((Number) dc.getOrDefault("amount", 1)).intValue();
+            List<Map<String, Object>> hosts = (List<Map<String, Object>>) dc.get("hosts");
+            for (Map<String, Object> host : hosts) {
+                int hostAmount = ((Number) host.get("amount")).intValue();
+                int pes = ((Number) host.get("pes")).intValue();
+                cores += (long) dcAmount * hostAmount * pes;
+            }
+        }
+        return cores;
     }
 }

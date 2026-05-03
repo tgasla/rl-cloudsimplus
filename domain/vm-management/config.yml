@@ -16,7 +16,7 @@ globals:
     attached: true
     gpu: false
     java_log_level: INFO
-    java_log_destination: stdout
+    java_log_destination: none
     junit_output_show: false
     num_cpu: 16
 
@@ -25,33 +25,43 @@ common:
     mode: train
     min_time_between_events: 0.1
     timestep_interval: 1.0
-    initial_s_vm_count: 0
-    initial_m_vm_count: 0
-    initial_l_vm_count: 0
     max_episode_length: 100
     vm_startup_delay: 0.0
     vm_shutdown_delay: 0.0
     split_large_jobs: true
     clear_created_lists: true
-    host_ram: 65536
-    host_storage: 100000
-    host_bw: 50000
-    small_vm_ram: 8192
-    small_vm_storage: 4000
-    small_vm_bw: 1000
     paying_for_the_full_hour: false
     small_vm_hourly_cost: 0.086
     save_experiment: true
     base_log_dir: logs
     max_hosts: 32
-    host_pes: 16
-    host_count: 16
-    host_pe_mips: 50000
     max_job_pes: 8
-    medium_vm_multiplier: 2
-    large_vm_multiplier: 4
-    small_vm_pes: 2
     job_trace_filename: three_60max_8maxcores.csv
+    datacenters:
+      - amount: 1
+        hosts:
+          - amount: 16
+            pes: 16
+            pe_mips: 50000
+            ram: 65536
+            storage: 100000
+            bw: 50000
+    vm_types:
+      - pes: 2
+        pe_mips: 50000
+        ram: 8192
+        size: 4000
+        bw: 1000
+      - pes: 4
+        pe_mips: 50000
+        ram: 16384
+        size: 4000
+        bw: 1000
+      - pes: 8
+        pe_mips: 50000
+        ram: 32768
+        size: 4000
+        bw: 1000
     timesteps: 2048         # 1M timesteps (recommended minimum for RL learning)
     n_rollout_steps: 128      # per-worker rollout steps. So, total rollout steps are x num_cpu
     reward_job_wait_coef: 0.25

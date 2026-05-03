@@ -18,6 +18,7 @@ import org.cloudsimplus.vms.VmSimple;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,7 +39,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
         simSettings = (SimulationSettings) settings;
         vmCost = new VmCost(simSettings);
         datacenter = createDatacenter();
-        submitInitialVmList();
     }
 
     @Override
@@ -73,22 +73,9 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     // ============== Infrastructure creation ==============
 
-    private void submitInitialVmList() {
-        List<Vm> initialVmList = new ArrayList<>();
-        for (int i = 0; i < simSettings.VM_TYPES.length; i++) {
-            String vmType = simSettings.VM_TYPES[i];
-            List<Vm> vmList = createVmList(simSettings.getInitialVmCounts()[i], vmType);
-            initialVmList.forEach(v -> v.setDescription(vmType));
-            initialVmList.addAll(vmList);
-        }
-        initialVmList.forEach(v -> vmCost.addNewVmToList(v));
-        broker.submitVmList(initialVmList);
-    }
-
     private Datacenter createDatacenter() {
-        List<Host> hostList = createHostList();
         LOGGER.debug("Creating datacenter");
-        return new DatacenterSimple(cloudSimPlus, hostList, defineVmAllocationPolicy());
+        return new DatacenterSimple(cloudSimPlus, createHostList(), defineVmAllocationPolicy());
     }
 
     private VmAllocationPolicy defineVmAllocationPolicy() {
@@ -100,44 +87,47 @@ public class CloudSimProxy extends CloudSimProxyBase {
         };
     }
 
+    @SuppressWarnings("unchecked")
     private List<Host> createHostList() {
         List<Host> hostList = new ArrayList<>();
-        final long hostRam = simSettings.getHostRam();
-        final long hostBw = simSettings.getHostBw();
-        final long hostStorage = simSettings.getHostStorage();
-        for (int i = 0; i < simSettings.getHostsCount(); i++) {
-            Host host = new HostWithoutCreatedList(hostRam, hostBw, hostStorage, createPeList())
-                    .setRamProvisioner(new ResourceProvisionerSimple())
-                    .setBwProvisioner(new ResourceProvisionerSimple())
-                    .setVmScheduler(new VmSchedulerTimeShared());
-            hostList.add(host);
+        for (Map<String, Object> dcMap : simSettings.getDatacenters()) {
+            int dcAmount = ((Number) dcMap.getOrDefault("amount", 1)).intValue();
+            List<Map<String, Object>> hostMaps = (List<Map<String, Object>>) dcMap.get("hosts");
+            for (Map<String, Object> hostMap : hostMaps) {
+                int amount = dcAmount * ((Number) hostMap.get("amount")).intValue();
+                long ram = ((Number) hostMap.get("ram")).longValue();
+                long bw = ((Number) hostMap.get("bw")).longValue();
+                long storage = ((Number) hostMap.get("storage")).longValue();
+                int pes = ((Number) hostMap.get("pes")).intValue();
+                long peMips = ((Number) hostMap.get("pe_mips")).longValue();
+                for (int i = 0; i < amount; i++) {
+                    hostList.add(new HostWithoutCreatedList(ram, bw, storage, createPeList(pes, peMips))
+                            .setRamProvisioner(new ResourceProvisionerSimple())
+                            .setBwProvisioner(new ResourceProvisionerSimple())
+                            .setVmScheduler(new VmSchedulerTimeShared()));
+                }
+            }
         }
         return hostList;
     }
 
-    private List<Pe> createPeList() {
+    private List<Pe> createPeList(final int pes, final long mips) {
         List<Pe> peList = new ArrayList<>();
-        for (int i = 0; i < simSettings.getHostPes(); i++) {
-            peList.add(new PeSimple(simSettings.getHostPeMips(), new PeProvisionerSimple()));
+        for (int i = 0; i < pes; i++) {
+            peList.add(new PeSimple(mips, new PeProvisionerSimple()));
         }
         return peList;
     }
 
-    private List<Vm> createVmList(final int vmCount, final String type) {
-        List<Vm> vmList = new ArrayList<>(vmCount);
-        for (int i = 0; i < vmCount; i++) {
-            vmList.add(createVm(type));
-        }
-        return vmList;
-    }
-
-    private Vm createVm(final String type) {
-        int sizeMultiplier = simSettings.getSizeMultiplier(type);
-        Vm vm = new VmSimple(vmsCreated++, simSettings.getHostPeMips(),
-                simSettings.getSmallVmPes() * sizeMultiplier);
-        vm.setRam(simSettings.getSmallVmRam() * sizeMultiplier)
-                .setBw(simSettings.getSmallVmBw())
-                .setSize(simSettings.getSmallVmStorage())
+    private Vm createVm(final int typeIndex) {
+        Map<String, Object> typeConfig = simSettings.getVmTypeConfig(typeIndex);
+        long pes = ((Number) typeConfig.get("pes")).longValue();
+        long peMips = ((Number) typeConfig.get("pe_mips")).longValue();
+        long ram = ((Number) typeConfig.get("ram")).longValue();
+        long size = ((Number) typeConfig.get("size")).longValue();
+        long bw = ((Number) typeConfig.get("bw")).longValue();
+        Vm vm = new VmSimple(vmsCreated++, peMips, pes);
+        vm.setRam(ram).setSize(size).setBw(bw)
                 .setCloudletScheduler(new OptimizedCloudletScheduler())
                 .setShutDownDelay(simSettings.getVmShutdownDelay());
         vm.setSubmissionDelay(simSettings.getVmStartupDelay());
@@ -163,8 +153,7 @@ public class CloudSimProxy extends CloudSimProxyBase {
         long maxFreeCoresOnSameVm = getMaxFreeVmCores();
         boolean vmAvailable = maxFreeCoresOnSameVm >= maxCoresNeeded;
         if (!vmAvailable && maxCoresNeeded > 0) {
-            List<Vm> vmList = createSingleVm(calculateTargetTime(), maxCoresNeeded);
-            broker.submitVmList(vmList);
+            broker.submitVmList(createSingleVm(calculateTargetTime(), maxCoresNeeded));
         } else {
             destroyLargestIdleVm();
         }
@@ -172,10 +161,10 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     private void executeMinimizeAllocatedAction() {
         int coresNeeded = calculateJobCoresWaiting();
-        final long smallVmCores = getVmCoreCountByType(simSettings.VM_TYPES[0]);
-        final long mediumVmCores = getVmCoreCountByType(simSettings.VM_TYPES[1]);
-        final long largeVmCores =
-                getVmCoreCountByType(simSettings.VM_TYPES[simSettings.VM_TYPES.length - 1]);
+        int numTypes = simSettings.getVmTypesCount();
+        final long smallVmCores = simSettings.getVmCoreCountByTypeIndex(0);
+        final long mediumVmCores = simSettings.getVmCoreCountByTypeIndex(1);
+        final long largeVmCores = simSettings.getVmCoreCountByTypeIndex(numTypes - 1);
         if (coresNeeded >= largeVmCores && !isVmWithCoresRunning(largeVmCores)) {
             broker.submitVmList(createSingleVm(calculateTargetTime(), largeVmCores));
         } else if (coresNeeded >= mediumVmCores && isVmWithCoresRunning(largeVmCores)) {
@@ -204,28 +193,21 @@ public class CloudSimProxy extends CloudSimProxyBase {
     }
 
     private List<Vm> createSingleVm(final double targetTime, final long coresNeeded) {
-        final int vmTypesCount = simSettings.VM_TYPES.length;
+        final int numTypes = simSettings.getVmTypesCount();
         final List<Vm> vmList = new ArrayList<>();
         final double startTime = targetTime - simSettings.getTimestepInterval();
 
-        int vmTypeIndex = vmTypesCount - 1;
-        for (int i = 0; i < vmTypesCount; i++) {
-            if (coresNeeded <= getVmCoreCountByType(simSettings.VM_TYPES[i])) {
-                vmTypeIndex = i;
+        int typeIndex = numTypes - 1;
+        for (int i = 0; i < numTypes; i++) {
+            if (coresNeeded <= simSettings.getVmCoreCountByTypeIndex(i)) {
+                typeIndex = i;
                 break;
             }
         }
 
-        if (vmTypeIndex == -1) {
-            LOGGER.error("[{} - {}]: No VM type can fulfill {} cores needed",
-                    startTime, targetTime, coresNeeded);
-            return vmList;
-        }
-
-        final String vmType = simSettings.VM_TYPES[vmTypeIndex];
-        LOGGER.info("[{} - {}]: {} VM cores needed, creating 1 {} VM",
-                startTime, targetTime, coresNeeded, vmType);
-        vmList.add(createVm(vmType).setDescription(vmType));
+        LOGGER.info("[{} - {}]: {} VM cores needed, creating 1 type-{} VM",
+                startTime, targetTime, coresNeeded, typeIndex);
+        vmList.add(createVm(typeIndex));
         return vmList;
     }
 
@@ -244,21 +226,20 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     // ============== VM add/remove ==============
 
-    public boolean addNewVm(final String type, final long hostId) {
-        LOGGER.debug("Agent action: Create a {} VM on host {}", type, hostId);
+    public boolean addNewVm(final int typeIndex, final long hostId) {
+        LOGGER.debug("Agent action: Create type-{} VM on host {}", typeIndex, hostId);
         final Host host = datacenter.getHostById(hostId);
         if (host == Host.NULL) {
             LOGGER.debug("VM creating ignored, no host with given id found");
             return false;
         }
-        final Vm newVm = createVm(type);
-        newVm.setDescription(type + "-" + hostId);
+        final Vm newVm = createVm(typeIndex);
         if (!host.isSuitableForVm(newVm)) {
             LOGGER.debug("VM creating ignored, host not suitable");
             return false;
         }
         broker.submitVm(newVm);
-        LOGGER.debug("Requested VM of type: {} at host {}", type, hostId);
+        LOGGER.debug("Requested type-{} VM at host {}", typeIndex, hostId);
         return true;
     }
 
@@ -273,7 +254,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
     }
 
     private void destroyVm(Vm vm) {
-        final String vmSize = vm.getDescription();
         final List<Cloudlet> execCloudlets =
                 resetCloudlets(vm.getCloudletScheduler().getCloudletExecList());
         final List<Cloudlet> waitingCloudlets =
@@ -283,8 +263,8 @@ public class CloudSimProxy extends CloudSimProxyBase {
                         .collect(Collectors.toList());
         datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
         vmCost.removeVmFromList(vm);
-        LOGGER.info("{} Killing VM {} ({}), cloudlets to reschedule: {}",
-                clock(), vm.getId(), vmSize, affectedCloudlets.size());
+        LOGGER.info("{} Killing VM {} ({} PEs), cloudlets to reschedule: {}",
+                clock(), vm.getId(), vm.getPesNumber(), affectedCloudlets.size());
         if (!affectedCloudlets.isEmpty()) {
             rescheduleCloudlets(affectedCloudlets);
         }
@@ -308,16 +288,9 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     // ============== Domain-specific accessors ==============
 
-    public int getVmCoreCountByType(final String type) {
-        return simSettings.getSmallVmPes() * simSettings.getSizeMultiplier(type);
-    }
-
     int calculateJobCoresWaiting() {
-        return coresRequiredForJobs(getJobsToSubmitAtThisTimestep(calculateTargetTime()));
-    }
-
-    private int coresRequiredForJobs(List<Cloudlet> jobs) {
-        return (int) jobs.stream().mapToLong(Cloudlet::getPesNumber).sum();
+        return (int) getJobsToSubmitAtThisTimestep(calculateTargetTime()).stream()
+                .mapToLong(Cloudlet::getPesNumber).sum();
     }
 
     private boolean isJobWithCoresWaiting(final long cores) {

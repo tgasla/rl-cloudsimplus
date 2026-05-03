@@ -48,7 +48,7 @@ public class VmCost {
         List<Vm> toRemove = new ArrayList<>();
         for (Vm vm : createdVms) {
             // check if the vm is started
-            double multiplier = settings.getSizeMultiplier(vm.getDescription());
+            double multiplier = (double) vm.getPesNumber() / settings.getMinVmPes();
             final double perIterationVMCost = perIterationSmallVmCost * multiplier;
             if (vm.getStartTime() > -1 && vm.getFinishTime() > -1) {
                 // vm stopped - we continue to pay for the full hour if needed
