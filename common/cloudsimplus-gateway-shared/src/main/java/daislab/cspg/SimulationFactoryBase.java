@@ -80,5 +80,23 @@ public abstract class SimulationFactoryBase {
     protected abstract CloudletDescriptor createSplitDescriptor(
             CloudletDescriptor original, int newId, long mi, int pes);
 
-    public abstract IWrappedSimulation create(String paramsJson, String jobsJson);
+    /** Constructs the domain-specific SimulationSettings from a parsed params map. */
+    protected abstract ISimulationSettings buildSettings(Map<String, Object> params);
+
+    /** Constructs the domain-specific WrappedSimulation instance. */
+    protected abstract IWrappedSimulation buildSimulation(
+            String id, ISimulationSettings settings, List<CloudletDescriptor> jobs);
+
+    public synchronized IWrappedSimulation create(
+            final String paramsAsJson, final String jobsAsJson) {
+        String identifier = "Sim" + simulationsRunning++;
+        ISimulationSettings settings = buildSettings(parseParamsJson(paramsAsJson));
+        LOGGER.info("Simulation settings dump:\n{}", settings);
+        List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
+        if (settings.isSplitLargeJobs()) {
+            LOGGER.info("Splitting large jobs");
+            jobs = splitLargeJobs(jobs, settings.getMaxJobPes());
+        }
+        return buildSimulation(identifier, settings, new ArrayList<>(jobs));
+    }
 }

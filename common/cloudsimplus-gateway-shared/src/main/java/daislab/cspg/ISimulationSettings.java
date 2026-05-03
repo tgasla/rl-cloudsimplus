@@ -16,4 +16,35 @@ public interface ISimulationSettings {
     int getMaxEpisodeLength();
 
     Map<String, Object> getParams();
+
+    static int getInt(Map<String, Object> m, String k) {
+        Object v = m.get(k);
+        if (v == null) throw new IllegalArgumentException("Missing required int parameter: " + k);
+        if (v instanceof Number) return ((Number) v).intValue();
+        try { return Integer.parseInt(v.toString()); } catch (Exception e) {
+            throw new IllegalArgumentException("Cannot parse int parameter '" + k + "': " + v);
+        }
+    }
+
+    static double getDouble(Map<String, Object> m, String k) {
+        Object v = m.get(k);
+        if (v == null) throw new IllegalArgumentException("Missing required double parameter: " + k);
+        if (v instanceof Number) return ((Number) v).doubleValue();
+        try { return Double.parseDouble(v.toString()); } catch (Exception e) {
+            throw new IllegalArgumentException("Cannot parse double parameter '" + k + "': " + v);
+        }
+    }
+
+    static boolean getBool(Map<String, Object> m, String k) {
+        Object v = m.get(k);
+        if (v == null) throw new IllegalArgumentException("Missing required boolean parameter: " + k);
+        if (v instanceof Boolean) return (Boolean) v;
+        return Boolean.parseBoolean(v.toString());
+    }
+
+    static String getStr(Map<String, Object> m, String k) {
+        Object v = m.get(k);
+        if (v == null) throw new IllegalArgumentException("Missing required string parameter: " + k);
+        return v.toString();
+    }
 }

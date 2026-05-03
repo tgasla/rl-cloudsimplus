@@ -59,68 +59,40 @@ public class SimulationSettings implements ISimulationSettings {
 
     public SimulationSettings(final Map<String, Object> params) {
         this.params = params;
-        minTimeBetweenEvents = getDouble(params, "min_time_between_events");
-        timestepInterval = getDouble(params, "timestep_interval");
-        initialSVmCount = getInt(params, "initial_s_vm_count");
-        initialMVmCount = getInt(params, "initial_m_vm_count");
-        initialLVmCount = getInt(params, "initial_l_vm_count");
+        minTimeBetweenEvents = ISimulationSettings.getDouble(params, "min_time_between_events");
+        timestepInterval = ISimulationSettings.getDouble(params, "timestep_interval");
+        initialSVmCount = ISimulationSettings.getInt(params, "initial_s_vm_count");
+        initialMVmCount = ISimulationSettings.getInt(params, "initial_m_vm_count");
+        initialLVmCount = ISimulationSettings.getInt(params, "initial_l_vm_count");
         initialVmCounts = new int[] {initialSVmCount, initialMVmCount, initialLVmCount};
-        splitLargeJobs = getBool(params, "split_large_jobs");
-        maxJobPes = getInt(params, "max_job_pes");
-        smallVmHourlyCost = getDouble(params, "small_vm_hourly_cost");
-        maxHosts = getInt(params, "max_hosts");
-        hostsCount = getInt(params, "host_count");
-        hostPeMips = getInt(params, "host_pe_mips");
-        hostPes = getInt(params, "host_pes");
-        hostRam = getInt(params, "host_ram");
-        hostStorage = getInt(params, "host_storage");
-        hostBw = getInt(params, "host_bw");
-        smallVmPes = getInt(params, "small_vm_pes");
-        smallVmRam = getInt(params, "small_vm_ram");
-        smallVmStorage = getInt(params, "small_vm_storage");
-        smallVmBw = getInt(params, "small_vm_bw");
-        mediumVmMultiplier = getInt(params, "medium_vm_multiplier");
-        largeVmMultiplier = getInt(params, "large_vm_multiplier");
-        vmStartupDelay = getDouble(params, "vm_startup_delay");
-        vmShutdownDelay = getDouble(params, "vm_shutdown_delay");
-        payingForTheFullHour = getBool(params, "paying_for_the_full_hour");
-        clearCreatedLists = getBool(params, "clear_created_lists");
-        rewardJobWaitCoef = getDouble(params, "reward_job_wait_coef");
-        rewardRunningVmCoresCoef = getDouble(params, "reward_running_vm_cores_coef");
-        rewardUnutilizedVmCoresCoef = getDouble(params, "reward_unutilized_vm_cores_coef");
-        rewardInvalidCoef = getDouble(params, "reward_invalid_coef");
-        maxEpisodeLength = getInt(params, "max_episode_length");
-        vmAllocationPolicy = getStr(params, "vm_allocation_policy");
-        algorithm = getStr(params, "algorithm");
-        sendObservationTreeArray = getBool(params, "send_observation_tree_array");
-    }
-
-    private static int getInt(Map<String, Object> m, String k) {
-        Object v = m.get(k);
-        if (v == null) throw new IllegalArgumentException("Missing required int parameter: " + k);
-        if (v instanceof Number) return ((Number) v).intValue();
-        try { return Integer.parseInt(v.toString()); } catch (Exception e) {
-            throw new IllegalArgumentException("Cannot parse int parameter '" + k + "': " + v);
-        }
-    }
-    private static double getDouble(Map<String, Object> m, String k) {
-        Object v = m.get(k);
-        if (v == null) throw new IllegalArgumentException("Missing required double parameter: " + k);
-        if (v instanceof Number) return ((Number) v).doubleValue();
-        try { return Double.parseDouble(v.toString()); } catch (Exception e) {
-            throw new IllegalArgumentException("Cannot parse double parameter '" + k + "': " + v);
-        }
-    }
-    private static boolean getBool(Map<String, Object> m, String k) {
-        Object v = m.get(k);
-        if (v == null) throw new IllegalArgumentException("Missing required boolean parameter: " + k);
-        if (v instanceof Boolean) return (Boolean) v;
-        return Boolean.parseBoolean(v.toString());
-    }
-    private static String getStr(Map<String, Object> m, String k) {
-        Object v = m.get(k);
-        if (v == null) throw new IllegalArgumentException("Missing required string parameter: " + k);
-        return v.toString();
+        splitLargeJobs = ISimulationSettings.getBool(params, "split_large_jobs");
+        maxJobPes = ISimulationSettings.getInt(params, "max_job_pes");
+        smallVmHourlyCost = ISimulationSettings.getDouble(params, "small_vm_hourly_cost");
+        maxHosts = ISimulationSettings.getInt(params, "max_hosts");
+        hostsCount = ISimulationSettings.getInt(params, "host_count");
+        hostPeMips = ISimulationSettings.getInt(params, "host_pe_mips");
+        hostPes = ISimulationSettings.getInt(params, "host_pes");
+        hostRam = ISimulationSettings.getInt(params, "host_ram");
+        hostStorage = ISimulationSettings.getInt(params, "host_storage");
+        hostBw = ISimulationSettings.getInt(params, "host_bw");
+        smallVmPes = ISimulationSettings.getInt(params, "small_vm_pes");
+        smallVmRam = ISimulationSettings.getInt(params, "small_vm_ram");
+        smallVmStorage = ISimulationSettings.getInt(params, "small_vm_storage");
+        smallVmBw = ISimulationSettings.getInt(params, "small_vm_bw");
+        mediumVmMultiplier = ISimulationSettings.getInt(params, "medium_vm_multiplier");
+        largeVmMultiplier = ISimulationSettings.getInt(params, "large_vm_multiplier");
+        vmStartupDelay = ISimulationSettings.getDouble(params, "vm_startup_delay");
+        vmShutdownDelay = ISimulationSettings.getDouble(params, "vm_shutdown_delay");
+        payingForTheFullHour = ISimulationSettings.getBool(params, "paying_for_the_full_hour");
+        clearCreatedLists = ISimulationSettings.getBool(params, "clear_created_lists");
+        rewardJobWaitCoef = ISimulationSettings.getDouble(params, "reward_job_wait_coef");
+        rewardRunningVmCoresCoef = ISimulationSettings.getDouble(params, "reward_running_vm_cores_coef");
+        rewardUnutilizedVmCoresCoef = ISimulationSettings.getDouble(params, "reward_unutilized_vm_cores_coef");
+        rewardInvalidCoef = ISimulationSettings.getDouble(params, "reward_invalid_coef");
+        maxEpisodeLength = ISimulationSettings.getInt(params, "max_episode_length");
+        vmAllocationPolicy = ISimulationSettings.getStr(params, "vm_allocation_policy");
+        algorithm = ISimulationSettings.getStr(params, "algorithm");
+        sendObservationTreeArray = ISimulationSettings.getBool(params, "send_observation_tree_array");
     }
 
     public long getDatacenterCores() { return hostsCount * hostPes; }

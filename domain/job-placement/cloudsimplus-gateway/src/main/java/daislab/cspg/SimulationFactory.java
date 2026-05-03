@@ -3,8 +3,8 @@ package daislab.cspg;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class SimulationFactory extends SimulationFactoryBase {
 
@@ -24,16 +24,15 @@ public class SimulationFactory extends SimulationFactoryBase {
                 cdl.getLocation(), cdl.getDelaySensitivity(), cdl.getDeadline());
     }
 
-    public synchronized WrappedSimulation create(
-            final String paramsAsJson, final String jobsAsJson) {
-        String identifier = "Sim" + simulationsRunning++;
-        ISimulationSettings settings = new SimulationSettings(parseParamsJson(paramsAsJson));
-        LOGGER.info("Simulation settings dump:\n{}", settings);
-        List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
-        if (settings.isSplitLargeJobs()) {
-            LOGGER.info("Splitting large jobs");
-            jobs = splitLargeJobs(jobs, settings.getMaxJobPes());
-        }
-        return new WrappedSimulation(identifier, settings, new ArrayList<>(jobs));
+    @Override
+    protected ISimulationSettings buildSettings(final Map<String, Object> params) {
+        return new SimulationSettings(params);
+    }
+
+    @Override
+    protected IWrappedSimulation buildSimulation(
+            final String id, final ISimulationSettings settings,
+            final List<CloudletDescriptor> jobs) {
+        return new WrappedSimulation(id, settings, jobs);
     }
 }
