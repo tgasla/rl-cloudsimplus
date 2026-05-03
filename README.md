@@ -121,6 +121,19 @@ make build-gateway domain=job-placement   # Build JAR
 make run domain=job-placement             # Run (JAR is mounted via :ro volume)
 ```
 
+### Proto Changes (`common/proto/unified/cloudsimplus.proto`)
+**Regenerate Python classes, then rebuild both gateway JARs:**
+
+```bash
+make generate-proto                        # Regenerates Python pb2 classes in protos/unified/
+make build-gateway domain=vm-management    # Rebuilds Java (Gradle copies proto automatically)
+make build-gateway domain=job-placement
+make run domain=<domain>
+```
+
+> Only needed when you change the proto schema (add/remove/rename fields or RPC methods).
+> Java-only changes or Python-only changes do not require `make generate-proto`.
+
 ### Configuration Changes (config.yml)
 **No rebuild needed.** Config is read at runtime:
 
@@ -171,7 +184,7 @@ Shared across all experiments in the config:
 - `timesteps`, `n_rollout_steps`: RL training parameters
 - `save_experiment`: save model/checkpoints
 - `base_log_dir`: parent log directory
-- `vm_allocation_policy`: rl | bestfit | rule-based
+- `vm_allocation_policy`: rl | bestfit
 - `algorithm`: PPO, MaskablePPO, A2C, etc.
 
 ### experiment_{id} (per-experiment overrides)
@@ -275,6 +288,14 @@ make run domain=job-placement         # No build needed
 ```bash
 make build-gateway domain=job-placement  # Rebuild JAR only
 make run domain=job-placement              # Run
+```
+
+### After proto changes:
+```bash
+make generate-proto                        # Regenerate Python pb2 classes
+make build-gateway domain=vm-management    # Rebuild both domain JARs
+make build-gateway domain=job-placement
+make run domain=<domain>
 ```
 
 ### Full reset:

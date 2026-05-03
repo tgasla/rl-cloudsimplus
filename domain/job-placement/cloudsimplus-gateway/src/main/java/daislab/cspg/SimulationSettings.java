@@ -31,6 +31,7 @@ public class SimulationSettings implements ISimulationSettings {
     private final double vmShutdownDelay;
     private final boolean payingForTheFullHour;
     private final boolean clearCreatedLists;
+    private final boolean printStats;
     private final double rewardJobsPlacedCoef;
     private final double rewardQualityCoef;
     private final double rewardDeadlineViolationCoef;
@@ -47,6 +48,7 @@ public class SimulationSettings implements ISimulationSettings {
         vmShutdownDelay = ISimulationSettings.getDouble(params, "vm_shutdown_delay");
         payingForTheFullHour = ISimulationSettings.getBool(params, "paying_for_the_full_hour");
         clearCreatedLists = ISimulationSettings.getBool(params, "clear_created_lists");
+        printStats = ISimulationSettings.getBoolOrDefault(params, "print_stats", true);
         rewardJobsPlacedCoef = ISimulationSettings.getDouble(params, "reward_jobs_placed_coef");
         rewardQualityCoef = ISimulationSettings.getDouble(params, "reward_quality_coef");
         rewardDeadlineViolationCoef = ISimulationSettings.getDouble(params, "reward_deadline_violation_coef");

@@ -1,7 +1,5 @@
 package daislab.cspg;
 
-import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
-import org.cloudsimplus.allocationpolicies.VmAllocationPolicyBestFit;
 import org.cloudsimplus.brokers.DatacenterBroker;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.core.CloudSimPlus;
@@ -34,7 +32,8 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
     protected int vmsCreated;
     protected boolean firstStep;
 
-    protected CloudSimProxyBase(final ISimulationSettings settings, final List<Cloudlet> inputJobs) {
+    protected CloudSimProxyBase(final ISimulationSettings settings,
+            final List<Cloudlet> inputJobs) {
         this.settings = settings;
         this.inputJobs = new ArrayList<>(inputJobs);
         final int initialCapacity = Math.max(inputJobs.size(), 1);
@@ -66,8 +65,8 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
     /** Domain-specific job submission filter logic. */
     protected abstract void tryToSubmitJobs(List<Cloudlet> cloudletList);
 
-    /** Optional hook called after printCloudletStatus() in runOneTimestep(). */
-    protected void afterPrintStats() {}
+    /** Domain-specific stats printing called each timestep. */
+    protected abstract void printStats();
 
     // ============== Simulation stepping ==============
 
@@ -115,9 +114,8 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
         maybeClearLists();
         tryToSubmitJobs(jobsToSubmitList);
         proceedClockTo(targetTime);
-        if (shouldPrintStats()) {
-            printCloudletStatus();
-            afterPrintStats();
+        if (settings.isPrintStats()) {
+            printStats();
         }
         if (firstStep) {
             firstStep = false;
@@ -136,10 +134,6 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
             broker.getCloudletCreatedList().clear();
             // broker.getVmCreatedList().clear(); // uncomment to also purge the VM created list
         }
-    }
-
-    private boolean shouldPrintStats() {
-        return ((int) Math.round(clock()) % 1 == 0) || !isRunning();
     }
 
     // ============== Job/event management ==============
@@ -195,8 +189,7 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
     }
 
     List<Cloudlet> getJobsToSubmitAtThisTimestep(final double targetTime) {
-        return jobQueue.stream()
-                .takeWhile(cloudlet -> cloudlet.getSubmissionDelay() < targetTime)
+        return jobQueue.stream().takeWhile(cloudlet -> cloudlet.getSubmissionDelay() < targetTime)
                 .collect(Collectors.toList());
     }
 
@@ -253,8 +246,8 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
 
     @Override
     public long getFinishedJobsCount() {
-        return inputJobs.parallelStream()
-                .filter(c -> c.getStatus().equals(Cloudlet.Status.SUCCESS)).count();
+        return inputJobs.parallelStream().filter(c -> c.getStatus().equals(Cloudlet.Status.SUCCESS))
+                .count();
     }
 
     // ============== Shared public accessors ==============
@@ -273,20 +266,19 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
     }
 
     public long getNotYetRunningJobsCount() {
-        return inputJobs.parallelStream()
-                .filter(c -> jobArrivalTimeMap.get(c.getId()) < clock())
+        return inputJobs.parallelStream().filter(c -> jobArrivalTimeMap.get(c.getId()) < clock())
                 .filter(c -> !c.getStatus().equals(Cloudlet.Status.INEXEC))
                 .filter(c -> !c.getStatus().equals(Cloudlet.Status.SUCCESS)).count();
     }
 
     public long getRunningJobsCount() {
-        return inputJobs.parallelStream()
-                .filter(c -> c.getStatus().equals(Cloudlet.Status.INEXEC)).count();
+        return inputJobs.parallelStream().filter(c -> c.getStatus().equals(Cloudlet.Status.INEXEC))
+                .count();
     }
 
     public long getAllocatedCores() {
-        return broker.getVmExecList().parallelStream()
-                .map(Vm::getPesNumber).reduce(Long::sum).orElse(0L);
+        return broker.getVmExecList().parallelStream().map(Vm::getPesNumber).reduce(Long::sum)
+                .orElse(0L);
     }
 
     public double[] getVmCpuUsage() {
@@ -310,15 +302,6 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
     }
 
     // ============== Shared domain helpers ==============
-
-    protected VmAllocationPolicy defineRuleBasedVmAllocationPolicy() {
-        return switch (settings.getAlgorithm()) {
-            case "minimize-queue", "minimize-allocated", "minimize-unutilized" ->
-                    new VmAllocationPolicyBestFit();
-            default -> throw new IllegalArgumentException(
-                    "Unknown algorithm: " + settings.getAlgorithm());
-        };
-    }
 
     long calculateMaxJobCoresNeeded() {
         return getJobsToSubmitAtThisTimestep(calculateTargetTime()).stream()

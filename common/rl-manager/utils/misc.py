@@ -477,9 +477,9 @@ def compute_freeze_indices_for_tree_obs(params, prev_host_count=None) -> dict:
     Compute indices for freezing weights in tree-based observation space.
     """
     max_hosts = params["max_hosts"]
-    host_count = params["host_count"]
-    host_pes = params["host_pes"]
-    small_vm_pes = params["small_vm_pes"]
+    host_count = _get_total_hosts(params)
+    host_pes = params["datacenters"][0]["hosts"][0]["pes"]
+    small_vm_pes = params["vm_types"][0]["pes"]
     min_job_pes = 1
 
     cur_max_vms = host_count * host_pes // small_vm_pes
@@ -578,11 +578,13 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
     sim_log_dir = os.environ.get("JAVA_SIM_LOG_DIR", "")
     log_dest = os.environ.get("JAVA_LOG_DESTINATION", "stdout")
     log_level = os.environ.get("JAVA_LOG_LEVEL", "INFO")
+    save_experiment = os.environ.get("SAVE_EXPERIMENT", "true").lower()
     # -D properties MUST come before -jar, otherwise they go to program's args[] instead of JVM
     java_cmd = [
         "java",
         "-Dlog.level=" + log_level,
         "-Dlog.destination=" + log_dest,
+        "-Dlog.saveExperiment=" + save_experiment,
         f"-Dexperiment.id={experiment_id}",
         "-jar", jar_path,
         "--grpc", str(port),
@@ -815,9 +817,12 @@ def get_suitable_device(algorithm) -> torch.device:
 
 
 def get_algorithm(algorithm_name, vm_allocation_policy) -> sb3.common.base_class.BaseAlgorithm:
-    if vm_allocation_policy == "fromfile" or vm_allocation_policy == "rule-based":
+    # If the vm_allocation_policy is fromfile or bestfit, pick a default algorithm
+    # so the code triggers the simulation environment creation
+    # NOTE: the algorithm decision through learning is not used at all in this case
+    if vm_allocation_policy == "fromfile" or vm_allocation_policy == "bestfit":
         algorithm = getattr(sb3, "PPO")
-    elif vm_allocation_policy == "rl" or vm_allocation_policy == "bestfit":
+    elif vm_allocation_policy == "rl":
         if hasattr(sb3, algorithm_name):
             algorithm = getattr(sb3, algorithm_name)
         elif hasattr(sb3_contrib, algorithm_name):

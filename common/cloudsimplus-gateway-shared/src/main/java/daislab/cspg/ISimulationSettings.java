@@ -18,6 +18,7 @@ public interface ISimulationSettings {
     double getMinTimeBetweenEvents();
     double getTimestepInterval();
     boolean isClearCreatedLists();
+    boolean isPrintStats();
 
     Map<String, Object> getParams();
 
@@ -42,6 +43,13 @@ public interface ISimulationSettings {
     static boolean getBool(Map<String, Object> m, String k) {
         Object v = m.get(k);
         if (v == null) throw new IllegalArgumentException("Missing required boolean parameter: " + k);
+        if (v instanceof Boolean) return (Boolean) v;
+        return Boolean.parseBoolean(v.toString());
+    }
+
+    static boolean getBoolOrDefault(Map<String, Object> m, String k, boolean defaultValue) {
+        Object v = m.get(k);
+        if (v == null) return defaultValue;
         if (v instanceof Boolean) return (Boolean) v;
         return Boolean.parseBoolean(v.toString());
     }

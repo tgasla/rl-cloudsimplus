@@ -37,6 +37,7 @@ GPU=${GPU:-false}
 # Read java log destination from config.yml (not overridden by ATTACHED)
 JAVA_LOG_DEST=$(get_yaml_value "java_log_destination")
 JAVA_LOG_LEVEL=$(get_yaml_value "java_log_level")
+SAVE_EXPERIMENT=$(get_yaml_value "save_experiment")
 
 cleanup_experiment() {
     # Stop the experiment containers
@@ -70,7 +71,7 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
 
     for i in $(seq 1 $NUM_EXPERIMENTS); do
         # Start all containers
-        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" DOMAIN="$DOMAIN" \
+        EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" SAVE_EXPERIMENT="$SAVE_EXPERIMENT" DOMAIN="$DOMAIN" \
             docker compose -f common/docker-compose.yml $PROFILE_OPTION up --build --remove-orphans -d
 
         echo "DEBUG: Container started, checking mounted config.yml"

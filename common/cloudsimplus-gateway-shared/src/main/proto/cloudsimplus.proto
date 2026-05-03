@@ -8,23 +8,14 @@ option java_outer_classname = "CloudSimProto";
 
 // Unified proto for both VM_MANAGEMENT (main) and JOB_PLACEMENT (euromlsys) RL problems.
 //
-// Field mapping:
-//   field 1: infrastructure_observation     -- main ONLY (tree array, via TreeArray.java)
-//   field 2: job_cores_waiting_observation -- main ONLY (scalar)
-//   field 3: flat_infrastructure_observation -- euromlsys ONLY (per-host [dc_id, dc_type, free_vmpes])
-//   field 4: jobs_waiting_observation       -- euromlsys ONLY (per-job [cores, loc, sens, deadline])
-//
-// unused field numbers: 5-7
-//
-// Both RL problems write to the Observation fields relevant to them;
-// irrelevant fields are empty/zero. The Python env or Java service reads
-// only the fields relevant to the current rl_problem.
+// Unified Observation shared by both RL problem types:
+//   field 1: infrastructure_observation -- shared: vm-management tree array OR jp flat per-host array
+//   field 2: secondary_observation      -- shared: vm-management [job_cores_waiting] (len=1)
+//                                                  OR jp [cores, loc, sens, deadline] per waiting job
 
 message Observation {
-  repeated int32 infrastructure_observation = 1;       // main: tree array (TreeArray.java)
-  int32 job_cores_waiting_observation = 2;             // main: scalar count
-  repeated int32 flat_infrastructure_observation = 3; // euromlsys: [dc_id, dc_type, free_vmpes] per host
-  repeated int32 jobs_waiting_observation = 4;          // euromlsys: [cores, location, sens, deadline] per job
+  repeated int32 infrastructure_observation = 1;
+  repeated int32 secondary_observation = 2;
 }
 
 // StepInfo field mapping:

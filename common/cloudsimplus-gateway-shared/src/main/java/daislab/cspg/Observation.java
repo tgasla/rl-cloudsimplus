@@ -6,16 +6,11 @@ import lombok.Value;
  * Unified observation for both RL problem types.
  * Maps 1:1 to the unified proto Observation message.
  *
- * Field usage by problem:
- *   VM_MANAGEMENT:  infrastructureObservation (field 1), jobCoresWaitingObservation (field 2)
- *   JOB_PLACEMENT: infrastructureObservation (field 3), jobsWaitingObservation (field 4)
- *
- * Each domain's WrappedSimulation sets only the relevant fields;
- * irrelevant fields are left as empty/zero arrays.
+ *   infrastructureObservation: vm-management tree array OR job-placement flat per-host array
+ *   secondaryObservation:      vm-management [jobCoresWaiting] (len=1) OR job-placement jobs-waiting array
  */
 @Value
 public class Observation {
     int[] infrastructureObservation;
-    int jobCoresWaitingObservation;
-    int[] jobsWaitingObservation;
+    int[] secondaryObservation;
 }

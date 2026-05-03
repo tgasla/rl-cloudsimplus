@@ -8,6 +8,8 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * CloudSim gRPC Server bootstrap.
@@ -56,8 +58,10 @@ public class Main {
         String logDestination = System.getProperty("log.destination", "stdout");
         String simDir = System.getProperty("log.simDir", "");
 
-        boolean writeToFile = logDestination.equals("file") || logDestination.equals("stdout-file");
-        boolean writeToStdout = logDestination.equals("stdout") || logDestination.equals("stdout-file");
+        List<String> destinations = Arrays.asList(logDestination.split("\\s*,\\s*"));
+        boolean saveExperiment = Boolean.parseBoolean(System.getProperty("log.saveExperiment", "true"));
+        boolean writeToFile = saveExperiment && destinations.contains("file");
+        boolean writeToStdout = destinations.contains("stdout");
 
         StringBuilder rootSection = new StringBuilder();
         if (writeToStdout) {

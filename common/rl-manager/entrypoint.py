@@ -72,8 +72,8 @@ def main():
     else:
         raise ValueError(f"DOMAIN must be 'vm-management' or 'job-placement', got: {domain}")
 
-    # ── euromlsys job_placement path: preprocess datacenters and jobs ──
-    if "datacenters" in params:
+    # ── job-placement: preprocess custom datacenter objects and jobs ──
+    if domain == "job-placement" and "datacenters" in params:
         datacenters = [dc.to_dict() for dc in params["datacenters"]]
         _check_datacenters_unique(datacenters)
         datacenters = _translate_connect_to_names_to_idx(datacenters)
@@ -87,9 +87,15 @@ def main():
     else:
         set_seed_for_all(params["seed"])
 
+    # ── Globals: load once, propagate to params and environment ──
+    raw_config = _load_raw_config()
+    globals_cfg = raw_config.get("globals", {})
+    save_experiment = globals_cfg.get("save_experiment", False)
+    params["save_experiment"] = save_experiment
+
     # ── Log dir ──
     params["log_dir"] = None
-    if params.get("save_experiment"):
+    if save_experiment:
         params["log_dir"] = os.path.join(
             params["base_log_dir"],
             params["experiment_dir"],
@@ -98,10 +104,6 @@ def main():
         os.makedirs(params["log_dir"], exist_ok=True)
         shutil.copy(CONFIG_FILE, params["log_dir"])
         write_seed_to_file(params["seed"], params["log_dir"])
-
-    # ── Propagate Java log settings to environment ──
-    raw_config = _load_raw_config()
-    globals_cfg = raw_config.get("globals", {})
     if "java_log_destination" in globals_cfg:
         os.environ["JAVA_LOG_DESTINATION"] = globals_cfg["java_log_destination"]
     if "java_log_level" in globals_cfg:

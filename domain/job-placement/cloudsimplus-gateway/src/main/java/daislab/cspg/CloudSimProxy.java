@@ -72,7 +72,7 @@ public class CloudSimProxy extends CloudSimProxyBase {
     }
 
     @Override
-    protected void afterPrintStats() {
+    protected void printStats() {
         printCloudletProgress();
     }
 
@@ -89,10 +89,11 @@ public class CloudSimProxy extends CloudSimProxyBase {
         return dcs;
     }
 
+    @SuppressWarnings("unchecked")
     private Datacenter createDatacenter(final Map<String, Object> dcMap) {
         final VmAllocationPolicy vmAllocationPolicy = defineVmAllocationPolicy();
         final List<Map<Host, List<Vm>>> hostVmMapping = createHostVmMapping(
-                SafeCasting.castToListOfMapStringObject(dcMap.get("hosts")), vmAllocationPolicy);
+                (List<Map<String, Object>>) dcMap.get("hosts"), vmAllocationPolicy);
         final String type = String.valueOf(dcMap.get("type"));
         final List<Integer> connectTo = (List<Integer>) dcMap.get("connect_to");
         LOGGER.info("while creating datacenter, I have connectTo {}", connectTo.toString());
@@ -108,7 +109,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
     private VmAllocationPolicy defineVmAllocationPolicy() {
         return switch (simSettings.getVmAllocationPolicy()) {
             case "rl", "fromfile" -> new VmAllocationPolicyCustom();
-            case "rule-based" -> defineRuleBasedVmAllocationPolicy();
             case "bestfit" -> new VmAllocationPolicyBestFit();
             default -> throw new IllegalArgumentException(
                     "Unknown VM allocation policy: " + simSettings.getVmAllocationPolicy());
@@ -131,8 +131,9 @@ public class CloudSimProxy extends CloudSimProxyBase {
                         .setRamProvisioner(new ResourceProvisionerSimple())
                         .setBwProvisioner(new ResourceProvisionerSimple())
                         .setVmScheduler(new VmSchedulerTimeShared());
-                final List<Vm> vms = createVmList(
-                        SafeCasting.castToListOfMapStringObject(hostMap.get("vms")));
+                @SuppressWarnings("unchecked")
+                final List<Vm> vms =
+                        createVmList((List<Map<String, Object>>) hostMap.get("vms"));
                 hostVmMapping.add(Map.of(host, vms));
             }
         }
@@ -143,7 +144,8 @@ public class CloudSimProxy extends CloudSimProxyBase {
             final VmAllocationPolicy vmAllocationPolicy) {
         for (Map<Host, List<Vm>> vmToHostMap : vmToHostMapList) {
             for (Map.Entry<Host, List<Vm>> entry : vmToHostMap.entrySet()) {
-                entry.getValue().forEach(vm -> vmAllocationPolicy.allocateHostForVm(vm, entry.getKey()));
+                entry.getValue()
+                        .forEach(vm -> vmAllocationPolicy.allocateHostForVm(vm, entry.getKey()));
             }
         }
     }
@@ -190,16 +192,18 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     // ============== Domain-specific observation helpers ==============
 
+    static final int JOB_OBS_FEATURES = 4; // cores, location, delaySensitivity, deadline
+
     int[] getJobsWaitingObservation() {
         final double targetTime = calculateTargetTime();
         List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
-        int[] jobsWaitingObs = new int[4 * jobsToSubmitList.size()];
+        int[] jobsWaitingObs = new int[JOB_OBS_FEATURES * jobsToSubmitList.size()];
         for (int i = 0; i < jobsToSubmitList.size(); i++) {
             CloudletWithLocation job = (CloudletWithLocation) jobsToSubmitList.get(i);
-            jobsWaitingObs[4 * i] = (int) job.getPesNumber();
-            jobsWaitingObs[4 * i + 1] = job.getLocation();
-            jobsWaitingObs[4 * i + 2] = job.getDelaySensitivity();
-            jobsWaitingObs[4 * i + 3] = job.getDeadline();
+            jobsWaitingObs[JOB_OBS_FEATURES * i] = (int) job.getPesNumber();
+            jobsWaitingObs[JOB_OBS_FEATURES * i + 1] = job.getLocation();
+            jobsWaitingObs[JOB_OBS_FEATURES * i + 2] = job.getDelaySensitivity();
+            jobsWaitingObs[JOB_OBS_FEATURES * i + 3] = job.getDeadline();
         }
         return jobsWaitingObs;
     }
@@ -215,16 +219,15 @@ public class CloudSimProxy extends CloudSimProxyBase {
     }
 
     long getQueuedJobsCount() {
-        return inputJobs.parallelStream()
-                .filter(c -> jobArrivalTimeMap.get(c.getId()) < clock())
+        return inputJobs.parallelStream().filter(c -> jobArrivalTimeMap.get(c.getId()) < clock())
                 .filter(c -> c.getStatus().equals(Cloudlet.Status.QUEUED)).count();
     }
 
     // ============== Datacenter accessors ==============
 
     public Datacenter getDatacenterById(final int id) {
-        return cloudSimPlus.getCis().getDatacenterList().stream()
-                .filter(dc -> dc.getId() == id).findFirst().orElse(Datacenter.NULL);
+        return cloudSimPlus.getCis().getDatacenterList().stream().filter(dc -> dc.getId() == id)
+                .findFirst().orElse(Datacenter.NULL);
     }
 
     public Datacenter getDatacenterByIdx(final int idx) {
@@ -244,12 +247,10 @@ public class CloudSimProxy extends CloudSimProxyBase {
                     for (CloudletExecution ce : vm.getCloudletScheduler().getCloudletExecList()) {
                         LOGGER.info(
                                 "Cloudlet {}, {} / {} executed. Total length: {}. Host {} in DC {}. HostPes: {}, HostMips: {}",
-                                ce.getCloudlet().getId(),
-                                ce.getCloudlet().getFinishedLengthSoFar(),
-                                ce.getCloudlet().getLength(),
-                                ce.getCloudlet().getTotalLength(),
-                                host.getId(), host.getDatacenter().getId(),
-                                host.getPesNumber(), host.getMips());
+                                ce.getCloudlet().getId(), ce.getCloudlet().getFinishedLengthSoFar(),
+                                ce.getCloudlet().getLength(), ce.getCloudlet().getTotalLength(),
+                                host.getId(), host.getDatacenter().getId(), host.getPesNumber(),
+                                host.getMips());
                     }
                 }
             }

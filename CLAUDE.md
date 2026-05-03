@@ -71,10 +71,19 @@ make check-gateway-deps domain=<domain>   # Show CloudSim Plus version
 |-------------|-----------------|
 | Python code (gym_cloudsimplus, utils, etc.) | **No rebuild** — just `make run` |
 | Java code (cloudsimplus-gateway) | `make build-gateway domain=<domain>` then `make run` |
+| Proto file (`common/proto/unified/cloudsimplus.proto`) | `make generate-proto` → `make build-gateway domain=<domain>` → `make run` |
 | Config (config.yml) | **No rebuild** — just `make run` |
 | Java log level/destination | **No rebuild** — env vars passed at runtime |
 
 **Important**: Python code is volume-mounted and reinstalled at container startup via `pip install -e`. No Docker rebuild needed for Python changes.
+
+**Proto change workflow** — only needed when editing `common/proto/unified/cloudsimplus.proto`:
+```bash
+make generate-proto                          # regenerates Python pb2 classes
+make build-gateway domain=vm-management      # rebuilds Java (Gradle copies proto automatically)
+make build-gateway domain=job-placement
+make run domain=<domain>
+```
 
 ## Build System
 
@@ -82,6 +91,7 @@ Gradle wrapper lives in `common/cloudsimplus-gateway-shared/` — **single sourc
 
 **Proto file consolidation:**
 - **Canonical proto:** `common/proto/unified/cloudsimplus.proto` — edit here to update the proto
+- Generated Python classes live in `common/rl-manager/gym_cloudsimplus/gym_cloudsimplus/protos/unified/` — regenerate with `make generate-proto`
 - Both domains need local copies in `domain/*/cloudsimplus-gateway/src/main/proto/` for the gradle protobuf plugin
 - On every `make build-gateway`, the Makefile copies the canonical proto to the target domain's `src/main/proto/` directory before building
 

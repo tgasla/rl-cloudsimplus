@@ -23,7 +23,7 @@ build-gateway:
 	@mkdir -p common/cloudsimplus-gateway-shared/src/main/proto
 	@cp -p $(CANONICAL_PROTO) common/cloudsimplus-gateway-shared/src/main/proto/
 	@cp -p $(CANONICAL_BUILD) $(DOMAIN_DIR)/cloudsimplus-gateway/build.gradle
-	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):build $(ARGS)
+	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):build -PuseSnapshot=true $(ARGS)
 
 build-manager:
 	docker build -t manager:$(MANAGER_VERSION) -t gateway:$(GATEWAY_VERSION) \
@@ -58,6 +58,15 @@ clean-all: stop
 	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):clean 2>/dev/null || true
 	rm -rf $(DOMAIN_DIR)/rl-manager/logs/*
 
+generate-proto:
+	python3 -m grpc_tools.protoc \
+		-I common/proto/unified \
+		--python_out=common/rl-manager/gym_cloudsimplus/gym_cloudsimplus/protos/unified/ \
+		--grpc_python_out=common/rl-manager/gym_cloudsimplus/gym_cloudsimplus/protos/unified/ \
+		common/proto/unified/cloudsimplus.proto
+	sed -i 's/^import cloudsimplus_pb2/from . import cloudsimplus_pb2/' \
+		common/rl-manager/gym_cloudsimplus/gym_cloudsimplus/protos/unified/cloudsimplus_pb2_grpc.py
+
 get-gradle:
 	cd common/cloudsimplus-gateway-shared && ./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
 
@@ -86,4 +95,4 @@ check-gateway-jar:
 		echo "No JAR found - run 'make build-gateway' first"; \
 	fi
 
-.PHONY: build build-gateway build-tensorboard build-manager run-tensorboard run clean-gateway wipe-logs stop get-gradle clear-gradle check-gateway-deps check-gateway-jar
+.PHONY: build build-gateway build-tensorboard build-manager run-tensorboard run clean-gateway wipe-logs stop generate-proto get-gradle clear-gradle check-gateway-deps check-gateway-jar

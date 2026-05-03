@@ -13,7 +13,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from gymnasium import spaces
 
-from ..cloud_sim_grpc_client import CloudSimGrpcClient, _detect_rl_problem
+from ..cloud_sim_grpc_client import CloudSimGrpcClient
 
 
 class CloudSimBaseEnv(gym.Env, ABC):
@@ -59,11 +59,6 @@ class CloudSimBaseEnv(gym.Env, ABC):
             gym.logger.warn(
                 f"Invalid render mode '{render_mode}'. Allowed: {self.metadata['render_modes']}"
             )
-
-    @abstractmethod
-    def _detect_rl_problem(self) -> str:
-        """Detect RL problem from params. Subclasses can override."""
-        return _detect_rl_problem(self.params)
 
     @abstractmethod
     def _get_observation(self, raw_obs: dict) -> dict:
@@ -146,3 +141,11 @@ class CloudSimBaseEnv(gym.Env, ABC):
     def ping(self) -> bool:
         """Health check against the gRPC server."""
         return self._client.ping()
+
+    def _pad_observation(self, obs: np.ndarray, target_dim: int) -> np.ndarray:
+        """Pad observation array to target dimension."""
+        if len(obs) >= target_dim:
+            return np.array(obs[:target_dim], dtype=np.int16)
+        padded = np.zeros(target_dim, dtype=np.int16)
+        padded[: len(obs)] = obs
+        return padded

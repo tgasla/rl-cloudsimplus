@@ -1,5 +1,5 @@
 # train_model_dir: applicable only if mode == [transfer|test]
-# globals.java_log_destination: [none, stdout, file, stdout-file] - if file, logs are written to a file, if stdout-file, logs are written to both stdout and a file
+# globals.java_log_destination: comma-separated list of [stdout, file] (e.g. "stdout", "file", "stdout,file"). Order does not matter. Use "none" to suppress all logging.
 # globals.junit_output_show: [true, false] - if true, junit test results are printed to stdout
 # globals.java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
 # seed: random or any integer
@@ -7,8 +7,8 @@
 # experiment_dir: parent directory for a set of experiments
 # experiment_name: name of the experiment
 # mode: [train, test, transfer]
-# vm_allocation_policy: [rl, rule-based]
-# algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
+# vm_allocation_policy: [rl, bestfit]
+# algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == bestfit]
 
 # java_log_level and java_log_destination: changes take effect at runtime — no rebuild needed.
 # junit_output_show: requires make build-gateway to rebuild (Java test output).
@@ -19,6 +19,7 @@ globals:
     java_log_destination: none
     junit_output_show: false
     num_cpu: 16
+    save_experiment: true
 
 common:
     seed: 1234
@@ -32,7 +33,7 @@ common:
     clear_created_lists: true
     paying_for_the_full_hour: false
     small_vm_hourly_cost: 0.086
-    save_experiment: true
+    print_stats: false
     base_log_dir: logs
     max_hosts: 32
     max_job_pes: 8

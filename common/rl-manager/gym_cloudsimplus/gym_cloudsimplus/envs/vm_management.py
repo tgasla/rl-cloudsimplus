@@ -4,10 +4,9 @@ Inherits from CloudSimBaseEnv which provides all shared gRPC wiring.
 Concrete domain-specific implementation for VM management problem:
 - Tree-array infrastructure observation
 - [action_type, host_id, vm_id, vm_type] action space
-- VM lifecycle control (create S/M/L VMs, destroy VMs, no-op)
+- VM lifecycle control (create VMs of any configured type, destroy VMs, no-op)
 """
 
-import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
@@ -19,14 +18,14 @@ class VmManagementEnv(CloudSimBaseEnv):
     VM management Gymnasium environment bridging Stable Baselines3 to
     CloudSim Plus via gRPC.
 
-    The agent controls VM lifecycle: create small/medium/large VMs on hosts,
-    destroy existing VMs. Observation is a tree-array of the infrastructure
-    (DC → hosts → VMs → jobs).
+    The agent controls VM lifecycle: create VMs (of any type defined in vm_types)
+    on hosts, destroy existing VMs. Observation is a tree-array of the
+    infrastructure (DC → hosts → VMs → jobs).
 
-    Action space: MultiDiscrete([3, max_hosts, max_vms, 3])
+    Action space: MultiDiscrete([3, max_hosts, max_vms, vm_types_count])
         [action_type, host_id, vm_id, vm_type]
         action_type: 0=noop, 1=create, 2=destroy
-        vm_type: 0=small, 1=medium, 2=large
+        vm_type: index into vm_types list from config
 
     Inherits from CloudSimBaseEnv:
         - gRPC client (_client)
@@ -34,8 +33,6 @@ class VmManagementEnv(CloudSimBaseEnv):
         - reset(), step(), close(), ping()
         - _pad_observation()
     """
-
-    VM_CORES = [2, 4, 8]  # small, medium, large
 
     def __init__(
         self,
@@ -51,12 +48,14 @@ class VmManagementEnv(CloudSimBaseEnv):
         # Domain-specific RL problem type
         self._rl_problem = "vm_management"
 
-        # ── Domain-specific fields ─────────────────────────────────────────────
+        # ── Domain-specific fields derived from topology config ────────────────
         self.vm_allocation_policy = params["vm_allocation_policy"]
-        self.host_count = params["host_count"]
-        self.host_pes = params["host_pes"]
-        self.small_vm_pes = params["small_vm_pes"]
-        self.large_vm_multiplier = params["large_vm_multiplier"]
+        self.vm_cores = [int(vt["pes"]) for vt in params["vm_types"]]
+        self.host_count = sum(
+            dc["amount"] * sum(h["amount"] for h in dc["hosts"])
+            for dc in params["datacenters"]
+        )
+        self.host_pes = params["datacenters"][0]["hosts"][0]["pes"]
 
         self.reward_job_wait_coef = params["reward_job_wait_coef"]
         self.reward_running_vm_cores_coef = params["reward_running_vm_cores_coef"]
@@ -64,10 +63,10 @@ class VmManagementEnv(CloudSimBaseEnv):
 
         self.max_hosts = params["max_hosts"]
         self.action_types_count = 3  # noop, create vm, destroy vm
-        self.vm_types_count = 3  # small, medium, large
+        self.vm_types_count = len(self.vm_cores)
         self.min_job_pes = 1
-        self.large_vm_pes = self.small_vm_pes * self.large_vm_multiplier
-        self.max_vms = self.max_hosts * int(self.host_pes) // int(self.small_vm_pes)
+        self.large_vm_pes = self.vm_cores[-1]
+        self.max_vms = self.max_hosts * int(self.host_pes) // int(self.vm_cores[0])
         self.max_jobs = self.max_hosts * int(self.host_pes) // self.min_job_pes
 
         # VM tracking for action masks
@@ -111,12 +110,6 @@ class VmManagementEnv(CloudSimBaseEnv):
             }
         )
 
-        if render_mode is not None and render_mode not in self.metadata["render_modes"]:
-            gym.logger.warn(
-                "Invalid render mode. Allowed: ['human', 'ansi']"
-            )
-        self.render_mode = render_mode
-
         # ── Create simulation (CloudSimBaseEnv has _client and _sim_id ready) ─
         import json
         self._sim_id = self._client.create_simulation(
@@ -125,65 +118,38 @@ class VmManagementEnv(CloudSimBaseEnv):
 
     # ── CloudSimBaseEnv abstract methods ───────────────────────────────────────
 
-    def _detect_rl_problem(self) -> str:
-        return "vm_management"
-
     def action_masks(self) -> list[bool]:
         """Action mask for VM management action space."""
         if self.host_cores_utilized is None:
-            return [True] * (3 + self.max_hosts + self.max_vms + 3)
+            return [True] * (self.action_types_count + self.max_hosts + self.max_vms + self.vm_types_count)
 
-        host_cores_utilized_sum = np.sum(self.host_cores_utilized)
-        current_max_vms = self.host_count * int(self.host_pes) // int(self.small_vm_pes)
+        free_cores = self.host_pes - self.host_cores_utilized[:self.host_count]
+        host_can_fit_any = free_cores >= self.vm_cores[0]
 
-        if host_cores_utilized_sum == 0:  # no VMs running
-            action_type_mask = [True, True, False]
-            host_mask = [True] * self.host_count + [False] * (self.max_hosts - self.host_count)
+        can_create = bool(np.any(host_can_fit_any))
+        can_destroy = self.vms_running > 0
+        action_type_mask = [True, can_create, can_destroy]
+
+        if can_create:
+            host_mask = list(host_can_fit_any.astype(bool)) + [False] * (self.max_hosts - self.host_count)
+            vm_type_mask = [bool(np.any(free_cores >= cores)) for cores in self.vm_cores]
+        else:
+            host_mask = [True] + [False] * (self.max_hosts - 1)
+            vm_type_mask = [True] + [False] * (self.vm_types_count - 1)
+
+        if can_destroy:
+            vm_mask = [True] * self.vms_running + [False] * (self.max_vms - self.vms_running)
+        else:
             vm_mask = [True] + [False] * (self.max_vms - 1)
-            vm_type_mask = [True, True, False]
-        elif self.vms_running == current_max_vms:  # all VMs running
-            action_type_mask = [True, False, True]
-            host_mask = [True] + [False] * (self.max_hosts - 1)
-            vm_mask = [True] * current_max_vms + [False] * (self.max_vms - current_max_vms)
-            vm_type_mask = [True, False, False]
-        elif all(self.host_pes - num < self.VM_CORES[0] for num in self.host_cores_utilized):
-            action_type_mask = [True, False, True]
-            host_mask = [True] + [False] * (self.max_hosts - 1)
-            vm_mask = [True] * self.vms_running + [False] * (self.max_vms - self.vms_running)
-            vm_type_mask = [True, False, False]
-        elif all(self.host_pes - num < self.VM_CORES[1] for num in self.host_cores_utilized):
-            action_type_mask = [True, True, True]
-            host_mask = [True] * self.host_count + [False] * (self.max_hosts - self.host_count)
-            vm_mask = [True] * self.vms_running + [False] * (self.max_vms - self.vms_running)
-            vm_type_mask = [True, False, False]
-        elif all(self.host_pes - num < self.VM_CORES[2] for num in self.host_cores_utilized):
-            action_type_mask = [True, True, True]
-            host_mask = [True] * self.host_count + [False] * (self.max_hosts - self.host_count)
-            vm_mask = [True] * self.vms_running + [False] * (self.max_vms - self.vms_running)
-            vm_type_mask = [True, True, False]
-        else:  # common case
-            full_host_indices = [
-                i for i, num in enumerate(self.host_cores_utilized)
-                if self.host_pes - num < self.VM_CORES[0]
-            ]
-            action_type_mask = [True, True, True]
-            host_mask = [False if i in full_host_indices else True for i in range(self.host_count)]
-            host_mask += [False] * (self.max_hosts - self.host_count)
-            vm_mask = [True] * self.vms_running + [False] * (self.max_vms - self.vms_running)
-            vm_type_mask = [True, True, True]
 
         masks = [action_type_mask, host_mask, vm_mask, vm_type_mask]
         return [item for sublist in masks for item in sublist]
 
     def _get_observation(self, raw_obs: dict) -> dict:
         """Convert raw gRPC observation to VM management gymnasium obs dict."""
-        infr_obs = np.array(raw_obs["infr_state"], dtype=np.int16)
+        infr_obs = np.array(raw_obs.get("infrastructure_observation", []), dtype=np.int16)
         infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
-        # Pad job_cores_waiting_state to (1,) so VecEnv stacking produces (n_envs, 1)
-        raw_jcw = raw_obs["job_cores_waiting_state"]
-        jcw = np.array(raw_jcw, dtype=np.int16)
-        if jcw.shape == ():  # scalar 0D
-            jcw = jcw.reshape(1)
+        jcw = np.array(raw_obs.get("secondary_observation", [0]), dtype=np.int16).reshape(1)
         return {
             "infr_state": infr_obs,
             "job_cores_waiting_state": jcw,
@@ -220,7 +186,7 @@ class VmManagementEnv(CloudSimBaseEnv):
             if action_list[0] == 1:  # create VM
                 host_id = action_list[1]
                 vm_type = action_list[3]
-                self.host_cores_utilized[host_id] += self.VM_CORES[vm_type]
+                self.host_cores_utilized[host_id] += self.vm_cores[vm_type]
                 self.vms_running += 1
             elif action_list[0] == 2:  # destroy VM
                 host_id = info["host_affected"]
@@ -228,10 +194,3 @@ class VmManagementEnv(CloudSimBaseEnv):
                 self.vms_running -= 1
         return obs, reward, terminated, truncated, info
 
-    def _pad_observation(self, obs, target_dim: int) -> np.ndarray:
-        """Pad observation array to target dimension."""
-        if len(obs) >= target_dim:
-            return np.array(obs[:target_dim], dtype=np.int16)
-        padded = np.zeros(target_dim, dtype=np.int16)
-        padded[: len(obs)] = obs
-        return padded

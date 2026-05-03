@@ -8,12 +8,11 @@ import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 import java.util.List;
 
 /**
- * VM Management simulation using RL-driven VM lifecycle management.
- * Extends WrappedSimulationBase with tree-array infrastructure observation
- * and VM create/destroy action space.
+ * VM Management simulation using RL-driven VM lifecycle management. Extends WrappedSimulationBase
+ * with tree-array infrastructure observation and VM create/destroy action space.
  */
-public class WrappedSimulation
-        extends WrappedSimulationBase<Observation, SimulationStepInfo, SimulationStepResult, SimulationResetResult>
+public class WrappedSimulation extends
+        WrappedSimulationBase<Observation, SimulationStepInfo, SimulationStepResult, SimulationResetResult>
         implements IWrappedSimulation {
 
     // Concrete settings reference for domain-specific access
@@ -39,12 +38,12 @@ public class WrappedSimulation
     protected int[] extractSecondaryObservation() {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
         final int jobCoresWaiting = proxy.calculateJobCoresWaiting();
-        return new int[] { Math.min(jobCoresWaiting, simSettings.getMaxVmPes()) };
+        return new int[] {Math.min(jobCoresWaiting, simSettings.getMaxVmPes())};
     }
 
     @Override
     protected Observation buildObservation(int[] infraObs, int[] secondaryObs) {
-        return new Observation(infraObs, secondaryObs[0], new int[0]);
+        return new Observation(infraObs, secondaryObs);
     }
 
     @Override
@@ -53,21 +52,21 @@ public class WrappedSimulation
     }
 
     @Override
-    protected SimulationStepInfo buildStepInfo(int[] actionResult,
-            boolean terminated, boolean truncated) {
+    protected SimulationStepInfo buildStepInfo(int[] actionResult, boolean terminated,
+            boolean truncated) {
         final boolean isValid = actionResult[0] != -1;
         final double[] rewards = calculateReward(isValid);
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
-        final int[] treeArray = simSettings.isSendObservationTreeArray()
-                ? getInfrastructureObservation()
-                : new int[0];
-        return new SimulationStepInfo(rewards,
-                proxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(),
-                treeArray, actionResult[0], actionResult[1]);
+        final int[] treeArray =
+                simSettings.isSendObservationTreeArray() ? getInfrastructureObservation()
+                        : new int[0];
+        return new SimulationStepInfo(rewards, proxy.getFinishedJobsWaitTimeLastTimestep(),
+                getUnutilizedVmCoreRatio(), treeArray, actionResult[0], actionResult[1]);
     }
 
     @Override
-    protected SimulationResetResult buildResetResult(Observation observation, SimulationStepInfo info) {
+    protected SimulationResetResult buildResetResult(Observation observation,
+            SimulationStepInfo info) {
         return new SimulationResetResult(observation, info);
     }
 
@@ -88,22 +87,17 @@ public class WrappedSimulation
     }
 
     private Long getUnutilizedVmCores(List<Vm> vmList) {
-        return vmList.parallelStream()
-                .map(Vm::getExpectedFreePesNumber)
-                .reduce(0L, Long::sum);
+        return vmList.parallelStream().map(Vm::getExpectedFreePesNumber).reduce(0L, Long::sum);
     }
 
     private Long getRunningVmCores(List<Vm> vmList) {
-        return vmList.parallelStream()
-                .map(Vm::getPesNumber)
-                .reduce(0L, Long::sum);
+        return vmList.parallelStream().map(Vm::getPesNumber).reduce(0L, Long::sum);
     }
 
     int[] executeCustomAction(final int[] action) {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
         if (action == null || action.length < 4) {
-            String msg = "Invalid action: " +
-                    (action == null ? "null" : "length=" + action.length);
+            String msg = "Invalid action: " + (action == null ? "null" : "length=" + action.length);
             LOGGER.warn(msg);
             return new int[] {-1, 0};
         }
@@ -204,10 +198,11 @@ public class WrappedSimulation
         final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
 
         double totalReward = 0;
-        if (simSettings.getVmAllocationPolicy().equals("rule-based")) {
+        if (simSettings.getVmAllocationPolicy().equals("bestfit")) {
             totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
         } else if (simSettings.getVmAllocationPolicy().equals("rl")) {
-            totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
+            totalReward =
+                    jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
         }
 
         LOGGER.info("totalReward: " + totalReward);
@@ -231,8 +226,7 @@ public class WrappedSimulation
     private double getWaitingJobsRatio() {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
         final long arrivedJobsCount = proxy.getArrivedJobsCount();
-        return arrivedJobsCount > 0
-                ? proxy.getNotYetRunningJobsCount() / (double) arrivedJobsCount
+        return arrivedJobsCount > 0 ? proxy.getNotYetRunningJobsCount() / (double) arrivedJobsCount
                 : 0.0;
     }
 
@@ -244,10 +238,7 @@ public class WrappedSimulation
     private Long getRunningCloudletsCount() {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
         List<Vm> vmList = proxy.getBroker().getVmExecList();
-        return vmList.parallelStream()
-                .map(Vm::getCloudletScheduler)
-                .map(CloudletScheduler::getCloudletExecList)
-                .mapToLong(List::size)
-                .sum();
+        return vmList.parallelStream().map(Vm::getCloudletScheduler)
+                .map(CloudletScheduler::getCloudletExecList).mapToLong(List::size).sum();
     }
 }

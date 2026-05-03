@@ -19,6 +19,7 @@ public class SimulationSettings implements ISimulationSettings {
     double vmShutdownDelay;
     boolean payingForTheFullHour;
     boolean clearCreatedLists;
+    boolean printStats;
     double rewardJobWaitCoef;
     double rewardRunningVmCoresCoef;
     double rewardUnutilizedVmCoresCoef;
@@ -47,14 +48,18 @@ public class SimulationSettings implements ISimulationSettings {
         vmShutdownDelay = ISimulationSettings.getDouble(params, "vm_shutdown_delay");
         payingForTheFullHour = ISimulationSettings.getBool(params, "paying_for_the_full_hour");
         clearCreatedLists = ISimulationSettings.getBool(params, "clear_created_lists");
+        printStats = ISimulationSettings.getBool(params, "print_stats");
         rewardJobWaitCoef = ISimulationSettings.getDouble(params, "reward_job_wait_coef");
-        rewardRunningVmCoresCoef = ISimulationSettings.getDouble(params, "reward_running_vm_cores_coef");
-        rewardUnutilizedVmCoresCoef = ISimulationSettings.getDouble(params, "reward_unutilized_vm_cores_coef");
+        rewardRunningVmCoresCoef =
+                ISimulationSettings.getDouble(params, "reward_running_vm_cores_coef");
+        rewardUnutilizedVmCoresCoef =
+                ISimulationSettings.getDouble(params, "reward_unutilized_vm_cores_coef");
         rewardInvalidCoef = ISimulationSettings.getDouble(params, "reward_invalid_coef");
         maxEpisodeLength = ISimulationSettings.getInt(params, "max_episode_length");
         vmAllocationPolicy = ISimulationSettings.getStr(params, "vm_allocation_policy");
         algorithm = ISimulationSettings.getStr(params, "algorithm");
-        sendObservationTreeArray = ISimulationSettings.getBool(params, "send_observation_tree_array");
+        sendObservationTreeArray =
+                ISimulationSettings.getBool(params, "send_observation_tree_array");
         datacenters = (List<Map<String, Object>>) params.get("datacenters");
         vmTypes = (List<Map<String, Object>>) params.get("vm_types");
         hostsCount = computeHostsCount();

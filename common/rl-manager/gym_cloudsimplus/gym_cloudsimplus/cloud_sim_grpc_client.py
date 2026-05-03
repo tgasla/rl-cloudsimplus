@@ -78,26 +78,19 @@ class CloudSimGrpcClient:
             "job_wait_time": list(info.job_wait_time) if hasattr(info, 'job_wait_time') else [],
         }
 
+    def _obs_to_dict(self, obs) -> dict:
+        """Convert proto Observation to unified dict (same structure for all domains)."""
+        return {
+            "infrastructure_observation": list(obs.infrastructure_observation),
+            "secondary_observation": list(obs.secondary_observation),
+        }
+
     def reset(self, sim_id: str, seed: int = None, rl_problem: str = None) -> dict:
         """Reset simulation, returns observation dict."""
         request = pb2.ResetRequest(sim_id=sim_id, seed=seed if seed else 0)
         response = self.stub.reset(request)
-        obs = response.observation
-
-        if rl_problem == "vm_management":
-            return {
-                "observation": {
-                    "infr_state": list(obs.infrastructure_observation) if hasattr(obs, 'infrastructure_observation') else [],
-                    "job_cores_waiting_state": obs.job_cores_waiting_observation if hasattr(obs, 'job_cores_waiting_observation') else 0,
-                },
-                "info": self._step_info_to_dict(response.info, rl_problem),
-            }
-        # job_placement: use flat_infrastructure_observation (field 3) and jobs_waiting_observation (field 4)
         return {
-            "observation": {
-                "flat_infrastructure_state": list(obs.flat_infrastructure_observation) if hasattr(obs, 'flat_infrastructure_observation') else [],
-                "jobs_waiting_state": list(obs.jobs_waiting_observation) if hasattr(obs, 'jobs_waiting_observation') else [],
-            },
+            "observation": self._obs_to_dict(response.observation),
             "info": self._step_info_to_dict(response.info, rl_problem),
         }
 
@@ -105,28 +98,11 @@ class CloudSimGrpcClient:
         """Execute one step."""
         request = pb2.StepRequest(sim_id=sim_id, action=action)
         response = self.stub.step(request)
-        obs = response.observation
-
-        if rl_problem == "vm_management":
-            return {
-                "observation": {
-                    "infr_state": list(obs.infrastructure_observation) if hasattr(obs, 'infrastructure_observation') else [],
-                    "job_cores_waiting_state": obs.job_cores_waiting_observation if hasattr(obs, 'job_cores_waiting_observation') else 0,
-                },
-                "reward": response.reward if hasattr(response, 'reward') else 0.0,
-                "terminated": response.terminated if hasattr(response, 'terminated') else False,
-                "truncated": response.truncated if hasattr(response, 'truncated') else False,
-                "info": self._step_info_to_dict(response.info, rl_problem),
-            }
-        # job_placement
         return {
-            "observation": {
-                "flat_infrastructure_state": list(obs.flat_infrastructure_observation) if hasattr(obs, 'flat_infrastructure_observation') else [],
-                "jobs_waiting_state": list(obs.jobs_waiting_observation) if hasattr(obs, 'jobs_waiting_observation') else [],
-            },
-            "reward": response.reward if hasattr(response, 'reward') else 0.0,
-            "terminated": response.terminated if hasattr(response, 'terminated') else False,
-            "truncated": response.truncated if hasattr(response, 'truncated') else False,
+            "observation": self._obs_to_dict(response.observation),
+            "reward": response.reward,
+            "terminated": response.terminated,
+            "truncated": response.truncated,
             "info": self._step_info_to_dict(response.info, rl_problem),
         }
 
@@ -138,33 +114,16 @@ class CloudSimGrpcClient:
         ]
         batch_request = pb2.BatchStepRequest(items=items)
         response = self.stub.batchStep(batch_request)
-
-        results = []
-        for r in response.results:
-            obs = r.observation
-            if rl_problem == "vm_management":
-                results.append({
-                    "observation": {
-                        "infr_state": list(obs.infrastructure_observation) if hasattr(obs, 'infrastructure_observation') else [],
-                        "job_cores_waiting_state": obs.job_cores_waiting_observation if hasattr(obs, 'job_cores_waiting_observation') else 0,
-                    },
-                    "reward": r.reward if hasattr(r, 'reward') else 0.0,
-                    "terminated": r.terminated if hasattr(r, 'terminated') else False,
-                    "truncated": r.truncated if hasattr(r, 'truncated') else False,
-                    "info": self._step_info_to_dict(r.info, rl_problem),
-                })
-            else:
-                results.append({
-                    "observation": {
-                        "flat_infrastructure_state": list(obs.flat_infrastructure_observation) if hasattr(obs, 'flat_infrastructure_observation') else [],
-                        "jobs_waiting_state": list(obs.jobs_waiting_observation) if hasattr(obs, 'jobs_waiting_observation') else [],
-                    },
-                    "reward": r.reward if hasattr(r, 'reward') else 0.0,
-                    "terminated": r.terminated if hasattr(r, 'terminated') else False,
-                    "truncated": r.truncated if hasattr(r, 'truncated') else False,
-                    "info": self._step_info_to_dict(r.info, rl_problem),
-                })
-        return results
+        return [
+            {
+                "observation": self._obs_to_dict(r.observation),
+                "reward": r.reward,
+                "terminated": r.terminated,
+                "truncated": r.truncated,
+                "info": self._step_info_to_dict(r.info, rl_problem),
+            }
+            for r in response.results
+        ]
 
     def close(self, sim_id: str):
         """Close simulation."""

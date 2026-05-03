@@ -1,5 +1,5 @@
 # train_model_dir: applicable only if mode == [transfer|test]
-# globals.java_log_destination: [none, stdout, file, stdout-file] - if file, logs are written to a file, if stdout-file, logs are written to both stdout and a file
+# globals.java_log_destination: comma-separated list of [stdout, file] (e.g. "stdout", "file", "stdout,file"). Order does not matter. Use "none" to suppress all logging.
 # globals.junit_output_show: [true, false] - if true, junit test results are printed to stdout
 # globals.java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
 # seed: random or any integer
@@ -7,10 +7,10 @@
 # experiment_dir: parent directory for a set of experiments
 # experiment_name: name of the experiment
 # mode: [train, test, transfer]
-# vm_allocation_policy: [rl, rule-based]
+# vm_allocation_policy: [rl, bestfit]
 # cloudlet_to_dc_assignment_policy: [earliest-shortest-to-most-free-dc, random-to-most-free-dc, earliest-most-critical-to-nearest-dc, rl]
 # cloudlet_to_vm_assignment_policy: [most-free-cores]
-# algorithm: [any stable-baselines3 or sb3-contrib algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == rule-based]
+# algorithm: [any stable-baselines3 or sb3-contrib algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == bestfit]
 
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
@@ -21,6 +21,7 @@ globals:
     java_log_destination: none
     junit_output_show: false
     num_cpu: 16
+    save_experiment: true
 
 common:
   timestep_interval: 1.0
@@ -31,9 +32,9 @@ common:
   vm_startup_delay: 0.0
   vm_shutdown_delay: 0.0
   paying_for_the_full_hour: false
-  save_experiment: true
   base_log_dir: logs
   batch_size: 64
+  print_stats: false
   vm_allocation_policy: bestfit
   # cloudlet_to_dc_assignment_policy:  earliest-most-critical-to-nearest-dc
   cloudlet_to_dc_assignment_policy: rl

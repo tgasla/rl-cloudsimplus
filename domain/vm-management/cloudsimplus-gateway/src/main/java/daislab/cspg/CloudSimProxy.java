@@ -11,6 +11,7 @@ import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
 import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
+import org.cloudsimplus.allocationpolicies.VmAllocationPolicyBestFit;
 import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
@@ -35,6 +36,11 @@ public class CloudSimProxy extends CloudSimProxyBase {
     // ============== Abstract method implementations ==============
 
     @Override
+    protected void printStats() {
+        printCloudletStatus();
+    }
+
+    @Override
     protected void setupInfrastructure() {
         simSettings = (SimulationSettings) settings;
         vmCost = new VmCost(simSettings);
@@ -56,8 +62,8 @@ public class CloudSimProxy extends CloudSimProxyBase {
         LOGGER.info("[{} - {}]: VMs running: {}", now, targetTime, broker.getVmExecList().size());
         for (Cloudlet cloudlet : cloudletList) {
             if (!isAnyVmSuitableForCloudlet(cloudlet)) {
-                LOGGER.debug("[{} - {}]: Could not submit job {}, no suitable vm found",
-                        now, targetTime, cloudlet.getId());
+                LOGGER.debug("[{} - {}]: Could not submit job {}, no suitable vm found", now,
+                        targetTime, cloudlet.getId());
                 continue;
             }
             cloudlet.setSubmissionDelay(Math.max(cloudlet.getSubmissionDelay() - now, 0));
@@ -81,7 +87,7 @@ public class CloudSimProxy extends CloudSimProxyBase {
     private VmAllocationPolicy defineVmAllocationPolicy() {
         return switch (simSettings.getVmAllocationPolicy()) {
             case "rl", "fromfile" -> new VmAllocationPolicyCustom();
-            case "rule-based" -> defineRuleBasedVmAllocationPolicy();
+            case "bestfit" -> new VmAllocationPolicyBestFit();
             default -> throw new IllegalArgumentException(
                     "Unknown VM allocation policy: " + simSettings.getVmAllocationPolicy());
         };
@@ -101,10 +107,11 @@ public class CloudSimProxy extends CloudSimProxyBase {
                 int pes = ((Number) hostMap.get("pes")).intValue();
                 long peMips = ((Number) hostMap.get("pe_mips")).longValue();
                 for (int i = 0; i < amount; i++) {
-                    hostList.add(new HostWithoutCreatedList(ram, bw, storage, createPeList(pes, peMips))
-                            .setRamProvisioner(new ResourceProvisionerSimple())
-                            .setBwProvisioner(new ResourceProvisionerSimple())
-                            .setVmScheduler(new VmSchedulerTimeShared()));
+                    hostList.add(
+                            new HostWithoutCreatedList(ram, bw, storage, createPeList(pes, peMips))
+                                    .setRamProvisioner(new ResourceProvisionerSimple())
+                                    .setBwProvisioner(new ResourceProvisionerSimple())
+                                    .setVmScheduler(new VmSchedulerTimeShared()));
                 }
             }
         }
@@ -135,18 +142,19 @@ public class CloudSimProxy extends CloudSimProxyBase {
         return vm;
     }
 
-    // ============== Rule-based actions ==============
+    // ============== Rule Based actions ==============
 
     public boolean executeRuleBasedAction() {
-        if (simSettings.getAlgorithm().equals("minimize-queue")) {
-            executeMinimizeQueueAction();
-        } else if (simSettings.getAlgorithm().equals("minimize-allocated")) {
-            executeMinimizeAllocatedAction();
-        } else if (simSettings.getAlgorithm().equals("minimize-unutilized")) {
-            executeMinimizeUnutilizedAction();
+        switch (simSettings.getAlgorithm()) {
+            case "minimize-queue" -> executeMinimizeQueueAction();
+            case "minimize-allocated" -> executeMinimizeAllocatedAction();
+            case "minimize-unutilized" -> executeMinimizeUnutilizedAction();
+            default -> throw new IllegalArgumentException(
+                    "Unknown algorithm: " + simSettings.getAlgorithm());
         }
         return true;
     }
+
 
     private void executeMinimizeQueueAction() {
         long maxCoresNeeded = calculateMaxJobCoresNeeded();
@@ -162,34 +170,35 @@ public class CloudSimProxy extends CloudSimProxyBase {
     private void executeMinimizeAllocatedAction() {
         int coresNeeded = calculateJobCoresWaiting();
         int numTypes = simSettings.getVmTypesCount();
-        final long smallVmCores = simSettings.getVmCoreCountByTypeIndex(0);
-        final long mediumVmCores = simSettings.getVmCoreCountByTypeIndex(1);
-        final long largeVmCores = simSettings.getVmCoreCountByTypeIndex(numTypes - 1);
-        if (coresNeeded >= largeVmCores && !isVmWithCoresRunning(largeVmCores)) {
-            broker.submitVmList(createSingleVm(calculateTargetTime(), largeVmCores));
-        } else if (coresNeeded >= mediumVmCores && isVmWithCoresRunning(largeVmCores)) {
-            destroyLargestIdleVm();
-        } else if (coresNeeded >= mediumVmCores && !isVmWithCoresRunning(mediumVmCores)) {
-            broker.submitVmList(createSingleVm(calculateTargetTime(), mediumVmCores));
-        } else if (coresNeeded >= smallVmCores && isVmWithCoresRunning(mediumVmCores)) {
-            destroyLargestIdleVm();
-        } else if (coresNeeded >= smallVmCores && !isVmWithCoresRunning(smallVmCores)) {
-            broker.submitVmList(createSingleVm(calculateTargetTime(), smallVmCores));
-        } else {
-            destroyLargestIdleVm();
+        // Descend from largest type: if coresNeeded < this type and it's running → downsize;
+        // if coresNeeded >= this type and it's not running → create it.
+        for (int i = numTypes - 1; i >= 0; i--) {
+            long typeCores = simSettings.getVmCoreCountByTypeIndex(i);
+            if (coresNeeded >= typeCores) {
+                if (!isVmWithCoresRunning(typeCores)) {
+                    broker.submitVmList(createSingleVm(calculateTargetTime(), typeCores));
+                } else {
+                    destroyLargestIdleVm();
+                }
+                return;
+            } else if (isVmWithCoresRunning(typeCores)) {
+                destroyLargestIdleVm();
+                return;
+            }
         }
+        destroyLargestIdleVm();
     }
 
     private void executeMinimizeUnutilizedAction() {
-        if (isJobWithCoresWaiting(2) && !isVmWithCoresRunning(2)) {
-            broker.submitVmList(createSingleVm(calculateTargetTime(), 2));
-        } else if (isJobWithCoresWaiting(4) && !isVmWithCoresRunning(4)) {
-            broker.submitVmList(createSingleVm(calculateTargetTime(), 4));
-        } else if (isJobWithCoresWaiting(8) && !isVmWithCoresRunning(8)) {
-            broker.submitVmList(createSingleVm(calculateTargetTime(), 8));
-        } else {
-            destroyLargestIdleVm();
+        int numTypes = simSettings.getVmTypesCount();
+        for (int i = 0; i < numTypes; i++) {
+            long typeCores = simSettings.getVmCoreCountByTypeIndex(i);
+            if (isJobWithCoresWaiting(typeCores) && !isVmWithCoresRunning(typeCores)) {
+                broker.submitVmList(createSingleVm(calculateTargetTime(), typeCores));
+                return;
+            }
         }
+        destroyLargestIdleVm();
     }
 
     private List<Vm> createSingleVm(final double targetTime, final long coresNeeded) {
@@ -205,16 +214,15 @@ public class CloudSimProxy extends CloudSimProxyBase {
             }
         }
 
-        LOGGER.info("[{} - {}]: {} VM cores needed, creating 1 type-{} VM",
-                startTime, targetTime, coresNeeded, typeIndex);
+        LOGGER.info("[{} - {}]: {} VM cores needed, creating 1 type-{} VM", startTime, targetTime,
+                coresNeeded, typeIndex);
         vmList.add(createVm(typeIndex));
         return vmList;
     }
 
     private void destroyLargestIdleVm() {
         List<Vm> idleVms = broker.getVmExecList().stream()
-                .filter(vm -> vm.getCloudletScheduler().isEmpty())
-                .collect(Collectors.toList());
+                .filter(vm -> vm.getCloudletScheduler().isEmpty()).collect(Collectors.toList());
         idleVms.stream().max(Comparator.comparingLong(Vm::getPesNumber)).ifPresent(largestVm -> {
             cloudSimPlus.send(datacenter, datacenter, 0, CloudSimTag.VM_DESTROY, largestVm);
             LOGGER.info("No jobs to submit, destroying the largest idle VM");
@@ -263,8 +271,8 @@ public class CloudSimProxy extends CloudSimProxyBase {
                         .collect(Collectors.toList());
         datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
         vmCost.removeVmFromList(vm);
-        LOGGER.info("{} Killing VM {} ({} PEs), cloudlets to reschedule: {}",
-                clock(), vm.getId(), vm.getPesNumber(), affectedCloudlets.size());
+        LOGGER.info("{} Killing VM {} ({} PEs), cloudlets to reschedule: {}", clock(), vm.getId(),
+                vm.getPesNumber(), affectedCloudlets.size());
         if (!affectedCloudlets.isEmpty()) {
             rescheduleCloudlets(affectedCloudlets);
         }
@@ -280,10 +288,8 @@ public class CloudSimProxy extends CloudSimProxyBase {
     }
 
     private List<Cloudlet> resetCloudlets(List<CloudletExecution> cloudlets) {
-        return cloudlets.parallelStream()
-                .map(CloudletExecution::getCloudlet)
-                .map(this::resetCloudlet)
-                .collect(Collectors.toList());
+        return cloudlets.parallelStream().map(CloudletExecution::getCloudlet)
+                .map(this::resetCloudlet).collect(Collectors.toList());
     }
 
     // ============== Domain-specific accessors ==============
@@ -303,8 +309,8 @@ public class CloudSimProxy extends CloudSimProxyBase {
     }
 
     private long getMaxFreeVmCores() {
-        return broker.getVmExecList().stream()
-                .mapToLong(Vm::getExpectedFreePesNumber).max().orElse(0);
+        return broker.getVmExecList().stream().mapToLong(Vm::getExpectedFreePesNumber).max()
+                .orElse(0);
     }
 
     public Datacenter getDatacenter() {

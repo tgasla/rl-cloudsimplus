@@ -186,9 +186,8 @@ public abstract class CloudSimGrpcServiceBase extends CloudSimServiceGrpc.CloudS
         return daislab.cspg.grpc.Observation.newBuilder()
                 .addAllInfrastructureObservation(
                         GrpcServiceDelegate.intArrayToList(obs.getInfrastructureObservation()))
-                .setJobCoresWaitingObservation(obs.getJobCoresWaitingObservation())
-                .addAllJobsWaitingObservation(
-                        GrpcServiceDelegate.intArrayToList(obs.getJobsWaitingObservation()))
+                .addAllSecondaryObservation(
+                        GrpcServiceDelegate.intArrayToList(obs.getSecondaryObservation()))
                 .build();
     }
 

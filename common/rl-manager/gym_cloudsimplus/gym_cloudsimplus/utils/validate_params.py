@@ -16,11 +16,9 @@ class ConfigurationValidatorError(ValueError):
 
 
 VM_MANAGEMENT_PARAMS = {
-    "host_count", "hosts_count", "host_pes", "host_pe_mips",
-    "host_ram", "host_storage", "host_bw",
-    "initial_s_vm_count", "initial_m_vm_count", "initial_l_vm_count",
-    "small_vm_pes", "small_vm_ram", "small_vm_storage", "small_vm_bw",
-    "small_vm_hourly_cost", "medium_vm_multiplier", "large_vm_multiplier",
+    "datacenters", "vm_types",
+    "max_hosts", "max_job_pes",
+    "small_vm_hourly_cost",
     "reward_job_wait_coef", "reward_running_vm_cores_coef",
     "reward_unutilized_vm_cores_coef", "reward_invalid_coef",
 }
@@ -37,13 +35,9 @@ JOB_PLACEMENT_PARAMS = {
 
 INCOMPATIBLE_PAIRS = [
     ("vm_management", "job_arrival_rate", "job_arrival_rate cannot be used with VM_MANAGEMENT"),
-    ("vm_management", "datacenters", "datacenters cannot be used with VM_MANAGEMENT"),
     ("vm_management", "max_datacenters", "max_datacenters cannot be used with VM_MANAGEMENT"),
     ("vm_management", "cloudlet_to_dc_assignment_policy", "cloudlet_to_dc_assignment_policy cannot be used with VM_MANAGEMENT"),
-    ("job_placement", "host_count", "host_count cannot be used with JOB_PLACEMENT"),
-    ("job_placement", "hosts_count", "hosts_count cannot be used with JOB_PLACEMENT"),
-    ("job_placement", "small_vm_pes", "small_vm_pes cannot be used with JOB_PLACEMENT"),
-    ("job_placement", "initial_s_vm_count", "initial_s_vm_count cannot be used with JOB_PLACEMENT"),
+    ("job_placement", "vm_allocation_policy", "vm_allocation_policy cannot be used with JOB_PLACEMENT"),
 ]
 
 

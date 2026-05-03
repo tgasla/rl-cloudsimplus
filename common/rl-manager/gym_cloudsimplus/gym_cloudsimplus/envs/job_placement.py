@@ -7,7 +7,6 @@ Concrete domain-specific implementation for job placement problem:
 - Job placement across multiple datacenters
 """
 
-import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
@@ -34,6 +33,7 @@ class JobPlacementEnv(CloudSimBaseEnv):
     """
 
     DC_TYPE_IDS = {"cloud": 0, "edge": 1, "micro": 2}
+    JOB_OBS_FEATURES = 4  # cores, location, delaySensitivity, deadline — must match Java CloudSimProxy.JOB_OBS_FEATURES
 
     def __init__(
         self,
@@ -72,8 +72,7 @@ class JobPlacementEnv(CloudSimBaseEnv):
         )
 
         # jobs_waiting_observation: [cores, location, sensitivity, deadline] per job
-        # 4 values per job, shape = (max_jobs_waiting * 4,)
-        self.job_obs_length = 4 * self.max_jobs_waiting
+        self.job_obs_length = self.JOB_OBS_FEATURES * self.max_jobs_waiting
         max_val = max(self.max_pes_per_vm, 1000)
         self.job_waiting_obs_space = spaces.Box(
             low=0,
@@ -96,9 +95,6 @@ class JobPlacementEnv(CloudSimBaseEnv):
             np.array([self.max_datacenters] * self.max_jobs_waiting)
         )
 
-        if render_mode is not None and render_mode not in self.metadata["render_modes"]:
-            gym.logger.warn("Invalid render mode. Allowed: ['human', 'ansi']")
-
         # ── Create simulation (CloudSimBaseEnv has _client and _sim_id ready) ─
         import json
         self._sim_id = self._client.create_simulation(
@@ -106,9 +102,6 @@ class JobPlacementEnv(CloudSimBaseEnv):
         )
 
     # ── CloudSimBaseEnv abstract methods ───────────────────────────────────────
-
-    def _detect_rl_problem(self) -> str:
-        return "job_placement"
 
     def action_masks(self) -> list[bool]:
         """Return action mask for job placement.
@@ -124,13 +117,11 @@ class JobPlacementEnv(CloudSimBaseEnv):
     def _get_observation(self, raw_obs: dict) -> dict:
         """Convert raw gRPC observation to job placement gymnasium obs dict."""
         # Infrastructure: [dc_id-1, dc_type_id, free_vmpes] per host
-        raw_infr = raw_obs.get("flat_infrastructure_state", [])
-        infr_obs = np.array(raw_infr, dtype=np.int16)
+        infr_obs = np.array(raw_obs.get("infrastructure_observation"), dtype=np.int16)
         infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
 
         # Jobs waiting: [cores, location, sensitivity, deadline] per job
-        raw_jobs = raw_obs.get("jobs_waiting_observation", [])
-        jobs_obs = np.array(raw_jobs, dtype=np.int16)
+        jobs_obs = np.array(raw_obs.get("secondary_observation"), dtype=np.int16)
         jobs_obs = self._pad_observation(jobs_obs, self.job_obs_length)
 
         return {
@@ -141,19 +132,12 @@ class JobPlacementEnv(CloudSimBaseEnv):
     def _parse_step_info(self, raw_info: dict) -> dict:
         """Convert raw gRPC step info to job placement info dict."""
         return {
-            "jobs_waiting": raw_info.get("jobs_waiting", 0),
-            "jobs_placed": raw_info.get("jobs_placed", 0),
-            "jobs_placed_ratio": raw_info.get("jobs_placed_ratio", 0.0),
-            "quality_ratio": raw_info.get("quality_ratio", 0.0),
-            "deadline_violation_ratio": raw_info.get("deadline_violation_ratio", 0.0),
-            "job_wait_time": raw_info.get("job_wait_time", []),
-            "is_valid": raw_info.get("is_valid", True),
+            "jobs_waiting": raw_info.get("jobs_waiting"),
+            "jobs_placed": raw_info.get("jobs_placed"),
+            "jobs_placed_ratio": raw_info.get("jobs_placed_ratio"),
+            "quality_ratio": raw_info.get("quality_ratio"),
+            "deadline_violation_ratio": raw_info.get("deadline_violation_ratio"),
+            "job_wait_time": raw_info.get("job_wait_time"),
+            "is_valid": raw_info.get("is_valid"),
         }
 
-    def _pad_observation(self, obs: np.ndarray, target_dim: int) -> np.ndarray:
-        """Pad observation array to target dimension."""
-        if len(obs) >= target_dim:
-            return np.array(obs[:target_dim], dtype=np.int16)
-        padded = np.zeros(target_dim, dtype=np.int16)
-        padded[: len(obs)] = obs
-        return padded
