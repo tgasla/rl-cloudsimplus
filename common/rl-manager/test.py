@@ -17,7 +17,7 @@ def test(params, jobs):
         "best_model",
     )
 
-    algorithm = get_algorithm(params["algorithm"], params["vm_allocation_policy"])
+    algorithm = get_algorithm(params["rl_algorithm"], params)
 
     jobs_json = json.dumps(jobs)
     base_port = params.get("grpc_base_port", 50051)
@@ -25,7 +25,7 @@ def test(params, jobs):
     # Create a single gRPC environment for evaluation (num_cpu=1)
     env = _create_grpc_env_for_rank(0, params, jobs_json, base_port)
 
-    device = get_suitable_device(params["algorithm"])
+    device = get_suitable_device(params["rl_algorithm"])
 
     # Load the trained agent
     model = algorithm.load(best_model_path, env=env, device=device, seed=params["seed"])

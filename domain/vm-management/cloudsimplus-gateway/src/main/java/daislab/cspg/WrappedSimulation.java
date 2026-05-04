@@ -11,20 +11,15 @@ import java.util.List;
  * VM Management simulation using RL-driven VM lifecycle management. Extends WrappedSimulationBase
  * with tree-array infrastructure observation and VM create/destroy action space.
  */
-public class WrappedSimulation extends
-        WrappedSimulationBase<Observation, SimulationStepInfo, SimulationStepResult, SimulationResetResult>
-        implements IWrappedSimulation {
+public class WrappedSimulation extends WrappedSimulationBase {
 
     // Concrete settings reference for domain-specific access
     private final SimulationSettings simSettings;
 
     public WrappedSimulation(final String identifier, final ISimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
-        super(identifier, settings, jobs, null, null, null);
+        super(identifier, settings, jobs);
         this.simSettings = (SimulationSettings) settings;
-        this.stateExtractor = new VmManagementStateExtractor(this);
-        this.actionDecoder = new VmManagementActionDecoder(this);
-        this.rewardCalculator = new VmManagementRewardCalculator(this);
     }
 
     // ============== Abstract method implementations ==============
@@ -35,6 +30,39 @@ public class WrappedSimulation extends
     }
 
     @Override
+    protected int[] extractInfrastructureObservation() {
+        final CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
+        final int hostsNum = simSettings.getHostsCount();
+        final int vmsNum = proxy.getBroker().getVmExecList().size();
+        final int jobsNum = getRunningCloudletsCount().intValue();
+        final int[] treeArray = new int[2 * (1 + hostsNum + vmsNum + jobsNum)];
+
+        final int totalDatacenterCores = (int) simSettings.getDatacenterCores();
+        final List<Host> hostList = proxy.getDatacenter().getHostList();
+        treeArray[0] = totalDatacenterCores;
+        treeArray[1] = hostsNum;
+        int currentIndex = 2;
+        for (int i = 0; i < hostsNum; i++) {
+            final Host host = hostList.get(i);
+            final List<Vm> vmList = host.getVmList();
+            treeArray[currentIndex++] = (int) host.getPesNumber();
+            treeArray[currentIndex++] = vmList.size();
+            for (int j = 0; j < vmList.size(); j++) {
+                final Vm vm = vmList.get(j);
+                final List<Cloudlet> jobList = vm.getCloudletScheduler().getCloudletList();
+                treeArray[currentIndex++] = (int) vm.getPesNumber();
+                treeArray[currentIndex++] = jobList.size();
+                for (int k = 0; k < jobList.size(); k++) {
+                    final Cloudlet cloudlet = jobList.get(k);
+                    treeArray[currentIndex++] = (int) cloudlet.getPesNumber();
+                    treeArray[currentIndex++] = 0;
+                }
+            }
+        }
+        return treeArray;
+    }
+
+    @Override
     protected int[] extractSecondaryObservation() {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
         final int jobCoresWaiting = proxy.calculateJobCoresWaiting();
@@ -42,56 +70,120 @@ public class WrappedSimulation extends
     }
 
     @Override
-    protected Observation buildObservation(int[] infraObs, int[] secondaryObs) {
-        return new Observation(infraObs, secondaryObs);
-    }
+    public SimulationStepResult step(final int[] action) {
+        validateSimulationReset();
+        currentStep++;
+        LOGGER.info("Step {} starting", currentStep);
 
-    @Override
-    protected SimulationStepInfo buildResetStepInfo() {
-        return new SimulationStepInfo();
-    }
-
-    @Override
-    protected SimulationStepInfo buildStepInfo(int[] actionResult, boolean terminated,
-            boolean truncated) {
+        final int[] actionResult = executeAction(action);
         final boolean isValid = actionResult[0] != -1;
+
+        cloudSimProxy.runOneTimestep();
+
+        final boolean terminated = !cloudSimProxy.isRunning();
+        final boolean truncated = !terminated && (currentStep >= simSettings.getMaxEpisodeLength());
+
+        // Single source of truth for reward — reuses isValid so the agent actually
+        // sees the invalid-action penalty (previously the strategy path always passed true).
         final double[] rewards = calculateReward(isValid);
-        CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
-        final int[] treeArray =
-                simSettings.isSendObservationTreeArray() ? getInfrastructureObservation()
-                        : new int[0];
-        return new SimulationStepInfo(rewards, proxy.getFinishedJobsWaitTimeLastTimestep(),
-                getUnutilizedVmCoreRatio(), treeArray, actionResult[0], actionResult[1]);
-    }
+        final double reward = rewards[0];
 
-    @Override
-    protected SimulationResetResult buildResetResult(Observation observation,
-            SimulationStepInfo info) {
-        return new SimulationResetResult(observation, info);
-    }
+        LOGGER.info("Step {} finished", currentStep);
+        LOGGER.debug("Terminated: {}, Truncated: {}", terminated, truncated);
+        LOGGER.debug("Length of future events queue: {}", cloudSimProxy.getNumberOfFutureEvents());
+        if (terminated || truncated) {
+            LOGGER.info("Simulation ended. Jobs finished: {}/{}",
+                    cloudSimProxy.getFinishedJobsCount(), initialJobsDescriptors.size());
+        }
 
-    @Override
-    protected SimulationStepResult buildStepResult(Observation observation, double reward,
-            boolean terminated, boolean truncated, SimulationStepInfo info) {
+        // Cache the obs so treeArray re-uses the same array without a second computation.
+        final int[] infraObs = extractInfrastructureObservation();
+        final Observation observation = buildObservation(infraObs, extractSecondaryObservation());
+
+        final CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
+        final int[] treeArray = simSettings.isSendObservationTreeArray() ? infraObs : new int[0];
+        final SimulationStepInfo info = new SimulationStepInfo(rewards,
+                proxy.getFinishedJobsWaitTimeLastTimestep(), getUnutilizedVmCoreRatio(), treeArray,
+                actionResult[0], actionResult[1]);
+
         return new SimulationStepResult(observation, reward, terminated, truncated, info);
     }
 
     // ============== Domain-specific methods ==============
 
-    private double getUnutilizedVmCoreRatio() {
+    /**
+     * Top-level action dispatch. RL/fromfile modes interpret the action array;
+     * rule-based modes ignore it and let the policy decide.
+     */
+    int[] executeAction(final int[] action) {
+        final String policy = simSettings.getVmAllocationPolicy();
+        if (policy.equals("rl") || policy.equals("fromfile")) {
+            return executeCustomAction(action);
+        }
+        executeRuleBasedAction();
+        return new int[] {0, 0};
+    }
+
+    private void executeRuleBasedAction() {
+        switch (simSettings.getVmAllocationPolicy()) {
+            case "minimize-queue" -> executeMinimizeQueueAction();
+            case "minimize-allocated" -> executeMinimizeAllocatedAction();
+            case "minimize-unutilized" -> executeMinimizeUnutilizedAction();
+            default -> throw new IllegalArgumentException(
+                    "Not a rule-based vm_allocation_policy: "
+                            + simSettings.getVmAllocationPolicy());
+        }
+    }
+
+    private void executeMinimizeQueueAction() {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
-        List<Vm> vmList = proxy.getBroker().getVmExecList();
-        Long unutilizedVmCores = getUnutilizedVmCores(vmList);
-        Long runningVmCores = getRunningVmCores(vmList);
-        return runningVmCores > 0 ? ((double) unutilizedVmCores / runningVmCores) : 0.0;
+        long maxCoresNeeded = proxy.calculateMaxJobCoresNeeded();
+        long maxFreeCoresOnSameVm = proxy.getMaxFreeVmCores();
+        boolean vmAvailable = maxFreeCoresOnSameVm >= maxCoresNeeded;
+        if (!vmAvailable && maxCoresNeeded > 0) {
+            proxy.getBroker().submitVmList(
+                    proxy.createSingleVm(proxy.calculateTargetTime(), maxCoresNeeded));
+        } else {
+            proxy.destroyLargestIdleVm();
+        }
     }
 
-    private Long getUnutilizedVmCores(List<Vm> vmList) {
-        return vmList.parallelStream().map(Vm::getExpectedFreePesNumber).reduce(0L, Long::sum);
+    private void executeMinimizeAllocatedAction() {
+        CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
+        int coresNeeded = proxy.calculateJobCoresWaiting();
+        int numTypes = simSettings.getVmTypesCount();
+        // Descend from largest type: if coresNeeded < this type and it's running -> downsize;
+        // if coresNeeded >= this type and it's not running -> create it.
+        for (int i = numTypes - 1; i >= 0; i--) {
+            long typeCores = simSettings.getVmCoreCountByTypeIndex(i);
+            if (coresNeeded >= typeCores) {
+                if (!proxy.isVmWithCoresRunning(typeCores)) {
+                    proxy.getBroker().submitVmList(
+                            proxy.createSingleVm(proxy.calculateTargetTime(), typeCores));
+                } else {
+                    proxy.destroyLargestIdleVm();
+                }
+                return;
+            } else if (proxy.isVmWithCoresRunning(typeCores)) {
+                proxy.destroyLargestIdleVm();
+                return;
+            }
+        }
+        proxy.destroyLargestIdleVm();
     }
 
-    private Long getRunningVmCores(List<Vm> vmList) {
-        return vmList.parallelStream().map(Vm::getPesNumber).reduce(0L, Long::sum);
+    private void executeMinimizeUnutilizedAction() {
+        CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
+        int numTypes = simSettings.getVmTypesCount();
+        for (int i = 0; i < numTypes; i++) {
+            long typeCores = simSettings.getVmCoreCountByTypeIndex(i);
+            if (proxy.isJobWithCoresWaiting(typeCores) && !proxy.isVmWithCoresRunning(typeCores)) {
+                proxy.getBroker().submitVmList(
+                        proxy.createSingleVm(proxy.calculateTargetTime(), typeCores));
+                return;
+            }
+        }
+        proxy.destroyLargestIdleVm();
     }
 
     int[] executeCustomAction(final int[] action) {
@@ -152,38 +244,6 @@ public class WrappedSimulation extends
         return true;
     }
 
-    int[] getInfrastructureObservation() {
-        CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
-        final int hostsNum = simSettings.getHostsCount();
-        final int vmsNum = proxy.getBroker().getVmExecList().size();
-        final int jobsNum = getRunningCloudletsCount().intValue();
-        final int[] treeArray = new int[2 * (1 + hostsNum + vmsNum + jobsNum)];
-
-        final int totalDatacenterCores = (int) simSettings.getDatacenterCores();
-        final List<Host> hostList = proxy.getDatacenter().getHostList();
-        treeArray[0] = totalDatacenterCores;
-        treeArray[1] = hostsNum;
-        int currentIndex = 2;
-        for (int i = 0; i < hostsNum; i++) {
-            final Host host = hostList.get(i);
-            final List<Vm> vmList = host.getVmList();
-            treeArray[currentIndex++] = (int) host.getPesNumber();
-            treeArray[currentIndex++] = vmList.size();
-            for (int j = 0; j < vmList.size(); j++) {
-                final Vm vm = vmList.get(j);
-                final List<Cloudlet> jobList = vm.getCloudletScheduler().getCloudletList();
-                treeArray[currentIndex++] = (int) vm.getPesNumber();
-                treeArray[currentIndex++] = jobList.size();
-                for (int k = 0; k < jobList.size(); k++) {
-                    final Cloudlet cloudlet = jobList.get(k);
-                    treeArray[currentIndex++] = (int) cloudlet.getPesNumber();
-                    treeArray[currentIndex++] = 0;
-                }
-            }
-        }
-        return treeArray;
-    }
-
     double[] calculateReward(final boolean isValid) {
         double[] rewards = new double[5];
 
@@ -197,12 +257,14 @@ public class WrappedSimulation extends
         final double unutilizedVmCoresReward = -unutilizedVmCoresCoef * getUnutilizedVmCoreRatio();
         final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
 
-        double totalReward = 0;
-        if (simSettings.getVmAllocationPolicy().equals("bestfit")) {
-            totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
-        } else if (simSettings.getVmAllocationPolicy().equals("rl")) {
+        // RL is the only mode where actions can be invalid (the agent might pick a bad host/VM).
+        // Rule-based and fromfile modes never produce invalid actions, so no invalid penalty.
+        double totalReward;
+        if (simSettings.getVmAllocationPolicy().equals("rl")) {
             totalReward =
                     jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
+        } else {
+            totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
         }
 
         LOGGER.info("totalReward: " + totalReward);

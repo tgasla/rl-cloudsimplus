@@ -26,7 +26,7 @@ public class SimulationSettings implements ISimulationSettings {
     double rewardInvalidCoef;
     int maxEpisodeLength;
     String vmAllocationPolicy;
-    String algorithm;
+    String rlAlgorithm;
     boolean sendObservationTreeArray;
     List<Map<String, Object>> datacenters;
     List<Map<String, Object>> vmTypes;
@@ -57,7 +57,7 @@ public class SimulationSettings implements ISimulationSettings {
         rewardInvalidCoef = ISimulationSettings.getDouble(params, "reward_invalid_coef");
         maxEpisodeLength = ISimulationSettings.getInt(params, "max_episode_length");
         vmAllocationPolicy = ISimulationSettings.getStr(params, "vm_allocation_policy");
-        algorithm = ISimulationSettings.getStr(params, "algorithm");
+        rlAlgorithm = ISimulationSettings.getStr(params, "rl_algorithm");
         sendObservationTreeArray =
                 ISimulationSettings.getBool(params, "send_observation_tree_array");
         datacenters = (List<Map<String, Object>>) params.get("datacenters");

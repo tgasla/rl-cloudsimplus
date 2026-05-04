@@ -515,7 +515,7 @@ def maybe_freeze_weights(model, params, prev_host_count=None) -> None:
         indices = compute_freeze_indices_for_tree_obs(params, prev_host_count)
     elif (
         params.get("state_space_type") == "dcid-dctype-freevmpes-per-host"
-        and params.get("cloudlet_to_dc_assignment_policy") == "rl"
+        and params.get("cloudlet_to_dc_mapping") == "rl"
     ):
         indices = compute_freeze_indices_for_multi_dc_obs(params, prev_host_count)
     else:
@@ -816,22 +816,26 @@ def get_suitable_device(algorithm) -> torch.device:
     return torch.device("cuda" if torch.cuda.is_available() and algorithm != "A2C" else "cpu")
 
 
-def get_algorithm(algorithm_name, vm_allocation_policy) -> sb3.common.base_class.BaseAlgorithm:
-    # If the vm_allocation_policy is fromfile or bestfit, pick a default algorithm
-    # so the code triggers the simulation environment creation
-    # NOTE: the algorithm decision through learning is not used at all in this case
-    if vm_allocation_policy == "fromfile" or vm_allocation_policy == "bestfit":
-        algorithm = getattr(sb3, "PPO")
-    elif vm_allocation_policy == "rl":
-        if hasattr(sb3, algorithm_name):
-            algorithm = getattr(sb3, algorithm_name)
-        elif hasattr(sb3_contrib, algorithm_name):
-            algorithm = getattr(sb3_contrib, algorithm_name)
-        else:
-            raise AttributeError(f"Algorithm {algorithm_name} not found.")
-    else:
-        raise AttributeError(f"Vm allocation policy {vm_allocation_policy} not found.")
-    return algorithm
+def _is_rl_mode(params) -> bool:
+    """Domain-agnostic check: is RL the controlling policy?
+    vm-management uses vm_allocation_policy; job-placement uses cloudlet_to_dc_mapping.
+    """
+    return (
+        params.get("vm_allocation_policy") == "rl"
+        or params.get("cloudlet_to_dc_mapping") == "rl"
+    )
+
+
+def get_algorithm(rl_algorithm_name, params) -> sb3.common.base_class.BaseAlgorithm:
+    # Non-RL modes (rule-based / fromfile): pick PPO as a placeholder so the
+    # env-creation pipeline still works. The model is never actually trained.
+    if not _is_rl_mode(params):
+        return getattr(sb3, "PPO")
+    if hasattr(sb3, rl_algorithm_name):
+        return getattr(sb3, rl_algorithm_name)
+    if hasattr(sb3_contrib, rl_algorithm_name):
+        return getattr(sb3_contrib, rl_algorithm_name)
+    raise AttributeError(f"RL algorithm {rl_algorithm_name} not found.")
 
 
 def maybe_load_replay_buffer(model, train_model_dir) -> None:
@@ -844,23 +848,23 @@ def maybe_load_replay_buffer(model, train_model_dir) -> None:
 
 def create_kwargs_with_algorithm_params(env, params) -> dict:
     algorithm_kwargs = {}
-    if params.get("ent_coef") and params["algorithm"] in ALGORITHMS_WITH_ENT_COEF:
+    if params.get("ent_coef") and params["rl_algorithm"] in ALGORITHMS_WITH_ENT_COEF:
         algorithm_kwargs["ent_coef"] = params["ent_coef"]
-    if params.get("learning_rate") and params["algorithm"] != "HER":
+    if params.get("learning_rate") and params["rl_algorithm"] != "HER":
         algorithm_kwargs["learning_rate"] = params["learning_rate"]
-    if params.get("n_rollout_steps") and params["algorithm"] in ALGORITHMS_WITH_N_STEPS:
+    if params.get("n_rollout_steps") and params["rl_algorithm"] in ALGORITHMS_WITH_N_STEPS:
         algorithm_kwargs["n_steps"] = params["n_rollout_steps"]
-    if params.get("batch_size") and params["algorithm"] != "HER":
+    if params.get("batch_size") and params["rl_algorithm"] != "HER":
         algorithm_kwargs["batch_size"] = params["batch_size"]
-    if params.get("seed") and params["algorithm"] != "HER":
+    if params.get("seed") and params["rl_algorithm"] != "HER":
         algorithm_kwargs["seed"] = params["seed"]
-    if params.get("action_noise") and params["algorithm"] in ALGORITHMS_WITH_ACTION_NOISE:
+    if params.get("action_noise") and params["rl_algorithm"] in ALGORITHMS_WITH_ACTION_NOISE:
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(
             mean=np.zeros(n_actions), sigma=params["action_noise"] * np.ones(n_actions)
         )
         algorithm_kwargs["action_noise"] = action_noise
-    if params.get("target_kl") and params["algorithm"] == "PPO":
+    if params.get("target_kl") and params["rl_algorithm"] == "PPO":
         algorithm_kwargs["target_kl"] = params["target_kl"]
     return algorithm_kwargs
 
@@ -885,7 +889,7 @@ def create_correct_lstm_policy(observation_space, maskable) -> classmethod:
 
 def create_correct_policy(observation_space, params) -> str | classmethod:
     if params.get("use_lstm"):
-        maskable = "Maskable" in params["algorithm"]
+        maskable = "Maskable" in params["rl_algorithm"]
         return create_correct_lstm_policy(observation_space, maskable)
     if isinstance(observation_space, gym.spaces.Dict) or isinstance(observation_space, gym.spaces.Tuple):
         return "MultiInputPolicy"

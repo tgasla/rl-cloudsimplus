@@ -14,29 +14,24 @@ import java.util.Iterator;
 import java.util.stream.Collectors;
 
 
-public class WrappedSimulation extends
-        WrappedSimulationBase<Observation, SimulationStepInfo, SimulationStepResult, SimulationResetResult>
-        implements IWrappedSimulation {
+public class WrappedSimulation extends WrappedSimulationBase {
 
     // Concrete settings reference for domain-specific access
     private final SimulationSettings simSettings;
 
+    // RL-level episode tracking (RL concepts; not present in CloudSimProxy)
     private int bestEpisodeReward;
     private int currentEpisodeReward;
-    private int jobsPlacedThisTimestep;
     private double lastReward = 0.0;
+
+    // Action-phase placement counter: set by action methods, consumed in step info
+    private int jobsPlacedThisTimestep;
 
     public WrappedSimulation(final String identifier, final ISimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
-        super(identifier, settings, jobs, null, null, null);
+        super(identifier, settings, jobs);
         this.simSettings = (SimulationSettings) settings;
         bestEpisodeReward = -Integer.MAX_VALUE;
-
-        LOGGER.info("Creating simulation: {}", identifier);
-
-        this.stateExtractor = new JobPlacementStateExtractor(this);
-        this.actionDecoder = new JobPlacementActionDecoder(this);
-        this.rewardCalculator = new JobPlacementRewardCalculator(this);
     }
 
     // ============== Abstract method implementations ==============
@@ -47,37 +42,19 @@ public class WrappedSimulation extends
     }
 
     @Override
+    protected int[] extractInfrastructureObservation() {
+        switch (simSettings.getStateSpaceType()) {
+            case "dcid-dctype-freevmpes-per-host":
+                return getInfraObsDcIdDcTypeFreeVmPesPerHost();
+            default:
+                throw new IllegalArgumentException(
+                        "Unexpected value: " + simSettings.getStateSpaceType());
+        }
+    }
+
+    @Override
     protected int[] extractSecondaryObservation() {
         return getJobsWaitingObservation();
-    }
-
-    @Override
-    protected Observation buildObservation(int[] infraObs, int[] secondaryObs) {
-        return new Observation(infraObs, secondaryObs);
-    }
-
-    @Override
-    protected SimulationStepInfo buildResetStepInfo() {
-        return new SimulationStepInfo();
-    }
-
-    @Override
-    protected SimulationStepInfo buildStepInfo(int[] actionResult, boolean terminated,
-            boolean truncated) {
-        // step() is overridden — this method is never called from the base template
-        throw new UnsupportedOperationException("jp uses overridden step()");
-    }
-
-    @Override
-    protected SimulationResetResult buildResetResult(Observation observation,
-            SimulationStepInfo info) {
-        return new SimulationResetResult(observation, info);
-    }
-
-    @Override
-    protected SimulationStepResult buildStepResult(Observation observation, double reward,
-            boolean terminated, boolean truncated, SimulationStepInfo info) {
-        return new SimulationStepResult(observation, reward, terminated, truncated, info);
     }
 
     // ============== Override reset() to reset episode counters ==============
@@ -127,36 +104,14 @@ public class WrappedSimulation extends
         SimulationStepInfo info = new SimulationStepInfo(jobsWaiting, this.jobsPlacedThisTimestep,
                 ratios[0], ratios[1], ratios[2], proxy.getFinishedJobsWaitTimeLastTimestep());
 
-        int[] infraObs = stateExtractor.extractState();
-        int[] secondaryObs = extractSecondaryObservation();
-        return buildStepResult(buildObservation(infraObs, secondaryObs), reward, terminated,
-                truncated, info);
+        final Observation observation =
+                buildObservation(extractInfrastructureObservation(), extractSecondaryObservation());
+        return new SimulationStepResult(observation, reward, terminated, truncated, info);
     }
 
     // Casts the inherited cloudSimProxy field to the concrete type used by jp
     private CloudSimProxy proxy() {
         return (CloudSimProxy) cloudSimProxy;
-    }
-
-    double getUnutilizedVmCoreRatio() {
-        List<Vm> vmList = proxy().getBroker().getVmExecList();
-        Long unutilizedVmCores = getUnutilizedVmCores(vmList);
-        Long runningVmCores = getRunningVmCores(vmList);
-
-        return runningVmCores > 0 ? ((double) unutilizedVmCores / runningVmCores) : 0.0;
-    }
-
-    Long getUnutilizedVmCores(List<Vm> vmList) {
-        Long unutilizedVmCores =
-                vmList.parallelStream().map(Vm::getExpectedFreePesNumber).reduce(0L, Long::sum);
-
-        return unutilizedVmCores;
-    }
-
-    private Long getRunningVmCores(List<Vm> vmList) {
-        Long runningVmCores = vmList.parallelStream().map(Vm::getPesNumber).reduce(0L, Long::sum);
-
-        return runningVmCores;
     }
 
     private Vm getMostFreeVmOfDcForCloudlet(final int targetDcId, final Cloudlet cloudlet) {
@@ -211,13 +166,21 @@ public class WrappedSimulation extends
     }
 
     private double[] executeCustomCloudletToDcAction(final int[] action) {
-        return switch (simSettings.getCloudletToDcAssignmentPolicy()) {
+        return switch (simSettings.getCloudletToDcMapping()) {
             case "rl" -> executeRlCloudletToDcAction(action);
             case "earliest-shortest-to-most-free-dc" -> executeEarliestShortestCloudletToMostFreeDcAction();
             case "earliest-shortest-to-nearest-dc" -> executeEarliestShortestCloudletToNearestDcAction();
             case "earliest-most-critical-to-nearest-dc" -> executeEarliestMostCriticalCloudletToNearestDcAction();
-            default -> throw new IllegalArgumentException("Cloudlet-to-DC Assignment Policy"
-                    + simSettings.getCloudletToDcAssignmentPolicy() + " was not found!");
+            default -> throw new IllegalArgumentException("Unknown cloudlet_to_dc_mapping: "
+                    + simSettings.getCloudletToDcMapping());
+        };
+    }
+
+    private Vm selectVmForCloudlet(final int dcId, final Cloudlet cloudlet) {
+        return switch (simSettings.getCloudletToVmMapping()) {
+            case "most-free-pes" -> getMostFreeVmOfDcForCloudlet(dcId, cloudlet);
+            default -> throw new IllegalArgumentException("Unknown cloudlet_to_vm_mapping: "
+                    + simSettings.getCloudletToVmMapping());
         };
     }
 
@@ -292,7 +255,7 @@ public class WrappedSimulation extends
 
             Vm targetVm = Vm.NULL;
             for (DatacenterWithType datacenter : sortedDcs) {
-                targetVm = getMostFreeVmOfDcForCloudlet((int) datacenter.getId(), selectedCloudlet);
+                targetVm = selectVmForCloudlet((int) datacenter.getId(), selectedCloudlet);
 
                 if (targetVm != Vm.NULL) {
                     // Found a suitable VM
@@ -357,7 +320,7 @@ public class WrappedSimulation extends
 
             Vm targetVm = Vm.NULL;
             for (DatacenterWithType datacenter : sortedDcs) {
-                targetVm = getMostFreeVmOfDcForCloudlet((int) datacenter.getId(), selectedCloudlet);
+                targetVm = selectVmForCloudlet((int) datacenter.getId(), selectedCloudlet);
 
                 if (targetVm != Vm.NULL) {
                     // Found a suitable VM
@@ -431,7 +394,7 @@ public class WrappedSimulation extends
             Vm targetVm = Vm.NULL;
             for (Iterator<Map.Entry<Datacenter, Long>> it = sortedDcs.iterator(); it.hasNext();) {
                 Datacenter datacenter = it.next().getKey();
-                targetVm = getMostFreeVmOfDcForCloudlet((int) datacenter.getId(), selectedCloudlet);
+                targetVm = selectVmForCloudlet((int) datacenter.getId(), selectedCloudlet);
 
                 if (targetVm != Vm.NULL) {
                     // Found a suitable VM
@@ -488,7 +451,7 @@ public class WrappedSimulation extends
                 LOGGER.info("No action for Cloudlet {}", job.getId());
                 continue;
             }
-            final Vm vm = getMostFreeVmOfDcForCloudlet(dcId, job);
+            final Vm vm = selectVmForCloudlet(dcId, job);
             if (vm == Vm.NULL) {
                 // This should never happen because the agent should not return an action that
                 // is not possible. The agent knows the free cores of each DC.
@@ -536,24 +499,6 @@ public class WrappedSimulation extends
                         + ((CloudletWithLocation) job).getDeadline() && job.getVm() == Vm.NULL)
                 .count();
         return (double) deadlineViolations / jobsWaiting.size();
-    }
-
-    int[] getInfrastructureObservation() {
-        switch (simSettings.getStateSpaceType()) {
-            case "dcid-dctype-freevmpes-per-host":
-                return getInfraObsDcIdDcTypeFreeVmPesPerHost();
-            default:
-                throw new IllegalArgumentException(
-                        "Unexpected value: " + simSettings.getStateSpaceType());
-        }
-    }
-
-    private int[] getJobsWaitingObservation() {
-        final int[] jobWaitObs = proxy().getJobsWaitingObservation();
-        final int jobsWaiting = jobWaitObs.length / CloudSimProxy.JOB_OBS_FEATURES;
-        LOGGER.info("Jobs waiting: {}", jobsWaiting);
-        LOGGER.info("JobWaitObs: {}", Arrays.toString(jobWaitObs));
-        return jobWaitObs;
     }
 
     /**
@@ -638,6 +583,14 @@ public class WrappedSimulation extends
         LOGGER.info("deadlineMissReward: {}", deadlineViolationCoef * deadlineViolationRatio);
 
         return reward;
+    }
+
+    private int[] getJobsWaitingObservation() {
+        final int[] jobWaitObs = proxy().getJobsWaitingObservation();
+        final int jobsWaiting = jobWaitObs.length / CloudSimProxy.JOB_OBS_FEATURES;
+        LOGGER.info("Jobs waiting: {}", jobsWaiting);
+        LOGGER.info("JobWaitObs: {}", Arrays.toString(jobWaitObs));
+        return jobWaitObs;
     }
 
     public SimulationSettings getSettings() {

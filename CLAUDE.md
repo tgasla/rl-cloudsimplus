@@ -222,14 +222,11 @@ All domain-agnostic logic lives in `common/cloudsimplus-gateway-shared/`. Domain
 | `GrpcServer` | Wraps io.grpc server lifecycle |
 | `CloudSimGrpcServiceBase` | gRPC RPC implementations (createSimulation, reset, step, batchStep, close, ping) |
 | `CloudSimProxyBase` | Simulation stepping engine: clock management, job queue, event loop |
-| `WrappedSimulationBase` | Bridges proxy ↔ gRPC service; assembles observations via strategy objects |
+| `WrappedSimulationBase` | Bridges proxy ↔ gRPC service; implements `IWrappedSimulation`; `reset()` concrete, `step()` abstract |
 | `SimulationFactoryBase` | Parses JSON params, builds `ISimulationSettings`, creates the simulation |
 | `ISimulationSettings` | Interface for settings shared by both domains + static parsing helpers |
 | `ICloudSimProxy` | Interface: `runOneTimestep()`, `isRunning()`, `reset()`, `terminate()` |
 | `IWrappedSimulation` | Interface: `step()`, `reset()`, `getObservation()` |
-| `IStateExtractor` | Strategy: `extractState()` → `int[]` infrastructure observation |
-| `IActionDecoder` | Strategy: decodes RL action array → simulation action |
-| `IRewardCalculator` | Strategy: computes scalar reward from step result |
 | `Observation` | Value object: `int[] infrastructureObservation`, `int[] secondaryObservation` |
 | `GrpcServiceDelegate` | Static helpers for proto ↔ Java conversion |
 | `CloudletDescriptor` | Parsed job entry from CSV trace |
@@ -247,9 +244,6 @@ All domain-agnostic logic lives in `common/cloudsimplus-gateway-shared/`. Domain
 | `CloudSimGrpcService` | ✓ | ✓ |
 | `CloudSimProxy` | ✓ | ✓ |
 | `WrappedSimulation` | ✓ | ✓ |
-| `VmManagementStateExtractor` / `JobPlacementStateExtractor` | ✓ | ✓ |
-| `VmManagementActionDecoder` / `JobPlacementActionDecoder` | ✓ | ✓ |
-| `VmManagementRewardCalculator` / `JobPlacementRewardCalculator` | ✓ | ✓ |
 | `VmCost` | ✓ | — |
 | `HostWithoutCreatedList` | ✓ | — |
 | `DatacenterWithType` | — | ✓ |
@@ -259,9 +253,7 @@ All domain-agnostic logic lives in `common/cloudsimplus-gateway-shared/`. Domain
 
 **Template Method** — `CloudSimProxyBase.runOneTimestep()` defines the fixed sequence (clear lists → submit jobs → advance clock → print stats). Abstract hooks let domains customize: `setupInfrastructure()`, `tryToSubmitJobs()`, `getPrimaryDatacenter()`, `printStats()`.
 
-**Strategy** — `IStateExtractor`, `IActionDecoder`, `IRewardCalculator` are injected into `WrappedSimulationBase`. Swapping them changes domain behavior without touching the stepping engine.
-
-**Factory** — `SimulationFactoryBase.create()` is the single entry point for constructing a simulation from a JSON params string. Domain `SimulationFactory` overrides to wire domain-specific strategies.
+**Factory** — `SimulationFactoryBase.create()` is the single entry point for constructing a simulation from a JSON params string. Domain `SimulationFactory` overrides to instantiate domain-specific `SimulationSettings` and `WrappedSimulation`.
 
 **Value Object** — `Observation`, `SimulationStepResult`, `SimulationResetResult` are Lombok `@Value` / immutable records — never mutated after construction.
 
@@ -365,6 +357,40 @@ Merged into every experiment's params dict.
 ### `experiment_N:` — per-experiment overrides
 Keys: `mode` (`train`/`transfer`/`test`), `experiment_dir`, `experiment_name`, `datacenters`, `job_trace_filename`, `train_model_dir` (for transfer/test).
 
+### Policy & algorithm params
+
+Each domain has its own controlling-policy param. `rl_algorithm` is read **only** when the policy is `rl`.
+
+**vm-management:**
+
+| Key | Values | Behavior |
+|-----|--------|----------|
+| `vm_allocation_policy` | `rl` | RL agent decides VM lifecycle (create/destroy) AND host placement explicitly. Uses `VmAllocationPolicyCustom`. |
+| | `fromfile` | Replays recorded actions from a file. Uses `VmAllocationPolicyCustom`. |
+| | `minimize-queue` | Rule: create a VM if no running VM has enough free cores; otherwise destroy the largest idle VM. |
+| | `minimize-allocated` | Rule: scan VM types largest→smallest; create/destroy to keep allocated cores tight. |
+| | `minimize-unutilized` | Rule: scan VM types smallest→largest; create only the type that exactly matches a waiting job. |
+| `rl_algorithm` | any SB3/sb3-contrib algo (e.g. `PPO`, `MaskablePPO`) | Read only when `vm_allocation_policy: rl`. |
+
+For rule-based modes, host placement is delegated to `VmAllocationPolicyBestFit` under the hood — the rule decides *what* and *when*, bestfit decides *where*.
+
+**job-placement:** see [Two-Stage Placement Model](#two-stage-placement-model) below.
+
+### Two-Stage Placement Model
+
+Job placement is a **two-stage decision pipeline**, mirroring how real cloud orchestration systems work (Kubernetes: cluster autoscaler → scheduler; AWS: region selection → AZ/instance):
+
+| Stage | Decision | Config key | Options |
+|-------|----------|-----------|---------|
+| 1 (macro) | Which **datacenter** runs this cloudlet? | `cloudlet_to_dc_mapping` | `rl`, `earliest-shortest-to-most-free-dc`, `earliest-shortest-to-nearest-dc`, `earliest-most-critical-to-nearest-dc` |
+| 2 (micro) | Which **VM within that DC** runs the cloudlet? | `cloudlet_to_vm_mapping` | `most-free-pes` (currently the only option; pluggable) |
+
+The RL agent operates on **stage 1 only** (when `cloudlet_to_dc_mapping: rl`). Stage 2 is always rule-based — a tactical decision better handled by a simple rule than learning.
+
+CloudSim Plus has no native "cloudlet → DC" concept (cloudlets bind to VMs via `bindCloudletToVm`); this two-stage model is a higher-level abstraction layered on top, with VM selection happening inside the chosen DC. VM-to-host placement is hardcoded to bestfit in job-placement (not configurable — the RL agent never controls it).
+
+`rl_algorithm` is read only when `cloudlet_to_dc_mapping: rl`.
+
 ---
 
 ## Environment Variables (Java subprocess)
@@ -412,7 +438,7 @@ Java file logging only activates when **both** `log.saveExperiment=true` and `lo
 ## Adding a New Domain
 
 1. Create `domain/<name>/` with `config.yml`, `topologies/`, `traces/`, `cloudsimplus-gateway/`, `rl-manager/entrypoint.py`
-2. In Java: extend `CloudSimProxyBase`, `WrappedSimulationBase`, `SimulationFactoryBase`, `CloudSimGrpcServiceBase`; implement `IStateExtractor`, `IActionDecoder`, `IRewardCalculator`
+2. In Java: extend `CloudSimProxyBase`, `WrappedSimulationBase`, `SimulationFactoryBase`, `CloudSimGrpcServiceBase`; implement `step()`, `extractInfrastructureObservation()`, `extractSecondaryObservation()`, `calculateReward()`
 3. In Python: extend `CloudSimBaseEnv`; implement `_get_observation()`, `_parse_step_info()`, `action_masks()`
 4. Add the domain to `common/rl-manager/gym_cloudsimplus/gym_cloudsimplus/cloud_sim_grpc_client.py`
 5. Register environment in `gym_cloudsimplus/__init__.py`

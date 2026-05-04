@@ -5,10 +5,8 @@ import org.cloudsimplus.cloudlets.CloudletExecution;
 import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.hosts.HostSimple;
-import org.cloudsimplus.provisioners.PeProvisionerSimple;
 import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
 import org.cloudsimplus.resources.Pe;
-import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicyBestFit;
 import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
@@ -91,7 +89,9 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     @SuppressWarnings("unchecked")
     private Datacenter createDatacenter(final Map<String, Object> dcMap) {
-        final VmAllocationPolicy vmAllocationPolicy = defineVmAllocationPolicy();
+        // job-placement always uses bestfit for VM-to-host placement; the RL agent operates
+        // at the higher level of cloudlet-to-DC mapping, not VM-to-host.
+        final VmAllocationPolicy vmAllocationPolicy = new VmAllocationPolicyBestFit();
         final List<Map<Host, List<Vm>>> hostVmMapping = createHostVmMapping(
                 (List<Map<String, Object>>) dcMap.get("hosts"), vmAllocationPolicy);
         final String type = String.valueOf(dcMap.get("type"));
@@ -104,15 +104,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
         allocateHostsForVms(hostVmMapping, vmAllocationPolicy);
         broker.submitVmList(getVmsFromAllHosts(hostVmMapping));
         return dc;
-    }
-
-    private VmAllocationPolicy defineVmAllocationPolicy() {
-        return switch (simSettings.getVmAllocationPolicy()) {
-            case "rl", "fromfile" -> new VmAllocationPolicyCustom();
-            case "bestfit" -> new VmAllocationPolicyBestFit();
-            default -> throw new IllegalArgumentException(
-                    "Unknown VM allocation policy: " + simSettings.getVmAllocationPolicy());
-        };
     }
 
     private List<Map<Host, List<Vm>>> createHostVmMapping(
@@ -180,14 +171,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
         vm.setRam(ram).setSize(size).setBw(bw)
                 .setCloudletScheduler(new OptimizedCloudletScheduler());
         return vm;
-    }
-
-    private List<Pe> createPeList(final long pes, final long mips) {
-        List<Pe> peList = new ArrayList<>();
-        for (int i = 0; i < pes; i++) {
-            peList.add(new PeSimple(mips, new PeProvisionerSimple()));
-        }
-        return peList;
     }
 
     // ============== Domain-specific observation helpers ==============

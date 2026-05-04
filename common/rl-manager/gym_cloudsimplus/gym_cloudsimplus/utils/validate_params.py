@@ -25,7 +25,7 @@ VM_MANAGEMENT_PARAMS = {
 
 JOB_PLACEMENT_PARAMS = {
     "datacenters", "max_datacenters", "max_datacenter_types",
-    "cloudlet_to_dc_assignment_policy", "cloudlet_to_vm_assignment_policy",
+    "cloudlet_to_dc_mapping", "cloudlet_to_vm_mapping",
     "state_space_type", "max_jobs_waiting", "job_trace_filename",
     "reward_jobs_placed_coef", "reward_quality_coef",
     "reward_deadline_violation_coef",
@@ -36,7 +36,7 @@ JOB_PLACEMENT_PARAMS = {
 INCOMPATIBLE_PAIRS = [
     ("vm_management", "job_arrival_rate", "job_arrival_rate cannot be used with VM_MANAGEMENT"),
     ("vm_management", "max_datacenters", "max_datacenters cannot be used with VM_MANAGEMENT"),
-    ("vm_management", "cloudlet_to_dc_assignment_policy", "cloudlet_to_dc_assignment_policy cannot be used with VM_MANAGEMENT"),
+    ("vm_management", "cloudlet_to_dc_mapping", "cloudlet_to_dc_mapping cannot be used with VM_MANAGEMENT"),
     ("job_placement", "vm_allocation_policy", "vm_allocation_policy cannot be used with JOB_PLACEMENT"),
 ]
 

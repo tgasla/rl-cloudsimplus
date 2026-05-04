@@ -11,7 +11,6 @@ import java.util.Map;
  */
 public interface ISimulationSettings {
 
-    String getAlgorithm();
     boolean isSplitLargeJobs();
     int getMaxJobPes();
     int getMaxEpisodeLength();
@@ -19,8 +18,6 @@ public interface ISimulationSettings {
     double getTimestepInterval();
     boolean isClearCreatedLists();
     boolean isPrintStats();
-
-    Map<String, Object> getParams();
 
     static int getInt(Map<String, Object> m, String k) {
         Object v = m.get(k);

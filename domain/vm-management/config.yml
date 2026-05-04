@@ -7,8 +7,12 @@
 # experiment_dir: parent directory for a set of experiments
 # experiment_name: name of the experiment
 # mode: [train, test, transfer]
-# vm_allocation_policy: [rl, bestfit]
-# algorithm: [any stable-baselines3 algorithm if vm_allocation_policy == rl, minimize-queue, minimize-allocated, minimize-unutilized if vm_allocation_policy == bestfit]
+# vm_allocation_policy: [rl, fromfile, minimize-queue, minimize-allocated, minimize-unutilized]
+#   - rl       : RL agent decides VM lifecycle + host placement (uses VmAllocationPolicyCustom)
+#   - fromfile : replay recorded actions from a file (uses VmAllocationPolicyCustom)
+#   - minimize-* : rule-based VM lifecycle (when/which to create/destroy);
+#                  bestfit decides host placement under the hood
+# rl_algorithm: any stable-baselines3 / sb3-contrib algorithm. Read only when vm_allocation_policy == rl.
 
 # java_log_level and java_log_destination: changes take effect at runtime — no rebuild needed.
 # junit_output_show: requires make build-gateway to rebuild (Java test output).
@@ -75,4 +79,4 @@ experiment_1:
     experiment_dir: debug
     experiment_name: test1_test
     vm_allocation_policy: rl
-    algorithm: MaskablePPO
+    rl_algorithm: MaskablePPO

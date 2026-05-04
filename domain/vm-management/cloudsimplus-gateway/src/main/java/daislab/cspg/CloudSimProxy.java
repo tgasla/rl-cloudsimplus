@@ -6,10 +6,7 @@ import org.cloudsimplus.core.CloudSimTag;
 import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.datacenters.DatacenterSimple;
 import org.cloudsimplus.hosts.Host;
-import org.cloudsimplus.provisioners.PeProvisionerSimple;
 import org.cloudsimplus.provisioners.ResourceProvisionerSimple;
-import org.cloudsimplus.resources.Pe;
-import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicy;
 import org.cloudsimplus.allocationpolicies.VmAllocationPolicyBestFit;
 import org.cloudsimplus.schedulers.vm.VmSchedulerTimeShared;
@@ -87,9 +84,10 @@ public class CloudSimProxy extends CloudSimProxyBase {
     private VmAllocationPolicy defineVmAllocationPolicy() {
         return switch (simSettings.getVmAllocationPolicy()) {
             case "rl", "fromfile" -> new VmAllocationPolicyCustom();
-            case "bestfit" -> new VmAllocationPolicyBestFit();
+            case "minimize-queue", "minimize-allocated", "minimize-unutilized"
+                    -> new VmAllocationPolicyBestFit();
             default -> throw new IllegalArgumentException(
-                    "Unknown VM allocation policy: " + simSettings.getVmAllocationPolicy());
+                    "Unknown vm_allocation_policy: " + simSettings.getVmAllocationPolicy());
         };
     }
 
@@ -118,14 +116,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
         return hostList;
     }
 
-    private List<Pe> createPeList(final int pes, final long mips) {
-        List<Pe> peList = new ArrayList<>();
-        for (int i = 0; i < pes; i++) {
-            peList.add(new PeSimple(mips, new PeProvisionerSimple()));
-        }
-        return peList;
-    }
-
     private Vm createVm(final int typeIndex) {
         Map<String, Object> typeConfig = simSettings.getVmTypeConfig(typeIndex);
         long pes = ((Number) typeConfig.get("pes")).longValue();
@@ -142,66 +132,9 @@ public class CloudSimProxy extends CloudSimProxyBase {
         return vm;
     }
 
-    // ============== Rule Based actions ==============
+    // ============== Rule-based action helpers (used by WrappedSimulation) ==============
 
-    public boolean executeRuleBasedAction() {
-        switch (simSettings.getAlgorithm()) {
-            case "minimize-queue" -> executeMinimizeQueueAction();
-            case "minimize-allocated" -> executeMinimizeAllocatedAction();
-            case "minimize-unutilized" -> executeMinimizeUnutilizedAction();
-            default -> throw new IllegalArgumentException(
-                    "Unknown algorithm: " + simSettings.getAlgorithm());
-        }
-        return true;
-    }
-
-
-    private void executeMinimizeQueueAction() {
-        long maxCoresNeeded = calculateMaxJobCoresNeeded();
-        long maxFreeCoresOnSameVm = getMaxFreeVmCores();
-        boolean vmAvailable = maxFreeCoresOnSameVm >= maxCoresNeeded;
-        if (!vmAvailable && maxCoresNeeded > 0) {
-            broker.submitVmList(createSingleVm(calculateTargetTime(), maxCoresNeeded));
-        } else {
-            destroyLargestIdleVm();
-        }
-    }
-
-    private void executeMinimizeAllocatedAction() {
-        int coresNeeded = calculateJobCoresWaiting();
-        int numTypes = simSettings.getVmTypesCount();
-        // Descend from largest type: if coresNeeded < this type and it's running → downsize;
-        // if coresNeeded >= this type and it's not running → create it.
-        for (int i = numTypes - 1; i >= 0; i--) {
-            long typeCores = simSettings.getVmCoreCountByTypeIndex(i);
-            if (coresNeeded >= typeCores) {
-                if (!isVmWithCoresRunning(typeCores)) {
-                    broker.submitVmList(createSingleVm(calculateTargetTime(), typeCores));
-                } else {
-                    destroyLargestIdleVm();
-                }
-                return;
-            } else if (isVmWithCoresRunning(typeCores)) {
-                destroyLargestIdleVm();
-                return;
-            }
-        }
-        destroyLargestIdleVm();
-    }
-
-    private void executeMinimizeUnutilizedAction() {
-        int numTypes = simSettings.getVmTypesCount();
-        for (int i = 0; i < numTypes; i++) {
-            long typeCores = simSettings.getVmCoreCountByTypeIndex(i);
-            if (isJobWithCoresWaiting(typeCores) && !isVmWithCoresRunning(typeCores)) {
-                broker.submitVmList(createSingleVm(calculateTargetTime(), typeCores));
-                return;
-            }
-        }
-        destroyLargestIdleVm();
-    }
-
-    private List<Vm> createSingleVm(final double targetTime, final long coresNeeded) {
+    List<Vm> createSingleVm(final double targetTime, final long coresNeeded) {
         final int numTypes = simSettings.getVmTypesCount();
         final List<Vm> vmList = new ArrayList<>();
         final double startTime = targetTime - simSettings.getTimestepInterval();
@@ -220,7 +153,7 @@ public class CloudSimProxy extends CloudSimProxyBase {
         return vmList;
     }
 
-    private void destroyLargestIdleVm() {
+    void destroyLargestIdleVm() {
         List<Vm> idleVms = broker.getVmExecList().stream()
                 .filter(vm -> vm.getCloudletScheduler().isEmpty()).collect(Collectors.toList());
         idleVms.stream().max(Comparator.comparingLong(Vm::getPesNumber)).ifPresent(largestVm -> {
@@ -299,16 +232,16 @@ public class CloudSimProxy extends CloudSimProxyBase {
                 .mapToLong(Cloudlet::getPesNumber).sum();
     }
 
-    private boolean isJobWithCoresWaiting(final long cores) {
+    boolean isJobWithCoresWaiting(final long cores) {
         return getJobsToSubmitAtThisTimestep(calculateTargetTime()).stream()
                 .anyMatch(job -> job.getPesNumber() == cores);
     }
 
-    private boolean isVmWithCoresRunning(final long cores) {
+    boolean isVmWithCoresRunning(final long cores) {
         return broker.getVmExecList().stream().anyMatch(vm -> vm.getPesNumber() == cores);
     }
 
-    private long getMaxFreeVmCores() {
+    long getMaxFreeVmCores() {
         return broker.getVmExecList().stream().mapToLong(Vm::getExpectedFreePesNumber).max()
                 .orElse(0);
     }

@@ -15,7 +15,7 @@ from utils.misc import (
 
 def train(params, jobs):
     # Select the appropriate algorithm
-    algorithm = get_algorithm(params["algorithm"], params["vm_allocation_policy"])
+    algorithm = get_algorithm(params["rl_algorithm"], params)
 
     # Convert jobs to JSON for gRPC
     jobs_json = json.dumps(jobs)
@@ -30,7 +30,7 @@ def train(params, jobs):
         jobs_json=jobs_json,
     )
 
-    device = get_suitable_device(params["algorithm"])
+    device = get_suitable_device(params["rl_algorithm"])
 
     algorithm_kwargs = create_kwargs_with_algorithm_params(env, params)
 

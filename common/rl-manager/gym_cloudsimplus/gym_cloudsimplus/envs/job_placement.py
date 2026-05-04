@@ -54,9 +54,7 @@ class JobPlacementEnv(CloudSimBaseEnv):
         self.max_hosts = params["max_hosts"]
         self.max_jobs_waiting = params["max_jobs_waiting"]
         self.max_pes_per_vm = params.get("max_pes_per_vm", params.get("max_host_pes", 16))
-        self.cloudlet_to_dc_assignment_policy = params.get(
-            "cloudlet_to_dc_assignment_policy", "rl"
-        )
+        self.cloudlet_to_dc_mapping = params.get("cloudlet_to_dc_mapping", "rl")
 
         # ── Observation spaces ─────────────────────────────────────────────────
         # infrastructure_observation: [dc_id-1, dc_type_id, free_vmpes] per host

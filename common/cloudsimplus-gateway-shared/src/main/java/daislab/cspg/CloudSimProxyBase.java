@@ -7,6 +7,9 @@ import org.cloudsimplus.core.CloudSimTag;
 import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.listeners.CloudletVmEventInfo;
 import org.cloudsimplus.listeners.EventListener;
+import org.cloudsimplus.provisioners.PeProvisionerSimple;
+import org.cloudsimplus.resources.Pe;
+import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.vms.Vm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -306,6 +309,15 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
     long calculateMaxJobCoresNeeded() {
         return getJobsToSubmitAtThisTimestep(calculateTargetTime()).stream()
                 .mapToLong(Cloudlet::getPesNumber).max().orElse(0);
+    }
+
+    /** Shared utility: builds a PE list for host or VM creation. Both domains use this. */
+    protected static List<Pe> createPeList(long pes, long mips) {
+        List<Pe> peList = new ArrayList<>();
+        for (int i = 0; i < pes; i++) {
+            peList.add(new PeSimple(mips, new PeProvisionerSimple()));
+        }
+        return peList;
     }
 
     // ============== Private helpers ==============

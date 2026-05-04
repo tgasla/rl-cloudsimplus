@@ -4,20 +4,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.cloudsimplus.cloudlets.Cloudlet;
+import org.cloudsimplus.vms.Vm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Unified abstract base for RL-driven CloudSim simulations.
  *
- * Defines the shared RL orchestration loop (reset/step/close) and declares
- * abstract methods for domain-specific behavior. Concrete domains extend this
- * class and implement the abstract methods.
+ * Provides the shared {@link #reset(long)} loop and infrastructure plumbing
+ * (settings, identifier, simulation proxy, step counter). Each domain owns
+ * its own {@link #step(int[])} implementation because action handling, reward
+ * computation, and step-info construction differ enough across domains that
+ * a one-size-fits-all template only added indirection.
  *
- * The three strategy interfaces (IStateExtractor, IActionDecoder, IRewardCalculator)
- * are injected at construction and handle domain-specific state/action/reward logic.
+ * Common RL-level helpers (unutilised VM core ratios) live here so domains
+ * can use them without duplicating the logic.
  */
-public abstract class WrappedSimulationBase<OBS, STEP_INFO, STEP_RESULT, RESET_RESULT> {
+public abstract class WrappedSimulationBase implements IWrappedSimulation {
 
     protected final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
@@ -28,28 +31,19 @@ public abstract class WrappedSimulationBase<OBS, STEP_INFO, STEP_RESULT, RESET_R
     protected ICloudSimProxy cloudSimProxy;
     protected int currentStep;
 
-    protected IStateExtractor stateExtractor;
-    protected IActionDecoder actionDecoder;
-    protected IRewardCalculator rewardCalculator;
-
     protected WrappedSimulationBase(
             final String identifier,
             final ISimulationSettings settings,
-            final List<CloudletDescriptor> jobs,
-            final IStateExtractor stateExtractor,
-            final IActionDecoder actionDecoder,
-            final IRewardCalculator rewardCalculator) {
+            final List<CloudletDescriptor> jobs) {
         this.identifier = identifier;
         this.settings = settings;
         this.initialJobsDescriptors = jobs;
-        this.stateExtractor = stateExtractor;
-        this.actionDecoder = actionDecoder;
-        this.rewardCalculator = rewardCalculator;
         LOGGER.info("Creating simulation: {}", identifier);
     }
 
-    // ============== Shared RL loop ==============
+    // ============== Shared lifecycle ==============
 
+    @Override
     public void close() {
         LOGGER.info("Terminating simulation...");
         if (cloudSimProxy.isRunning()) {
@@ -64,10 +58,11 @@ public abstract class WrappedSimulationBase<OBS, STEP_INFO, STEP_RESULT, RESET_R
         }
     }
 
-    public RESET_RESULT reset(final long seed) {
+    @Override
+    public SimulationResetResult reset(final long seed) {
         // seed is ignored (used only for reproducibility in distributed training)
         LOGGER.info("Reset initiated");
-        LOGGER.info("job count: " + initialJobsDescriptors.size());
+        LOGGER.info("job count: {}", initialJobsDescriptors.size());
 
         currentStep = 0;
 
@@ -75,47 +70,14 @@ public abstract class WrappedSimulationBase<OBS, STEP_INFO, STEP_RESULT, RESET_R
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
         cloudSimProxy = createCloudSimProxy(cloudlets);
 
-        int[] infraObs = stateExtractor.extractState();
-        int[] secondaryObs = extractSecondaryObservation();
-        OBS observation = buildObservation(infraObs, secondaryObs);
-
-        STEP_INFO info = buildResetStepInfo();
+        Observation observation = buildObservation(extractInfrastructureObservation(),
+                extractSecondaryObservation());
+        SimulationStepInfo info = buildResetStepInfo();
 
         return buildResetResult(observation, info);
     }
 
-    public STEP_RESULT step(final int[] action) {
-        validateSimulationReset();
-        currentStep++;
-        LOGGER.info("Step {} starting", currentStep);
-
-        final int[] actionResult = actionDecoder.decodeAction(action);
-
-        cloudSimProxy.runOneTimestep();
-
-        boolean terminated = !cloudSimProxy.isRunning();
-        boolean truncated = !terminated && (currentStep >= settings.getMaxEpisodeLength());
-
-        double reward = rewardCalculator.calculateReward();
-
-        LOGGER.info("Step {} finished", currentStep);
-        LOGGER.debug("Terminated: {}, Truncated: {}", terminated, truncated);
-        LOGGER.debug("Length of future events queue: {}", cloudSimProxy.getNumberOfFutureEvents());
-        if (terminated || truncated) {
-            LOGGER.info("Simulation ended. Jobs finished: {}/{}",
-                    cloudSimProxy.getFinishedJobsCount(),
-                    initialJobsDescriptors.size());
-        }
-
-        int[] infraObs = stateExtractor.extractState();
-        int[] secondaryObs = extractSecondaryObservation();
-        OBS observation = buildObservation(infraObs, secondaryObs);
-
-        STEP_INFO info = buildStepInfo(actionResult, terminated, truncated);
-
-        return buildStepResult(observation, reward, terminated, truncated, info);
-    }
-
+    @Override
     public String render() {
         return "";
     }
@@ -124,6 +86,7 @@ public abstract class WrappedSimulationBase<OBS, STEP_INFO, STEP_RESULT, RESET_R
         return currentStep;
     }
 
+    @Override
     public String getIdentifier() {
         return identifier;
     }
@@ -132,28 +95,49 @@ public abstract class WrappedSimulationBase<OBS, STEP_INFO, STEP_RESULT, RESET_R
         return cloudSimProxy.clock();
     }
 
-    // ============== Abstract methods for domain-specific behavior ==============
+    // ============== Concrete shared helpers ==============
 
-    /** Create domain-specific simulation proxy with initial cloudlets */
+    protected Observation buildObservation(int[] infraObs, int[] secondaryObs) {
+        return new Observation(infraObs, secondaryObs);
+    }
+
+    protected SimulationStepInfo buildResetStepInfo() {
+        return new SimulationStepInfo();
+    }
+
+    protected SimulationResetResult buildResetResult(Observation observation,
+            SimulationStepInfo info) {
+        return new SimulationResetResult(observation, info);
+    }
+
+    /** Ratio of free PEs across all running VMs to total running VM PEs. */
+    protected double getUnutilizedVmCoreRatio() {
+        List<Vm> vmList = cloudSimProxy.getBroker().getVmExecList();
+        long unutilized = getUnutilizedVmCores(vmList);
+        long running = getRunningVmCores(vmList);
+        return running > 0 ? ((double) unutilized / running) : 0.0;
+    }
+
+    protected long getUnutilizedVmCores(List<Vm> vmList) {
+        return vmList.parallelStream().map(Vm::getExpectedFreePesNumber).reduce(0L, Long::sum);
+    }
+
+    protected long getRunningVmCores(List<Vm> vmList) {
+        return vmList.parallelStream().map(Vm::getPesNumber).reduce(0L, Long::sum);
+    }
+
+    // ============== Domain-specific abstract methods ==============
+
+    /** Create domain-specific simulation proxy with initial cloudlets. */
     protected abstract ICloudSimProxy createCloudSimProxy(List<Cloudlet> cloudlets);
 
-    /** Extract secondary observation (e.g., jobs waiting, cores waiting) */
+    /** Domain-specific step loop: decode action, advance clock, compute reward, build result. */
+    @Override
+    public abstract SimulationStepResult step(int[] action);
+
+    /** Extract infrastructure observation (state) from the simulation. */
+    protected abstract int[] extractInfrastructureObservation();
+
+    /** Extract secondary observation (e.g., jobs waiting, cores waiting). */
     protected abstract int[] extractSecondaryObservation();
-
-    /** Build domain-specific observation from infrastructure and secondary observations */
-    protected abstract OBS buildObservation(int[] infraObs, int[] secondaryObs);
-
-    /** Build SimulationStepInfo for reset */
-    protected abstract STEP_INFO buildResetStepInfo();
-
-    /** Build SimulationStepInfo for step result */
-    protected abstract STEP_INFO buildStepInfo(int[] actionResult,
-            boolean terminated, boolean truncated);
-
-    /** Build SimulationResetResult from observation and step info */
-    protected abstract RESET_RESULT buildResetResult(OBS observation, STEP_INFO info);
-
-    /** Build SimulationStepResult from observation, reward, terminated, truncated, and step info */
-    protected abstract STEP_RESULT buildStepResult(OBS observation, double reward,
-            boolean terminated, boolean truncated, STEP_INFO info);
 }

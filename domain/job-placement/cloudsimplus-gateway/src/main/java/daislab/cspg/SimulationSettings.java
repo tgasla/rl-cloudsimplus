@@ -1,7 +1,7 @@
 package daislab.cspg;
 
 import java.util.Map;
-import lombok.Data;
+import lombok.Value;
 import java.util.List;
 
 /*
@@ -10,7 +10,7 @@ import java.util.List;
  * It takes as a parameter a Map<String, Object>. Parameters are accessed via
  * safe Number-aware getters to handle Gson LazilyParsedNumber correctly.
  */
-@Data
+@Value
 public class SimulationSettings implements ISimulationSettings {
     private final String mode;
     private final int numExperiments;
@@ -19,11 +19,10 @@ public class SimulationSettings implements ISimulationSettings {
     private final boolean splitLargeJobs;
     private final int maxJobPes;
     private final int maxEpisodeLength;
-    private final String algorithm;
-    private final String cloudletToDcAssignmentPolicy;
-    private final String cloudletToVmAssignmentPolicy;
+    private final String rlAlgorithm;
+    private final String cloudletToDcMapping;
+    private final String cloudletToVmMapping;
     private final String stateSpaceType;
-    private final String vmAllocationPolicy;
     private final int maxJobsWaiting;
     private final List<Map<String, Object>> datacenters;
     private final int maxHosts;
@@ -53,17 +52,12 @@ public class SimulationSettings implements ISimulationSettings {
         rewardQualityCoef = ISimulationSettings.getDouble(params, "reward_quality_coef");
         rewardDeadlineViolationCoef = ISimulationSettings.getDouble(params, "reward_deadline_violation_coef");
         maxEpisodeLength = ISimulationSettings.getInt(params, "max_episode_length");
-        algorithm = ISimulationSettings.getStr(params, "algorithm");
-        cloudletToDcAssignmentPolicy = ISimulationSettings.getStr(params, "cloudlet_to_dc_assignment_policy");
-        cloudletToVmAssignmentPolicy = ISimulationSettings.getStr(params, "cloudlet_to_vm_assignment_policy");
+        rlAlgorithm = ISimulationSettings.getStr(params, "rl_algorithm");
+        cloudletToDcMapping = ISimulationSettings.getStr(params, "cloudlet_to_dc_mapping");
+        cloudletToVmMapping = ISimulationSettings.getStr(params, "cloudlet_to_vm_mapping");
         stateSpaceType = ISimulationSettings.getStr(params, "state_space_type");
-        vmAllocationPolicy = ISimulationSettings.getStr(params, "vm_allocation_policy");
         maxJobsWaiting = ISimulationSettings.getInt(params, "max_jobs_waiting");
         datacenters = (List<Map<String, Object>>) params.get("datacenters");
     }
 
-    @Override
-    public Map<String, Object> getParams() {
-        return Map.of();
-    }
 }

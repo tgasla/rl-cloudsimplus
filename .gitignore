@@ -233,3 +233,5 @@ logs/
 # Auto-copied build files during build (canonical is common/cloudsimplus-gateway-shared/gateway-build.gradle)
 domain/**/build.gradle
 domain/**/src/main/proto/
+.claude
+.mcp.json

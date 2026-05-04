@@ -21,7 +21,7 @@ def transfer(params, jobs):
         "best_model",
     )
 
-    algorithm = get_algorithm(params["algorithm"], params["vm_allocation_policy"])
+    algorithm = get_algorithm(params["rl_algorithm"], params)
 
     num_cpu = params.get("num_cpu", 16)
     jobs_json = json.dumps(jobs)
@@ -38,7 +38,7 @@ def transfer(params, jobs):
     # Change any model parameters you want here
     custom_objects = create_kwargs_with_algorithm_params(env, params)
 
-    device = get_suitable_device(params["algorithm"])
+    device = get_suitable_device(params["rl_algorithm"])
 
     # Load the trained agent
     model = algorithm.load(
