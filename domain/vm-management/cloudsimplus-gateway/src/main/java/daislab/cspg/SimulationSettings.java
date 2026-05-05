@@ -7,17 +7,13 @@ import java.util.Map;
 @Value
 public class SimulationSettings implements ISimulationSettings {
 
-    Map<String, Object> params;
-
     double minTimeBetweenEvents;
     double timestepInterval;
     boolean splitLargeJobs;
     int maxJobPes;
     int maxHosts;
-    double smallVmHourlyCost;
     double vmStartupDelay;
     double vmShutdownDelay;
-    boolean payingForTheFullHour;
     boolean clearCreatedLists;
     boolean printStats;
     double rewardJobWaitCoef;
@@ -37,16 +33,13 @@ public class SimulationSettings implements ISimulationSettings {
 
     @SuppressWarnings("unchecked")
     public SimulationSettings(final Map<String, Object> params) {
-        this.params = params;
         minTimeBetweenEvents = ISimulationSettings.getDouble(params, "min_time_between_events");
         timestepInterval = ISimulationSettings.getDouble(params, "timestep_interval");
         splitLargeJobs = ISimulationSettings.getBool(params, "split_large_jobs");
         maxJobPes = ISimulationSettings.getInt(params, "max_job_pes");
         maxHosts = ISimulationSettings.getInt(params, "max_hosts");
-        smallVmHourlyCost = ISimulationSettings.getDouble(params, "small_vm_hourly_cost");
         vmStartupDelay = ISimulationSettings.getDouble(params, "vm_startup_delay");
         vmShutdownDelay = ISimulationSettings.getDouble(params, "vm_shutdown_delay");
-        payingForTheFullHour = ISimulationSettings.getBool(params, "paying_for_the_full_hour");
         clearCreatedLists = ISimulationSettings.getBool(params, "clear_created_lists");
         printStats = ISimulationSettings.getBool(params, "print_stats");
         rewardJobWaitCoef = ISimulationSettings.getDouble(params, "reward_job_wait_coef");

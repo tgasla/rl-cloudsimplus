@@ -300,7 +300,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
     private Long getRunningCloudletsCount() {
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
         List<Vm> vmList = proxy.getBroker().getVmExecList();
-        return vmList.parallelStream().map(Vm::getCloudletScheduler)
+        return vmList.stream().map(Vm::getCloudletScheduler)
                 .map(CloudletScheduler::getCloudletExecList).mapToLong(List::size).sum();
     }
 }

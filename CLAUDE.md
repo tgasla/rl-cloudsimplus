@@ -244,7 +244,6 @@ All domain-agnostic logic lives in `common/cloudsimplus-gateway-shared/`. Domain
 | `CloudSimGrpcService` | ✓ | ✓ |
 | `CloudSimProxy` | ✓ | ✓ |
 | `WrappedSimulation` | ✓ | ✓ |
-| `VmCost` | ✓ | — |
 | `HostWithoutCreatedList` | ✓ | — |
 | `DatacenterWithType` | — | ✓ |
 | `CloudletWithLocation` / `CloudletDescriptorWithLocation` | — | ✓ |

@@ -24,7 +24,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     private SimulationSettings simSettings;
     private Datacenter datacenter;
-    private VmCost vmCost;
 
     public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
         super(settings, inputJobs);
@@ -40,7 +39,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
     @Override
     protected void setupInfrastructure() {
         simSettings = (SimulationSettings) settings;
-        vmCost = new VmCost(simSettings);
         datacenter = createDatacenter();
     }
 
@@ -128,7 +126,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
                 .setCloudletScheduler(new OptimizedCloudletScheduler())
                 .setShutDownDelay(simSettings.getVmShutdownDelay());
         vm.setSubmissionDelay(simSettings.getVmStartupDelay());
-        vmCost.addNewVmToList(vm);
         return vm;
     }
 
@@ -203,7 +200,6 @@ public class CloudSimProxy extends CloudSimProxyBase {
                 Stream.concat(execCloudlets.stream(), waitingCloudlets.stream())
                         .collect(Collectors.toList());
         datacenter.getVmAllocationPolicy().deallocateHostForVm(vm);
-        vmCost.removeVmFromList(vm);
         LOGGER.info("{} Killing VM {} ({} PEs), cloudlets to reschedule: {}", clock(), vm.getId(),
                 vm.getPesNumber(), affectedCloudlets.size());
         if (!affectedCloudlets.isEmpty()) {
@@ -248,9 +244,5 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     public Datacenter getDatacenter() {
         return datacenter;
-    }
-
-    public double getRunningCost() {
-        return vmCost.getVMCostPerIteration(clock());
     }
 }

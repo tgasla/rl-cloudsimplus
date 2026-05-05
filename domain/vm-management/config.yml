@@ -35,8 +35,6 @@ common:
     vm_shutdown_delay: 0.0
     split_large_jobs: true
     clear_created_lists: true
-    paying_for_the_full_hour: false
-    small_vm_hourly_cost: 0.086
     print_stats: false
     base_log_dir: logs
     max_hosts: 32
