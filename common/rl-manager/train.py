@@ -46,6 +46,8 @@ def train(params, jobs):
                 embedding_size=params["embedding_size"],
                 hidden_dim=params["hidden_dim"],
                 adaptation_bottleneck=params.get("adaptation_bottleneck", False),
+                use_residual=params.get("use_residual", True),
+                dropout=params.get("dropout", 0.1),
             ),
         )
 

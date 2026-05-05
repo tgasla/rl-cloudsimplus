@@ -213,9 +213,11 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
         activation: nn.Module = nn.ReLU(),
         adaptation_bottleneck: bool = False,
         dropout: float = 0.1,
+        use_residual: bool = True,
     ):
         super().__init__(observation_space, features_dim)
 
+        self.use_residual = use_residual
         self.extractors = nn.ModuleDict()
         self.embeddings = nn.ModuleDict()
         total_embedding_dim = 0
@@ -331,7 +333,10 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
                 embedded_features.append(extractor(obs_val.float()))
 
         final_features = torch.cat(embedded_features, dim=-1)
-        adapted_features = final_features + 0.1 * self.adaptation_layer(final_features)
+        if self.use_residual:
+            adapted_features = final_features + 0.1 * self.adaptation_layer(final_features)
+        else:
+            adapted_features = final_features
         return self.fc(adapted_features)
 
 

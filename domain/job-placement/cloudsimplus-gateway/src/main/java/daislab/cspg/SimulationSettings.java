@@ -28,7 +28,8 @@ public class SimulationSettings implements ISimulationSettings {
     private final int maxHosts;
     private final double vmStartupDelay;
     private final double vmShutdownDelay;
-    private final boolean payingForTheFullHour;
+    private final int driftAtStep;
+    private final int driftDcIndex;
     private final boolean clearCreatedLists;
     private final boolean printStats;
     private final double rewardJobsPlacedCoef;
@@ -45,7 +46,8 @@ public class SimulationSettings implements ISimulationSettings {
         maxHosts = ISimulationSettings.getInt(params, "max_hosts");
         vmStartupDelay = ISimulationSettings.getDouble(params, "vm_startup_delay");
         vmShutdownDelay = ISimulationSettings.getDouble(params, "vm_shutdown_delay");
-        payingForTheFullHour = ISimulationSettings.getBool(params, "paying_for_the_full_hour");
+        driftAtStep = ISimulationSettings.getIntOrDefault(params, "drift_at_step", -1);
+        driftDcIndex = ISimulationSettings.getIntOrDefault(params, "drift_dc_index", 0);
         clearCreatedLists = ISimulationSettings.getBool(params, "clear_created_lists");
         printStats = ISimulationSettings.getBoolOrDefault(params, "print_stats", true);
         rewardJobsPlacedCoef = ISimulationSettings.getDouble(params, "reward_jobs_placed_coef");

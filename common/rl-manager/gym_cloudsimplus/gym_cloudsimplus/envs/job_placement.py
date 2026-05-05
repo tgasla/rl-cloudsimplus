@@ -93,6 +93,10 @@ class JobPlacementEnv(CloudSimBaseEnv):
             np.array([self.max_datacenters] * self.max_jobs_waiting)
         )
 
+        # ── Last observation cache (used by action_masks) ─────────────────────
+        self._last_infr_obs = np.zeros(self.infr_obs_length, dtype=np.int16)
+        self._last_jobs_obs = np.zeros(self.job_obs_length, dtype=np.int16)
+
         # ── Create simulation (CloudSimBaseEnv has _client and _sim_id ready) ─
         import json
         self._sim_id = self._client.create_simulation(
@@ -102,25 +106,58 @@ class JobPlacementEnv(CloudSimBaseEnv):
     # ── CloudSimBaseEnv abstract methods ───────────────────────────────────────
 
     def action_masks(self) -> list[bool]:
-        """Return action mask for job placement.
+        """Return action mask for MaskablePPO.
 
-        Returns a flat list of booleans for MultiDiscrete masking.
-        Currently allows all DC choices for all jobs.
+        For each (job, dc) pair: valid if DC has free capacity >= job's requested cores.
+        Action 0 is always valid (no-op: skip placing this job).
+        Padding job slots (cores=0) allow all actions.
+        If no real DC can fit a job, fall back to allowing all actions so MaskablePPO
+        always has at least one valid choice per sub-space.
+
+        obs_dc_id = cloudSim_dc_id - 1, which equals the agent action for that DC.
+        action=0 is no-op; real DCs start at obs_dc_id=1 (action=1).
         """
+        infr_obs = self._last_infr_obs
+        jobs_obs = self._last_jobs_obs
+
+        # Compute max free cores per DC action index.
+        # infr_obs layout: [obs_dc_id, dc_type, free_vmpes] per host.
+        n_hosts = self.infr_obs_length // 3
+        hosts = infr_obs.reshape(n_hosts, 3)
+        dc_max_free = np.zeros(self.max_datacenters, dtype=np.int64)
+        for obs_dc_id, _, free_pes in hosts:
+            if 0 < obs_dc_id < self.max_datacenters:
+                if free_pes > dc_max_free[obs_dc_id]:
+                    dc_max_free[obs_dc_id] = free_pes
+
         masks = []
-        for _ in range(self.max_jobs_waiting):
-            masks.append([True] * self.max_datacenters)
-        return [item for sublist in masks for item in sublist]
+        for j in range(self.max_jobs_waiting):
+            cores = int(jobs_obs[j * self.JOB_OBS_FEATURES])
+            if cores == 0:
+                # Padding slot — no real job, allow any action.
+                masks.extend([True] * self.max_datacenters)
+                continue
+            job_masks = [True]  # action=0 (no-op) is always valid
+            for dc_idx in range(1, self.max_datacenters):
+                job_masks.append(bool(dc_max_free[dc_idx] >= cores))
+            # If all real DCs are full, allow everything (MaskablePPO invariant).
+            if not any(job_masks[1:]):
+                job_masks = [True] * self.max_datacenters
+            masks.extend(job_masks)
+
+        return masks
 
     def _get_observation(self, raw_obs: dict) -> dict:
         """Convert raw gRPC observation to job placement gymnasium obs dict."""
         # Infrastructure: [dc_id-1, dc_type_id, free_vmpes] per host
         infr_obs = np.array(raw_obs.get("infrastructure_observation"), dtype=np.int16)
         infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
+        self._last_infr_obs = infr_obs
 
         # Jobs waiting: [cores, location, sensitivity, deadline] per job
         jobs_obs = np.array(raw_obs.get("secondary_observation"), dtype=np.int16)
         jobs_obs = self._pad_observation(jobs_obs, self.job_obs_length)
+        self._last_jobs_obs = jobs_obs
 
         return {
             "infrastructure_state": infr_obs,

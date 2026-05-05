@@ -74,6 +74,13 @@ public class WrappedSimulation extends WrappedSimulationBase {
         LOGGER.info("Step {} starting", currentStep);
         CloudSimProxy proxy = (CloudSimProxy) cloudSimProxy;
 
+        final int driftAt = simSettings.getDriftAtStep();
+        if (driftAt > 0 && currentStep == driftAt) {
+            LOGGER.info("Drift event at step {}: failing DC index {}", currentStep,
+                    simSettings.getDriftDcIndex());
+            proxy.injectDrift(simSettings.getDriftDcIndex());
+        }
+
         final double[] ratios = executeCustomCloudletToDcAction(action);
 
         final double targetTime = proxy.calculateTargetTime();

@@ -206,6 +206,23 @@ public class CloudSimProxy extends CloudSimProxyBase {
                 .filter(c -> c.getStatus().equals(Cloudlet.Status.QUEUED)).count();
     }
 
+    // ============== Drift injection ==============
+
+    /**
+     * Simulates a datacenter failure by marking all its hosts as failed.
+     * The observation will reflect 0 free PEs for the failed DC, and action masking
+     * will prevent the agent from placing further jobs there.
+     */
+    public void injectDrift(final int dcIndex) {
+        if (dcIndex < 0 || dcIndex >= datacenters.size()) {
+            LOGGER.warn("injectDrift: invalid DC index {} (total DCs: {})", dcIndex, datacenters.size());
+            return;
+        }
+        final Datacenter dc = datacenters.get(dcIndex);
+        LOGGER.info("Drift: failing all hosts in DC {} (index {})", dc.getId(), dcIndex);
+        dc.getHostList().forEach(host -> host.setFailed(true));
+    }
+
     // ============== Datacenter accessors ==============
 
     public Datacenter getDatacenterById(final int id) {

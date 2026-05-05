@@ -51,6 +51,15 @@ public interface ISimulationSettings {
         return Boolean.parseBoolean(v.toString());
     }
 
+    static int getIntOrDefault(Map<String, Object> m, String k, int defaultValue) {
+        Object v = m.get(k);
+        if (v == null) return defaultValue;
+        if (v instanceof Number) return ((Number) v).intValue();
+        try { return Integer.parseInt(v.toString()); } catch (Exception e) {
+            throw new IllegalArgumentException("Cannot parse int parameter '" + k + "': " + v);
+        }
+    }
+
     static String getStr(Map<String, Object> m, String k) {
         Object v = m.get(k);
         if (v == null) throw new IllegalArgumentException("Missing required string parameter: " + k);
