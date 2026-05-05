@@ -59,10 +59,10 @@ common:
         bw: 1000
     timesteps: 2048         # 1M timesteps (recommended minimum for RL learning)
     n_rollout_steps: 128      # per-worker rollout steps. So, total rollout steps are x num_cpu
-    reward_job_wait_coef: 0.25
-    reward_running_vm_cores_coef: 0.25
-    reward_unutilized_vm_cores_coef: 0.25
-    reward_invalid_coef: 0.25
+    reward_job_wait_coef: 0.33
+    reward_running_vm_cores_coef: 0.33
+    reward_unutilized_vm_cores_coef: 0.33
+    reward_invalid_coef: 0.0  # 0.0 for MaskablePPO (masks guarantee validity); >0 for ablation without masks
     # Set to false to disable sending tree array observation (faster gRPC communication)
     send_observation_tree_array: false
     # Feature extractor: 'default' uses standard MLP, 'custom' uses CustomFeatureExtractor

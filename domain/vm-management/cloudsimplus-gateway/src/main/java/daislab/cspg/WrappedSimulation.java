@@ -257,15 +257,13 @@ public class WrappedSimulation extends WrappedSimulationBase {
         final double unutilizedVmCoresReward = -unutilizedVmCoresCoef * getUnutilizedVmCoreRatio();
         final double invalidReward = -invalidCoef * (isValid ? 0 : 1);
 
-        // RL is the only mode where actions can be invalid (the agent might pick a bad host/VM).
-        // Rule-based and fromfile modes never produce invalid actions, so no invalid penalty.
-        double totalReward;
-        if (simSettings.getVmAllocationPolicy().equals("rl")) {
-            totalReward =
-                    jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
-        } else {
-            totalReward = jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward;
-        }
+        // reward_invalid_coef controls whether invalid actions are penalised:
+        //   0.0 → masked RL (MaskablePPO guarantees all actions are valid; penalty never fires)
+        //   >0  → ablation without masking (plain PPO; penalty fires on bad host/VM choices)
+        // Rule-based and fromfile modes always produce valid actions, so invalidReward is 0
+        // regardless of the coefficient.
+        final double totalReward =
+                jobWaitReward + runningVmCoresReward + unutilizedVmCoresReward + invalidReward;
 
         LOGGER.info("totalReward: " + totalReward);
         LOGGER.info("jobWaitReward: " + jobWaitReward);
