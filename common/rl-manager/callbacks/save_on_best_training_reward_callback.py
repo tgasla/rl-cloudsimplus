@@ -114,7 +114,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # Dynamically discover and track all numeric info keys
         for key, value in info.items():
             # Skip non-numeric/non-serializable values
-            if isinstance(value, (list, dict)):
+            if value is None or isinstance(value, (list, dict)):
                 continue
             # Initialize tracking on first encounter
             if key not in self.info_tracked_lists:
@@ -223,7 +223,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                 deque_val = self.mean_exclude_neg(values)
             else:
                 # Rewards and signed metrics: use regular mean
-                deque_val = np.mean(values) if values else 0.0
+                numeric = [v for v in values if isinstance(v, (int, float))]
+                deque_val = np.mean(numeric) if numeric else 0.0
             self.metric_deques[key].append(deque_val)
             # Record per-episode aggregate
             self.logger.record(f"train/ep_{key}", deque_val, exclude="tensorboard")

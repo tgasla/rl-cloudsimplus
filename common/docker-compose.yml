@@ -29,6 +29,7 @@ services:
       - ./rl-manager/entrypoint.py:/mgr/entrypoint.py
       - ../common/logs:/mgr/logs
       - ./rl-manager/callbacks:/mgr/callbacks
+      - ./rl-manager/extractors:/mgr/extractors
       - ../domain/${DOMAIN}/config.yml:/mgr/config.yml
       - ../domain/${DOMAIN}/cloudsimplus-gateway/build/libs:/app/cloudsimplus-gateway/build/libs:ro
       - ../common/topologies:/mgr/topologies:ro

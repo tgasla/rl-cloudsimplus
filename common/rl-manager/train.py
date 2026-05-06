@@ -37,18 +37,12 @@ def train(params, jobs):
     policy = create_correct_policy(env.observation_space, params)
 
     policy_kwargs = None
-    if params.get("feature_extractor") == "custom":
-        from utils.misc import CustomFeatureExtractor
+    feature_extractor_name = params.get("feature_extractor")
+    if feature_extractor_name and feature_extractor_name != "default":
+        from extractors import get_extractor_class, build_extractor_kwargs
         policy_kwargs = dict(
-            features_extractor_class=CustomFeatureExtractor,
-            features_extractor_kwargs=dict(
-                features_dim=params["features_dim"],
-                embedding_size=params["embedding_size"],
-                hidden_dim=params["hidden_dim"],
-                adaptation_bottleneck=params.get("adaptation_bottleneck", False),
-                use_residual=params.get("use_residual", True),
-                dropout=params.get("dropout", 0.1),
-            ),
+            features_extractor_class=get_extractor_class(feature_extractor_name),
+            features_extractor_kwargs=build_extractor_kwargs(feature_extractor_name, params),
         )
 
     # Instantiate the agent

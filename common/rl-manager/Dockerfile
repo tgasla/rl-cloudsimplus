@@ -11,7 +11,7 @@ WORKDIR /mgr
 
 RUN pip3 install --upgrade pip==26.0.1 && pip3 install stable-baselines3==2.8.0 sb3-contrib==2.8.0 \
     tensorboard==2.20.0 tqdm==4.67.3 rich==15.0.0 pyyaml==6.0.3 pycurl==7.45.7 scikit-learn==1.8.0 \
-    grpcio==1.80.0 protobuf==7.34.1
+    grpcio==1.80.0 protobuf==7.34.1 torch_geometric
 
 RUN apt update \
     && apt install -yqq wget \
