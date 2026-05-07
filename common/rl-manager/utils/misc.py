@@ -465,7 +465,7 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
         java_cmd,
         stdout=java_stdout,
         stderr=_subprocess.STDOUT,
-        env={**os.environ, "JAVA_TOOL_OPTIONS": "-XX:+UseSerialGC"},
+        env={**os.environ, "JAVA_TOOL_OPTIONS": "-XX:+UseG1GC -Xmx256m"},
     )
 
     deadline = _time.time() + 60
@@ -534,7 +534,7 @@ def make_grpc_env(rank, params, jobs_json, num_cpu, base_port=50051, log_dir=Non
             java_cmd,
             stdout=None if ("stdout" in log_dest) else _subprocess.DEVNULL,
             stderr=_subprocess.STDOUT,
-            env={**os.environ, "JAVA_TOOL_OPTIONS": "-XX:+UseSerialGC"},
+            env={**os.environ, "JAVA_TOOL_OPTIONS": "-XX:+UseG1GC -Xmx256m"},
         )
         deadline = _time.time() + 60
         while _time.time() < deadline:
@@ -733,6 +733,8 @@ def create_kwargs_with_algorithm_params(env, params) -> dict:
         algorithm_kwargs["action_noise"] = action_noise
     if params.get("target_kl") and params["rl_algorithm"] == "PPO":
         algorithm_kwargs["target_kl"] = params["target_kl"]
+    if params.get("n_epochs") and params["rl_algorithm"] in ("PPO", "MaskablePPO"):
+        algorithm_kwargs["n_epochs"] = params["n_epochs"]
     return algorithm_kwargs
 
 

@@ -1,11 +1,9 @@
 import os
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, Union
-import torch
+from typing import Any, Dict
 from collections import deque
 
-from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.callbacks import BaseCallback
 
 
@@ -39,10 +37,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         # All tracked info lists per episode
         self.info_tracked_lists: Dict[str, list] = {}
         # Rolling episode lists
-        self.observations = []
         self.actions = []
         self.rewards = []
-        self.new_observations = []
         self.current_episode_length = 0
 
     def get(self, attr) -> Any:
@@ -70,10 +66,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         return episode_details
 
     def _clear_episode_details(self) -> None:
-        self.observations = []
         self.actions = []
         self.rewards = []
-        self.new_observations = []
         self.current_episode_length = 0
         # Clear per-episode info lists
         for key in self.info_tracked_lists:
@@ -88,26 +82,9 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             if os.path.exists(log_file):
                 os.remove(log_file)
 
-    def _get_observation_from_locals(self, obs_key) -> Union[list, dict]:
-        obs = self.locals[obs_key]
-        if isinstance(obs, dict):
-            processed_obs = {}
-            for key, value in obs.items():
-                value = value[0].cpu() if isinstance(value, torch.Tensor) else value[0]
-                processed_obs[key] = value
-        elif isinstance(obs, torch.Tensor):
-            processed_obs = obs[0].cpu().numpy()
-        elif isinstance(obs, np.ndarray):
-            processed_obs = obs[0]
-        else:
-            raise TypeError(f"Unknown observation type: {type(obs)}")
-        return processed_obs
-
     def _save_timestep_details(self) -> None:
-        self.observations.append(self._get_observation_from_locals("obs_tensor"))
         self.actions.append(self.locals["actions"][0])
         self.rewards.append(self.locals["rewards"][0])
-        self.new_observations.append(self._get_observation_from_locals("new_obs"))
 
         info = self.locals["infos"][0]
 
@@ -185,7 +162,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         if self.verbose >= 1:
             print(f"Current timesteps: {self.num_timesteps - 1}")
             print(f"Episode number: {self.current_episode_num}")
-            print(f"Episode length: {len(self.observations)}")
+            print(f"Episode length: {self.current_episode_length}")
             print(f"Best reward: {self.best_reward:.2f}")
             print(f"Current reward: {current_reward:.2f}")
 
@@ -241,14 +218,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                 print("Episode terminated")
             self._write_progress_log_row()
 
-            # Retrieve training reward
-            try:
-                x, y = ts2xy(load_results(self.log_dir), "timesteps")
-            except Exception:
-                return True
-            if len(x) == 0:
-                return True
-            current_reward = float(y[-1])
+            current_reward = float(np.sum(self.rewards))
             self._maybe_print_current_episode_info(current_reward)
 
             # New best model, save the agent and the episode details

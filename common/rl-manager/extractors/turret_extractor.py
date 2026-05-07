@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.utils.checkpoint import checkpoint as grad_checkpoint
 import numpy as np
 from gymnasium import spaces
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
@@ -61,7 +62,6 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         self.max_jobs = jobs_flat // self.JOB_FEAT_DIM
 
         # ── Input model F_in ─────────────────────────────────────────────────
-        # Categorically embed dc_id and dc_type, treat free_vmpes as continuous
         dc_id_dim = min(16, (max_datacenters // 2) + 1)
         dc_type_dim = min(8, (max_dc_types // 2) + 1)
         self.dc_id_embed = nn.Embedding(max_datacenters + 1, dc_id_dim)
@@ -72,7 +72,6 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         self.job_proj = nn.Linear(self.JOB_FEAT_DIM, gnn_hidden)
 
         # ── Propagation model P ───────────────────────────────────────────────
-        # K GATConv layers; each doubles width via multi-head concat
         self.gnn_layers = nn.ModuleList()
         self.norms = nn.ModuleList()
         for i in range(num_layers):
@@ -85,7 +84,7 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         out_ch = gnn_hidden * gnn_heads
 
         # ── Readout model F_read ─────────────────────────────────────────────
-        # Set-transformer readout: one learned query attends over all node vectors
+        # Set-transformer readout: one learned query attends over all node vectors.
         # Equivalent to the attention-based ENCODER-DECODER in the TURRET paper.
         self.pool_query = nn.Parameter(torch.randn(1, 1, out_ch))
         self.pool_attn = nn.MultiheadAttention(
@@ -97,20 +96,22 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
             nn.LayerNorm(features_dim),
         )
 
-    def _embed_host_nodes(self, host_feats: torch.Tensor, max_datacenters: int, max_dc_types: int) -> torch.Tensor:
-        """
-        host_feats: [max_hosts, 3] — (dc_id, dc_type, free_vmpes)
-        Returns:    [max_hosts, gnn_hidden]
-        """
-        dc_ids = host_feats[:, 0].long().clamp(0, max_datacenters)
-        dc_types = host_feats[:, 1].long().clamp(0, max_dc_types)
-        free_pes = host_feats[:, 2:3].float()
-        embedded = torch.cat([
-            self.dc_id_embed(dc_ids),
-            self.dc_type_embed(dc_types),
-            free_pes,
-        ], dim=-1)
-        return self.host_proj(embedded)
+        # ── Precomputed fixed edge_index ─────────────────────────────────────
+        # Graph topology (fully-connected, no self-loops) is identical for every
+        # sample and every step: n = max_hosts + max_jobs never changes.
+        # Registering as a buffer moves it to the correct device automatically.
+        n = self.max_hosts + self.max_jobs
+        idx = torch.arange(n)
+        src, dst = torch.meshgrid(idx, idx, indexing="ij")
+        mask = src != dst
+        self.register_buffer("_edge_index", torch.stack([src[mask], dst[mask]], dim=0))
+
+    def _gnn_forward(self, xb: torch.Tensor) -> torch.Tensor:
+        for layer, norm in zip(self.gnn_layers, self.norms):
+            xb = layer(xb, self._edge_index)
+            xb = norm(xb)
+            xb = torch.relu(xb)
+        return xb
 
     def forward(self, observations) -> torch.Tensor:
         device = next(self.parameters()).device
@@ -124,30 +125,36 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         max_dc = self.dc_id_embed.num_embeddings - 1
         max_dct = self.dc_type_embed.num_embeddings - 1
 
-        batch_outs = []
+        # Vectorized host embedding over full batch — no Python loop
+        # [B, H, 3] → [B, H, gnn_hidden]
+        dc_ids = host_feats[..., 0].long().clamp(0, max_dc)
+        dc_types = host_feats[..., 1].long().clamp(0, max_dct)
+        h = self.host_proj(torch.cat([
+            self.dc_id_embed(dc_ids),
+            self.dc_type_embed(dc_types),
+            host_feats[..., 2:3],
+        ], dim=-1))
+
+        # [B, J, 4] → [B, J, gnn_hidden]
+        j = self.job_proj(job_feats)
+
+        # [B, H+J, gnn_hidden]
+        x = torch.cat([h, j], dim=1)
+
+        # GATConv per-sample using precomputed edge_index.
+        # Fully-connected graphs are O(n²) edges — batching all B samples at once OOMs.
+        # Gradient checkpointing discards GATConv intermediate activations (~140 MB/sample)
+        # and recomputes them during backward, reducing peak memory from B×140 MB to ~140 MB.
+        node_outs = []
         for b in range(batch_size):
-            h = self._embed_host_nodes(host_feats[b], max_dc, max_dct)  # [H, gnn_hidden]
-            j = self.job_proj(job_feats[b])                              # [J, gnn_hidden]
-            x = torch.cat([h, j], dim=0)                                 # [H+J, gnn_hidden]
-            n = x.shape[0]
+            if self.training:
+                xb = grad_checkpoint(self._gnn_forward, x[b], use_reentrant=False)
+            else:
+                xb = self._gnn_forward(x[b])
+            node_outs.append(xb)
+        x = torch.stack(node_outs, dim=0)  # [B, n, out_ch]
 
-            # Fully-connected graph (no self-loops)
-            idx = torch.arange(n, device=device)
-            src, dst = torch.meshgrid(idx, idx, indexing="ij")
-            mask = src != dst
-            edge_index = torch.stack([src[mask], dst[mask]], dim=0)
-
-            for layer, norm in zip(self.gnn_layers, self.norms):
-                x = layer(x, edge_index)
-                x = norm(x)
-                x = torch.relu(x)
-
-            # Set-transformer readout (learned query attending over all nodes)
-            # x: [H+J, out_ch] → unsqueeze to [1, H+J, out_ch]
-            x_seq = x.unsqueeze(0)                                         # [1, H+J, D]
-            q = self.pool_query                                             # [1, 1, D]
-            pooled, _ = self.pool_attn(q, x_seq, x_seq)                   # [1, 1, D]
-            batch_outs.append(pooled.squeeze(0).squeeze(0))                # [D]
-
-        out = torch.stack(batch_outs, dim=0)  # [B, out_ch]
-        return self.readout(out)
+        # Set-transformer readout: [B, n, D] → pool → [B, D]
+        q = self.pool_query.expand(batch_size, -1, -1)   # [B, 1, D]
+        pooled, _ = self.pool_attn(q, x, x)              # [B, 1, D]
+        return self.readout(pooled.squeeze(1))            # [B, features_dim]
