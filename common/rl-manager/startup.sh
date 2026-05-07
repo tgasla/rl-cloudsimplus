@@ -9,5 +9,5 @@ if [ -d "$GYM_DIR" ]; then
     echo "gym_cloudsimplus installed/updated."
 fi
 
-export PYTHONPATH="/mgr/gym_cloudsimplus/gym_cloudsimplus:$PYTHONPATH"
+export PYTHONPATH="/mgr/gym_cloudsimplus:$PYTHONPATH"
 exec python entrypoint.py

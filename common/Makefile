@@ -1,8 +1,7 @@
-# domain=vm-management or domain=job-placement — must be passed explicitly
+# domain=vm-management or domain=job-placement — required for domain-specific targets
+# Domain-free targets (build-tensorboard, run-tensorboard, generate-proto, stop, …)
+# work without domain and are guarded in the root Makefile.
 DOMAIN ?= $(shell echo $$DOMAIN)
-ifeq ($(DOMAIN),)
-$(error DOMAIN is not set. Usage: make run domain=vm-management or make run domain=job-placement)
-endif
 DOMAIN_DIR := domain/$(DOMAIN)
 
 CONFIG_FILE := $(DOMAIN_DIR)/config.yml
@@ -31,13 +30,13 @@ build-manager:
 		-f common/rl-manager/Dockerfile common/rl-manager/
 
 build-tensorboard:
-	docker build -t tensorboard $(DOMAIN_DIR)/tensorboard
+	docker build -t tensorboard common/tensorboard
 
 run-tensorboard:
-	docker run --rm --name tensorboard -d -v $(DOMAIN_DIR)/logs/:/logs/ -p 6006:6006 tensorboard
+	docker run --rm --name tensorboard -d -v $(PWD)/common/logs/:/logs/ -p 6006:6006 tensorboard
 
 run:
-	DOMAIN="$(DOMAIN)" ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) bash common/scripts/run_docker.sh
+	DOMAIN=$(DOMAIN) ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) bash common/scripts/run_docker.sh
 
 clean-gateway:
 	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):clean 2>/dev/null || true
@@ -46,7 +45,7 @@ wipe-logs:
 	rm -rf $(DOMAIN_DIR)/logs/*
 
 stop:
-	docker compose -f common/docker-compose.yml down --remove-orphans
+	DOMAIN=$(DOMAIN) docker compose -f common/docker-compose.yml --profile cpu --profile cuda down --remove-orphans
 # 	docker system prune -f
 # 	docker system prune --volumes -f
 

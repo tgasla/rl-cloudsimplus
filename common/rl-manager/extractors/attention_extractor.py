@@ -74,7 +74,7 @@ class AttentionFeatureExtractor(BaseFeaturesExtractor):
             d_model=hidden_dim, nhead=n_heads, dim_feedforward=hidden_dim * 4,
             dropout=dropout, batch_first=True, norm_first=True,
         )
-        self.host_encoder = nn.TransformerEncoder(host_enc_layer, num_layers=1)
+        self.host_encoder = nn.TransformerEncoder(host_enc_layer, num_layers=1, enable_nested_tensor=False)
 
         # ── Step 4: Job encoding ──────────────────────────────────────────────
         self.job_proj = nn.Linear(self.JOB_FEAT_DIM, hidden_dim)
@@ -90,7 +90,7 @@ class AttentionFeatureExtractor(BaseFeaturesExtractor):
             d_model=hidden_dim, nhead=n_heads, dim_feedforward=hidden_dim * 4,
             dropout=dropout, batch_first=True, norm_first=True,
         )
-        self.global_encoder = nn.TransformerEncoder(enc_layer, num_layers=n_layers)
+        self.global_encoder = nn.TransformerEncoder(enc_layer, num_layers=n_layers, enable_nested_tensor=False)
 
         # ── Step 7: Mean pooling → output ─────────────────────────────────────
         self.head = nn.Sequential(
@@ -224,7 +224,7 @@ class AttentionPoolingFeatureExtractor(BaseFeaturesExtractor):
             d_model=hidden_dim, nhead=n_heads, dim_feedforward=hidden_dim * 4,
             dropout=dropout, batch_first=True, norm_first=True,
         )
-        self.host_encoder = nn.TransformerEncoder(host_enc_layer, num_layers=1)
+        self.host_encoder = nn.TransformerEncoder(host_enc_layer, num_layers=1, enable_nested_tensor=False)
 
         self.job_proj = nn.Linear(self.JOB_FEAT_DIM, hidden_dim)
 
@@ -237,7 +237,7 @@ class AttentionPoolingFeatureExtractor(BaseFeaturesExtractor):
             d_model=hidden_dim, nhead=n_heads, dim_feedforward=hidden_dim * 4,
             dropout=dropout, batch_first=True, norm_first=True,
         )
-        self.global_encoder = nn.TransformerEncoder(enc_layer, num_layers=n_layers)
+        self.global_encoder = nn.TransformerEncoder(enc_layer, num_layers=n_layers, enable_nested_tensor=False)
 
         # Learned pooling query (the key difference from AttentionFeatureExtractor)
         self.pool_query = nn.Parameter(torch.randn(1, 1, hidden_dim))

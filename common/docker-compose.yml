@@ -2,6 +2,7 @@ services:
   manager: &cpu
     image: manager:0.11
     container_name: manager
+    profiles: ["cpu"]
     environment: # passing defaults to avoid warnings
       - EXPERIMENT_ID=${EXPERIMENT_ID:-1}
       - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-1}

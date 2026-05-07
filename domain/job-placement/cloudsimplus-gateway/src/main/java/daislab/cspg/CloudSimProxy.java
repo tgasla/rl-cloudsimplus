@@ -28,6 +28,13 @@ public class CloudSimProxy extends CloudSimProxyBase {
         super(settings, inputJobs);
     }
 
+    // ============== Lifecycle ==============
+
+    @Override
+    public boolean isRunning() {
+        return cloudSimPlus.isRunning() && !jobQueue.isEmpty();
+    }
+
     // ============== Abstract method implementations ==============
 
     @Override

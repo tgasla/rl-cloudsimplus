@@ -242,7 +242,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             self._write_progress_log_row()
 
             # Retrieve training reward
-            x, y = ts2xy(load_results(self.log_dir), "timesteps")
+            try:
+                x, y = ts2xy(load_results(self.log_dir), "timesteps")
+            except Exception:
+                return True
             if len(x) == 0:
                 return True
             current_reward = float(y[-1])

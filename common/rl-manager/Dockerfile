@@ -9,14 +9,14 @@ RUN groupadd -g ${HOST_GID} appgroup && useradd -m -u ${HOST_UID} -g appgroup ap
 
 WORKDIR /mgr
 
-RUN pip3 install --upgrade pip==26.0.1 && pip3 install stable-baselines3==2.8.0 sb3-contrib==2.8.0 \
-    tensorboard==2.20.0 tqdm==4.67.3 rich==15.0.0 pyyaml==6.0.3 pycurl==7.45.7 scikit-learn==1.8.0 \
-    grpcio==1.80.0 protobuf==7.34.1 torch_geometric
+RUN pip3 install --upgrade pip==26.1.1 && pip3 install stable-baselines3==2.8.0 sb3-contrib==2.8.0 \
+    tensorboard==2.20.0 tqdm==4.67.3 rich==15.0.0 pyyaml==6.0.3 pycurl==7.46.0 scikit-learn==1.8.0 \
+    grpcio==1.80.0 protobuf==7.34.1 torch_geometric=2.7.0
 
 RUN apt update \
     && apt install -yqq wget \
     # Eclipse Temurin Java 25 (reliable direct download URL)
-    && wget -q "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_linux_hotspot_25.0.2_10.tar.gz" -O /tmp/jdk25.tar.gz \
+    && wget -q "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_linux_hotspot_25.0.3_9.tar.gz" -O /tmp/jdk25.tar.gz \
     && tar -xzf /tmp/jdk25.tar.gz -C /opt \
     && mv /opt/jdk-25* /opt/java \
     && ln -sf /opt/java/bin/java /usr/local/bin/java \
