@@ -9,8 +9,8 @@ from stable_baselines3.common.callbacks import BaseCallback
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
     """
-    Unified callback for both SingleDC (main) and MultiDC (euromlsys) environments.
-    Dynamically tracks all info keys returned by the environment — no hardcoded metric names.
+    Unified callback for both vm-management and job-placement environments.
+    Dynamically tracks all info keys returned by the environment with no hardcoded metric names.
 
     :param log_dir: Path to the folder where the model will be saved.
             It must contain the file created by the ``Monitor`` wrapper.

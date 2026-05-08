@@ -27,8 +27,13 @@ get_yaml_value() {
     grep -A 20 '^globals:' "$CONFIG_FILE" | grep -m 1 "^ *$1:" | sed 's/^ *//' | sed 's/.*: //'
 }
 
-# Detect the number of replicas
-NUM_EXPERIMENTS=$(grep -o "$GREP_FLAG" '^experiment_\d+' "$CONFIG_FILE" | wc -l)
+# Count experiments from the YAML list (stub !include so yaml.load doesn't need topology files)
+NUM_EXPERIMENTS=$(python3 -c "
+import yaml
+yaml.add_constructor('!include', lambda l, n: {}, Loader=yaml.Loader)
+cfg = yaml.load(open('$CONFIG_FILE'), Loader=yaml.Loader)
+print(len(cfg.get('experiments', [])))
+")
 
 # Set ATTACHED and GPU flags with default values if not provided
 ATTACHED=${ATTACHED:-false}

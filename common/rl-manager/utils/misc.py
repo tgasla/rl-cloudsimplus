@@ -134,8 +134,8 @@ def _register_yaml_constructors():
 def dict_from_config(replica_id, config):
     _register_yaml_constructors()
     with open(config, "r") as file:
-        config = yaml.load(file, Loader=yaml.Loader)
-    params = {**config["common"], **config[f"experiment_{replica_id}"]}
+        cfg = yaml.load(file, Loader=yaml.Loader)
+    params = {**cfg["common"], **cfg["experiments"][replica_id - 1]}
     return params
 
 

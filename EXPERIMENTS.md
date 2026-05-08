@@ -58,6 +58,22 @@ for normalizing transfer metrics.
 | 8 | `oracle_c_euromlsys` | C | euromlsys |
 | 9 | `oracle_c_attention` | C | attention |
 
+> **Oracle design note (revised)**: Each method must be normalized against **its own
+> oracle** — i.e., the same extractor trained from scratch in the target environment.
+> This is the self-normalization principle: norm-jumpstart for `attention` = first transfer
+> reward / attention oracle peak reward in target env. Using a shared oracle (e.g. euromlsys
+> for all) introduces a systematic bias — if attention achieves a higher ceiling than
+> euromlsys from scratch in the target env, its normalized jumpstart would be *under*-stated,
+> and vice versa.
+>
+> **Status**: Currently only `oracle_a_euromlsys` exists. Run:
+> - `oracle_a_attention` and `oracle_c_attention` — for attention transfer metrics
+> - `oracle_a_turret` and `oracle_c_turret` — for turret transfer metrics
+> (already in Phase 5 matrix below)
+>
+> Until per-extractor oracles are available, `transfer_analysis.py` uses the euromlsys
+> oracle as a shared denominator — clearly flag this as a limitation in results.
+
 ### Phase 5 — Turret transfers + oracles (after turret re-train completes)
 
 | # | Name | Source model / Env | Extractor |
@@ -264,3 +280,75 @@ common/logs/euromlsys/extractor_comparison/
 ├── oracle_c_turret/
 └── oracle_c_attention/
 ```
+
+---
+
+## Embedding Visualization (Figure — Topology-Invariant Representation)
+
+Analogous to TURRET paper Figure 4, but stronger: instead of projecting raw state-space
+trajectories (which have different dimensions across envs and require zero-padding before
+projection), we project **feature extractor output embeddings** — the fixed-dim vector that
+the policy actually uses to make decisions.
+
+### What it shows
+
+- **Blue dots**: embeddings collected from rollouts in Env B (source, after training)
+- **Red dots**: embeddings collected from rollouts in Env C (target, after transfer fine-tuning)
+- **Dense overlap** → extractor learned a topology-invariant representation; source and target
+  "look the same" in latent space → policy transfers without re-learning the world model
+- **Separate clusters** → representation shifted on topology change → transfer requires
+  significant fine-tuning to realign
+
+### Why this is stronger than TURRET's Figure 4
+
+TURRET projects raw observation vectors via t-SNE, then zero-pads different-sized robot
+joint vectors to a common dimension before projection. This can produce artificial overlap
+from the padding zeros, not genuine representation alignment.
+
+Here the embedding is already a fixed 256-d vector for all envs and extractors, so:
+1. No padding artifacts
+2. You directly visualize what the policy "sees" — if it looks the same in both envs,
+   the policy doesn't need to re-learn
+3. All three extractors are directly comparable in the same 256-d space
+
+### Quantitative metric
+
+Same as TURRET: mean Euclidean distance D between source and target embeddings in the
+projected 3D space. Lower D = better topology invariance.
+
+| Extractor | B→C expected D | Reason |
+|---|---|---|
+| `attention` | Lowest | Learned query suppresses zero-padded DC slots regardless of count; DC scatter-mean is count-invariant |
+| `euromlsys` | Medium | Residual layer adapts but base embedding shifts with padding ratio change |
+| `turret` | Medium | GNN propagates across topology; new DC nodes shift node feature distribution |
+| Vanilla MLP | Highest | Padding ratio change directly shifts the mean input → embedding shifts proportionally |
+
+### Implementation
+
+Script: `embedding_viz.py` (repo root, to be created after all transfer experiments complete)
+
+```python
+# Collect N rollout steps from the trained model in each env
+def collect_embeddings(model, env, n_steps=2000):
+    embeddings = []
+    obs = env.reset()
+    for _ in range(n_steps):
+        obs_tensor = torch.as_tensor(obs).to(model.device)
+        with torch.no_grad():
+            feats = model.policy.features_extractor(obs_tensor)
+        embeddings.append(feats.cpu().numpy())
+        action, _ = model.predict(obs, deterministic=True)
+        obs, _, dones, _ = env.step(action)
+    return np.vstack(embeddings)
+
+# UMAP to 3D, color by env
+from umap import UMAP
+reducer = UMAP(n_components=3, random_state=42)
+coords = reducer.fit_transform(np.vstack([src_emb, tgt_emb]))
+```
+
+Run once per extractor, after B→C transfer completes. Save one subplot per extractor
+(3×2 figure: source/target for each of the 3 extractors). Report D in subplot title,
+matching TURRET Figure 4 format.
+
+**Dependencies**: `umap-learn`, `matplotlib` (both installable via pip in the container).

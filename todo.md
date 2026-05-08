@@ -29,6 +29,20 @@
   - Rollout 2+ (policy update active): CPU drops to **39 FPS**, GPU holds at **132 FPS**
   - Despite no Conv layers, Adam optimizer + multiple PPO epochs over minibatches is heavy enough that GPU wins 3.4× after warmup. Use `gpu: true`.
 
+## Experiment Queue
+
+- [ ] **Run all per-extractor oracle experiments** — each extractor must be normalized against
+  its own oracle (self-normalization principle). Using a shared oracle biases normalized metrics:
+  if `attention` achieves a higher ceiling from scratch, its norm-jumpstart is understated.
+  Required runs (scratch training in target env, same step budget as transfer):
+  - `oracle_a_attention` — attention from scratch in Env A
+  - `oracle_a_turret` — turret from scratch in Env A
+  - `oracle_c_euromlsys` — euromlsys from scratch in Env C
+  - `oracle_c_attention` — attention from scratch in Env C
+  - `oracle_c_turret` — turret from scratch in Env C
+  All are in Phase 4/5 of the config matrix. Once done, update `transfer_analysis.py`
+  to use per-extractor oracle as denominator per method.
+
 ## Performance Investigations
 
 - [ ] **Java lightweight reset** — `WrappedSimulationBase.reset()` currently rebuilds the entire CloudSim infrastructure from scratch (new `CloudSimPlus`, broker, datacenters, hosts, VMs). As the agent learns and episodes shorten (fewer steps per episode → more resets per rollout), reset overhead dominates. Fix: instead of creating new objects, reset state of existing objects (requeue cloudlets, clear broker lists, reset clock). Significant Java refactor but would eliminate the reset cost growing with training progress.

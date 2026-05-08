@@ -72,8 +72,8 @@ common:
     hidden_dim: 128
     adaptation_bottleneck: false
 
-experiment_1:
-    mode: train
+experiments:
+  - mode: train
     experiment_dir: debug
     experiment_name: test1_test
     vm_allocation_policy: rl

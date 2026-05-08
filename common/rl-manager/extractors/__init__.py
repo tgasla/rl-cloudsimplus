@@ -1,14 +1,13 @@
 from extractors.euromlsys_extractor import CustomFeatureExtractor
-from extractors.attention_extractor import (
-    AttentionFeatureExtractor,
-    AttentionPoolingFeatureExtractor,
-)
+from extractors.attention_extractor import AttentionPoolingFeatureExtractor
+from extractors.spane_extractor import SPANEFeatureExtractor
 
 EXTRACTOR_REGISTRY = {
     "euromlsys": CustomFeatureExtractor,
     "custom": CustomFeatureExtractor,  # backward-compat alias
-    "attention": AttentionFeatureExtractor,
+    "attention": AttentionPoolingFeatureExtractor,  # alias; mean-pool variant removed
     "attention_pooling": AttentionPoolingFeatureExtractor,
+    "spane": SPANEFeatureExtractor,
 }
 
 
@@ -61,6 +60,13 @@ def build_extractor_kwargs(name: str, params: dict) -> dict:
             "dropout": params.get("dropout", 0.1),
             "max_datacenters": params.get("max_datacenters", 8),
             "max_dc_types": params.get("max_datacenter_types", params.get("max_dc_types", 3)),
+        })
+    elif name == "spane":
+        kwargs.update({
+            "dc_emb_dim": params.get("dc_emb_dim", 64),
+            "job_emb_dim": params.get("job_emb_dim", 64),
+            "hidden_dim": params.get("hidden_dim", 128),
+            "max_datacenters": params.get("max_datacenters", 8),
         })
 
     return kwargs

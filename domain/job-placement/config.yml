@@ -21,8 +21,8 @@
 # if you make any changes in java_log_leve, java_log_destination or java_output_show, 
 #  you need to execute make build-gateway for the changes to take effect
 globals:
-    attached: true
-    gpu: false
+    attached: false
+    gpu: true
     java_log_level: INFO
     java_log_destination: none
     junit_output_show: false
@@ -38,14 +38,10 @@ common:
   vm_startup_delay: 0.0
   vm_shutdown_delay: 0.0
   base_log_dir: logs
-  batch_size: 64
   print_stats: false
-  # cloudlet_to_dc_mapping:  earliest-most-critical-to-nearest-dc
   cloudlet_to_dc_mapping: rl
   cloudlet_to_vm_mapping: most-free-pes
   state_space_type: dcid-dctype-freevmpes-per-host
-  autoencoder_infr_obs: false # for now, autoencoder observation affects only the infrastructure state
-  autoencoder_infr_obs_latent_dim: 32
   freeze_inactive_input_layer_weights: false # keep false if autoencoder or embeddings are used
   max_datacenters: 8
   max_datacenter_types: 3
@@ -55,7 +51,6 @@ common:
   max_job_pes: 16
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
-  timesteps: 2048
   n_rollout_steps: 128
   reward_jobs_placed_coef: 0.333
   reward_quality_coef: 0.333
@@ -63,20 +58,19 @@ common:
   seed: 1234
   rl_algorithm: MaskablePPO
 
-experiment_1:
-  mode: train
-  datacenters: !include topologies/euromlsys_a.yml
-  experiment_dir: euromlsys
-  experiment_name: env_a_train
-  job_trace_filename: euromlsys_jobs_first_50.csv
-
-# experiment_2:
-#   mode: transfer
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys
-#   experiment_name: env_a_to_b_transfer
-#   train_model_dir: euromlsys/env_a_train
-#   job_trace_filename: euromlsys_jobs_first_50.csv
+# experiments:
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_a.yml
+#     experiment_dir: euromlsys
+#     experiment_name: env_a_train
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#
+#   - mode: transfer
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys
+#     experiment_name: env_a_to_b_transfer
+#     train_model_dir: euromlsys/env_a_train
+#     job_trace_filename: euromlsys_jobs_first_50.csv
 
 # ── P2 Ablation Study ────────────────────────────────────────────────────────
 # All ablations train on Env B (the paper's primary training environment).
@@ -85,67 +79,61 @@ experiment_1:
 # Seeds: set seed to different values (e.g. 1234, 2345, 3456, 4567, 5678) and
 # run each variant 5 times. Report mean ± std in the ablation table.
 
-# experiment_3:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/ablation
-#   experiment_name: ppox_full
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-
-# experiment_4:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/ablation
-#   experiment_name: ppox_no_residual
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-#   use_residual: false
-
-# experiment_5:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/ablation
-#   experiment_name: ppox_no_dropout
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-#   dropout: 0.0
-
-# experiment_6:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/ablation
-#   experiment_name: ppox_embedding_8
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-#   embedding_size: 8
-
-# experiment_7:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/ablation
-#   experiment_name: ppox_embedding_64
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-#   embedding_size: 64
-
-# experiment_8:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/ablation
-#   experiment_name: ppox_hidden_64
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-#   hidden_dim: 64
-
-# experiment_9:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/ablation
-#   experiment_name: ppox_hidden_256
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-#   hidden_dim: 256
+# experiments:
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/ablation
+#     experiment_name: ppox_full
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/ablation
+#     experiment_name: ppox_no_residual
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#     use_residual: false
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/ablation
+#     experiment_name: ppox_no_dropout
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#     dropout: 0.0
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/ablation
+#     experiment_name: ppox_embedding_8
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#     embedding_size: 8
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/ablation
+#     experiment_name: ppox_embedding_64
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#     embedding_size: 64
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/ablation
+#     experiment_name: ppox_hidden_64
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#     hidden_dim: 64
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/ablation
+#     experiment_name: ppox_hidden_256
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#     hidden_dim: 256
 
 # ── P3 Extended Transfer Matrix ──────────────────────────────────────────────
 # Run these in sequence: train first, then transfer using train_model_dir.
@@ -154,71 +142,66 @@ experiment_1:
 # Note: all transfer experiments must share the same max_datacenters as training
 # (currently 8 in common). Do not override max_datacenters per experiment.
 
-# experiment_10:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/transfer
-#   experiment_name: env_b_train
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-
-# experiment_11:
-#   mode: transfer
-#   datacenters: !include topologies/euromlsys_a.yml
-#   experiment_dir: euromlsys/transfer
-#   experiment_name: env_b_to_a_transfer
-#   train_model_dir: euromlsys/transfer/env_b_train
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-
-# experiment_12:
-#   mode: transfer
-#   datacenters: !include topologies/euromlsys_c.yml
-#   experiment_dir: euromlsys/transfer
-#   experiment_name: env_b_to_c_transfer
-#   train_model_dir: euromlsys/transfer/env_b_train
-#   job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
-#   feature_extractor: custom
-
-# experiment_13:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_c.yml
-#   experiment_dir: euromlsys/transfer
-#   experiment_name: env_c_train
-#   job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
-#   feature_extractor: custom
-
-# experiment_14:
-#   mode: transfer
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/transfer
-#   experiment_name: env_a_to_b_transfer
-#   train_model_dir: euromlsys/env_a_train
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-
-# experiment_15:
-#   mode: transfer
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/transfer
-#   experiment_name: env_c_to_b_transfer
-#   train_model_dir: euromlsys/transfer/env_c_train
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
+# experiments:
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/transfer
+#     experiment_name: env_b_train
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: transfer
+#     datacenters: !include topologies/euromlsys_a.yml
+#     experiment_dir: euromlsys/transfer
+#     experiment_name: env_b_to_a_transfer
+#     train_model_dir: euromlsys/transfer/env_b_train
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: transfer
+#     datacenters: !include topologies/euromlsys_c.yml
+#     experiment_dir: euromlsys/transfer
+#     experiment_name: env_b_to_c_transfer
+#     train_model_dir: euromlsys/transfer/env_b_train
+#     job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_c.yml
+#     experiment_dir: euromlsys/transfer
+#     experiment_name: env_c_train
+#     job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: transfer
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/transfer
+#     experiment_name: env_a_to_b_transfer
+#     train_model_dir: euromlsys/env_a_train
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: transfer
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/transfer
+#     experiment_name: env_c_to_b_transfer
+#     train_model_dir: euromlsys/transfer/env_c_train
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
 
 # ── Frozen transfer ablation (P2 item 5) ─────────────────────────────────────
 # Tests whether freezing base MLP weights during transfer speeds convergence.
 # Expected: faster initial learning, potentially lower asymptotic reward.
 
-# experiment_16:
-#   mode: transfer
-#   datacenters: !include topologies/euromlsys_c.yml
-#   experiment_dir: euromlsys/ablation
-#   experiment_name: env_b_to_c_frozen
-#   train_model_dir: euromlsys/transfer/env_b_train
-#   job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
-#   feature_extractor: custom
-#   freeze_inactive_input_layer_weights: true
+# experiments:
+#   - mode: transfer
+#     datacenters: !include topologies/euromlsys_c.yml
+#     experiment_dir: euromlsys/ablation
+#     experiment_name: env_b_to_c_frozen
+#     train_model_dir: euromlsys/transfer/env_b_train
+#     job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
+#     feature_extractor: euromlsys
+#     freeze_inactive_input_layer_weights: true
 
 # ── P4 Scalability — Env D (12 DCs) ──────────────────────────────────────────
 # Env D: 2 cloud + 4 edge + 6 micro = 12 DCs. Replaces the theoretical
@@ -227,23 +210,22 @@ experiment_1:
 # This changes the observation size, so Env D models are NOT compatible with
 # B/C models for transfer. Train from scratch or transfer within the D family.
 
-# experiment_17:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_d.yml
-#   experiment_dir: euromlsys/scalability
-#   experiment_name: env_d_train_ppox
-#   job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
-#   feature_extractor: custom
-#   max_datacenters: 13
-
-# experiment_18:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_d.yml
-#   experiment_dir: euromlsys/scalability
-#   experiment_name: env_d_train_vanilla
-#   job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
-#   feature_extractor: default
-#   max_datacenters: 13
+# experiments:
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_d.yml
+#     experiment_dir: euromlsys/scalability
+#     experiment_name: env_d_train_ppox
+#     job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
+#     feature_extractor: euromlsys
+#     max_datacenters: 13
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_d.yml
+#     experiment_dir: euromlsys/scalability
+#     experiment_name: env_d_train_vanilla
+#     job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
+#     feature_extractor: default
+#     max_datacenters: 13
 
 # ── P5 Drift Experiment ───────────────────────────────────────────────────────
 # Injects a DC failure at step drift_at_step by failing all hosts in that DC.
@@ -251,25 +233,228 @@ experiment_1:
 # The agent must recover: reward will dip then partially recover as it adapts.
 # Plot per-seed mean±std with a vertical line at the drift step for the paper.
 # Compare PPO-X vs PPO-Base vs Heuristic on the same drift scenario.
-# Requires a pre-trained B model (train experiment_10 first).
+# Requires a pre-trained B model.
 
-# experiment_19:
-#   mode: transfer
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/drift
-#   experiment_name: env_b_drift_step75_ppox
-#   train_model_dir: euromlsys/transfer/env_b_train
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: custom
-#   drift_at_step: 75
-#   drift_dc_index: 0
+# experiments:
+#   - mode: transfer
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/drift
+#     experiment_name: env_b_drift_step75_ppox
+#     train_model_dir: euromlsys/transfer/env_b_train
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#     drift_at_step: 75
+#     drift_dc_index: 0
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/drift
+#     experiment_name: env_b_drift_step75_vanilla
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: default
+#     drift_at_step: 75
+#     drift_dc_index: 0
 
-# experiment_20:
-#   mode: train
-#   datacenters: !include topologies/euromlsys_b.yml
-#   experiment_dir: euromlsys/drift
-#   experiment_name: env_b_drift_step75_vanilla
-#   job_trace_filename: euromlsys_jobs_first_50.csv
-#   feature_extractor: default
-#   drift_at_step: 75
-#   drift_dc_index: 0
+# ── Extractor tournament: euromlsys (PPO-X) vs TURRET vs Attention ────────────
+# Full matrix: train on A/B/C, transfer to the other two envs.
+# 400k steps for all training AND transfer runs.
+# Run in order: train first, then transfers using train_model_dir.
+# Results: python3 compare_results.py
+
+# ─── Phase 1: Train on Env B (primary) ───────────────────────────────────────
+
+# experiments:
+#   - mode: train
+#     timesteps: 100000
+#     batch_size: 256
+#     n_epochs: 1
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/extractor_comparison_train_b_100k
+#     experiment_name: euromlsys
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: train
+#     timesteps: 100000
+#     batch_size: 256
+#     n_epochs: 1
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/extractor_comparison_train_b_100k
+#     experiment_name: attention_pooling
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: attention_pooling
+#
+#   - mode: train
+#     timesteps: 100000
+#     batch_size: 256
+#     n_epochs: 1
+#     datacenters: !include topologies/euromlsys_b.yml
+#     experiment_dir: euromlsys/extractor_comparison_train_b_100k
+#     experiment_name: turret
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: turret
+
+# ─── Phase 2: Transfer B → A (downscale) ─────────────────────────────────────
+
+# experiments:
+#   - mode: transfer
+#     timesteps: 50000
+#     batch_size: 256
+#     n_epochs: 1
+#     datacenters: !include topologies/euromlsys_a.yml
+#     experiment_dir: euromlsys/extractor_comparison_train_b_100k_transfer_to_a_50k
+#     experiment_name: euromlsys
+#     train_model_dir: euromlsys/extractor_comparison_train_b_100k/euromlsys
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: transfer
+#     timesteps: 50000
+#     batch_size: 256
+#     n_epochs: 1
+#     datacenters: !include topologies/euromlsys_a.yml
+#     experiment_dir: euromlsys/extractor_comparison_train_b_100k_transfer_to_a_50k
+#     experiment_name: attention_pooling
+#     train_model_dir: euromlsys/extractor_comparison_train_b_100k/attention_pooling
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: attention_pooling
+#
+#   - mode: transfer
+#     timesteps: 50000
+#     batch_size: 256
+#     n_epochs: 1
+#     datacenters: !include topologies/euromlsys_a.yml
+#     experiment_dir: euromlsys/extractor_comparison_train_b_100k_transfer_to_a_50k
+#     experiment_name: turret
+#     train_model_dir: euromlsys/extractor_comparison_train_b_100k/turret
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: turret
+
+# ── Oracles: Train A from scratch ────────────────────────────────────────────
+
+# experiments:
+#   - mode: train
+#     timesteps: 50000
+#     batch_size: 256
+#     n_epochs: 1
+#     datacenters: !include topologies/euromlsys_a.yml
+#     experiment_dir: euromlsys/oracle_train_a_50k
+#     experiment_name: euromlsys
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+
+experiments:
+  - mode: train
+    timesteps: 50000
+    batch_size: 256
+    n_epochs: 1
+    datacenters: !include topologies/euromlsys_c.yml
+    experiment_dir: euromlsys/oracle_train_c_50k
+    experiment_name: attention_pooling
+    job_trace_filename: euromlsys_jobs_first_50.csv
+    feature_extractor: attention_pooling
+
+  - mode: train
+    timesteps: 50000
+    batch_size: 256
+    n_epochs: 1
+    datacenters: !include topologies/euromlsys_c.yml
+    experiment_dir: euromlsys/oracle_train_c_50k
+    experiment_name: turret
+    job_trace_filename: euromlsys_jobs_first_50.csv
+    feature_extractor: turret
+
+  - mode: train
+    timesteps: 50000
+    batch_size: 256
+    n_epochs: 1
+    datacenters: !include topologies/euromlsys_c.yml
+    experiment_dir: euromlsys/oracle_train_c_50k
+    experiment_name: euromlsys
+    job_trace_filename: euromlsys_jobs_first_50.csv
+    feature_extractor: euromlsys
+
+# ─── Phase 3a: Transfer B → C (upscale — hardest) ────────────────────────────
+
+  - mode: transfer
+    timesteps: 50000
+    batch_size: 256
+    n_epochs: 1
+    datacenters: !include topologies/euromlsys_c.yml
+    experiment_dir: euromlsys/extractor_comparison_train_b_100k_transfer_to_c_50k
+    experiment_name: euromlsys
+    train_model_dir: euromlsys/extractor_comparison_train_b_100k/euromlsys
+    job_trace_filename: euromlsys_jobs_first_50.csv
+    feature_extractor: euromlsys
+
+  - mode: transfer
+    timesteps: 50000
+    batch_size: 256
+    n_epochs: 1
+    datacenters: !include topologies/euromlsys_c.yml
+    experiment_dir: euromlsys/extractor_comparison_train_b_100k_transfer_to_c_50k
+    experiment_name: turret
+    train_model_dir: euromlsys/extractor_comparison_train_b_100k/turret
+    job_trace_filename: euromlsys_jobs_first_50.csv
+    feature_extractor: turret
+
+  - mode: transfer
+    timesteps: 50000
+    batch_size: 256
+    n_epochs: 1
+    datacenters: !include topologies/euromlsys_c.yml
+    experiment_dir: euromlsys/extractor_comparison_train_b_100k_transfer_to_c_50k
+    experiment_name: attention_pooling
+    train_model_dir: euromlsys/extractor_comparison_train_b_100k/attention_pooling
+    job_trace_filename: euromlsys_jobs_first_50.csv
+    feature_extractor: attention_pooling
+
+# ─── Phase 3b: Transfer B → C (upscale + different job trace) ────────────────
+# FILL IN
+
+# ─── Phase 4: Oracle baselines (scratch training in target envs) ─────────────
+# Needed for normalized jumpstart and AUC-ratio metrics in compare_results.py.
+# Each oracle trains from scratch in the target env — no train_model_dir.
+
+# experiments:
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_a.yml
+#     experiment_dir: euromlsys/extractor_comparison
+#     experiment_name: oracle_a_euromlsys
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_a.yml
+#     experiment_dir: euromlsys/extractor_comparison
+#     experiment_name: oracle_a_turret
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: turret
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_a.yml
+#     experiment_dir: euromlsys/extractor_comparison
+#     experiment_name: oracle_a_attention
+#     job_trace_filename: euromlsys_jobs_first_50.csv
+#     feature_extractor: attention
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_c.yml
+#     experiment_dir: euromlsys/extractor_comparison
+#     experiment_name: oracle_c_euromlsys
+#     job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
+#     feature_extractor: euromlsys
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_c.yml
+#     experiment_dir: euromlsys/extractor_comparison
+#     experiment_name: oracle_c_turret
+#     job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
+#     feature_extractor: turret
+#
+#   - mode: train
+#     datacenters: !include topologies/euromlsys_c.yml
+#     experiment_dir: euromlsys/extractor_comparison
+#     experiment_name: oracle_c_attention
+#     job_trace_filename: euromlsys_jobs_three_locs_first_50.csv
+#     feature_extractor: attention
