@@ -43,14 +43,6 @@ def write_seed_to_file(seed, log_dir, filename="seed.txt"):
         print(f"An error occurred while writing to the file: {e}")
 
 
-def _load_raw_config():
-    """Load raw config for globals (java_log_destination, java_log_level)."""
-    import yaml
-    _register_yaml_constructors()
-    with open(CONFIG_FILE, "r") as f:
-        return yaml.load(f, Loader=yaml.Loader)
-
-
 def main():
     num_experiments = int(os.getenv("NUM_EXPERIMENTS"))
     experiment_id = os.getenv("EXPERIMENT_ID")
@@ -89,13 +81,8 @@ def main():
     else:
         set_seed_for_all(params["seed"])
 
-    # ── Globals: load once, propagate to params and environment ──
-    raw_config = _load_raw_config()
-    globals_cfg = raw_config.get("globals", {})
-    save_experiment = globals_cfg.get("save_experiment", False)
-    params["save_experiment"] = save_experiment
-
     # ── Log dir ──
+    save_experiment = params.get("save_experiment", False)
     params["log_dir"] = None
     if save_experiment:
         params["log_dir"] = os.path.join(
@@ -106,10 +93,10 @@ def main():
         os.makedirs(params["log_dir"], exist_ok=True)
         shutil.copy(CONFIG_FILE, params["log_dir"])
         write_seed_to_file(params["seed"], params["log_dir"])
-    if "java_log_destination" in globals_cfg:
-        os.environ["JAVA_LOG_DESTINATION"] = globals_cfg["java_log_destination"]
-    if "java_log_level" in globals_cfg:
-        os.environ["JAVA_LOG_LEVEL"] = globals_cfg["java_log_level"]
+
+    os.environ["JAVA_LOG_DESTINATION"] = params.get("java_log_destination", "stdout")
+    os.environ["JAVA_LOG_LEVEL"] = params.get("java_log_level", "INFO")
+    os.environ["SAVE_EXPERIMENT"] = str(save_experiment).lower()
 
     # ── Dispatch to train/transfer/test ──
     try:

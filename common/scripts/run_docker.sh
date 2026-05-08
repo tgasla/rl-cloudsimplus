@@ -12,22 +12,23 @@ CONFIG_FILE="$HOST_DOMAIN_DIR/config.yml"
 export HOST_UID=$(id -u)
 export HOST_GID=$(id -g)
 
-# Detect the correct grep flag based on OS
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    GREP_FLAG="-E" # macOS
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    GREP_FLAG="-P" # Linux
-else
-    echo "Unsupported OS: $OSTYPE"
-    exit 1
-fi
-
-# Read a value from the globals section of config.yml
-get_yaml_value() {
-    grep -A 20 '^globals:' "$CONFIG_FILE" | grep -m 1 "^ *$1:" | sed 's/^ *//' | sed 's/.*: //'
+# Read a value from the merged (common + experiment[i-1]) params.
+# Booleans are printed as lowercase true/false for bash consumption.
+get_experiment_value() {
+    local idx=$(( $1 - 1 ))
+    local key="$2"
+    local default="$3"
+    python3 - <<PYEOF
+import yaml
+yaml.add_constructor('!include', lambda l, n: {}, Loader=yaml.Loader)
+cfg = yaml.load(open('$CONFIG_FILE'), Loader=yaml.Loader)
+merged = {**cfg.get('common', {}), **cfg.get('experiments', [])[$idx]}
+val = merged.get('$key', $default)
+print(str(val).lower() if isinstance(val, bool) else val)
+PYEOF
 }
 
-# Count experiments from the YAML list (stub !include so yaml.load doesn't need topology files)
+# Count experiments from the YAML list
 NUM_EXPERIMENTS=$(python3 -c "
 import yaml
 yaml.add_constructor('!include', lambda l, n: {}, Loader=yaml.Loader)
@@ -35,48 +36,31 @@ cfg = yaml.load(open('$CONFIG_FILE'), Loader=yaml.Loader)
 print(len(cfg.get('experiments', [])))
 ")
 
-# Set ATTACHED and GPU flags with default values if not provided
-ATTACHED=${ATTACHED:-false}
-GPU=${GPU:-false}
-
-# Read java log destination from config.yml (not overridden by ATTACHED)
-JAVA_LOG_DEST=$(get_yaml_value "java_log_destination")
-JAVA_LOG_LEVEL=$(get_yaml_value "java_log_level")
-SAVE_EXPERIMENT=$(get_yaml_value "save_experiment")
-
 cleanup_experiment() {
-    # Stop the experiment containers
     docker compose -f common/docker-compose.yml $PROFILE_OPTION down --remove-orphans
     if [ $? -ne 0 ]; then
         echo "Error stopping containers. Retrying..."
         docker compose -f common/docker-compose.yml $PROFILE_OPTION down --remove-orphans
     fi
-
-    # Remove volumes and networks
-    # docker volume prune -f
-    # docker network prune -f
-    # docker system prune --volumes -f
-
-    # Sleep for a short duration to ensure resources are released
     sleep 5
-
     echo "Cleanup completed for experiment containers."
 }
 
-# Check if there are replicas
 if [ $NUM_EXPERIMENTS -gt 0 ]; then
-    # Determine the Docker command based on the GPU flag
-    if [ "$GPU" = true ]; then
-        PROFILE_OPTION="--profile cuda"
-        MANAGER_SERVICE="manager-cuda"
-    else
-        PROFILE_OPTION="--profile cpu"
-        MANAGER_SERVICE="manager"
-    fi
-
     for i in $(seq 1 $NUM_EXPERIMENTS); do
+        GPU=$(get_experiment_value $i gpu False)
+        ATTACHED=$(get_experiment_value $i attached False)
+
+        if [ "$GPU" = true ]; then
+            PROFILE_OPTION="--profile cuda"
+            MANAGER_SERVICE="manager-cuda"
+        else
+            PROFILE_OPTION="--profile cpu"
+            MANAGER_SERVICE="manager"
+        fi
+
         # Start all containers
-        COMPOSE_BAKE=true EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" JAVA_LOG_DESTINATION="$JAVA_LOG_DEST" JAVA_LOG_LEVEL="$JAVA_LOG_LEVEL" SAVE_EXPERIMENT="$SAVE_EXPERIMENT" DOMAIN="$DOMAIN" \
+        COMPOSE_BAKE=true EXPERIMENT_ID="$i" NUM_EXPERIMENTS="$NUM_EXPERIMENTS" DOMAIN="$DOMAIN" \
             docker compose -f common/docker-compose.yml $PROFILE_OPTION up --build --remove-orphans -d
 
         # Get the container ID for the manager service
@@ -88,25 +72,15 @@ if [ $NUM_EXPERIMENTS -gt 0 ]; then
         fi
 
         if [ "$ATTACHED" = true ]; then
-            if [ "$NUM_EXPERIMENTS" -gt 1 ]; then
-                # Attach only to the manager container logs
-                echo "Attaching to logs of manager container for experiment $i..."
-                docker compose -f common/docker-compose.yml $PROFILE_OPTION logs -f "$MANAGER_SERVICE"
-            else
-                # Attach to all container logs
-                echo "Attaching to all container logs for experiment $i..."
-                docker compose -f common/docker-compose.yml $PROFILE_OPTION logs -f
-            fi
+            echo "Attaching to container logs for experiment $i..."
+            docker compose -f common/docker-compose.yml $PROFILE_OPTION logs -f
         else
-            # Wait for the manager container to finish (using docker wait with container ID)
             echo "Waiting for container $MANAGER_CONTAINER_ID to finish for experiment $i..."
             docker wait "$MANAGER_CONTAINER_ID"
         fi
 
-        # Cleanup after the experiment
         cleanup_experiment
     done
-
 else
-    echo "No replicas found in the YAML file."
+    echo "No experiments found in the YAML file."
 fi

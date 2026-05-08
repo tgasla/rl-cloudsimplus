@@ -1,7 +1,6 @@
 # train_model_dir: applicable only if mode == [transfer|test]
-# globals.java_log_destination: comma-separated list of [stdout, file] (e.g. "stdout", "file", "stdout,file"). Order does not matter. Use "none" to suppress all logging.
-# globals.junit_output_show: [true, false] - if true, junit test results are printed to stdout
-# globals.java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
+# java_log_destination: comma-separated list of [stdout, file] (e.g. "stdout", "file", "stdout,file"). Order does not matter. Use "none" to suppress all logging.
+# java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
 # seed: random or any integer
 # base_log_dir: parent directory for all logs
 # experiment_dir: parent directory for a set of experiments
@@ -17,17 +16,6 @@
 # cloudlet_to_dc_mapping: [rl, earliest-shortest-to-most-free-dc, earliest-shortest-to-nearest-dc, earliest-most-critical-to-nearest-dc]
 # cloudlet_to_vm_mapping: [most-free-pes]
 # rl_algorithm: any stable-baselines3 or sb3-contrib algorithm. Read only when cloudlet_to_dc_mapping == rl.
-
-# if you make any changes in java_log_leve, java_log_destination or java_output_show, 
-#  you need to execute make build-gateway for the changes to take effect
-globals:
-    attached: false
-    gpu: true
-    java_log_level: INFO
-    java_log_destination: none
-    junit_output_show: false
-    num_cpu: 16
-    save_experiment: true
 
 common:
   timestep_interval: 1.0
@@ -57,6 +45,12 @@ common:
   reward_deadline_violation_coef: 0.333
   seed: 1234
   rl_algorithm: MaskablePPO
+  gpu: true
+  attached: false
+  num_cpu: 16
+  save_experiment: true
+  java_log_level: INFO
+  java_log_destination: none
 
 # experiments:
 #   - mode: train

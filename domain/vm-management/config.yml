@@ -1,7 +1,6 @@
 # train_model_dir: applicable only if mode == [transfer|test]
-# globals.java_log_destination: comma-separated list of [stdout, file] (e.g. "stdout", "file", "stdout,file"). Order does not matter. Use "none" to suppress all logging.
-# globals.junit_output_show: [true, false] - if true, junit test results are printed to stdout
-# globals.java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
+# java_log_destination: comma-separated list of [stdout, file] (e.g. "stdout", "file", "stdout,file"). Order does not matter. Use "none" to suppress all logging.
+# java_log_level: [TRACE, DEBUG, INFO, WARNING, ERROR]
 # seed: random or any integer
 # base_log_dir: parent directory for all logs
 # experiment_dir: parent directory for a set of experiments
@@ -16,15 +15,6 @@
 
 # java_log_level and java_log_destination: changes take effect at runtime — no rebuild needed.
 # junit_output_show: requires make build-gateway to rebuild (Java test output).
-globals:
-    attached: true
-    gpu: false
-    java_log_level: INFO
-    java_log_destination: none
-    junit_output_show: false
-    num_cpu: 16
-    save_experiment: true
-
 common:
     seed: 1234
     mode: train
@@ -71,6 +61,12 @@ common:
     embedding_size: 32
     hidden_dim: 128
     adaptation_bottleneck: false
+    gpu: false
+    attached: true
+    num_cpu: 16
+    save_experiment: true
+    java_log_level: INFO
+    java_log_destination: none
 
 experiments:
   - mode: train

@@ -3,16 +3,13 @@ services:
     image: manager:0.11
     container_name: manager
     profiles: ["cpu"]
-    environment: # passing defaults to avoid warnings
+    environment:
       - EXPERIMENT_ID=${EXPERIMENT_ID:-1}
       - NUM_EXPERIMENTS=${NUM_EXPERIMENTS:-1}
       - DOMAIN=${DOMAIN}
       - CUBLAS_WORKSPACE_CONFIG=:4096:8
       - CUDA_LAUNCH_BLOCKING=1
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-      - JAVA_LOG_DESTINATION=${JAVA_LOG_DESTINATION:-stdout}
-      - JAVA_LOG_LEVEL=${JAVA_LOG_LEVEL:-INFO}
-      - SAVE_EXPERIMENT=${SAVE_EXPERIMENT:-true}
     build:
       context: rl-manager
       args:
