@@ -179,7 +179,6 @@ public class WrappedSimulation extends WrappedSimulationBase {
         return switch (simSettings.getCloudletToDcMapping()) {
             case "rl" -> executeRlCloudletToDcAction(action);
             case "earliest-shortest-to-most-free-dc" -> executeEarliestShortestCloudletToMostFreeDcAction();
-            case "earliest-shortest-to-nearest-dc" -> executeEarliestShortestCloudletToNearestDcAction();
             case "earliest-most-critical-to-nearest-dc" -> executeEarliestMostCriticalCloudletToNearestDcAction();
             default -> throw new IllegalArgumentException("Unknown cloudlet_to_dc_mapping: "
                     + simSettings.getCloudletToDcMapping());
@@ -236,68 +235,6 @@ public class WrappedSimulation extends WrappedSimulationBase {
         resultList.addAll(connectedDatacenters);
 
         return resultList;
-    }
-
-    private double[] executeEarliestShortestCloudletToNearestDcAction() {
-        final double targetTime = proxy().calculateTargetTime();
-        final List<Cloudlet> jobsWaitingList = proxy().getJobsToSubmitAtThisTimestep(targetTime);
-        final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
-
-        int jobsPlaced = 0;
-        int quality = 0;
-
-        while (!jobsToProcessList.isEmpty()) {
-            // Step 1: Find cloudlets with the earliest deadline
-            double earliestDeadline = jobsToProcessList.stream()
-                    .mapToDouble(
-                            c -> c.getSubmissionDelay() + ((CloudletWithLocation) c).getDeadline())
-                    .min().orElse(Double.MAX_VALUE);
-
-            // Filter cloudlets with the earliest deadline
-            List<Cloudlet> earliestDeadlineCloudlets = jobsToProcessList.stream()
-                    .filter(c -> (c.getSubmissionDelay()
-                            + ((CloudletWithLocation) c).getDeadline()) == earliestDeadline)
-                    .collect(Collectors.toList());
-
-            // From these, select the shortest one(s)
-            long shortestLength = earliestDeadlineCloudlets.stream().mapToLong(Cloudlet::getLength)
-                    .min().orElseThrow();
-
-            Cloudlet selectedCloudlet = earliestDeadlineCloudlets.stream()
-                    .filter(c -> c.getLength() == shortestLength).findFirst().orElseThrow();
-
-            List<DatacenterWithType> sortedDcs = getOrderedDatacentersForCloudlet(selectedCloudlet);
-
-            Vm targetVm = Vm.NULL;
-            for (DatacenterWithType datacenter : sortedDcs) {
-                targetVm = selectVmForCloudlet((int) datacenter.getId(), selectedCloudlet);
-
-                if (targetVm != Vm.NULL) {
-                    // Found a suitable VM
-                    proxy().getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
-                    jobsToProcessList.remove(selectedCloudlet);
-                    jobsPlaced++;
-                    quality +=
-                            calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
-
-                    break; // Stop searching once a suitable VM is found
-                }
-            }
-            // If no suitable VM was found after traversing all datacenters
-            if (targetVm == Vm.NULL) {
-                jobsToProcessList.remove(selectedCloudlet);
-            }
-        }
-
-        this.jobsPlacedThisTimestep = jobsPlaced;
-
-        final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaitingList.size());
-        final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
-        final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsWaitingList);
-        LOGGER.info("jobsPlacedRatio: {}, qualityRatio: {}, deadlineViolationRatio: {}",
-                jobsPlacedRatio, qualityRatio, deadlineViolationRatio);
-
-        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
     }
 
     private double[] executeEarliestMostCriticalCloudletToNearestDcAction() {

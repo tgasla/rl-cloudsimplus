@@ -20,7 +20,7 @@
 # The RL agent operates on stage 1 (when set to 'rl'). Stage 2 is always rule-based.
 # VM-to-host placement is always handled internally by bestfit (not configurable).
 #
-# cloudlet_to_dc_mapping: [rl, earliest-shortest-to-most-free-dc, earliest-shortest-to-nearest-dc, earliest-most-critical-to-nearest-dc]
+# cloudlet_to_dc_mapping: [rl, earliest-shortest-to-most-free-dc, earliest-most-critical-to-nearest-dc]
 # cloudlet_to_vm_mapping: [most-free-pes]
 # rl_algorithm: any stable-baselines3 or sb3-contrib algorithm. Read only when cloudlet_to_dc_mapping == rl.
 

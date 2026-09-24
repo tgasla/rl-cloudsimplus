@@ -428,7 +428,7 @@ Job placement is a **two-stage decision pipeline**, mirroring how real cloud orc
 
 | Stage | Decision | Config key | Options |
 |-------|----------|-----------|---------|
-| 1 (macro) | Which **datacenter** runs this cloudlet? | `cloudlet_to_dc_mapping` | `rl`, `earliest-shortest-to-most-free-dc`, `earliest-shortest-to-nearest-dc`, `earliest-most-critical-to-nearest-dc` |
+| 1 (macro) | Which **datacenter** runs this cloudlet? | `cloudlet_to_dc_mapping` | `rl`, `earliest-shortest-to-most-free-dc`, `earliest-most-critical-to-nearest-dc` |
 | 2 (micro) | Which **VM within that DC** runs the cloudlet? | `cloudlet_to_vm_mapping` | `most-free-pes` (currently the only option; pluggable) |
 
 The RL agent operates on **stage 1 only** (when `cloudlet_to_dc_mapping: rl`). Stage 2 is always rule-based — a tactical decision better handled by a simple rule than learning.
