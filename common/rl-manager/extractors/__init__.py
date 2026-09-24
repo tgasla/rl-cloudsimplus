@@ -1,6 +1,20 @@
 from extractors.euromlsys_extractor import CustomFeatureExtractor
 from extractors.attention_extractor import AttentionPoolingFeatureExtractor
 from extractors.spane_extractor import SPANEFeatureExtractor
+from extractors.hybrid_extractor import HybridPoolingExtractor
+from extractors.hybrid_pre_head_extractor import HybridPoolingPreHeadExtractor
+from extractors.type_stratified_extractor import TypeStratifiedExtractor
+from extractors.type_stratified_pre_head_extractor import TypeStratifiedPreHeadExtractor
+from extractors.rbf_extractor import RBFPoolingExtractor
+from extractors.type_stratified_embed_extractor import TypeStratifiedEmbedExtractor
+from extractors.fusion_extractor import FusionMLPExtractor
+from extractors.attention_idfree_extractor import IDFreeAttentionExtractor
+from extractors.pma_extractor import PMAPoolingExtractor
+from extractors.hierarchical_extractor import HierarchicalJobDCExtractor
+from extractors.hybrid_rbf_extractor import HybridRBFPoolExtractor
+from extractors.swat_extractor import SWATExtractor
+from extractors.aria_extractor import ARIAExtractor
+from extractors.tsar_extractor import TSARExtractor
 
 EXTRACTOR_REGISTRY = {
     "euromlsys": CustomFeatureExtractor,
@@ -8,6 +22,20 @@ EXTRACTOR_REGISTRY = {
     "attention": AttentionPoolingFeatureExtractor,  # alias; mean-pool variant removed
     "attention_pooling": AttentionPoolingFeatureExtractor,
     "spane": SPANEFeatureExtractor,
+    "hybrid": HybridPoolingExtractor,
+    "hybrid_pre_head": HybridPoolingPreHeadExtractor,
+    "type_stratified": TypeStratifiedExtractor,
+    "type_stratified_pre_head": TypeStratifiedPreHeadExtractor,
+    "rbf": RBFPoolingExtractor,
+    "type_stratified_embed": TypeStratifiedEmbedExtractor,
+    "fusion": FusionMLPExtractor,
+    "attention_idfree": IDFreeAttentionExtractor,
+    "pma": PMAPoolingExtractor,
+    "hierarchical": HierarchicalJobDCExtractor,
+    "hybrid_rbf": HybridRBFPoolExtractor,
+    "swat": SWATExtractor,
+    "aria": ARIAExtractor,
+    "tsar": TSARExtractor,
 }
 
 
@@ -67,6 +95,109 @@ def build_extractor_kwargs(name: str, params: dict) -> dict:
             "job_emb_dim": params.get("job_emb_dim", 64),
             "hidden_dim": params.get("hidden_dim", 128),
             "max_datacenters": params.get("max_datacenters", 8),
+        })
+    elif name in ("hybrid", "hybrid_pre_head"):
+        kwargs.update({
+            "dc_emb_dim": params.get("dc_emb_dim", 64),
+            "job_emb_dim": params.get("job_emb_dim", 64),
+            "hidden_dim": params.get("hidden_dim", 128),
+            "n_heads": params.get("n_heads", 4),
+            "dropout": params.get("dropout", 0.1),
+            "max_datacenters": params.get("max_datacenters", 8),
+        })
+    elif name in ("type_stratified", "type_stratified_pre_head"):
+        kwargs.update({
+            "dc_emb_dim": params.get("dc_emb_dim", 32),
+            "job_emb_dim": params.get("job_emb_dim", 64),
+            "hidden_dim": params.get("hidden_dim", 128),
+            "max_dc_types": params.get("max_dc_types", params.get("max_datacenter_types", 3)),
+            "max_datacenters": params.get("max_datacenters", 8),
+        })
+    elif name == "rbf":
+        kwargs.update({
+            "dc_emb_dim": params.get("dc_emb_dim", 64),
+            "job_emb_dim": params.get("job_emb_dim", 64),
+            "hidden_dim": params.get("hidden_dim", 128),
+            "max_datacenters": params.get("max_datacenters", 8),
+        })
+    elif name == "type_stratified_embed":
+        kwargs.update({
+            "dc_emb_dim": params.get("dc_emb_dim", 32),
+            "job_emb_dim": params.get("job_emb_dim", 64),
+            "hidden_dim": params.get("hidden_dim", 128),
+            "dc_type_emb_dim": params.get("dc_type_emb_dim", 16),
+            "max_dc_types": params.get("max_dc_types", params.get("max_datacenter_types", 3)),
+            "max_datacenters": params.get("max_datacenters", 8),
+        })
+    elif name == "fusion":
+        kwargs.update({
+            "dc_type_emb_dim": params.get("dc_type_emb_dim", 16),
+            "hidden_dim": params.get("hidden_dim", 128),
+            "dropout": params.get("dropout", 0.1),
+            "max_dc_types": params.get("max_dc_types", params.get("max_datacenter_types", 3)),
+        })
+    elif name == "attention_idfree":
+        kwargs.update({
+            "hidden_dim": params.get("hidden_dim", 64),
+            "n_heads": params.get("n_heads", 4),
+            "n_layers": params.get("n_layers", 2),
+            "dropout": params.get("dropout", 0.1),
+            "max_datacenters": params.get("max_datacenters", 8),
+            "max_dc_types": params.get("max_dc_types", params.get("max_datacenter_types", 3)),
+        })
+    elif name == "pma":
+        kwargs.update({
+            "dc_emb_dim": params.get("dc_emb_dim", 64),
+            "job_emb_dim": params.get("job_emb_dim", 64),
+            "hidden_dim": params.get("hidden_dim", 128),
+            "n_heads": params.get("n_heads", 4),
+            "dropout": params.get("dropout", 0.1),
+            "max_datacenters": params.get("max_datacenters", 8),
+            "max_dc_types": params.get("max_dc_types", params.get("max_datacenter_types", 3)),
+        })
+    elif name == "hierarchical":
+        kwargs.update({
+            "hidden_dim": params.get("hidden_dim", 64),
+            "n_heads": params.get("n_heads", 4),
+            "n_layers": params.get("n_layers", 2),
+            "dropout": params.get("dropout", 0.1),
+            "max_datacenters": params.get("max_datacenters", 8),
+            "max_dc_types": params.get("max_dc_types", params.get("max_datacenter_types", 3)),
+        })
+    elif name == "hybrid_rbf":
+        kwargs.update({
+            "dc_emb_dim": params.get("dc_emb_dim", 64),
+            "job_emb_dim": params.get("job_emb_dim", 64),
+            "hidden_dim": params.get("hidden_dim", 128),
+            "dropout": params.get("dropout", 0.1),
+            "max_datacenters": params.get("max_datacenters", 8),
+        })
+    elif name == "swat":
+        kwargs.update({
+            "hidden_dim": params.get("hidden_dim", 64),
+            "n_heads": params.get("n_heads", 4),
+            "n_layers": params.get("n_layers", 2),
+            "dropout": params.get("dropout", 0.1),
+            "max_datacenters": params.get("max_datacenters", 8),
+            "max_dc_types": params.get("max_dc_types", params.get("max_datacenter_types", 3)),
+        })
+    elif name == "aria":
+        kwargs.update({
+            "hidden_dim": params.get("hidden_dim", 64),
+            "n_heads": params.get("n_heads", 4),
+            "n_layers": params.get("n_layers", 2),
+            "dropout": params.get("dropout", 0.1),
+            "max_datacenters": params.get("max_datacenters", 8),
+            "max_dc_types": params.get("max_dc_types", params.get("max_datacenter_types", 3)),
+        })
+    elif name == "tsar":
+        kwargs.update({
+            "hidden_dim": params.get("hidden_dim", 64),
+            "n_heads": params.get("n_heads", 4),
+            "n_layers": params.get("n_layers", 2),
+            "dropout": params.get("dropout", 0.1),
+            "max_datacenters": params.get("max_datacenters", 8),
+            "max_dc_types": params.get("max_dc_types", params.get("max_datacenter_types", 3)),
         })
 
     return kwargs

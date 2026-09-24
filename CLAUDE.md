@@ -53,6 +53,20 @@ For multi-step tasks, state a brief plan before starting:
 2. [Step] → verify: [check]
 ```
 
+### Feature Extractor Safety
+
+**Before creating or reviewing any feature extractor, read the transfer-safety checklist.**
+
+The checklist lives at: `~/.claude/projects/-home-taslanidis-git-rl-cloudsimplus/memory/extractor_transfer_checklist.md`
+
+It documents 4 architectural red flags that cause silent degradation on cross-environment transfer and are easy to overlook:
+1. DC ID embeddings (reviewer-fatal)
+2. Raw dc_type scalar into linear layer (ordinal assumption)
+3. Unmasked mean pooling over DC slots (count-shift between envs)
+4. Positional flat MLP without canonical ordering guarantee
+
+Run the quick audit greps from the checklist before claiming any extractor is transfer-safe.
+
 ---
 
 ## Project Structure
