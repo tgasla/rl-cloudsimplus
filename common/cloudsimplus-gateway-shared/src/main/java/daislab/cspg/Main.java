@@ -109,28 +109,29 @@ public class Main {
             configurator.doConfigure(logbackFile.toUri().toURL());
             LOGGER.info("Logging configured: level={}, destination={}, logDir={}", logLevel, logDestination, logDir);
         } else if (writeToStdout) {
-            // Logback defaults to INFO on stdout; only reconfigure if a different level is needed.
-            if (!logLevel.equals("INFO")) {
-                String logbackXml = """
-                    <configuration>
-                      <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-                        <encoder>
-                          <pattern>%%d{HH:mm:ss.SSS} [%%thread] %%-5level %%logger{36} - %%msg%%n</pattern>
-                        </encoder>
-                      </appender>
+            String logbackXml = """
+                <configuration>
+                  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                    <encoder>
+                      <pattern>%%d{HH:mm:ss.SSS} [%%thread] %%-5level %%logger{36} - %%msg%%n</pattern>
+                    </encoder>
+                  </appender>
 
-                      <root level="%s">
-                        <appender-ref ref="STDOUT" />
-                      </root>
-                    </configuration>
-                    """.formatted(logLevel);
+                  <root level="%s">
+                    <appender-ref ref="STDOUT" />
+                  </root>
+                </configuration>
+                """.formatted(logLevel);
 
-                Path logDir = simDir.isEmpty() ? Path.of("logs").toAbsolutePath() : Path.of(simDir).toAbsolutePath();
-                Files.createDirectories(logDir);
-                Path logbackFile = logDir.resolve("logback-generated.xml");
-                Files.writeString(logbackFile, logbackXml);
-                System.setProperty("logback.configurationFile", logbackFile.toString());
-            }
+            Path logDir = simDir.isEmpty() ? Path.of("logs").toAbsolutePath() : Path.of(simDir).toAbsolutePath();
+            Files.createDirectories(logDir);
+            Path logbackFile = logDir.resolve("logback-generated.xml");
+            Files.writeString(logbackFile, logbackXml);
+            LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+            loggerContext.reset();
+            JoranConfigurator configurator = new JoranConfigurator();
+            configurator.setContext(loggerContext);
+            configurator.doConfigure(logbackFile.toUri().toURL());
             LOGGER.info("Logging configured: level={}, destination={}", logLevel, logDestination);
         } else {
             // none: suppress all logging.
