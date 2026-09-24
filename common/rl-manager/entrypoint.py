@@ -45,7 +45,7 @@ def write_seed_to_file(seed, log_dir, filename="seed.txt"):
 
 def main():
     num_experiments = int(os.getenv("NUM_EXPERIMENTS"))
-    experiment_id = os.getenv("EXPERIMENT_ID")
+    experiment_id = int(os.getenv("EXPERIMENT_ID"))
 
     params = dict_from_config(experiment_id, CONFIG_FILE)
 

@@ -1,5 +1,6 @@
 import os
 import json
+import numpy as np
 import pandas as pd
 
 from utils.misc import (
@@ -32,22 +33,27 @@ def test(params, jobs):
 
     maybe_load_replay_buffer(model, params["train_model_dir"])
 
+    n_eval_episodes = params.get("n_eval_episodes", 10)
     episodes_info = {"r": [], "l": []}
 
-    obs, info = env.reset()
-    episode_reward = 0
-    current_length = 0
-    done = False
-    while not done:
-        current_length += 1
-        action_masks = env.unwrapped.action_masks()
-        action, _ = model.predict(obs, action_masks=action_masks)
-        obs, reward, terminated, truncated, info = env.step(action)
-        episode_reward += reward
-        done = terminated or truncated
+    for _ in range(n_eval_episodes):
+        obs, info = env.reset()
+        episode_reward = 0
+        current_length = 0
+        done = False
+        while not done:
+            current_length += 1
+            action_masks = env.unwrapped.action_masks()
+            action, _ = model.predict(obs, action_masks=action_masks, deterministic=True)
+            obs, reward, terminated, truncated, info = env.step(action)
+            episode_reward += reward
+            done = terminated or truncated
+        episodes_info["r"].append(episode_reward)
+        episodes_info["l"].append(current_length)
 
-    episodes_info["r"].append(episode_reward)
-    episodes_info["l"].append(current_length)
+    mean_r = float(np.mean(episodes_info["r"]))
+    std_r = float(np.std(episodes_info["r"]))
+    print(f"Evaluation ({n_eval_episodes} episodes): mean reward = {mean_r:.3f} ± {std_r:.3f}")
 
     if params["save_experiment"]:
         os.makedirs(params["log_dir"], exist_ok=True)

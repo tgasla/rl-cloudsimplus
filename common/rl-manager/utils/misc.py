@@ -131,11 +131,11 @@ def _register_yaml_constructors():
     yaml.add_constructor("!vm", _vm_constructor)
 
 
-def dict_from_config(replica_id, config):
+def dict_from_config(experiment_id, config):
     _register_yaml_constructors()
     with open(config, "r") as file:
         cfg = yaml.load(file, Loader=yaml.Loader)
-    params = {**cfg["common"], **cfg["experiments"][replica_id - 1]}
+    params = {**cfg["common"], **cfg["experiments"][experiment_id - 1]}
     return params
 
 
