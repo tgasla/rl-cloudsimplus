@@ -22,11 +22,18 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         log_dir: str,
         save_replay_buffer: bool = True,
         verbose: int = 0,
+        best_window: int = 50,
     ) -> None:
         super().__init__(verbose)
         self.log_dir = log_dir
         self.save_replay_buffer = save_replay_buffer
         self.model_save_path = os.path.join(log_dir, "best_model")
+        # best_model is selected on the mean of the last `best_window` episodes, not on a
+        # single episode. With per-episode sd ~0.47 a single-episode argmax over thousands
+        # of episodes selects a ~3 sigma upward outlier, and every transfer loads that file.
+        # 50 matches FINAL_WINDOW in transfer_analysis.py so selection and reporting agree.
+        self.best_window = best_window
+        self.reward_window: deque = deque(maxlen=best_window)
         self.best_reward = -np.inf
         self.previous_best_episode_num = None
         self.current_episode_num = 0
@@ -221,10 +228,15 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             current_reward = float(np.sum(self.rewards))
             self._maybe_print_current_episode_info(current_reward)
 
-            # New best model, save the agent and the episode details
-            if current_reward > self.best_reward:
-                self.best_reward = current_reward
-                self._save_new_best()
+            # New best model, save the agent and the episode details.
+            # Criterion is the windowed mean, and only once the window is full, so early
+            # lucky episodes cannot claim the checkpoint.
+            self.reward_window.append(current_reward)
+            if len(self.reward_window) == self.best_window:
+                windowed_mean = float(np.mean(self.reward_window))
+                if windowed_mean > self.best_reward:
+                    self.best_reward = windowed_mean
+                    self._save_new_best()
 
             self._clear_episode_details()
         return True
