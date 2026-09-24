@@ -36,7 +36,7 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
     """
 
     HOST_FEAT_DIM = 3
-    JOB_FEAT_DIM = 4
+    JOB_FEAT_DIM  = 3
 
     def __init__(
         self,

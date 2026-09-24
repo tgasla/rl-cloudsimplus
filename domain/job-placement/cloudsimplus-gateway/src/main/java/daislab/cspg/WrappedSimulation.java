@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 
 public class WrappedSimulation extends WrappedSimulationBase {
 
+    // Must match Python JobPlacementEnv.HOST_OBS_FEATURES: [dc_id, dc_type, free_vmpes]
+    static final int HOST_OBS_FEATURES = 3;
+
     // Concrete settings reference for domain-specific access
     private final SimulationSettings simSettings;
 
@@ -527,7 +530,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
      */
     private int[] getInfraObsDcIdDcTypeFreeVmPesPerHost() {
         final int totalHosts = getTotalHosts();
-        final int[] infrastructureObservation = new int[3 * totalHosts];
+        final int[] infrastructureObservation = new int[HOST_OBS_FEATURES * totalHosts];
         List<Datacenter> datacenterList = proxy().getSimulation().getCis().getDatacenterList();
         int currentIndex = 0;
         for (Datacenter dc : datacenterList) {

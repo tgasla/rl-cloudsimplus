@@ -41,7 +41,7 @@ class SPANEFeatureExtractor(BaseFeaturesExtractor):
     IDX_DC_TYPE  = 1
     IDX_FREE_PES = 2
     HOST_FEAT_DIM = 3
-    JOB_FEAT_DIM  = 4
+    JOB_FEAT_DIM  = 3
     DC_INPUT_DIM  = 3  # [dc_type, sum_free_vmpes, n_active_hosts]
 
     def __init__(

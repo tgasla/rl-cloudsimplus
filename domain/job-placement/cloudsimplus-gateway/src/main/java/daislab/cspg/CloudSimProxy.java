@@ -182,7 +182,9 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     // ============== Domain-specific observation helpers ==============
 
-    static final int JOB_OBS_FEATURES = 4; // cores, location, delaySensitivity, deadline
+    // gRPC wire format: [cores, location, delaySensitivity, deadline] — Python strips location (idx 1)
+    // before exposing to the policy; it is cached in JobPlacementEnv._last_locations for action masking.
+    static final int JOB_OBS_FEATURES = 4;
 
     int[] getJobsWaitingObservation() {
         final double targetTime = calculateTargetTime();

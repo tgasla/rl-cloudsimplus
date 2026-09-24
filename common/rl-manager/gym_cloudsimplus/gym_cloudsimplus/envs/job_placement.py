@@ -33,7 +33,9 @@ class JobPlacementEnv(CloudSimBaseEnv):
     """
 
     DC_TYPE_IDS = {"cloud": 0, "edge": 1, "micro": 2}
-    JOB_OBS_FEATURES = 4  # cores, location, delaySensitivity, deadline — must match Java CloudSimProxy.JOB_OBS_FEATURES
+    HOST_OBS_FEATURES = 3     # dc_id, dc_type, free_vmpes — must match Java WrappedSimulation.HOST_OBS_FEATURES
+    JOB_OBS_FEATURES = 3      # policy-visible features per job: cores, delaySensitivity, deadline
+    _JOB_GGRPC_FEATURES = 4   # gRPC wire format: [cores, location, delaySensitivity, deadline] — location (idx 1) cached for masking only
 
     def __init__(
         self,
@@ -61,7 +63,7 @@ class JobPlacementEnv(CloudSimBaseEnv):
         # 3 values per host, shape = (3 * total_hosts,)
         total_hosts = params.get("total_hosts", self.max_hosts * self.max_datacenters)
         self.total_hosts = total_hosts
-        self.infr_obs_length = 3 * total_hosts
+        self.infr_obs_length = self.HOST_OBS_FEATURES * total_hosts
         self.infr_obs_space = spaces.Box(
             low=0,
             high=self.max_pes_per_vm,
@@ -96,6 +98,27 @@ class JobPlacementEnv(CloudSimBaseEnv):
         # ── Last observation cache (used by action_masks) ─────────────────────
         self._last_infr_obs = np.zeros(self.infr_obs_length, dtype=np.int16)
         self._last_jobs_obs = np.zeros(self.job_obs_length, dtype=np.int16)
+        # Job locations cached separately — read from gRPC wire obs (index 1) but
+        # not exposed to the policy (location has zero reward correlation; masking
+        # enforces connectivity structurally).
+        self._last_locations = np.zeros(self.max_jobs_waiting, dtype=np.int64)
+
+        # ── Permutation stress-test flag ───────────────────────────────────────
+        # When True, DC host groups are shuffled randomly at each observation.
+        # Permutation-invariant extractors (type_stratified, hybrid, spane,
+        # attention_pooling) should maintain performance; positionally-biased
+        # extractors (euromlsys flat MLP) will degrade.
+        self.permute_dcs = params.get("permute_dcs", False)
+
+        # ── Topology connectivity mask ────────────────────────────────────────
+        # Precomputed static table: _location_valid_dc_mask[loc, action] = True
+        # means a job originating from DC 'loc' (0-based) may be placed via
+        # action 'action' (1-based, 0 = no-op).
+        # Action k corresponds to datacenters[k-1]. Built once from connect_to
+        # after name→index translation in entrypoint.py.
+        self._location_valid_dc_mask = self._build_location_mask(
+            params.get("datacenters", [])
+        )
 
         # ── Create simulation (CloudSimBaseEnv has _client and _sim_id ready) ─
         import json
@@ -104,6 +127,52 @@ class JobPlacementEnv(CloudSimBaseEnv):
         )
 
     # ── CloudSimBaseEnv abstract methods ───────────────────────────────────────
+
+    def _build_location_mask(self, datacenters: list) -> np.ndarray | None:
+        """Build static [n_dc, max_datacenters] bool mask from topology connect_to.
+
+        mask[loc, action] = True means a job originating at DC loc (0-based)
+        can be placed via action (action=0 no-op excluded — handled separately).
+        DCs with no connect_to (cloud/edge destinations) allow all actions.
+        """
+        if not datacenters:
+            return None
+        n_dc = len(datacenters)
+        mask = np.zeros((n_dc, self.max_datacenters), dtype=bool)
+        for loc_idx, dc in enumerate(datacenters):
+            connect_to = dc.get("connect_to", [])
+            if not connect_to:
+                # Destination DC (cloud/edge): no origin restriction
+                mask[loc_idx, :] = True
+            else:
+                # Micro DC: can place at itself or at explicitly connected DCs
+                for dest_idx in [loc_idx] + list(connect_to):
+                    action = dest_idx + 1  # obs_dc_id is 1-based
+                    if action < self.max_datacenters:
+                        mask[loc_idx, action] = True
+        return mask
+
+    def _permute_infr_obs(self, infr_obs: np.ndarray) -> np.ndarray:
+        """Randomly shuffle DC host-groups in the flat infrastructure observation.
+
+        Host features are [dc_id, dc_type, free_vmpes] per row. We group rows
+        by dc_id value, shuffle the group order, then reassemble — so dc_id
+        values are preserved but their positions in the flat array change.
+
+        Permutation-invariant extractors (type_stratified, hybrid, spane,
+        attention_pooling) are unaffected because they read dc_id by value via
+        scatter_add. The euromlsys flat MLP reads by position and degrades.
+        """
+        hosts = infr_obs.reshape(-1, self.HOST_OBS_FEATURES)
+        dc_ids = hosts[:, 0]
+        active_dcs = list({int(d) for d in dc_ids if d > 0})
+        if len(active_dcs) <= 1:
+            return infr_obs
+        np.random.shuffle(active_dcs)
+        groups = [hosts[dc_ids == dc_id] for dc_id in active_dcs]
+        padding = hosts[dc_ids == 0]
+        parts = groups + ([padding] if len(padding) > 0 else [])
+        return np.concatenate(parts, axis=0).flatten().astype(infr_obs.dtype)
 
     def action_masks(self) -> list[bool]:
         """Return action mask for MaskablePPO.
@@ -122,8 +191,8 @@ class JobPlacementEnv(CloudSimBaseEnv):
 
         # Scatter-max: compute max free PEs per DC action index in one vectorized pass.
         # infr_obs layout: [obs_dc_id, dc_type, free_vmpes] per host.
-        n_hosts = self.infr_obs_length // 3
-        hosts = infr_obs.reshape(n_hosts, 3)
+        n_hosts = self.infr_obs_length // self.HOST_OBS_FEATURES
+        hosts = infr_obs.reshape(n_hosts, self.HOST_OBS_FEATURES)
         dc_ids = hosts[:, 0].astype(np.int64)
         free_pes = hosts[:, 2].astype(np.int64)
         valid = (dc_ids > 0) & (dc_ids < self.max_datacenters)
@@ -131,8 +200,20 @@ class JobPlacementEnv(CloudSimBaseEnv):
         np.maximum.at(dc_max_free, dc_ids[valid], free_pes[valid])
 
         # Broadcast [max_jobs, 1] cores against [1, max_datacenters] capacity.
-        cores = jobs_obs.reshape(self.max_jobs_waiting, self.JOB_OBS_FEATURES)[:, 0].astype(np.int64)
+        job_feats = jobs_obs.reshape(self.max_jobs_waiting, self.JOB_OBS_FEATURES)
+        cores = job_feats[:, 0].astype(np.int64)
         mask_matrix = dc_max_free[np.newaxis, :] >= cores[:, np.newaxis]  # [J, DC]
+
+        # Connectivity constraint: job can only be placed at its origin DC or
+        # DCs reachable via connect_to. Padding jobs (cores=0) are unrestricted.
+        if self._location_valid_dc_mask is not None:
+            locations = self._last_locations.clip(
+                0, len(self._location_valid_dc_mask) - 1
+            )
+            conn_mask = self._location_valid_dc_mask[locations]  # [J, max_dc]
+            conn_mask[cores == 0] = True  # padding slots: unrestricted
+            mask_matrix &= conn_mask
+
         mask_matrix[:, 0] = True                        # action=0 (no-op) always valid
         mask_matrix[cores == 0] = True                  # padding slots: allow all
         all_blocked = (cores > 0) & ~mask_matrix[:, 1:].any(axis=1)
@@ -145,11 +226,18 @@ class JobPlacementEnv(CloudSimBaseEnv):
         # Infrastructure: [dc_id-1, dc_type_id, free_vmpes] per host
         infr_obs = np.array(raw_obs.get("infrastructure_observation"), dtype=np.int16)
         infr_obs = self._pad_observation(infr_obs, self.infr_obs_length)
+        if self.permute_dcs:
+            infr_obs = self._permute_infr_obs(infr_obs)
         self._last_infr_obs = infr_obs
 
-        # Jobs waiting: [cores, location, sensitivity, deadline] per job
-        jobs_obs = np.array(raw_obs.get("secondary_observation"), dtype=np.int16)
-        jobs_obs = self._pad_observation(jobs_obs, self.job_obs_length)
+        # Jobs waiting: gRPC sends [cores, location, sensitivity, deadline] per job (4 features).
+        # Strip location before exposing to the policy; cache it for action masking.
+        raw_jobs = np.array(raw_obs.get("secondary_observation"), dtype=np.int16)
+        raw_jobs = self._pad_observation(raw_jobs, self._JOB_GGRPC_FEATURES * self.max_jobs_waiting)
+        raw_feats = raw_jobs.reshape(self.max_jobs_waiting, self._JOB_GGRPC_FEATURES)
+        self._last_locations = raw_feats[:, 1].astype(np.int64)  # location — masking only
+        # Policy obs: [cores, sensitivity, deadline] (columns 0, 2, 3)
+        jobs_obs = np.concatenate([raw_feats[:, :1], raw_feats[:, 2:]], axis=1).flatten().astype(np.int16)
         self._last_jobs_obs = jobs_obs
 
         return {
