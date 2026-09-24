@@ -217,7 +217,12 @@ public class WrappedSimulation extends WrappedSimulationBase {
         List<DatacenterWithType> connectedDatacenters = new ArrayList<>();
 
         for (int i = 0; i < connectToArray.size(); i++) {
-            DatacenterWithType connectedDatacenter = (DatacenterWithType) datacenterList.get(i);
+            // Index by the connectTo entry, not the loop counter. These coincide only
+            // while connectTo indices happen to be contiguous from 0; any topology whose
+            // connect_to skips an index would otherwise select the wrong datacenters.
+            final int connectedDcIndex = connectToArray.get(i);
+            DatacenterWithType connectedDatacenter =
+                    (DatacenterWithType) datacenterList.get(connectedDcIndex);
             connectedDatacenters.add(connectedDatacenter);
         }
 

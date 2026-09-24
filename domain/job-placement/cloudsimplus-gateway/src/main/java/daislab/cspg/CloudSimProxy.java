@@ -102,7 +102,12 @@ public class CloudSimProxy extends CloudSimProxyBase {
         final List<Map<Host, List<Vm>>> hostVmMapping = createHostVmMapping(
                 (List<Map<String, Object>>) dcMap.get("hosts"), vmAllocationPolicy);
         final String type = String.valueOf(dcMap.get("type"));
-        final List<Integer> connectTo = (List<Integer>) dcMap.get("connect_to");
+        // JSON numbers deserialise to Double, and the unchecked cast to List<Integer> is a
+        // no-op under erasure, so the list silently holds Doubles until something extracts
+        // an element. Normalise here so every consumer really does get Integers.
+        final List<?> rawConnectTo = (List<?>) dcMap.get("connect_to");
+        final List<Integer> connectTo = rawConnectTo == null ? List.of()
+                : rawConnectTo.stream().map(v -> ((Number) v).intValue()).toList();
         LOGGER.info("while creating datacenter, I have connectTo {}", connectTo.toString());
         final List<Host> hostList = getHostListFromMapping(hostVmMapping);
         final Datacenter dc =
