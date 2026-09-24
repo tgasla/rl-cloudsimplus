@@ -235,3 +235,8 @@ domain/**/build.gradle
 domain/**/src/main/proto/
 .claude
 .mcp.json
+
+# Local run output and scratch analyses — not part of the repo
+session_logs/
+nohup.out
+docs/analysis/
