@@ -1,6 +1,7 @@
 import os
 import random
 import shutil
+import signal
 import numpy as np
 import torch
 import sys
@@ -13,6 +14,12 @@ from utils.misc import _translate_connect_to_names_to_idx
 from utils.misc import _translate_job_location_names_to_idx
 from utils.misc import _translate_sensitivity_str_to_levels
 from utils.trace_utils import csv_to_cloudlet_descriptor
+from utils.run_dir import (
+    RunDirExistsError,
+    SKIP_EXIT_CODE,
+    prepare_run_dir,
+    write_run_status,
+)
 
 CONFIG_FILE = "config.yml"
 
@@ -32,15 +39,6 @@ def set_seed_for_all(seed):
     os.environ["OMP_NUM_THREADS"] = "1"
     os.environ["MKL_NUM_THREADS"] = "1"
     os.environ["PYTHONHASHSEED"] = str(seed)
-
-
-def write_seed_to_file(seed, log_dir, filename="seed.txt"):
-    filepath = os.path.join(log_dir, filename)
-    try:
-        with open(filepath, "w") as file:
-            file.write(str(seed))
-    except Exception as e:
-        print(f"An error occurred while writing to the file: {e}")
 
 
 def main():
@@ -85,14 +83,11 @@ def main():
     save_experiment = params.get("save_experiment", False)
     params["log_dir"] = None
     if save_experiment:
-        params["log_dir"] = os.path.join(
-            params["base_log_dir"],
-            params["experiment_dir"],
-            params["experiment_name"],
-        )
-        os.makedirs(params["log_dir"], exist_ok=True)
+        params["log_dir"] = prepare_run_dir(params)
+        # Status first: a crash between here and the first result must still be
+        # recognisable as an unfinished run, not mistaken for a legacy directory.
+        write_run_status(params["log_dir"], params, "running")
         shutil.copy(CONFIG_FILE, params["log_dir"])
-        write_seed_to_file(params["seed"], params["log_dir"])
 
     os.environ["JAVA_LOG_DESTINATION"] = params.get("java_log_destination", "stdout")
     os.environ["JAVA_LOG_LEVEL"] = params.get("java_log_level", "INFO")
@@ -108,8 +103,29 @@ def main():
         raise
 
     func = getattr(module, params["mode"])
-    func(params, jobs)
+
+    status = "failed"
+    try:
+        func(params, jobs)
+        status = "completed"
+    except KeyboardInterrupt:
+        status = "interrupted"
+        raise
+    finally:
+        if params["log_dir"]:
+            write_run_status(params["log_dir"], params, status)
+
+
+def _raise_on_sigterm(signum, _frame):
+    # startup.sh execs this module, so Python is PID 1 and would otherwise ignore
+    # SIGTERM — `make stop-all` would leave the run recorded as still running.
+    raise KeyboardInterrupt(f"terminated by signal {signum}")
 
 
 if __name__ == "__main__":
-    main()
+    signal.signal(signal.SIGTERM, _raise_on_sigterm)
+    try:
+        main()
+    except RunDirExistsError as exc:
+        print(exc)
+        sys.exit(SKIP_EXIT_CODE)

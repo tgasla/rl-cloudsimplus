@@ -6,6 +6,13 @@
 # experiment_dir: parent directory for a set of experiments
 # experiment_name: name of the experiment
 # mode: [train, test, transfer]
+# on_exists: [abort, archive] - what to do when this run's directory already holds
+#   a completed run. A run directory is written exactly once; results are never
+#   merged. Per-experiment only, do not put it in common:.
+#     absent / abort : this experiment is skipped, the queue continues (default)
+#     archive        : the previous run is moved to
+#                      <base_log_dir>/_archive/<experiment_dir>/<experiment_name>/<UTC stamp>/
+#   A run that CRASHED or was killed is archived automatically, no flag needed.
 # vm_allocation_policy: [rl, fromfile, minimize-queue, minimize-allocated, minimize-unutilized]
 #   - rl       : RL agent decides VM lifecycle + host placement (uses VmAllocationPolicyCustom)
 #   - fromfile : replay recorded actions from a file (uses VmAllocationPolicyCustom)
