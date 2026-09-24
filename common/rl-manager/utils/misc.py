@@ -705,10 +705,10 @@ def get_algorithm(rl_algorithm_name, params) -> sb3.common.base_class.BaseAlgori
     raise AttributeError(f"RL algorithm {rl_algorithm_name} not found.")
 
 
-def maybe_load_replay_buffer(model, train_model_dir) -> None:
+def maybe_load_replay_buffer(model, base_log_dir, train_model_dir) -> None:
     if hasattr(model, "replay_buffer"):
         best_replay_buffer_path = os.path.join(
-            "logs", train_model_dir, "best_model_replay_buffer",
+            base_log_dir, train_model_dir, "best_model_replay_buffer",
         )
         model.load_replay_buffer(best_replay_buffer_path)
 

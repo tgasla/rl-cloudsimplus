@@ -31,7 +31,7 @@ def test(params, jobs):
     # Load the trained agent
     model = algorithm.load(best_model_path, env=env, device=device, seed=params["seed"])
 
-    maybe_load_replay_buffer(model, params["train_model_dir"])
+    maybe_load_replay_buffer(model, params["base_log_dir"], params["train_model_dir"])
 
     n_eval_episodes = params.get("n_eval_episodes", 10)
     episodes_info = {"r": [], "l": []}

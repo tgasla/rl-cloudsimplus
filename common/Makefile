@@ -1,10 +1,14 @@
 # domain=vm-management or domain=job-placement — required for domain-specific targets
-# Domain-free targets (build-tensorboard, run-tensorboard, generate-proto, stop, …)
+# Domain-free targets (build-tensorboard, run-tensorboard, generate-proto, stop-all, …)
 # work without domain and are guarded in the root Makefile.
 DOMAIN ?= $(shell echo $$DOMAIN)
 DOMAIN_DIR := domain/$(DOMAIN)
 
 CONFIG_FILE := $(DOMAIN_DIR)/config.yml
+
+# Host-side results root. run-tensorboard and prune-archive are domain-free, so they
+# cannot read a per-domain base_log_dir; override if you change it in config.yml.
+LOGS_DIR ?= common/logs
 get_yaml_value = $(shell grep -A 20 '^globals:' $(CONFIG_FILE) | grep -m 1 '^ *$(1):' | sed 's/^ *$(1): //')
 
 # Read versions from versions.gradle — single source of truth
@@ -33,7 +37,7 @@ build-tensorboard:
 	docker build -t tensorboard common/tensorboard
 
 run-tensorboard:
-	docker run --rm --name tensorboard -d -v $(PWD)/common/logs/:/logs/ -p 6006:6006 tensorboard
+	docker run --rm --name tensorboard -d -v $(PWD)/$(LOGS_DIR)/:/logs/ -p 6006:6006 tensorboard
 
 run:
 	DOMAIN=$(DOMAIN) ATTACHED=$(call get_yaml_value,attached) GPU=$(call get_yaml_value,gpu) bash common/scripts/run_docker.sh
@@ -44,18 +48,30 @@ clean-gateway:
 wipe-logs:
 	rm -rf $(DOMAIN_DIR)/logs/*
 
-stop:
+# Kill the experiment orchestrator, then tear down containers.
+# Order matters: run_docker.sh blocks on `docker wait`, so tearing down the
+# container while the loop is alive makes it start the next experiment.
+# The [r] bracket keeps the pattern from matching the shell running this recipe,
+# whose own command line contains "run_docker.sh".
+stop-all:
+	pkill -f '[r]un_docker\.sh' || true
 	DOMAIN=$(DOMAIN) docker compose -f common/docker-compose.yml --profile cpu --profile cuda down --remove-orphans
 # 	docker system prune -f
 # 	docker system prune --volumes -f
 
 # Clean all state: containers, volumes, images, gradle builds
-clean-all: stop
+clean-all: stop-all
 	docker rmi -f $$(docker images -q 'manager*' 2>/dev/null) 2>/dev/null || true
 	docker rmi -f $$(docker images -q 'gateway*' 2>/dev/null) 2>/dev/null || true
 	docker rmi -f $$(docker images -q 'tensorboard*' 2>/dev/null) 2>/dev/null || true
 	cd common/cloudsimplus-gateway-shared && ./gradlew :$(DOMAIN):clean 2>/dev/null || true
 	rm -rf $(DOMAIN_DIR)/rl-manager/logs/*
+
+# Delete archived runs (logs/_archive). Never automatic - an archived run is a
+# research artifact, and auto-deleting one is worse than keeping a full disk.
+prune-archive:
+	@du -sh $(LOGS_DIR)/_archive 2>/dev/null || echo "no archive to prune"
+	rm -rf $(LOGS_DIR)/_archive
 
 generate-proto:
 	python3 -m grpc_tools.protoc \
@@ -94,4 +110,4 @@ check-gateway-jar:
 		echo "No JAR found - run 'make build-gateway' first"; \
 	fi
 
-.PHONY: build build-gateway build-tensorboard build-manager run-tensorboard run clean-gateway wipe-logs stop generate-proto get-gradle clear-gradle check-gateway-deps check-gateway-jar
+.PHONY: build build-gateway build-tensorboard build-manager run-tensorboard run clean-gateway wipe-logs stop-all prune-archive generate-proto get-gradle clear-gradle check-gateway-deps check-gateway-jar

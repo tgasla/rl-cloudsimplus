@@ -55,7 +55,7 @@ def transfer(params, jobs):
     logger = create_logger(params["save_experiment"], params["log_dir"])
     model.set_logger(logger)
 
-    maybe_load_replay_buffer(model, params["train_model_dir"])
+    maybe_load_replay_buffer(model, params["base_log_dir"], params["train_model_dir"])
 
     # Retrain the agent initializing the weights from the saved agent
     # The right thing to do is to set reset_num_timesteps=True

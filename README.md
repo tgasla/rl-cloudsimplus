@@ -60,7 +60,7 @@ make run domain=job-placement
 
 | Command | Description |
 |---------|-------------|
-| `make stop` | Stop running containers, remove networks |
+| `make stop-all` | Kill the experiment orchestrator (`run_docker.sh`), then stop containers and remove networks |
 | `make clean-all domain=<domain>` | Full cleanup: stop containers, remove images, clean gradle build, wipe logs |
 | `make wipe-logs domain=<domain>` | Delete all logs for the domain |
 | `make clean-gateway domain=<domain>` | Clean only the Java gradle build |

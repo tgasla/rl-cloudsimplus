@@ -300,7 +300,7 @@ When `gpu: true` was configured, both `manager` (CPU) and `manager-cuda` (GPU) s
 simultaneously, causing a GPU crash.
 
 **Fix**: Added `profiles: ["cpu"]` to the `manager` service so it is only started explicitly
-via `--profile cpu`. The `make stop` target uses `--profile cpu --profile cuda` to stop either.
+via `--profile cpu`. The `make stop-all` target uses `--profile cpu --profile cuda` to stop either.
 
 ---
 

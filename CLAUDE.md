@@ -127,11 +127,11 @@ make build-manager domain=<domain>
 # Run experiment(s) defined in config.yml
 make run domain=<domain>
 
-# Start TensorBoard at http://localhost:6006
-make run-tensorboard domain=<domain>
+# Start TensorBoard at http://localhost:6006 (no domain needed)
+make run-tensorboard
 
-# Stop containers
-make stop
+# Kill the experiment orchestrator, then stop containers
+make stop-all
 
 # Full cleanup: containers, images, gradle build, logs
 make clean-all domain=<domain>
@@ -369,6 +369,39 @@ Merged into every experiment's params dict.
 
 ### `experiment_N:` — per-experiment overrides
 Keys: `mode` (`train`/`transfer`/`test`), `experiment_dir`, `experiment_name`, `datacenters`, `job_trace_filename`, `train_model_dir` (for transfer/test).
+
+**Run directories are write-once.** `log_dir` = `base_log_dir/experiment_dir/experiment_name`
+is created with no `exist_ok`, so a rerun can never merge into a previous run's output.
+
+| target state | behaviour |
+|--------------|-----------|
+| absent / empty | runs normally |
+| a run that crashed or was killed | archived automatically, no flag |
+| a completed or pre-`run_status.json` run | needs `on_exists: archive`, else the experiment is **skipped** (exit 3) and the queue continues |
+
+`on_exists` accepts only `abort` (default) and `archive` — there is deliberately no
+`overwrite`; use `rm -rf` for that. Archives land in `base_log_dir/_archive/<experiment_dir>/<experiment_name>/<UTC stamp>/`
+with their `tfevents` files renamed to `tfarchived` so TensorBoard ignores them.
+Clear them with `make prune-archive`.
+
+`make run` runs `common/scripts/preflight.py` first, which prints the whole queue with
+resolved sources and predicted skips. It blocks only when a transfer/test source model
+neither exists on disk nor is produced by an earlier experiment in the same queue.
+
+**`base_log_dir` is the single source of truth for where results land.** `run_docker.sh`
+reads it once from `common:` and exports it as `BASE_LOG_DIR`, which drives all three
+consumers so they cannot drift apart:
+
+| consumer | resolves to |
+|----------|-------------|
+| container bind mount (`docker-compose.yml`) | `../common/${BASE_LOG_DIR}:/mgr/${BASE_LOG_DIR}` |
+| host path preflight inspects | `common/$BASE_LOG_DIR` |
+| Python (`entrypoint`, `transfer`, `test`, `run_dir`) | `params["base_log_dir"]` |
+
+It must be set once under `common:` — a per-experiment override is rejected by preflight,
+because the bind mount is established once per container and could not honour it.
+The two domain-free Make targets (`run-tensorboard`, `prune-archive`) cannot read a
+per-domain config; they use `LOGS_DIR ?= common/logs`, so pass `LOGS_DIR=...` if you change it.
 
 ### Policy & algorithm params
 

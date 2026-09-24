@@ -25,7 +25,7 @@ services:
       - ./rl-manager/transfer.py:/mgr/transfer.py
       - ./rl-manager/test.py:/mgr/test.py
       - ./rl-manager/entrypoint.py:/mgr/entrypoint.py
-      - ../common/logs:/mgr/logs
+      - ../common/${BASE_LOG_DIR:-logs}:/mgr/${BASE_LOG_DIR:-logs}
       - ./rl-manager/callbacks:/mgr/callbacks
       - ./rl-manager/extractors:/mgr/extractors
       - ../domain/${DOMAIN}/config.yml:/mgr/config.yml
