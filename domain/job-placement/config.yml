@@ -36,14 +36,18 @@ common:
   print_stats: false
   cloudlet_to_dc_mapping: rl
   cloudlet_to_vm_mapping: most-free-pes
-  state_space_type: dcid-dctype-freevmpes-per-host
+  state_space_type: dcid-dctype-vmcap-freepes-backlog-per-host
   freeze_inactive_input_layer_weights: false # keep false if autoencoder or embeddings are used
-  max_datacenters: 8
+  # Shape constants: they fix the observation (960 + 192 + 768) and action spaces, so
+  # changing any of them invalidates every trained checkpoint.
+  max_datacenters: 24   # action 0 is the no-op, so 23 addressable DCs
   max_datacenter_types: 3
-  max_hosts: 40
-  max_host_pes: 64
-  max_jobs_waiting: 50
-  max_job_pes: 16
+  max_hosts: 8          # per-DC host cap
+  total_hosts: 192      # host slots in the observation
+  max_host_pes: 32
+  max_jobs_waiting: 32  # jobs decided per timestep (head by due time)
+  max_job_pes: 8
+  mips_ref: 60          # PE speed that defines one unit of nominal job runtime
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
   n_rollout_steps: 128

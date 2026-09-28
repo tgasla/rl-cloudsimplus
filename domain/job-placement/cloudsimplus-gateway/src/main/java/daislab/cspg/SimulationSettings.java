@@ -35,6 +35,8 @@ public class SimulationSettings implements ISimulationSettings {
     private final double rewardJobsPlacedCoef;
     private final double rewardQualityCoef;
     private final double rewardDeadlineViolationCoef;
+    // PE speed that defines one unit of nominal runtime (the edge tier in RING-N).
+    private final double mipsRef;
 
     public SimulationSettings(final Map<String, Object> params) {
         mode = ISimulationSettings.getStr(params, "mode");
@@ -59,6 +61,7 @@ public class SimulationSettings implements ISimulationSettings {
         cloudletToVmMapping = ISimulationSettings.getStr(params, "cloudlet_to_vm_mapping");
         stateSpaceType = ISimulationSettings.getStr(params, "state_space_type");
         maxJobsWaiting = ISimulationSettings.getInt(params, "max_jobs_waiting");
+        mipsRef = ISimulationSettings.getDouble(params, "mips_ref");
         datacenters = (List<Map<String, Object>>) params.get("datacenters");
     }
 

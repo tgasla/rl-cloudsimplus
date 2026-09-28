@@ -276,10 +276,10 @@ All domain-agnostic logic lives in `common/cloudsimplus-gateway-shared/`. Domain
 
 | Field | vm-management | job-placement |
 |-------|---------------|---------------|
-| `infrastructureObservation` | Tree-array: DC→Host→VM→Job hierarchy (flat encoding) | `[dc_id, dc_type_id, free_vmpes]` per host, all DCs |
-| `secondaryObservation` | `[min(jobCoresWaiting, maxVmPes)]` (length 1) | `[cores, location, sensitivity, deadline]` per waiting job (length = `JOB_OBS_FEATURES × jobs`) |
+| `infrastructureObservation` | Tree-array: DC→Host→VM→Job hierarchy (flat encoding) | `[dc_id, dc_type, vm_capacity_pes, free_pes, backlog_core_ts]` per host, all DCs; dc_type 1=cloud, 2=edge, 3=micro (0 = padding) |
+| `secondaryObservation` | `[min(jobCoresWaiting, maxVmPes)]` (length 1) | `[cores, location, nominal_runtime_ref, time_to_due, s0, s1, s2]` per visible job: the first `max_jobs_waiting` arrived jobs by (due, arrival, id); action[i] places slot i |
 
-`JOB_OBS_FEATURES = 4` is a named constant in `CloudSimProxy` (Java) and `JobPlacementEnv` (Python). Both sides **must** agree on this value.
+`HOST_OBS_FEATURES = 5` (`WrappedSimulation` / `JobPlacementEnv`) and the 7-feature job wire format (`CloudSimProxy.JOB_OBS_FEATURES` / `JobPlacementEnv._JOB_WIRE_FEATURES`) **must** agree on both sides; `tests/test_observation_schema.py` checks it. Python strips `location` from the policy's job features and turns it into the `reach_mask` channel.
 
 ### Key Invariants
 
@@ -302,7 +302,7 @@ CloudSimBaseEnv (envs/base.py)          ← abstract base; gRPC wiring, reset(),
 **`CloudSimBaseEnv`** provides:
 - `_client: CloudSimGrpcClient` — gRPC stub
 - `reset()`, `step()`, `close()`, `ping()`
-- `_pad_observation(obs, target_dim)` — zero-pads or truncates to fixed shape
+- `_pad_observation(obs, target_dim)` — zero-pads to fixed shape; raises if the observation is longer
 - Abstract methods: `_get_observation()`, `_parse_step_info()`, `action_masks()`
 
 **`VmManagementEnv`**:
@@ -313,8 +313,8 @@ CloudSimBaseEnv (envs/base.py)          ← abstract base; gRPC wiring, reset(),
 
 **`JobPlacementEnv`**:
 - Action space: `MultiDiscrete([max_datacenters] × max_jobs_waiting)`
-- Obs space: `Dict(infrastructure_state: Box, jobs_waiting_state: Box)`
-- `JOB_OBS_FEATURES = 4` class constant (must match Java)
+- Obs space: `Dict(infrastructure_state: Box, jobs_waiting_state: Box, reach_mask: Box)` — 960 + 192 + 768 with the benchmark shape constants (`total_hosts` 192, `max_jobs_waiting` 32, `max_datacenters` 24, pinned in config)
+- `reach_mask[j, k]` = topology allows placing job slot j via action k; the action mask is reach ∧ free PEs, and a padding slot can only take the no-op
 
 ### gRPC Client
 
@@ -469,7 +469,7 @@ Java file logging only activates when **both** `log.saveExperiment=true` and `lo
 ### Java
 - Java 21+, Lombok (`@Value` for immutable records, `@Data` for mutable settings)
 - 4-space indentation
-- Named constants over magic numbers — e.g. `JOB_OBS_FEATURES = 4` instead of literal `4`
+- Named constants over magic numbers — e.g. `JOB_OBS_FEATURES = 7` instead of literal `7`
 - `@SuppressWarnings("unchecked")` on methods with necessary raw casts (data from JSON deserialization), not scattered inline
 - Domain-agnostic logic belongs in shared module; only domain-specific behaviour in domain packages
 

@@ -145,9 +145,15 @@ class CloudSimBaseEnv(gym.Env, ABC):
         return self._client.ping()
 
     def _pad_observation(self, obs: np.ndarray, target_dim: int) -> np.ndarray:
-        """Pad observation array to target dimension."""
-        if len(obs) >= target_dim:
-            return np.array(obs[:target_dim], dtype=np.int16)
-        padded = np.zeros(target_dim, dtype=np.int16)
+        """Zero-pad observation array to target dimension, keeping its dtype.
+
+        An observation longer than the space is an error: truncating it would silently
+        hide hosts or jobs from the policy.
+        """
+        if len(obs) > target_dim:
+            raise ValueError(
+                f"observation has {len(obs)} values but the space holds {target_dim}"
+            )
+        padded = np.zeros(target_dim, dtype=obs.dtype)
         padded[: len(obs)] = obs
         return padded

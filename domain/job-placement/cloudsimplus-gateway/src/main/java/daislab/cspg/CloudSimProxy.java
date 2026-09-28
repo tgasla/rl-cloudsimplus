@@ -14,6 +14,7 @@ import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -187,20 +188,54 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     // ============== Domain-specific observation helpers ==============
 
-    // gRPC wire format: [cores, location, delaySensitivity, deadline] — Python strips location (idx 1)
-    // before exposing to the policy; it is cached in JobPlacementEnv._last_locations for action masking.
-    static final int JOB_OBS_FEATURES = 4;
+    // gRPC wire format per job: [cores, location, nominal_runtime_ref, time_to_due, s0, s1, s2].
+    // Python strips location (idx 1) before exposing the job to the policy and uses it for the
+    // reachability mask. s0..s2 one-hot the delay sensitivity (tolerant, moderate, critical).
+    // Must match Python JobPlacementEnv._JOB_WIRE_FEATURES.
+    static final int JOB_OBS_FEATURES = 7;
+    static final int SENSITIVITY_LEVELS = 3;
+
+    /**
+     * The jobs the agent decides on this timestep: the first max_jobs_waiting arrived, unsubmitted
+     * jobs by (due time, arrival, id). Observation slot i and action[i] both refer to element i.
+     * Anything that aggregates over the backlog must use getJobsToSubmitAtThisTimestep instead.
+     */
+    List<Cloudlet> getVisibleJobs(final double targetTime) {
+        return getJobsToSubmitAtThisTimestep(targetTime).stream()
+                .sorted(Comparator.comparingDouble(this::getDueTime)
+                        .thenComparingDouble(c -> jobArrivalTimeMap.get(c.getId()))
+                        .thenComparingLong(Cloudlet::getId))
+                .limit(simSettings.getMaxJobsWaiting())
+                .toList();
+    }
+
+    /** Completion deadline: arrival plus the job's deadline in timesteps. */
+    double getDueTime(final Cloudlet job) {
+        return jobArrivalTimeMap.get(job.getId())
+                + ((CloudletWithLocation) job).getDeadline() * settings.getTimestepInterval();
+    }
 
     int[] getJobsWaitingObservation() {
-        final double targetTime = calculateTargetTime();
-        List<Cloudlet> jobsToSubmitList = getJobsToSubmitAtThisTimestep(targetTime);
-        int[] jobsWaitingObs = new int[JOB_OBS_FEATURES * jobsToSubmitList.size()];
-        for (int i = 0; i < jobsToSubmitList.size(); i++) {
-            CloudletWithLocation job = (CloudletWithLocation) jobsToSubmitList.get(i);
-            jobsWaitingObs[JOB_OBS_FEATURES * i] = (int) job.getPesNumber();
-            jobsWaitingObs[JOB_OBS_FEATURES * i + 1] = job.getLocation();
-            jobsWaitingObs[JOB_OBS_FEATURES * i + 2] = job.getDelaySensitivity();
-            jobsWaitingObs[JOB_OBS_FEATURES * i + 3] = job.getDeadline();
+        final List<Cloudlet> visibleJobs = getVisibleJobs(calculateTargetTime());
+        final double interval = settings.getTimestepInterval();
+        final double refMiPerTimestep = simSettings.getMipsRef() * interval;
+        final int[] jobsWaitingObs = new int[JOB_OBS_FEATURES * visibleJobs.size()];
+        for (int i = 0; i < visibleJobs.size(); i++) {
+            final CloudletWithLocation job = (CloudletWithLocation) visibleJobs.get(i);
+            final int sensitivity = job.getDelaySensitivity();
+            if (sensitivity < 0 || sensitivity >= SENSITIVITY_LEVELS) {
+                throw new IllegalStateException("Job " + job.getId()
+                        + " has delay sensitivity " + sensitivity + ", expected 0.."
+                        + (SENSITIVITY_LEVELS - 1));
+            }
+            final int base = JOB_OBS_FEATURES * i;
+            jobsWaitingObs[base] = (int) job.getPesNumber();
+            jobsWaitingObs[base + 1] = job.getLocation();
+            // Cloudlet length is per PE, so this is the runtime on a reference-speed PE.
+            jobsWaitingObs[base + 2] = (int) Math.ceil(job.getLength() / refMiPerTimestep);
+            jobsWaitingObs[base + 3] =
+                    (int) Math.max(0, Math.floor((getDueTime(job) - clock()) / interval));
+            jobsWaitingObs[base + 4 + sensitivity] = 1;
         }
         return jobsWaitingObs;
     }

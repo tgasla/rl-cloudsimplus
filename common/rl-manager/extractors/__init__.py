@@ -15,6 +15,8 @@ from extractors.hybrid_rbf_extractor import HybridRBFPoolExtractor
 from extractors.swat_extractor import SWATExtractor
 from extractors.aria_extractor import ARIAExtractor
 from extractors.tsar_extractor import TSARExtractor
+from extractors.deepsets_extractor import DeepSetsExtractor
+from extractors.featurize import HOST_FEATURES, JOB_FEATURES
 
 EXTRACTOR_REGISTRY = {
     "euromlsys": CustomFeatureExtractor,
@@ -36,6 +38,7 @@ EXTRACTOR_REGISTRY = {
     "swat": SWATExtractor,
     "aria": ARIAExtractor,
     "tsar": TSARExtractor,
+    "deepsets": DeepSetsExtractor,
 }
 
 
@@ -56,7 +59,17 @@ def get_extractor_class(name: str):
             f"Unknown feature extractor: '{name}'. "
             f"Available: {list(EXTRACTOR_REGISTRY.keys())}"
         )
-    return EXTRACTOR_REGISTRY[name]
+    cls = EXTRACTOR_REGISTRY[name]
+    # Extractors written for an older observation layout would reshape the flat arrays
+    # with the wrong stride and misread every slot without raising (960 = 192*5 = 320*3).
+    host_dim = getattr(cls, "HOST_FEAT_DIM", HOST_FEATURES)
+    job_dim = getattr(cls, "JOB_FEAT_DIM", JOB_FEATURES)
+    if (host_dim, job_dim) != (HOST_FEATURES, JOB_FEATURES):
+        raise ValueError(
+            f"Feature extractor '{name}' reads {host_dim} host / {job_dim} job features per "
+            f"slot, but the observation has {HOST_FEATURES} / {JOB_FEATURES}; port it first."
+        )
+    return cls
 
 
 def build_extractor_kwargs(name: str, params: dict) -> dict:
@@ -77,8 +90,10 @@ def build_extractor_kwargs(name: str, params: dict) -> dict:
             "gnn_heads": params.get("gnn_heads", 4),
             "num_layers": params.get("num_layers", 2),
             "dropout": params.get("dropout", 0.1),
-            "max_datacenters": params.get("max_datacenters", 8),
-            "max_dc_types": params.get("max_datacenter_types", params.get("max_dc_types", 3)),
+        })
+    elif name == "deepsets":
+        kwargs.update({
+            "hidden_dim": params.get("hidden_dim", 128),
         })
     elif name in ("attention", "attention_pooling"):
         kwargs.update({

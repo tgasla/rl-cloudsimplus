@@ -4,6 +4,7 @@ import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.cloudlets.Cloudlet;
+import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 
 import java.util.List;
 import java.util.Map;
@@ -12,12 +13,14 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class WrappedSimulation extends WrappedSimulationBase {
 
-    // Must match Python JobPlacementEnv.HOST_OBS_FEATURES: [dc_id, dc_type, free_vmpes]
-    static final int HOST_OBS_FEATURES = 3;
+    // Must match Python JobPlacementEnv.HOST_OBS_FEATURES:
+    // [dc_id, dc_type, vm_capacity_pes, free_pes, backlog_core_ts]
+    static final int HOST_OBS_FEATURES = 5;
 
     // Concrete settings reference for domain-specific access
     private final SimulationSettings simSettings;
@@ -47,8 +50,8 @@ public class WrappedSimulation extends WrappedSimulationBase {
     @Override
     protected int[] extractInfrastructureObservation() {
         switch (simSettings.getStateSpaceType()) {
-            case "dcid-dctype-freevmpes-per-host":
-                return getInfraObsDcIdDcTypeFreeVmPesPerHost();
+            case "dcid-dctype-vmcap-freepes-backlog-per-host":
+                return getInfraObsPerHost();
             default:
                 throw new IllegalArgumentException(
                         "Unexpected value: " + simSettings.getStateSpaceType());
@@ -387,16 +390,17 @@ public class WrappedSimulation extends WrappedSimulationBase {
         final double targetTime = proxy().calculateTargetTime();
         final List<Cloudlet> jobsToSubmit = proxy().getJobsToSubmitAtThisTimestep(targetTime);
         final int jobsWaiting = jobsToSubmit.size();
+        // action[i] refers to observation slot i, i.e. the i-th visible job.
+        final List<Cloudlet> visibleJobs = proxy().getVisibleJobs(targetTime);
+        if (action.length < visibleJobs.size()) {
+            throw new IllegalArgumentException("Got " + action.length + " actions for "
+                    + visibleJobs.size() + " visible jobs; max_jobs_waiting must match the action space");
+        }
 
         int jobsPlaced = 0;
         double quality = 0.0;
-        for (int i = 0; i < jobsWaiting; i++) {
-            if (action.length <= i) {
-                LOGGER.warn(
-                        "More jobs waiting than actions returned by the agent. Jobs will stay in the queue. Continuing...");
-                break;
-            }
-            final CloudletWithLocation job = (CloudletWithLocation) jobsToSubmit.get(i);
+        for (int i = 0; i < visibleJobs.size(); i++) {
+            final CloudletWithLocation job = (CloudletWithLocation) visibleJobs.get(i);
             final int dcId = action[i] + 1;
             LOGGER.info("Action[{}]: {}", i, dcId);
             if (dcId == 1) {
@@ -454,53 +458,56 @@ public class WrappedSimulation extends WrappedSimulationBase {
     }
 
     /**
-     * Retrieves the total number of free VM cores per host in the infrastructure.
+     * Per host, in datacenter order: [dc_id, dc_type, vm_capacity_pes, free_pes, backlog_core_ts].
      * <p>
-     * This method assumes that the trace file contains cloudlets, and VMs have already been opened
-     * to fit inside all hosts. Therefore, the free cores of interest are the free cores of the VMs.
-     * It also assumes that each host has only one VM that is as large as the host. Consequently,
-     * the method counts the free cores of the VMs.
-     * <p>
-     * If the trace file contains VMs, no VMs should be opened, and the free cores of the hosts
-     * should be counted instead.
-     * <p>
-     * The method returns an array where each pair of elements represents a datacenter ID and the
-     * corresponding number of free cores in that datacenter.
-     *
-     * @return an array of integers where each pair of elements represents a datacenter ID and the
-     *         corresponding number of free cores in that datacenter.
+     * dc_id is the action index of the host's datacenter (CloudSim ids start at 2, action 0 is the
+     * no-op, so dc_id = id - 1). vm_capacity_pes is the PE count of the host's VMs, which decides
+     * whether a job can be held at all. free_pes is clipped at 0 once cloudlets queue, and
+     * backlog_core_ts carries the depth that clipping hides: the core-timesteps of work still to
+     * run on the host's VMs, executing and waiting.
      */
-    private int[] getInfraObsDcIdDcTypeFreeVmPesPerHost() {
+    private int[] getInfraObsPerHost() {
         final int totalHosts = getTotalHosts();
         final int[] infrastructureObservation = new int[HOST_OBS_FEATURES * totalHosts];
+        final double interval = simSettings.getTimestepInterval();
         List<Datacenter> datacenterList = proxy().getSimulation().getCis().getDatacenterList();
         int currentIndex = 0;
         for (Datacenter dc : datacenterList) {
             for (Host host : dc.getHostList()) {
-                int freePes = 0;
-                final List<Vm> vmList = host.getVmList();
-                // - 1 because dc ids start from 2, Actions start with 0 but 0 means no dc, so
-                // we send 1 that means dc with id 2.
-                // We do the opposite (add 1) when we get the action
+                long vmCapacityPes = 0;
+                long usedPes = 0;
+                double backlogCoreSeconds = 0;
+                for (Vm vm : host.getVmList()) {
+                    final CloudletScheduler scheduler = vm.getCloudletScheduler();
+                    vmCapacityPes += vm.getPesNumber();
+                    usedPes += scheduler.getCloudletList().stream()
+                            .mapToLong(Cloudlet::getPesNumber).sum();
+                    backlogCoreSeconds += Stream
+                            .concat(scheduler.getCloudletExecList().stream(),
+                                    scheduler.getCloudletWaitingList().stream())
+                            .mapToDouble(ce -> ce.getCloudlet().getPesNumber()
+                                    * ce.getRemainingCloudletLength() / vm.getMips())
+                            .sum();
+                }
                 infrastructureObservation[currentIndex++] = (int) dc.getId() - 1;
                 infrastructureObservation[currentIndex++] =
                         getDcTypeIdFromStr(((DatacenterWithType) dc).getType());
-                for (Vm vm : vmList) {
-                    List<Cloudlet> cloudletList = vm.getCloudletScheduler().getCloudletList();
-                    long usedPes = cloudletList.stream().mapToLong(Cloudlet::getPesNumber).sum();
-                    freePes += vm.getPesNumber() - usedPes;
-                }
-                infrastructureObservation[currentIndex++] = freePes;
+                infrastructureObservation[currentIndex++] = (int) vmCapacityPes;
+                infrastructureObservation[currentIndex++] =
+                        (int) Math.max(0, vmCapacityPes - usedPes);
+                infrastructureObservation[currentIndex++] =
+                        (int) Math.ceil(backlogCoreSeconds / interval);
             }
         }
         return infrastructureObservation;
     }
 
+    // 0 is reserved for padding host slots, so real types start at 1.
     private int getDcTypeIdFromStr(final String dcType) {
         return switch (dcType) {
-            case "cloud" -> 0;
-            case "edge" -> 1;
-            case "micro" -> 2;
+            case "cloud" -> 1;
+            case "edge" -> 2;
+            case "micro" -> 3;
             default -> throw new IllegalArgumentException("Unexpected DC type: " + dcType);
         };
     }

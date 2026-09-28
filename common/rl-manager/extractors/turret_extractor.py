@@ -1,42 +1,45 @@
 import torch
 from torch import nn
-from torch.utils.checkpoint import checkpoint as grad_checkpoint
-import numpy as np
 from gymnasium import spaces
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 try:
     from torch_geometric.nn import GATConv
-    from torch_geometric.nn import LayerNorm as GeoLayerNorm
     _HAS_TORCH_GEOMETRIC = True
 except ImportError:
     _HAS_TORCH_GEOMETRIC = False
 
+from extractors.featurize import (
+    HOST_INPUT_DIM,
+    JOB_INPUT_DIM,
+    host_inputs,
+    job_inputs,
+    split_observation,
+)
+
 
 class TurretGNNExtractor(BaseFeaturesExtractor):
     """
-    GNN-based feature extractor faithful to the TURRET paper (Yang et al., AAAI-24).
+    A4: TURRET's structured policy network (Yang et al., AAAI-24), adapted to job placement.
 
-    Architecture:
-      1. Input model F_in: project each host/job node to gnn_hidden via separate MLPs.
-         dc_id and dc_type are embedded categorically; free_vmpes is continuous.
-      2. Propagation model P: K GATConv layers with multi-head attention (concat=True),
-         applied over a fully-connected host+job graph.
-      3. Readout model F_read: set-transformer readout — a learned query vector attends
-         over all node representations (attention pooling, equivalent to the paper's
-         encoder-decoder readout producing a fixed-dim S_emb).
+    TURRET builds its graph from the system's morphology, gives every node its own input
+    vector through type-specific input networks (no node identities), propagates with
+    multi-head graph attention and reads the graph out with a set transformer. Here:
 
-    Observation format (JobPlacementEnv flat layout):
-      infrastructure_state: flat [max_hosts * 3]  — (dc_id, dc_type, free_vmpes) per host
-      jobs_waiting_state:   flat [max_jobs * 4]   — (cores, location, sensitivity, deadline)
+      nodes   real hosts and real waiting jobs; padding slots stay isolated and are masked
+              out of the readout
+      edges   host <-> host within the same datacenter, and job <-> host wherever reach_mask
+              lets the job use that host's datacenter
+      F_in    one MLP for host nodes, one for job nodes (featurize.py inputs)
+      P       num_layers GATConv layers with gnn_heads heads (concat), LayerNorm per node
+      F_read  one learned seed query attending over the real nodes (set-transformer pooling)
+
+    Not included: TURRET's per-node action outputs (the action head is the policy's) and
+    its multi-source transfer weighting (transfer here is single-source).
 
     Config params (via features_extractor_kwargs):
-      features_dim, gnn_hidden, gnn_heads, num_layers, dropout,
-      max_datacenters, max_dc_types
+      features_dim, gnn_hidden, gnn_heads, num_layers, dropout
     """
-
-    HOST_FEAT_DIM = 3
-    JOB_FEAT_DIM  = 3
 
     def __init__(
         self,
@@ -46,8 +49,6 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         gnn_heads: int = 4,
         num_layers: int = 2,
         dropout: float = 0.1,
-        max_datacenters: int = 8,
-        max_dc_types: int = 3,
     ):
         if not _HAS_TORCH_GEOMETRIC:
             raise ImportError(
@@ -56,20 +57,9 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
             )
         super().__init__(observation_space, features_dim)
 
-        infr_flat = int(np.prod(observation_space.spaces["infrastructure_state"].shape))
-        jobs_flat = int(np.prod(observation_space.spaces["jobs_waiting_state"].shape))
-        self.max_hosts = infr_flat // self.HOST_FEAT_DIM
-        self.max_jobs = jobs_flat // self.JOB_FEAT_DIM
-
         # ── Input model F_in ─────────────────────────────────────────────────
-        dc_id_dim = min(16, (max_datacenters // 2) + 1)
-        dc_type_dim = min(8, (max_dc_types // 2) + 1)
-        self.dc_id_embed = nn.Embedding(max_datacenters + 1, dc_id_dim)
-        self.dc_type_embed = nn.Embedding(max_dc_types + 1, dc_type_dim)
-
-        host_input_dim = dc_id_dim + dc_type_dim + 1  # +1 for free_vmpes (continuous)
-        self.host_proj = nn.Linear(host_input_dim, gnn_hidden)
-        self.job_proj = nn.Linear(self.JOB_FEAT_DIM, gnn_hidden)
+        self.host_in = nn.Sequential(nn.Linear(HOST_INPUT_DIM, gnn_hidden), nn.ReLU())
+        self.job_in = nn.Sequential(nn.Linear(JOB_INPUT_DIM, gnn_hidden), nn.ReLU())
 
         # ── Propagation model P ───────────────────────────────────────────────
         self.gnn_layers = nn.ModuleList()
@@ -79,13 +69,10 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
             self.gnn_layers.append(
                 GATConv(in_ch, gnn_hidden, heads=gnn_heads, dropout=dropout, concat=True)
             )
-            self.norms.append(GeoLayerNorm(gnn_hidden * gnn_heads))
-
+            self.norms.append(nn.LayerNorm(gnn_hidden * gnn_heads))
         out_ch = gnn_hidden * gnn_heads
 
         # ── Readout model F_read ─────────────────────────────────────────────
-        # Set-transformer readout: one learned query attends over all node vectors.
-        # Equivalent to the attention-based ENCODER-DECODER in the TURRET paper.
         self.pool_query = nn.Parameter(torch.randn(1, 1, out_ch))
         self.pool_attn = nn.MultiheadAttention(
             out_ch, gnn_heads, dropout=dropout, batch_first=True
@@ -96,65 +83,45 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
             nn.LayerNorm(features_dim),
         )
 
-        # ── Precomputed fixed edge_index ─────────────────────────────────────
-        # Graph topology (fully-connected, no self-loops) is identical for every
-        # sample and every step: n = max_hosts + max_jobs never changes.
-        # Registering as a buffer moves it to the correct device automatically.
-        n = self.max_hosts + self.max_jobs
-        idx = torch.arange(n)
-        src, dst = torch.meshgrid(idx, idx, indexing="ij")
-        mask = src != dst
-        self.register_buffer("_edge_index", torch.stack([src[mask], dst[mask]], dim=0))
+    @staticmethod
+    def _edges(dc_ids, host_mask, job_mask, reach) -> torch.Tensor:
+        """edge_index over the batch graph; sample b owns nodes [b*N, (b+1)*N), hosts first."""
+        batch, n_hosts = dc_ids.shape
+        n_jobs = job_mask.shape[1]
+        n_nodes = n_hosts + n_jobs
 
-    def _gnn_forward(self, xb: torch.Tensor) -> torch.Tensor:
-        for layer, norm in zip(self.gnn_layers, self.norms):
-            xb = layer(xb, self._edge_index)
-            xb = norm(xb)
-            xb = torch.relu(xb)
-        return xb
+        same_dc = (dc_ids.unsqueeze(2) == dc_ids.unsqueeze(1)) \
+            & host_mask.unsqueeze(2) & host_mask.unsqueeze(1)
+        same_dc &= ~torch.eye(n_hosts, dtype=torch.bool, device=dc_ids.device)
+        b, i, k = same_dc.nonzero(as_tuple=True)
+        host_host = torch.stack([b * n_nodes + i, b * n_nodes + k])
+
+        # reach column dc_id says whether the job may use that host's datacenter
+        usable = reach.bool().gather(2, dc_ids.unsqueeze(1).expand(batch, n_jobs, n_hosts)) \
+            & job_mask.unsqueeze(2) & host_mask.unsqueeze(1)
+        b, j, h = usable.nonzero(as_tuple=True)
+        job_host = torch.stack([b * n_nodes + n_hosts + j, b * n_nodes + h])
+        return torch.cat([host_host, job_host, job_host.flip(0)], dim=1)
 
     def forward(self, observations) -> torch.Tensor:
         device = next(self.parameters()).device
-        infr = observations["infrastructure_state"].float().to(device)
-        jobs = observations["jobs_waiting_state"].float().to(device)
-        batch_size = infr.shape[0]
+        hosts, jobs, reach = split_observation(observations, device)
+        dc_ids, host_mask, host_x = host_inputs(hosts)
+        job_mask, job_x = job_inputs(jobs)
+        batch = hosts.shape[0]
 
-        host_feats = infr.view(batch_size, self.max_hosts, self.HOST_FEAT_DIM)
-        job_feats = jobs.view(batch_size, self.max_jobs, self.JOB_FEAT_DIM)
+        x = torch.cat([self.host_in(host_x), self.job_in(job_x)], dim=1)  # [B, N, hidden]
+        n_nodes = x.shape[1]
+        edge_index = self._edges(dc_ids, host_mask, job_mask, reach)
 
-        max_dc = self.dc_id_embed.num_embeddings - 1
-        max_dct = self.dc_type_embed.num_embeddings - 1
+        h = x.reshape(batch * n_nodes, -1)
+        for layer, norm in zip(self.gnn_layers, self.norms):
+            h = torch.relu(norm(layer(h, edge_index)))
+        h = h.view(batch, n_nodes, -1)
 
-        # Vectorized host embedding over full batch — no Python loop
-        # [B, H, 3] → [B, H, gnn_hidden]
-        dc_ids = host_feats[..., 0].long().clamp(0, max_dc)
-        dc_types = host_feats[..., 1].long().clamp(0, max_dct)
-        h = self.host_proj(torch.cat([
-            self.dc_id_embed(dc_ids),
-            self.dc_type_embed(dc_types),
-            host_feats[..., 2:3],
-        ], dim=-1))
-
-        # [B, J, 4] → [B, J, gnn_hidden]
-        j = self.job_proj(job_feats)
-
-        # [B, H+J, gnn_hidden]
-        x = torch.cat([h, j], dim=1)
-
-        # GATConv per-sample using precomputed edge_index.
-        # Fully-connected graphs are O(n²) edges — batching all B samples at once OOMs.
-        # Gradient checkpointing discards GATConv intermediate activations (~140 MB/sample)
-        # and recomputes them during backward, reducing peak memory from B×140 MB to ~140 MB.
-        node_outs = []
-        for b in range(batch_size):
-            if self.training:
-                xb = grad_checkpoint(self._gnn_forward, x[b], use_reentrant=False)
-            else:
-                xb = self._gnn_forward(x[b])
-            node_outs.append(xb)
-        x = torch.stack(node_outs, dim=0)  # [B, n, out_ch]
-
-        # Set-transformer readout: [B, n, D] → pool → [B, D]
-        q = self.pool_query.expand(batch_size, -1, -1)   # [B, 1, D]
-        pooled, _ = self.pool_attn(q, x, x)              # [B, 1, D]
-        return self.readout(pooled.squeeze(1))            # [B, features_dim]
+        # Set-transformer readout over the real nodes: [B, N, D] -> [B, D]
+        padding = ~torch.cat([host_mask, job_mask], dim=1)
+        padding[padding.all(dim=1)] = False  # an all-padding sample would give NaN weights
+        q = self.pool_query.expand(batch, -1, -1)
+        pooled, _ = self.pool_attn(q, h, h, key_padding_mask=padding)
+        return self.readout(pooled.squeeze(1))
