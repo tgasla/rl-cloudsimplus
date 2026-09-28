@@ -264,6 +264,12 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
                 .count();
     }
 
+    // The current episode's job count; after reset(seed, jobsJson) this differs from creation.
+    @Override
+    public long getJobsCount() {
+        return inputJobs.size();
+    }
+
     // ============== Shared public accessors ==============
 
     public CloudSimPlus getSimulation() {

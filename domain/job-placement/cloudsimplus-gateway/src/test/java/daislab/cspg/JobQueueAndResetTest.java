@@ -3,10 +3,20 @@ package daislab.cspg;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import daislab.cspg.grpc.CreateRequest;
+import daislab.cspg.grpc.CreateResponse;
+import daislab.cspg.grpc.ResetRequest;
+import daislab.cspg.grpc.ResetResult;
+import daislab.cspg.grpc.StepRequest;
+import daislab.cspg.grpc.StepResult;
+import io.grpc.stub.StreamObserver;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,6 +55,22 @@ class JobQueueAndResetTest {
         return (CloudSimProxy) sim.cloudSimProxy;
     }
 
+    /** Arrived (arrival < targetTime), unsubmitted jobs in (arrival, id) order. */
+    private static List<Long> arrivedUnsubmitted(final CloudSimProxy proxy, final double targetTime) {
+        final Set<Long> submitted = proxy.getBroker().getCloudletSubmittedList().stream()
+                .map(Cloudlet::getId).collect(Collectors.toSet());
+        return proxy.getSimulationCloudletList().stream()
+                .filter(c -> proxy.jobArrivalTimeMap.get(c.getId()) < targetTime)
+                .filter(c -> !submitted.contains(c.getId()))
+                .sorted(Comparator.comparingDouble((Cloudlet c) -> proxy.jobArrivalTimeMap.get(c.getId()))
+                        .thenComparingLong(Cloudlet::getId))
+                .map(Cloudlet::getId).toList();
+    }
+
+    private static List<Long> ids(final List<Cloudlet> cloudlets) {
+        return cloudlets.stream().map(Cloudlet::getId).toList();
+    }
+
     /**
      * Placing some jobs makes jobQueue.removeAll re-heapify the PriorityQueue. Iterating the heap
      * with takeWhile then stopped at the first not-yet-arrived job in heap order and hid eligible
@@ -59,19 +85,8 @@ class JobQueueAndResetTest {
         for (int step = 0; step < 12 && proxy.isRunning(); step++) {
             final double targetTime = proxy.calculateTargetTime();
             final List<Cloudlet> visible = proxy.getJobsToSubmitAtThisTimestep(targetTime);
-
-            final Set<Long> submitted = proxy.getBroker().getCloudletSubmittedList().stream()
-                    .map(Cloudlet::getId).collect(Collectors.toSet());
-            final List<Long> expected = proxy.getSimulationCloudletList().stream()
-                    .filter(c -> proxy.jobArrivalTimeMap.get(c.getId()) < targetTime)
-                    .filter(c -> !submitted.contains(c.getId()))
-                    .map(Cloudlet::getId).sorted().toList();
-            assertEquals(expected, visible.stream().map(Cloudlet::getId).sorted().toList(),
+            assertEquals(arrivedUnsubmitted(proxy, targetTime), ids(visible),
                     "visible jobs at step " + step);
-            for (int i = 1; i < visible.size(); i++) {
-                assertTrue(visible.get(i - 1).getSubmissionDelay()
-                        <= visible.get(i).getSubmissionDelay(), "arrival order at step " + step);
-            }
 
             // Place every other visible job so the queue is partially drained each step.
             final int[] action = new int[MAX_JOBS_WAITING];
@@ -80,6 +95,98 @@ class JobQueueAndResetTest {
             }
             sim.step(action);
         }
+    }
+
+    /**
+     * vm-management re-queues a destroyed VM's cloudlets with delay 0, which breaks the heap
+     * array's order even for a sorted trace. A re-queued job must not hide arrived ones.
+     */
+    @Test
+    void zeroDelayRequeueDoesNotHideArrivedJobs() {
+        final WrappedSimulation sim = newSimulation("dense_jobs_b.json");
+        sim.reset(0);
+        final CloudSimProxy proxy = proxy(sim);
+        sim.step(new int[MAX_JOBS_WAITING]); // all no-op: nothing leaves the queue
+        sim.step(new int[MAX_JOBS_WAITING]);
+
+        final double targetTime = proxy.calculateTargetTime();
+        final Cloudlet future = proxy.jobQueue.stream()
+                .filter(c -> c.getSubmissionDelay() > targetTime + 1)
+                .max(Comparator.comparingDouble(Cloudlet::getSubmissionDelay)).orElseThrow();
+        proxy.jobQueue.remove(future);
+        future.setSubmissionDelay(0);
+        proxy.jobQueue.add(future);
+
+        final List<Long> expected = new ArrayList<>(proxy.jobQueue).stream()
+                .filter(c -> c.getSubmissionDelay() < targetTime)
+                .sorted(Comparator.comparingDouble(Cloudlet::getSubmissionDelay)
+                        .thenComparingLong(Cloudlet::getId))
+                .map(Cloudlet::getId).toList();
+        assertEquals(expected, ids(proxy.getJobsToSubmitAtThisTimestep(targetTime)));
+        assertEquals(future.getId(), expected.get(0));
+    }
+
+    /** reset(seed, jobsJson) must parse and split jobs exactly like createSimulation does. */
+    @Test
+    void resetJobsGoThroughTheSameSplitAsCreate() {
+        final WrappedSimulation created = newSimulation("split_jobs.json");
+        created.reset(0);
+        final WrappedSimulation reset = newSimulation("dense_jobs_a.json");
+        reset.reset(0, resource("split_jobs.json"));
+
+        final List<Cloudlet> expected = proxy(created).getSimulationCloudletList();
+        final List<Cloudlet> actual = proxy(reset).getSimulationCloudletList();
+        assertTrue(expected.size() > 6, "the 20-core job must be split (max_job_pes 16)");
+        assertEquals(expected.size(), actual.size());
+        assertEquals(expected.stream().map(Cloudlet::getPesNumber).toList(),
+                actual.stream().map(Cloudlet::getPesNumber).toList());
+    }
+
+    /** Captures the single value a unary gRPC call returns. */
+    private static final class Capture<T> implements StreamObserver<T> {
+        T value;
+
+        @Override
+        public void onNext(final T v) {
+            value = v;
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            throw new AssertionError(t);
+        }
+
+        @Override
+        public void onCompleted() {}
+    }
+
+    private static int jobsVisibleAfterOneStep(final CloudSimGrpcService service, final String simId,
+            final String jobsJson) {
+        service.reset(ResetRequest.newBuilder().setSimId(simId).setJobsJson(jobsJson).build(),
+                new Capture<ResetResult>());
+        final Capture<StepResult> step = new Capture<>();
+        final StepRequest.Builder request = StepRequest.newBuilder().setSimId(simId);
+        for (int i = 0; i < MAX_JOBS_WAITING; i++) {
+            request.addAction(0);
+        }
+        service.step(request.build(), step);
+        return step.value.getObservation().getSecondaryObservationCount()
+                / CloudSimProxy.JOB_OBS_FEATURES;
+    }
+
+    /** jobs_json must survive the gRPC hop; an empty one replays the creation jobs. */
+    @Test
+    void grpcResetForwardsJobsJson() {
+        final CloudSimGrpcService service = new CloudSimGrpcService();
+        final Capture<CreateResponse> created = new Capture<>();
+        service.createSimulation(CreateRequest.newBuilder()
+                .setParamsJson(resource("env_b_params.json"))
+                .setJobsJson(resource("dense_jobs_a.json")).build(), created);
+        final String simId = created.value.getSimId();
+
+        // dense_jobs_a has 16 arrivals per timestep, dense_jobs_b has 8.
+        assertEquals(8, jobsVisibleAfterOneStep(service, simId, resource("dense_jobs_b.json")));
+        assertEquals(16, jobsVisibleAfterOneStep(service, simId, ""));
     }
 
     @Test

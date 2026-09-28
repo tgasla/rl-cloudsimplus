@@ -14,4 +14,5 @@ public interface ICloudSimProxy {
     double clock();
     DatacenterBroker getBroker();
     long getFinishedJobsCount();
+    long getJobsCount();
 }

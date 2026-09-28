@@ -93,7 +93,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
         LOGGER.debug("Length of future events queue: {}", cloudSimProxy.getNumberOfFutureEvents());
         if (terminated || truncated) {
             LOGGER.info("Simulation ended. Jobs finished: {}/{}",
-                    cloudSimProxy.getFinishedJobsCount(), initialJobsDescriptors.size());
+                    cloudSimProxy.getFinishedJobsCount(), cloudSimProxy.getJobsCount());
         }
 
         // Cache the obs so treeArray re-uses the same array without a second computation.

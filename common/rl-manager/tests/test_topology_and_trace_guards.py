@@ -44,7 +44,30 @@ def test_topology_larger_than_the_action_space_is_rejected():
         JobPlacementEnv(params)
 
 
+def test_topology_that_fills_the_action_space_is_accepted(make_env):
+    template = json.load(open(ENV_B_PARAMS))["datacenters"][0]
+    dcs = [dict(template, name=f"dc{i}", connect_to=[]) for i in range(7)]
+    assert make_env(max_datacenters=8, datacenters=dcs).max_datacenters == 8
+
+
 def test_datacenter_amount_other_than_one_is_rejected():
     _check_datacenter_amounts_are_one([{"name": "a", "amount": 1}, {"name": "b"}])
     with pytest.raises(ValueError, match="'c'"):
         _check_datacenter_amounts_are_one([{"name": "a", "amount": 1}, {"name": "c", "amount": 2}])
+
+
+def test_reset_forwards_jobs_json_into_the_grpc_request(make_env):
+    from gym_cloudsimplus.protos.unified import cloudsimplus_pb2 as pb2
+
+    env = make_env()
+    sent = []
+
+    class FakeStub:
+        def reset(self, request):
+            sent.append(request)
+            return pb2.ResetResult()
+
+    env._client.stub = FakeStub()
+    env.reset(options={"jobs_json": '[{"jobId": 7}]'})
+    env.reset()
+    assert [request.jobs_json for request in sent] == ['[{"jobId": 7}]', ""]
