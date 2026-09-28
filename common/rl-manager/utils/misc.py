@@ -21,6 +21,7 @@ from callbacks.save_on_best_training_reward_callback import (
 )
 from callbacks.best_on_val_callback import BestOnValCallback
 from utils.evaluation import eval_env_params, level_quotas
+from utils import levels
 from utils.levels import LevelSampler, LevelSource, SENSITIVITY_LEVELS
 from utils.rl_algorithm_support_flags import (
     ALGORITHMS_WITH_ENT_COEF,
@@ -533,7 +534,8 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
     # Use _detect_rl_problem to dispatch to domain-named envs
     rl_problem = _detect_rl_problem(params)
     if rl_problem == "job_placement":
-        env = JobPlacementEnv(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+        env = JobPlacementEnv(params={**params, "worker_rank": rank}, jobs_as_json=jobs_json,
+                              host="localhost", port=port)
         if params.get("benchmark_member"):
             env.set_level_stream(*level_stream(params, rank))
     else:
@@ -546,6 +548,11 @@ def level_stream(params: dict, rank: int) -> tuple[LevelSource, LevelSampler]:
     """Where worker `rank` gets its per-episode instances: the RING-N member's levels, drawn
     from params["level_split"] (train: a random level from the worker's own stream seeded by
     (seed, rank); val/test/lockbox: the worker's share of the split, round-robin)."""
+    horizon = params["max_episode_length"]
+    if params["timestep_interval"] != 1.0 or horizon < levels.HORIZON:
+        raise ValueError(f"RING-N levels need timestep_interval 1.0 and max_episode_length >= "
+                         f"{levels.HORIZON} (arrivals end at t={levels.LAST_ARRIVAL}), got "
+                         f"{params['timestep_interval']} and {horizon}")
     source = LevelSource(params["ring_manifest"], params["benchmark_member"],
                          [dc["name"] for dc in params["datacenters"]])
     sampler = LevelSampler(params["level_split"], rank, params.get("num_cpu", 1), params["seed"])

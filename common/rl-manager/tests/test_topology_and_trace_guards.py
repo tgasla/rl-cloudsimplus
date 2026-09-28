@@ -71,3 +71,34 @@ def test_reset_forwards_jobs_json_into_the_grpc_request(make_env):
     env.reset(options={"jobs_json": '[{"jobId": 7}]'})
     env.reset()
     assert [request.jobs_json for request in sent] == ['[{"jobId": 7}]', ""]
+
+
+def test_ring_runs_refuse_a_horizon_that_ends_before_the_arrivals():
+    from utils.misc import level_stream
+
+    base = {"max_episode_length": 150, "timestep_interval": 1.0, "ring_manifest": "unused",
+            "benchmark_member": "S", "datacenters": [], "level_split": "train", "seed": 0}
+    with pytest.raises(ValueError, match="max_episode_length >= 200"):
+        level_stream(base, 0)
+    with pytest.raises(ValueError, match="timestep_interval 1.0"):
+        level_stream(dict(base, max_episode_length=200, timestep_interval=2.0), 0)
+
+
+def test_test_mode_refuses_ring_runs():
+    from test import test as run_test
+
+    with pytest.raises(ValueError, match="mode: evaluate"):
+        run_test({"benchmark_member": "S"}, [])
+
+
+def test_topologies_the_action_mask_cannot_describe_are_rejected(make_env):
+    template = json.load(open(ENV_B_PARAMS))["datacenters"]
+    two_vms = json.loads(json.dumps(template))
+    vm = two_vms[1]["hosts"][0]["vms"][0]
+    two_vms[1]["hosts"][0]["vms"] = [dict(vm, pes=8), dict(vm, pes=8)]
+    with pytest.raises(ValueError, match="exactly one VM"):
+        make_env(datacenters=two_vms)
+    tiny = json.loads(json.dumps(template))
+    tiny[2]["hosts"][0]["vms"][0]["size"] = 1000
+    with pytest.raises(ValueError, match="cannot hold a cloudlet"):
+        make_env(datacenters=tiny)

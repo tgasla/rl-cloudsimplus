@@ -13,6 +13,9 @@ from utils.misc import (
 
 
 def test(params, jobs):
+    if params.get("benchmark_member"):
+        raise ValueError("RING-N runs are evaluated with mode: evaluate, which plays every level "
+                         "of level_split once")
     best_model_path = os.path.join(
         params["base_log_dir"],
         params["train_model_dir"],

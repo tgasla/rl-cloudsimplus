@@ -24,6 +24,7 @@ import numpy as np
 import yaml
 
 FIRST_ARRIVAL, LAST_ARRIVAL = 1, 160   # arrival window; the episode (H = 200) drains after it
+HORIZON = 200                           # timesteps; one timestep is 1 s
 SHAPE_BINS = 288                        # 5-minute bins per day in the anchor intensity shape
 
 MIPS_REF = 60                           # edge tier: runtime_ref is measured here
@@ -200,9 +201,13 @@ class LevelSource:
         with open(anchor_path) as f:
             self._anchor = json.load(f)
         self._member = {m["id"]: m for m in manifest["members"]}[member_id]
-        missing = sorted(set(self._member["origins"]) - set(datacenter_names))
-        if missing:
-            raise ValueError(f"member {member_id} has origins {missing} that are not in the topology")
+        # The environment must be built on this member's own topology, DC for DC: a wrong
+        # !include would otherwise train another arm of the family without any error.
+        topologies_dir = os.path.dirname(os.path.dirname(os.path.abspath(manifest_path)))
+        expected = [dc["name"] for dc in load_topology(os.path.join(topologies_dir, self._member["yaml"]))]
+        if list(datacenter_names) != expected:
+            raise ValueError(f"datacenters are not member {member_id}'s topology "
+                             f"({self._member['yaml']}): got {list(datacenter_names)}")
         self._lam = resolve_lambda(manifest, member_id, self._anchor)
         self._index = {name: i for i, name in enumerate(datacenter_names)}
         self.jobs_json = functools.lru_cache(maxsize=cache_size)(self._jobs_json)

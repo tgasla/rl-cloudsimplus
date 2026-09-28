@@ -346,5 +346,9 @@ def test_level_source_emits_the_simulator_encoding(ring_manifest):
     assert [j["location"] for j in jobs] == [names.index(j["location"]) for j in raw]
     assert [j["delaySensitivity"] for j in jobs] == [levels.SENSITIVITY_LEVELS[j["delaySensitivity"]] for j in raw]
     assert source.jobs_json(5) is source.jobs_json(5)  # cached
-    with pytest.raises(ValueError, match="not in the topology"):
+    with pytest.raises(ValueError, match="not member C1-N19's topology"):
         levels.LevelSource(RING_MANIFEST, "C1-N19", names)
+    pi_names = [dc["name"] for dc in levels.load_topology(os.path.join(os.path.dirname(RING_MANIFEST), "PI-S.yml"))]
+    assert sorted(pi_names) == sorted(names) and pi_names != names
+    with pytest.raises(ValueError, match="not member S's topology"):     # same DCs, other order
+        levels.LevelSource(RING_MANIFEST, "S", pi_names)

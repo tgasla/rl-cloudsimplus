@@ -289,6 +289,8 @@ All domain-agnostic logic lives in `common/cloudsimplus-gateway-shared/`. Domain
 
 **Job-placement reward (net SLA value, `SlaLedger`):**
 - Each job resolves exactly once: `V − c` if it finishes by `arrival + deadline`, else `−P − c`; `c = cost_<tier> · pes · length / mips_ref`, 0 if never placed. A step's reward is that step's resolutions divided by `Z = ΣV`, so placing nothing scores exactly `−ΣP/ΣV`.
+- "Finishes by" allows `min_time_between_events + 0.01`, CloudSim's update granularity. Inside the simulator work is counted in 1/`MI_RESOLUTION` MI (job MI, every PE's MIPS and `mips_ref` are scaled by 1000), because CloudSim truncates executed work to whole units at every update and recorded finishes otherwise drift seconds late on busy DCs.
+- A job arriving at or after `max_episode_length · timestep_interval` is rejected at reset (it could only be charged). RING-N runs need `max_episode_length ≥ 200` (arrivals end at t=160); `level_stream` enforces it.
 - Every action path (RL and both heuristics) binds through `WrappedSimulation.bind()`, so all policies are scored by the same ledger.
 - Unplaced jobs past their due time are evicted from the queue. At `max_episode_length` the remaining unplaced jobs are violated and the simulation drains until every placed job resolves, so episodes always terminate (never truncate).
 - A full DC stays a legal action: the VM selector ignores free PEs and the job queues. Python's mask is `reach ∧ (DC has a VM with ≥ cores PEs)`; keep the two in lockstep.
@@ -383,7 +385,7 @@ Keys: `mode` (`train`/`transfer`/`test`/`evaluate`), `experiment_dir`, `experime
 **RING-N experiments** (job-placement) set `benchmark_member` (a `common/topologies/ring/manifest.json` id) and `datacenters: !include topologies/ring/<id>.yml` instead of `job_trace_filename`: every episode, including SB3's auto-resets, plays a fresh level from `utils/levels.py`, drawn from `level_split` (`train`: a random level per worker seeded by `(seed, rank)`; `val`/`test`/`lockbox`: each worker's round-robin share).
 - Training keeps checkpoints by a deterministic sweep of the 24 val levels every `val_every` steps (`BestOnValCallback`, `val_num_cpu` workers on their own JVMs): `best_val_model` (best mean unshaped return), `final_model`, and one row per level per sweep in `val.csv`.
 - `transfer`/`test`/`evaluate` load `checkpoint` from `train_model_dir`, defaulting to `best_val_model` for RING-N and `best_model` otherwise; `preflight.py` applies the same rule.
-- `mode: evaluate` plays every level of `level_split` once (the deterministic policy, or a rule-based `cloudlet_to_dc_mapping` with no model) and writes `evaluation.csv`, one row per level with the unshaped return and its breakdown.
+- `mode: test` refuses RING-N runs; `mode: evaluate` plays every level of `level_split` once (the deterministic policy, or a rule-based `cloudlet_to_dc_mapping` with no model) and writes `evaluation.csv`, one row per level with the unshaped return and its breakdown.
 
 **Run directories are write-once.** `log_dir` = `base_log_dir/experiment_dir/experiment_name`
 is created with no `exist_ok`, so a rerun can never merge into a previous run's output.

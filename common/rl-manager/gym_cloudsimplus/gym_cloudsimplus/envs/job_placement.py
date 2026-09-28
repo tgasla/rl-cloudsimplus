@@ -14,6 +14,25 @@ from gymnasium import spaces
 from .base import CloudSimBaseEnv
 
 
+# Java gives every cloudlet a file size of one MTU and places it only on a VM whose storage
+# holds it (Vm.isSuitableForCloudlet).
+CLOUDLET_FILE_SIZE = 1500
+
+
+def _check_one_vm_per_host(datacenters: list) -> None:
+    """The observation reports one capacity per host and the action mask is built from it,
+    while Java checks each VM; the two only agree when one VM fills each host."""
+    for dc in datacenters:
+        for host in dc["hosts"]:
+            vms = host["vms"]
+            if len(vms) != 1 or vms[0].get("amount", 1) != 1 or vms[0]["pes"] != host["pes"]:
+                raise ValueError(f"{dc['name']}: every host must run exactly one VM as large as "
+                                 f"the host, got {vms}")
+            if vms[0]["size"] < CLOUDLET_FILE_SIZE:
+                raise ValueError(f"{dc['name']}: VM size {vms[0]['size']} cannot hold a cloudlet "
+                                 f"({CLOUDLET_FILE_SIZE})")
+
+
 class JobPlacementEnv(CloudSimBaseEnv):
     """
     Job placement Gymnasium environment bridging Stable Baselines3 to
@@ -148,6 +167,9 @@ class JobPlacementEnv(CloudSimBaseEnv):
         # attention_pooling) should maintain performance; positionally-biased
         # extractors (euromlsys flat MLP) will degrade.
         self.permute_dcs = params.get("permute_dcs", False)
+        # Its own stream per worker: workers step in threads, and a shared global stream would
+        # be consumed in scheduling order.
+        self._rng = np.random.default_rng([params.get("seed", 0), params.get("worker_rank", 0)])
 
         # ── Topology connectivity mask ────────────────────────────────────────
         # Precomputed static table: _location_valid_dc_mask[loc, action] = True
@@ -157,6 +179,7 @@ class JobPlacementEnv(CloudSimBaseEnv):
         # after name→index translation in entrypoint.py.
         # Action 0 is the no-op, so only max_datacenters - 1 real DCs are addressable.
         # A bigger topology would have its last DCs silently unmaskable (dead).
+        _check_one_vm_per_host(datacenters)
         n_dcs = len(datacenters)
         if n_dcs > self.max_datacenters - 1:
             raise ValueError(
@@ -226,7 +249,7 @@ class JobPlacementEnv(CloudSimBaseEnv):
         active_dcs = list({int(d) for d in dc_ids if d > 0})
         if len(active_dcs) <= 1:
             return infr_obs
-        np.random.shuffle(active_dcs)
+        self._rng.shuffle(active_dcs)
         groups = [hosts[dc_ids == dc_id] for dc_id in active_dcs]
         padding = hosts[dc_ids == 0]
         parts = groups + ([padding] if len(padding) > 0 else [])
