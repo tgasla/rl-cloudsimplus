@@ -186,3 +186,27 @@ def test_largest_member_resets_fast_enough(level_env):
     n_jobs = payload.count('"jobId"')
     print(f"C1-N19: {n_jobs} jobs, {len(payload) / 1024:.0f} KB, reset {1000 * elapsed:.1f} ms")
     assert n_jobs > 2500 and elapsed < 0.25
+
+
+def test_parallel_vec_env_matches_sequential_dummy_vec_env(level_env):
+    from stable_baselines3.common.vec_env import DummyVecEnv
+    from utils.misc import ParallelBatchDummyVecEnv
+
+    def rollout(vec_cls, steps=260):  # long enough to cross an auto-reset
+        envs = [level_env("S", rank=rank) for rank in range(4)]
+        vec = vec_cls([lambda env=env: env for env in envs])
+        obs = vec.reset()
+        trace, start = [], time.perf_counter()
+        for _ in range(steps):
+            actions = np.stack([_all_to_cloud(env) for env in envs])
+            obs, rewards, dones, infos = vec.step(actions)
+            trace.append((obs["jobs_waiting_state"].copy(), rewards.copy(), dones.copy(),
+                          [info["level_id"] for info in infos]))
+        return trace, time.perf_counter() - start
+
+    sequential, t_seq = rollout(DummyVecEnv)
+    parallel, t_par = rollout(ParallelBatchDummyVecEnv)
+    print(f"4 workers, 260 steps: sequential {t_seq:.2f} s, parallel {t_par:.2f} s")
+    assert any(dones.any() for _, _, dones, _ in sequential)
+    for (o1, r1, d1, l1), (o2, r2, d2, l2) in zip(sequential, parallel):
+        assert (o1 == o2).all() and (r1 == r2).all() and (d1 == d2).all() and l1 == l2

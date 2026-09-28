@@ -1,5 +1,6 @@
 import re
 import os
+from copy import deepcopy
 import yaml
 import numpy as np
 import torch
@@ -595,80 +596,38 @@ def _make_grpc_factory(rank, params, jobs_json, base_port):
     return _factory
 
 
-class ParallelBatchDummyVecEnv:
-    """
-    Wraps a DummyVecEnv of VmManagementEnv/JobPlacementEnv envs.
+class ParallelBatchDummyVecEnv(DummyVecEnv):
+    """DummyVecEnv that steps every worker concurrently.
 
-    Overrides step() to fire all gRPC calls in parallel using a ThreadPoolExecutor,
-    then return individual results as SB3 expects.
+    Each worker is a gRPC client of its own Java JVM, and a step spends nearly all its time
+    waiting on that JVM with the GIL released, so running the workers' steps in threads
+    overlaps the simulations. step_wait's per-worker body is DummyVecEnv's (SB3 2.4-2.8),
+    and each worker only writes its own buffer slots.
     """
 
     def __init__(self, env_fns, num_envs=None):
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        self._inner = DummyVecEnv(env_fns)
-        self._num_envs = self._inner.num_envs
-        self._executor = ThreadPoolExecutor(max_workers=self._num_envs)
-        self._as_completed = as_completed
-        self._inner_reset = self._inner.reset
-        self._inner_get_attr = self._inner.get_attr
-        self._inner_method = self._inner.env_method
-        self._inner_close = self._inner.close
-        self._inner_seed = self._inner.seed
-        self._inner_env_is_wrapped = getattr(self._inner, 'env_is_wrapped', lambda: False)
+        from concurrent.futures import ThreadPoolExecutor
+        super().__init__(env_fns)
+        self._executor = ThreadPoolExecutor(max_workers=self.num_envs)
 
-    @property
-    def num_envs(self):
-        return self._num_envs
+    def step_wait(self):
+        list(self._executor.map(self._step_worker, range(self.num_envs)))
+        return (self._obs_from_buf(), np.copy(self.buf_rews), np.copy(self.buf_dones),
+                deepcopy(self.buf_infos))
 
-    def reset(self, seed=None):
-        return self._inner_reset()
-
-    def step(self, actions):
-        futures = []
-        for i in range(self._num_envs):
-            action_i = actions[i] if hasattr(actions, '__iter__') else actions
-            futures.append(self._executor.submit(self._inner.envs[i].step, action_i))
-
-        obss, rewards, dones, infos = [], [], [], []
-        for f in futures:
-            obs, reward, done, info = f.result()
-            obss.append(obs)
-            rewards.append(reward)
-            dones.append(done)
-            infos.append(info)
-
-        return self._stack_results(obss, rewards, dones, infos)
-
-    def _stack_results(self, obss, rewards, dones, infos):
-        if isinstance(obss[0], dict):
-            stacked = {}
-            for key in obss[0]:
-                stacked[key] = np.stack([o[key] for o in obss])
-            obs = stacked
-        else:
-            obs = np.stack(obss)
-        rewards = np.array(rewards, dtype=np.float32)
-        dones = np.array(dones, dtype=bool)
-        return obs, rewards, dones, infos
-
-    def get_attr(self, name, indices=None):
-        return self._inner_get_attr(name, indices)
-
-    def env_method(self, method_name, *method_args, **method_kwargs):
-        return self._inner_method(method_name, *method_args, **method_kwargs)
+    def _step_worker(self, env_idx):
+        obs, self.buf_rews[env_idx], terminated, truncated, self.buf_infos[env_idx] = \
+            self.envs[env_idx].step(self.actions[env_idx])
+        self.buf_dones[env_idx] = terminated or truncated
+        self.buf_infos[env_idx]["TimeLimit.truncated"] = truncated and not terminated
+        if self.buf_dones[env_idx]:
+            self.buf_infos[env_idx]["terminal_observation"] = obs
+            obs, self.reset_infos[env_idx] = self.envs[env_idx].reset()
+        self._save_obs(env_idx, obs)
 
     def close(self):
         self._executor.shutdown(wait=False)
-        self._inner_close()
-
-    def seed(self, seed=None):
-        return self._inner_seed(seed)
-
-    def env_is_wrapped(self, wrapper_class=None):
-        return self._inner.env_is_wrapped(wrapper_class)
-
-    def __getattr__(self, name):
-        return getattr(self._inner, name)
+        super().close()
 
 
 def vectorize_env(env, algorithm, num_cpu=None, params=None, jobs_json=None):
