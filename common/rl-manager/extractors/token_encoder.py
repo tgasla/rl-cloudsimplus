@@ -10,6 +10,7 @@ from extractors.featurize import (
     DC_INPUT_DIM,
     JOB_FEATURES,
     JOB_INPUT_DIM,
+    N_DC_TYPES,
     dc_inputs,
     job_inputs,
     masked_mean,
@@ -75,15 +76,23 @@ class TokenEncoder(BaseFeaturesExtractor):
     Config params (via features_extractor_kwargs):
       token_dim:        token width H (features_dim is 2H)
       cross_attention:  the job <-> DC attention layers (A5: on; A3 SPANE: off)
+    Ablations, each reintroducing one red flag of the transfer checklist (default off):
+      unmasked_pool:    context averages over padding slots too (V2)
+      scalar_dc_type:   dc_type enters as one ordinal number instead of one-hot (V3)
+      dc_id_embedding:  a learned embedding per DC slot is added to each DC token (V4)
     """
 
     def __init__(self, observation_space: spaces.Dict, token_dim: int = 64,
-                 cross_attention: bool = True):
+                 cross_attention: bool = True, unmasked_pool: bool = False,
+                 scalar_dc_type: bool = False, dc_id_embedding: bool = False):
         super().__init__(observation_space, features_dim=2 * token_dim)
         n_jobs = observation_space.spaces["jobs_waiting_state"].shape[0] // JOB_FEATURES
         self.n_dc_slots = observation_space.spaces["reach_mask"].shape[0] // n_jobs
         self.token_dim = token_dim
-        self.dc_mlp = _mlp(DC_INPUT_DIM, token_dim)
+        self.unmasked_pool = unmasked_pool
+        self.scalar_dc_type = scalar_dc_type
+        self.dc_mlp = _mlp(DC_INPUT_DIM - (N_DC_TYPES - 1 if scalar_dc_type else 0), token_dim)
+        self.dc_id_embed = nn.Embedding(self.n_dc_slots, token_dim) if dc_id_embedding else None
         self.job_mlp = _mlp(JOB_INPUT_DIM, token_dim)
         self.cross_attention = cross_attention
         if cross_attention:
@@ -95,12 +104,20 @@ class TokenEncoder(BaseFeaturesExtractor):
         hosts, jobs, reach = split_observation(observations, device)
         dc_mask, dc_x = dc_inputs(hosts, self.n_dc_slots)
         job_mask, job_x = job_inputs(jobs)
+        if self.scalar_dc_type:
+            type_id = (dc_x[..., :N_DC_TYPES] * torch.arange(1, N_DC_TYPES + 1, device=device)).sum(-1)
+            dc_x = torch.cat([type_id.unsqueeze(-1), dc_x[..., N_DC_TYPES:]], dim=-1)
         dc_tok, job_tok = self.dc_mlp(dc_x), self.job_mlp(job_x)
+        if self.dc_id_embed is not None:
+            dc_tok = dc_tok + self.dc_id_embed.weight.unsqueeze(0)
         if self.cross_attention:
             usable = (reach > 0) & dc_mask.unsqueeze(1) & job_mask.unsqueeze(2)   # [B, J, D]
             job_tok, dc_tok = (self.job_to_dc(job_tok, dc_tok, usable),
                                self.dc_to_job(dc_tok, job_tok, usable.transpose(1, 2)))
-        context = torch.cat([masked_mean(dc_tok, dc_mask), masked_mean(job_tok, job_mask)], dim=-1)
+        if self.unmasked_pool:
+            context = torch.cat([dc_tok.mean(dim=1), job_tok.mean(dim=1)], dim=-1)
+        else:
+            context = torch.cat([masked_mean(dc_tok, dc_mask), masked_mean(job_tok, job_mask)], dim=-1)
         return Tokens(dc_tok, dc_mask, job_tok, job_mask, reach, context)
 
     def forward(self, observations) -> torch.Tensor:

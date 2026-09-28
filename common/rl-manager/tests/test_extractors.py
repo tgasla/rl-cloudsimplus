@@ -350,3 +350,44 @@ def test_turret_policy_survives_save_and_load(make_env, tmp_path):
     obs = _random_obs(env.observation_space, np.random.default_rng(8), batch=2)
     np.testing.assert_allclose(_probs(model.policy.eval(), obs), _probs(loaded.policy.eval(), obs),
                                atol=1e-6)
+
+
+def _context(name, env, obs):
+    with torch.no_grad():
+        return _policy(name, env).features_extractor(
+            {k: torch.as_tensor(v) for k, v in obs.items()}).numpy()
+
+
+def test_ablations_break_what_they_claim_to_break(make_env):
+    env = make_env(datacenters=ring_topology(N_RING), **SPEC_SHAPE)
+    rng = np.random.default_rng(9)
+    obs = _random_obs(env.observation_space, rng)
+    relabelled, maps = _relabel_with_maps(obs, rng)
+    new_id, order = maps[0]
+
+    def relabel_gap(name):
+        p, q = _probs(_policy(name, env), obs), _probs(_policy(name, env), relabelled)
+        return np.abs(q[0][:, new_id] - p[0][order]).max()
+
+    # V4 (DC-id embedding) loses relabelling equivariance; V2 and V3 keep it.
+    assert relabel_gap("a5_dc_id_embedding") > 1e-3
+    assert relabel_gap("a5_unmasked_pool") < 1e-5 and relabel_gap("a5_scalar_dc_type") < 1e-5
+
+    # V2 (unmasked pooling) moves with the number of padding slots: fewer real jobs.
+    fewer = {key: value.copy() for key, value in obs.items()}
+    n_jobs = SPEC_SHAPE["max_jobs_waiting"]
+    jobs = fewer["jobs_waiting_state"].reshape(-1, n_jobs, 6)
+    reach = fewer["reach_mask"].reshape(-1, n_jobs, SPEC_SHAPE["max_datacenters"])
+    duplicate = np.concatenate([jobs[:, :1]] * 2, axis=1)            # job 0 twice, rest padding
+    jobs[:] = 0
+    jobs[:, :2] = duplicate
+    reach[:, 2:] = 0
+    reach[:, 2:, 0] = 1
+    reach[:, 1] = reach[:, 0]
+    single = {key: value.copy() for key, value in fewer.items()}
+    single["jobs_waiting_state"].reshape(-1, n_jobs, 6)[:, 1] = 0
+    single["reach_mask"].reshape(-1, n_jobs, SPEC_SHAPE["max_datacenters"])[:, 1, 1:] = 0
+    # A masked mean cannot tell one job from two copies of it; an unmasked one can.
+    np.testing.assert_allclose(_context("a5", env, fewer), _context("a5", env, single), atol=1e-5)
+    assert not np.allclose(_context("a5_unmasked_pool", env, fewer),
+                           _context("a5_unmasked_pool", env, single), atol=1e-4)

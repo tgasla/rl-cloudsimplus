@@ -43,6 +43,9 @@ EXTRACTOR_REGISTRY = {
     "deepsets": DeepSetsExtractor,
     "a5": TokenEncoder,
     "a5_positional_head": TokenEncoder,     # ablation V1: A5's encoder, SB3's positional head
+    "a5_unmasked_pool": TokenEncoder,       # ablation V2
+    "a5_scalar_dc_type": TokenEncoder,      # ablation V3
+    "a5_dc_id_embedding": TokenEncoder,     # ablation V4
     "a5_no_cross_attention": TokenEncoder,  # ablation V5
 }
 
@@ -61,9 +64,15 @@ _register_turret()
 # Architectures built on TokenEncoder: whether the encoder uses job <-> DC cross-attention,
 # and, for those with the pointer head, whether the pair scorer sees reach.
 TOKEN_ENCODER_CROSS_ATTENTION = {
-    "a5": True, "a5_positional_head": True, "a5_no_cross_attention": False, "spane": False,
+    "a5": True, "a5_positional_head": True, "a5_unmasked_pool": True, "a5_scalar_dc_type": True,
+    "a5_dc_id_embedding": True, "a5_no_cross_attention": False, "spane": False,
 }
-POINTER_HEAD_REACH_INPUT = {"a5": True, "a5_no_cross_attention": True, "spane": False}
+# The ablation flag each A5 variant turns on (TokenEncoder kwargs).
+TOKEN_ENCODER_ABLATION = {"a5_unmasked_pool": "unmasked_pool", "a5_scalar_dc_type": "scalar_dc_type",
+                          "a5_dc_id_embedding": "dc_id_embedding"}
+POINTER_HEAD_REACH_INPUT = {"a5": True, "a5_unmasked_pool": True, "a5_scalar_dc_type": True,
+                            "a5_dc_id_embedding": True, "a5_no_cross_attention": True,
+                            "spane": False}
 
 
 def get_policy_class(name: str, default):
@@ -127,6 +136,8 @@ def build_extractor_kwargs(name: str, params: dict) -> dict:
             "token_dim": params.get("token_dim", 64),
             "cross_attention": TOKEN_ENCODER_CROSS_ATTENTION[name],
         }
+        if name in TOKEN_ENCODER_ABLATION:
+            kwargs[TOKEN_ENCODER_ABLATION[name]] = True
     elif name in ("attention", "attention_pooling"):
         kwargs.update({
             "hidden_dim": params.get("hidden_dim", 64),
