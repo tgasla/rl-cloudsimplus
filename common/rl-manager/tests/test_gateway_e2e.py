@@ -283,3 +283,44 @@ def test_training_keeps_best_val_and_final_models(spawned_params, tmp_path):
     assert (tmp_path / "best_val_model.zip").exists() and (tmp_path / "final_model.zip").exists()
     best = val.groupby("timestep")["unshaped_return"].mean().max()
     assert callback.best_mean == pytest.approx(best)
+
+
+def _deterministic_return(env, policy, level):
+    env._level_sampler.next = lambda: level
+    obs, _ = env.reset()
+    total, done = 0.0, False
+    while not done:
+        mask = np.array(env.action_masks())
+        action, _ = policy.predict(obs, deterministic=True, action_masks=mask)
+        obs, _, terminated, truncated, info = env.step(action)
+        total += info["unshaped_reward"]
+        done = terminated or truncated
+    return total
+
+
+def test_pointer_policy_scores_a_relabelled_topology_identically(level_env):
+    # H0 on the live simulator: PI-S is S with its DCs renumbered, so an equivariant policy
+    # must play every level exactly as on S; a positional one does not.
+    from sb3_contrib.common.maskable.policies import MaskableMultiInputActorCriticPolicy
+    from extractors import (build_extractor_kwargs, build_policy_head_kwargs,
+                            get_extractor_class, get_policy_class)
+
+    s_env, pi_env = level_env("S", split="test"), level_env("PI-S", split="test")
+
+    def policy(name):
+        import torch
+        torch.manual_seed(0)
+        cls = get_policy_class(name, MaskableMultiInputActorCriticPolicy)
+        return cls(s_env.observation_space, s_env.action_space, lambda _: 3e-4,
+                   features_extractor_class=get_extractor_class(name),
+                   features_extractor_kwargs=build_extractor_kwargs(name, SPEC_SHAPE),
+                   **build_policy_head_kwargs(name, SPEC_SHAPE)).eval()
+
+    levels_ = [2000000, 2000001]
+    a5 = policy("a5")
+    for level in levels_:
+        assert _deterministic_return(s_env, a5, level) == pytest.approx(
+            _deterministic_return(pi_env, a5, level), abs=1e-9)
+    a1 = policy("euromlsys")
+    assert any(_deterministic_return(s_env, a1, level) != pytest.approx(
+        _deterministic_return(pi_env, a1, level), abs=1e-6) for level in levels_)

@@ -218,6 +218,21 @@ def create_val_callback(params: dict, num_cpu: int) -> tuple[BestOnValCallback, 
     return callback, eval_env
 
 
+def apply_finetune_scope(model, scope: str) -> None:
+    """Which part of a loaded policy keeps training: `full` (default), `head` (everything
+    after the features extractor: SB3's MLP/action/value nets, or the pointer head and critic)
+    or `extractor` (only the features extractor)."""
+    if scope == "full":
+        return
+    if scope not in ("head", "extractor"):
+        raise ValueError(f"finetune must be full, head or extractor, got {scope!r}")
+    policy = model.policy
+    extractor = {id(p) for module in (policy.features_extractor, policy.pi_features_extractor,
+                                      policy.vf_features_extractor) for p in module.parameters()}
+    for p in policy.parameters():
+        p.requires_grad_((id(p) in extractor) == (scope == "extractor"))
+
+
 def source_checkpoint(params: dict) -> str:
     """The saved model a transfer/test/evaluate run loads from train_model_dir: `checkpoint`
     if set, else best_val_model for RING-N runs and the legacy best_model otherwise.

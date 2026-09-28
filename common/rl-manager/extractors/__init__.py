@@ -1,6 +1,5 @@
 from extractors.euromlsys_extractor import CustomFeatureExtractor
 from extractors.attention_extractor import AttentionPoolingFeatureExtractor
-from extractors.spane_extractor import SPANEFeatureExtractor
 from extractors.hybrid_extractor import HybridPoolingExtractor
 from extractors.hybrid_pre_head_extractor import HybridPoolingPreHeadExtractor
 from extractors.type_stratified_extractor import TypeStratifiedExtractor
@@ -16,6 +15,8 @@ from extractors.swat_extractor import SWATExtractor
 from extractors.aria_extractor import ARIAExtractor
 from extractors.tsar_extractor import TSARExtractor
 from extractors.deepsets_extractor import DeepSetsExtractor
+from extractors.token_encoder import TokenEncoder
+from extractors.pointer_policy import PointerPolicy
 from extractors.featurize import HOST_FEATURES, JOB_FEATURES
 
 EXTRACTOR_REGISTRY = {
@@ -23,7 +24,8 @@ EXTRACTOR_REGISTRY = {
     "custom": CustomFeatureExtractor,  # backward-compat alias
     "attention": AttentionPoolingFeatureExtractor,  # alias; mean-pool variant removed
     "attention_pooling": AttentionPoolingFeatureExtractor,
-    "spane": SPANEFeatureExtractor,
+    # A3: SPANE's shared per-machine embedding and advantage module (pointer head, no reach).
+    "spane": TokenEncoder,
     "hybrid": HybridPoolingExtractor,
     "hybrid_pre_head": HybridPoolingPreHeadExtractor,
     "type_stratified": TypeStratifiedExtractor,
@@ -39,6 +41,9 @@ EXTRACTOR_REGISTRY = {
     "aria": ARIAExtractor,
     "tsar": TSARExtractor,
     "deepsets": DeepSetsExtractor,
+    "a5": TokenEncoder,
+    "a5_positional_head": TokenEncoder,     # ablation V1: A5's encoder, SB3's positional head
+    "a5_no_cross_attention": TokenEncoder,  # ablation V5
 }
 
 
@@ -51,6 +56,25 @@ def _register_turret() -> None:
 
 
 _register_turret()
+
+
+# Architectures built on TokenEncoder: whether the encoder uses job <-> DC cross-attention,
+# and, for those with the pointer head, whether the pair scorer sees reach.
+TOKEN_ENCODER_CROSS_ATTENTION = {
+    "a5": True, "a5_positional_head": True, "a5_no_cross_attention": False, "spane": False,
+}
+POINTER_HEAD_REACH_INPUT = {"a5": True, "a5_no_cross_attention": True, "spane": False}
+
+
+def get_policy_class(name: str, default):
+    """The pointer head replaces SB3's positional head for the architectures that use it."""
+    return PointerPolicy if name in POINTER_HEAD_REACH_INPUT else default
+
+
+def build_policy_head_kwargs(name: str, params: dict) -> dict:
+    if name not in POINTER_HEAD_REACH_INPUT:
+        return {}
+    return {"head_dim": params.get("head_dim", 64), "reach_input": POINTER_HEAD_REACH_INPUT[name]}
 
 
 def get_extractor_class(name: str):
@@ -95,6 +119,11 @@ def build_extractor_kwargs(name: str, params: dict) -> dict:
         kwargs.update({
             "hidden_dim": params.get("hidden_dim", 128),
         })
+    elif name in TOKEN_ENCODER_CROSS_ATTENTION:
+        kwargs = {
+            "token_dim": params.get("token_dim", 64),
+            "cross_attention": TOKEN_ENCODER_CROSS_ATTENTION[name],
+        }
     elif name in ("attention", "attention_pooling"):
         kwargs.update({
             "hidden_dim": params.get("hidden_dim", 64),
@@ -103,13 +132,6 @@ def build_extractor_kwargs(name: str, params: dict) -> dict:
             "dropout": params.get("dropout", 0.1),
             "max_datacenters": params.get("max_datacenters", 8),
             "max_dc_types": params.get("max_datacenter_types", params.get("max_dc_types", 3)),
-        })
-    elif name == "spane":
-        kwargs.update({
-            "dc_emb_dim": params.get("dc_emb_dim", 64),
-            "job_emb_dim": params.get("job_emb_dim", 64),
-            "hidden_dim": params.get("hidden_dim", 128),
-            "max_datacenters": params.get("max_datacenters", 8),
         })
     elif name in ("hybrid", "hybrid_pre_head"):
         kwargs.update({

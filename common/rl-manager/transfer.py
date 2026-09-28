@@ -14,6 +14,7 @@ from utils.misc import (
     check_reward_shaping_gamma,
     create_val_callback,
     source_checkpoint,
+    apply_finetune_scope,
 )
 
 
@@ -53,6 +54,7 @@ def transfer(params, jobs):
 
     prev_host_count = get_host_count_from_train_dir(params["train_model_dir"])
     maybe_freeze_weights(model, params, prev_host_count=prev_host_count)
+    apply_finetune_scope(model, params.get("finetune", "full"))
     check_reward_shaping_gamma(params, model)
 
     callback = create_callback(params["save_experiment"], params["log_dir"])

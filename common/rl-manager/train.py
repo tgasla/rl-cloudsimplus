@@ -41,10 +41,13 @@ def train(params, jobs):
     policy_kwargs = None
     feature_extractor_name = params.get("feature_extractor")
     if feature_extractor_name and feature_extractor_name != "default":
-        from extractors import get_extractor_class, build_extractor_kwargs
+        from extractors import (build_extractor_kwargs, build_policy_head_kwargs,
+                                get_extractor_class, get_policy_class)
+        policy = get_policy_class(feature_extractor_name, policy)
         policy_kwargs = dict(
             features_extractor_class=get_extractor_class(feature_extractor_name),
             features_extractor_kwargs=build_extractor_kwargs(feature_extractor_name, params),
+            **build_policy_head_kwargs(feature_extractor_name, params),
         )
 
     # Instantiate the agent
