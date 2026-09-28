@@ -27,6 +27,7 @@ class ObservationSchemaTest {
 
     private static final int K = 50;
     private static final int CLOUD_ACTION = 1;
+    private static final int EDGE_ACTION = 2;
     private static final double MIPS_REF = 60.0;
     private static final int[] EXPECTED_TYPE_BY_DC_ID = {0, 1, 2, 3, 3};
     private static final int[] EXPECTED_VM_PES_BY_DC_ID = {0, 64, 16, 6, 6};
@@ -96,10 +97,55 @@ class ObservationSchemaTest {
         assertTrue(busyCloudHosts > 0);
     }
 
+    /** Backlog is the work left at the observation clock, so it falls by the job's PEs per second. */
+    @Test
+    void backlogFallsAsTheJobRuns() {
+        // 2 cores x 1200 MI per PE (split_large_jobs halves the 2400): 20 s on a 60-MIPS edge PE.
+        final String job = "[{\"jobId\": 0, \"submissionDelay\": 1, \"mi\": 2400, \"cores\": 2,"
+                + " \"location\": 2, \"delaySensitivity\": 0, \"deadline\": 60}]";
+        final WrappedSimulation sim = (WrappedSimulation) new SimulationFactory()
+                .create(resource("env_b_params.json"), job);
+        sim.reset(0);
+        sim.step(new int[K]); // arrives at t=1
+        final int[] toEdge = new int[K];
+        toEdge[0] = EDGE_ACTION;
+        sim.step(toEdge); // reaches the edge VM after its 1 s network delay
+
+        final Cloudlet cloudlet = proxy(sim).getSimulationCloudletList().get(0);
+        final List<Integer> backlog = new java.util.ArrayList<>();
+        while (cloudlet.getStatus() != Cloudlet.Status.SUCCESS) {
+            final int[] infra = sim.step(new int[K]).getObservation().getInfrastructureObservation();
+            int edgeBacklog = 0;
+            for (int base = 0; base < infra.length; base += WrappedSimulation.HOST_OBS_FEATURES) {
+                edgeBacklog += infra[base + 1] == 2 ? infra[base + 4] : 0;
+            }
+            backlog.add(edgeBacklog);
+        }
+        final List<Integer> running = backlog.stream().filter(b -> b > 0).toList();
+        assertTrue(running.size() >= 15 && running.get(0) <= 40, "backlog " + backlog);
+        for (int i = 1; i < running.size(); i++) {
+            assertEquals(running.get(i - 1) - 2, running.get(i), "backlog " + backlog);
+        }
+        assertEquals(0, backlog.get(backlog.size() - 1));
+    }
+
     /** Job slots are the (due, arrival, id) head of the backlog, max_jobs_waiting long. */
     @Test
     void jobRowsAreTheDueOrderedHeadWithSevenFeatures() {
-        final WrappedSimulation sim = newSimulation("dense_jobs_a.json");
+        assertJobRowsAreTheDueOrderedHead(1.0);
+    }
+
+    /** Every job feature that scales with the timestep (due, runtime, time to due) must use it. */
+    @Test
+    void jobRowsScaleWithTheTimestepInterval() {
+        assertJobRowsAreTheDueOrderedHead(2.5);
+    }
+
+    private static void assertJobRowsAreTheDueOrderedHead(final double interval) {
+        final String params = resource("env_b_params.json")
+                .replace("\"timestep_interval\": 1.0", "\"timestep_interval\": " + interval);
+        final WrappedSimulation sim = (WrappedSimulation) new SimulationFactory()
+                .create(params, resource("dense_jobs_a.json"));
         sim.reset(0);
         final CloudSimProxy proxy = proxy(sim);
         int[] jobsObs = null;
@@ -109,7 +155,8 @@ class ObservationSchemaTest {
 
         final double targetTime = proxy.calculateTargetTime();
         final Comparator<Cloudlet> byDue = Comparator.comparingDouble((Cloudlet c) ->
-                proxy.jobArrivalTimeMap.get(c.getId()) + ((CloudletWithLocation) c).getDeadline());
+                proxy.jobArrivalTimeMap.get(c.getId())
+                        + ((CloudletWithLocation) c).getDeadline() * interval);
         final List<Cloudlet> backlog = proxy.getSimulationCloudletList().stream()
                 .filter(c -> proxy.jobArrivalTimeMap.get(c.getId()) < targetTime)
                 .filter(c -> proxy.getDueTime(c) >= proxy.clock()) // expired ones are evicted
@@ -124,12 +171,13 @@ class ObservationSchemaTest {
 
         for (int i = 0; i < K; i++) {
             final CloudletWithLocation job = (CloudletWithLocation) head.get(i);
-            final double due = proxy.jobArrivalTimeMap.get(job.getId()) + job.getDeadline();
+            final double due = proxy.jobArrivalTimeMap.get(job.getId()) + job.getDeadline() * interval;
             final int base = CloudSimProxy.JOB_OBS_FEATURES * i;
             assertEquals(job.getPesNumber(), jobsObs[base], "cores of slot " + i);
             assertEquals(job.getLocation(), jobsObs[base + 1], "location of slot " + i);
-            assertEquals((int) Math.ceil(job.getLength() / MIPS_REF), jobsObs[base + 2]);
-            assertEquals((int) Math.max(0, Math.floor(due - proxy.clock())), jobsObs[base + 3]);
+            assertEquals((int) Math.ceil(job.getLength() / (MIPS_REF * interval)), jobsObs[base + 2]);
+            assertEquals((int) Math.max(0, Math.floor((due - proxy.clock()) / interval)),
+                    jobsObs[base + 3]);
             for (int s = 0; s < CloudSimProxy.SENSITIVITY_LEVELS; s++) {
                 assertEquals(s == job.getDelaySensitivity() ? 1 : 0, jobsObs[base + 4 + s]);
             }

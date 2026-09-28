@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public class WrappedSimulation extends WrappedSimulationBase {
@@ -460,11 +459,14 @@ public class WrappedSimulation extends WrappedSimulationBase {
                     vmCapacityPes += vm.getPesNumber();
                     usedPes += scheduler.getCloudletList().stream()
                             .mapToLong(Cloudlet::getPesNumber).sum();
-                    backlogCoreSeconds += Stream
-                            .concat(scheduler.getCloudletExecList().stream(),
-                                    scheduler.getCloudletWaitingList().stream())
+                    final double now = clock();
+                    backlogCoreSeconds += scheduler.getCloudletExecList().stream()
                             .mapToDouble(ce -> ce.getCloudlet().getPesNumber()
-                                    * ce.getRemainingCloudletLength() / vm.getMips())
+                                    * remainingLength(ce, vm, now) / vm.getMips())
+                            .sum();
+                    backlogCoreSeconds += scheduler.getCloudletWaitingList().stream()
+                            .mapToDouble(ce -> ce.getCloudlet().getPesNumber()
+                                    * ce.getCloudlet().getLength() / vm.getMips())
                             .sum();
                     for (Cloudlet inFlight : proxy().getInFlight(vm).keySet()) {
                         usedPes += inFlight.getPesNumber();
@@ -483,6 +485,19 @@ public class WrappedSimulation extends WrappedSimulationBase {
             }
         }
         return infrastructureObservation;
+    }
+
+    /**
+     * Per-PE MI a running cloudlet still has to execute at time now. CloudSim advances a
+     * cloudlet's progress only when its datacenter processes an event, which with no scheduling
+     * interval happens at the next finish in that DC, so its own counter can be many timesteps
+     * stale. Space-shared with full utilisation, a cloudlet runs at the VM's per-PE MIPS from
+     * the moment it starts, so read the progress from the clock instead.
+     */
+    private static double remainingLength(final CloudletExecution ce, final Vm vm,
+            final double now) {
+        final Cloudlet cloudlet = ce.getCloudlet();
+        return Math.max(0, cloudlet.getLength() - (now - cloudlet.getStartTime()) * vm.getMips());
     }
 
     // 0 is reserved for padding host slots, so real types start at 1.
@@ -521,7 +536,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
             for (CloudletExecution ce : scheduler.getCloudletExecList()) {
                 final long pes = ce.getCloudlet().getPesNumber();
                 final double finish = takePes(peFreeAt, pes, now)
-                        + ce.getRemainingCloudletLength() / mips;
+                        + remainingLength(ce, vm, now) / mips;
                 releasePes(peFreeAt, pes, finish);
                 completion.put(ce.getCloudlet(), finish);
             }

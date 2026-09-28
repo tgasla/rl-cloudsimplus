@@ -117,3 +117,81 @@ def test_set_extractors_never_embed_dc_ids():
     here = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "extractors")
     for file_name in ["featurize.py", "deepsets_extractor.py", "turret_extractor.py"]:
         assert "Embedding(" not in open(os.path.join(here, file_name)).read(), file_name
+
+
+def _fill_padding(obs, rng):
+    """Arbitrary values in every padding slot's non-identifying columns."""
+    out = {key: value.copy() for key, value in obs.items()}
+    n_jobs, n_slots = SPEC_SHAPE["max_jobs_waiting"], SPEC_SHAPE["max_datacenters"]
+    for b in range(len(obs["infrastructure_state"])):
+        hosts = out["infrastructure_state"][b].reshape(-1, 5)
+        pad = hosts[:, 0] == 0
+        hosts[pad, 1] = rng.integers(0, 4, pad.sum())
+        hosts[pad, 2:] = rng.integers(0, 50, (pad.sum(), 3))
+        jobs = out["jobs_waiting_state"][b].reshape(n_jobs, 6)
+        reach = out["reach_mask"][b].reshape(n_jobs, n_slots)
+        pad = jobs[:, 0] == 0
+        jobs[pad, 1:] = rng.integers(0, 50, (pad.sum(), 5))
+        reach[pad] = rng.integers(0, 2, (pad.sum(), n_slots))
+    return out
+
+
+@pytest.mark.parametrize("name", INVARIANT)
+def test_padding_slots_are_ignored(name, obs_space):
+    rng = np.random.default_rng(2)
+    obs = _random_obs(obs_space, rng)
+    model = _extractor(name, obs_space)
+    torch.testing.assert_close(_features(model, obs), _features(model, _fill_padding(obs, rng)),
+                               atol=1e-5, rtol=1e-5)
+
+
+def test_deepsets_features_do_not_move_with_the_number_of_dcs(obs_space):
+    # Every real DC duplicated under an unused dc_id, reach columns included: a masked mean
+    # cannot tell the difference, an unmasked one (checklist red flag 3) would.
+    rng = np.random.default_rng(3)
+    obs = _random_obs(obs_space, rng)
+    doubled = {key: value.copy() for key, value in obs.items()}
+    n_jobs, n_slots, n_real = SPEC_SHAPE["max_jobs_waiting"], SPEC_SHAPE["max_datacenters"], N_RING + 1
+    for b in range(len(obs["infrastructure_state"])):
+        hosts = obs["infrastructure_state"][b].reshape(-1, 5)
+        real = hosts[hosts[:, 0] > 0]
+        copies = real.copy()
+        copies[:, 0] += n_real
+        rows = np.concatenate([real, copies])
+        doubled["infrastructure_state"][b] = 0
+        doubled["infrastructure_state"][b, :rows.size] = rows.ravel()
+        reach = doubled["reach_mask"][b].reshape(n_jobs, n_slots)
+        reach[:, n_real + 1:2 * n_real + 1] = reach[:, 1:n_real + 1]
+    model = _extractor("deepsets", obs_space)
+    torch.testing.assert_close(_features(model, obs), _features(model, doubled), atol=1e-5, rtol=1e-5)
+
+
+def test_deepsets_features_depend_on_where_jobs_may_go(obs_space):
+    rng = np.random.default_rng(4)
+    obs = _random_obs(obs_space, rng)
+    moved = {key: value.copy() for key, value in obs.items()}
+    n_jobs, n_slots = SPEC_SHAPE["max_jobs_waiting"], SPEC_SHAPE["max_datacenters"]
+    reach = moved["reach_mask"].reshape(-1, n_jobs, n_slots)
+    reach[:, :, 1:N_RING + 2] = 1 - reach[:, :, 1:N_RING + 2]
+    reach[moved["jobs_waiting_state"].reshape(-1, n_jobs, 6)[:, :, 0] == 0] = 0
+    reach[:, :, 0] = 1
+    model = _extractor("deepsets", obs_space)
+    assert not torch.allclose(_features(model, obs), _features(model, moved))
+
+
+def test_turret_graph_links_hosts_of_a_dc_and_jobs_to_the_hosts_they_may_use():
+    from extractors.turret_extractor import TurretGNNExtractor
+
+    # Hosts 0,1 in DC 1, host 2 in DC 2, host 3 padding; job 0 may use DC 1, job 1 DC 2,
+    # job 2 is padding (its reach row must not matter). Nodes: hosts 0-3, jobs 4-6.
+    dc_ids = torch.tensor([[1, 1, 2, 0]])
+    host_mask = dc_ids > 0
+    job_mask = torch.tensor([[True, True, False]])
+    reach = torch.zeros(1, 3, 3)
+    reach[0, :, 0] = 1
+    reach[0, 0, 1] = reach[0, 1, 2] = 1
+    reach[0, 2, 1:] = 1
+    edges = TurretGNNExtractor._edges(dc_ids, host_mask, job_mask, reach)
+    got = sorted(map(tuple, edges.t().tolist()))
+    expected = sorted([(0, 1), (1, 0), (4, 0), (4, 1), (5, 2), (0, 4), (1, 4), (2, 5)])
+    assert got == expected

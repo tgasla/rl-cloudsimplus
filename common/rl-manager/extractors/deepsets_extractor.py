@@ -30,9 +30,12 @@ class DeepSetsExtractor(BaseFeaturesExtractor):
 
     A shared network phi_dc is applied to every DC token (hosts aggregated by dc_id, see
     featurize.dc_inputs) and phi_job to every job; each set is mean-pooled over its real
-    elements only; rho maps the two pooled vectors to features_dim. The features are
-    invariant to DC order, host order and job order, and do not move with the number of
-    padding slots. The action head stays the policy's positional one.
+    elements only; rho maps the two pooled vectors to features_dim. A job's input also
+    carries the mean of the DC tokens it may use (reach_mask): location is not a job
+    feature, so this is how a job's origin reaches the network, and a mean over the DCs
+    selected by reach is itself invariant to how DCs are numbered. The features are invariant
+    to DC order, host order and job order, and do not move with the number of padding slots.
+    The action head stays the policy's positional one.
 
     Config params (via features_extractor_kwargs):
       features_dim: output dimension
@@ -49,7 +52,7 @@ class DeepSetsExtractor(BaseFeaturesExtractor):
         n_jobs = observation_space.spaces["jobs_waiting_state"].shape[0] // JOB_FEATURES
         self.n_dc_slots = observation_space.spaces["reach_mask"].shape[0] // n_jobs
         self.phi_dc = _phi(DC_INPUT_DIM, hidden_dim)
-        self.phi_job = _phi(JOB_INPUT_DIM, hidden_dim)
+        self.phi_job = _phi(JOB_INPUT_DIM + hidden_dim, hidden_dim)
         self.rho = nn.Sequential(
             nn.Linear(2 * hidden_dim, hidden_dim),
             nn.ReLU(),
@@ -59,9 +62,13 @@ class DeepSetsExtractor(BaseFeaturesExtractor):
 
     def forward(self, observations) -> torch.Tensor:
         device = next(self.parameters()).device
-        hosts, jobs, _ = split_observation(observations, device)
+        hosts, jobs, reach = split_observation(observations, device)
         dc_mask, dc_x = dc_inputs(hosts, self.n_dc_slots)
         job_mask, job_x = job_inputs(jobs)
-        dc_emb = masked_mean(self.phi_dc(dc_x), dc_mask)
-        job_emb = masked_mean(self.phi_job(job_x), job_mask)
+        dc_tokens = self.phi_dc(dc_x)                                    # [B, D, H]
+        usable = reach * dc_mask.unsqueeze(1).float()                     # [B, J, D], no-op dropped
+        reachable = usable @ dc_tokens / usable.sum(-1, keepdim=True).clamp(min=1.0)
+        job_tokens = self.phi_job(torch.cat([job_x, reachable], dim=-1))
+        dc_emb = masked_mean(dc_tokens, dc_mask)
+        job_emb = masked_mean(job_tokens, job_mask)
         return self.rho(torch.cat([dc_emb, job_emb], dim=-1))
