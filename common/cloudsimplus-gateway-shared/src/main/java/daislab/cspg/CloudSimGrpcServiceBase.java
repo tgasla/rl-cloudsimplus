@@ -206,8 +206,15 @@ public abstract class CloudSimGrpcServiceBase extends CloudSimServiceGrpc.CloudS
                 .setJobsWaiting(info.getJobsWaiting())
                 .setJobsPlaced(info.getJobsPlaced())
                 .setJobsPlacedRatio(info.getJobsPlacedRatio())
-                .setQualityRatio(info.getQualityRatio())
-                .setDeadlineViolationRatio(info.getDeadlineViolationRatio())
+                .setSlaValueRealized(info.getSlaValueRealized())
+                .setSlaPenaltyPaid(info.getSlaPenaltyPaid())
+                .setResourceCost(info.getResourceCost())
+                .setJobsMet(info.getJobsMet())
+                .setJobsViolated(info.getJobsViolated())
+                .setJobsExpiredUnplaced(info.getJobsExpiredUnplaced())
+                .setPotential(info.getPotential())
+                .setOfferedValue(info.getOfferedValue())
+                .setUnshapedReward(info.getUnshapedReward())
                 .build();
     }
 }

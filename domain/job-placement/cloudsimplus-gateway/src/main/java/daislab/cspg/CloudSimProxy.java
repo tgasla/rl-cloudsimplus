@@ -15,6 +15,7 @@ import org.cloudsimplus.vms.VmSimple;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,16 +25,12 @@ public class CloudSimProxy extends CloudSimProxyBase {
 
     private SimulationSettings simSettings;
     private List<Datacenter> datacenters;
+    // Submitted jobs still crossing the network to their VM, with the time they reach it.
+    // CloudSim leaves a cloudlet INSTANTIATED until its VM's scheduler receives it.
+    private final Map<Cloudlet, Double> inFlight = new LinkedHashMap<>();
 
     public CloudSimProxy(final SimulationSettings settings, final List<Cloudlet> inputJobs) {
         super(settings, inputJobs);
-    }
-
-    // ============== Lifecycle ==============
-
-    @Override
-    public boolean isRunning() {
-        return cloudSimPlus.isRunning() && !jobQueue.isEmpty();
     }
 
     // ============== Abstract method implementations ==============
@@ -64,7 +61,13 @@ public class CloudSimProxy extends CloudSimProxyBase {
                         clock(), targetTime, cloudlet.getId());
                 continue;
             }
-            cloudlet.setSubmissionDelay(Math.max(cloudlet.getSubmissionDelay() - clock(), 0));
+            // Wait for the job to arrive if it arrives later in this step, then cross the network
+            // from the moment of binding. Relative to now, so deferring a job never makes the
+            // delay disappear.
+            final double delay = Math.max(cloudlet.getSubmissionDelay() - clock(), 0)
+                    + simSettings.networkDelay(getDatacenterType(cloudlet.getVm()));
+            cloudlet.setSubmissionDelay(delay);
+            inFlight.put(cloudlet, clock() + delay);
             LOGGER.info("[{} - {}): Submitting cloudlet {} with delay {}", clock(), targetTime,
                     cloudlet.getId(), cloudlet.getSubmissionDelay());
             jobsToSubmit.add(cloudlet);
@@ -253,6 +256,27 @@ public class CloudSimProxy extends CloudSimProxyBase {
     long getQueuedJobsCount() {
         return inputJobs.parallelStream().filter(c -> jobArrivalTimeMap.get(c.getId()) < clock())
                 .filter(c -> c.getStatus().equals(Cloudlet.Status.QUEUED)).count();
+    }
+
+    /** Removes jobs from the queue without submitting them (expired, never placed). */
+    void evict(final List<Cloudlet> jobs) {
+        jobQueue.removeAll(jobs);
+    }
+
+    /** Jobs submitted to vm that have not reached it yet, with their arrival time at it. */
+    Map<Cloudlet, Double> getInFlight(final Vm vm) {
+        inFlight.keySet().removeIf(c -> c.getStatus() != Cloudlet.Status.INSTANTIATED);
+        final Map<Cloudlet, Double> toVm = new LinkedHashMap<>();
+        inFlight.forEach((cloudlet, arrival) -> {
+            if (cloudlet.getVm() == vm) {
+                toVm.put(cloudlet, arrival);
+            }
+        });
+        return toVm;
+    }
+
+    static String getDatacenterType(final Vm vm) {
+        return ((DatacenterWithType) vm.getHost().getDatacenter()).getType();
     }
 
     // ============== Drift injection ==============

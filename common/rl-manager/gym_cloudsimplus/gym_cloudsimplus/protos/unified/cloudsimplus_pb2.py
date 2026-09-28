@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x63loudsimplus.proto\x12\x0c\x64\x61islab.cspg\"P\n\x0bObservation\x12\"\n\x1ainfrastructure_observation\x18\x01 \x03(\x05\x12\x1d\n\x15secondary_observation\x18\x02 \x03(\x05\"\x98\x03\n\x08StepInfo\x12\x17\n\x0fjob_wait_reward\x18\x01 \x01(\x01\x12\x1f\n\x17running_vm_cores_reward\x18\x02 \x01(\x01\x12\"\n\x1aunutilized_vm_cores_reward\x18\x03 \x01(\x01\x12\x16\n\x0einvalid_reward\x18\x04 \x01(\x01\x12\x10\n\x08is_valid\x18\x05 \x01(\x08\x12\x15\n\rjob_wait_time\x18\x06 \x03(\x01\x12 \n\x18unutilized_vm_core_ratio\x18\x07 \x01(\x01\x12\x1e\n\x16observation_tree_array\x18\x08 \x03(\x05\x12\x15\n\rhost_affected\x18\t \x01(\x05\x12\x15\n\rcores_changed\x18\n \x01(\x05\x12\x14\n\x0cjobs_waiting\x18\x0b \x01(\x05\x12\x13\n\x0bjobs_placed\x18\x0c \x01(\x05\x12\x19\n\x11jobs_placed_ratio\x18\r \x01(\x01\x12\x15\n\rquality_ratio\x18\x0e \x01(\x01\x12 \n\x18\x64\x65\x61\x64line_violation_ratio\x18\x0f \x01(\x01\"\x99\x01\n\nStepResult\x12.\n\x0bobservation\x18\x01 \x01(\x0b\x32\x19.daislab.cspg.Observation\x12\x0e\n\x06reward\x18\x02 \x01(\x01\x12\x12\n\nterminated\x18\x03 \x01(\x08\x12\x11\n\ttruncated\x18\x04 \x01(\x08\x12$\n\x04info\x18\x05 \x01(\x0b\x32\x16.daislab.cspg.StepInfo\"c\n\x0bResetResult\x12.\n\x0bobservation\x18\x01 \x01(\x0b\x32\x19.daislab.cspg.Observation\x12$\n\x04info\x18\x02 \x01(\x0b\x32\x16.daislab.cspg.StepInfo\"7\n\rCreateRequest\x12\x13\n\x0bparams_json\x18\x01 \x01(\t\x12\x11\n\tjobs_json\x18\x02 \x01(\t\" \n\x0e\x43reateResponse\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\"?\n\x0cResetRequest\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\x12\x0c\n\x04seed\x18\x02 \x01(\x03\x12\x11\n\tjobs_json\x18\x03 \x01(\t\"-\n\x0bStepRequest\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61\x63tion\x18\x02 \x03(\x05\"v\n\x10\x42\x61tchStepRequest\x12\x36\n\x05items\x18\x01 \x03(\x0b\x32\'.daislab.cspg.BatchStepRequest.StepItem\x1a*\n\x08StepItem\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61\x63tion\x18\x02 \x03(\x05\">\n\x11\x42\x61tchStepResponse\x12)\n\x07results\x18\x01 \x03(\x0b\x32\x18.daislab.cspg.StepResult\"\x1e\n\x0c\x43loseRequest\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\"\x0f\n\rCloseResponse\"\x1f\n\rRenderRequest\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\"*\n\x0eRenderResponse\x12\x18\n\x10render_data_json\x18\x01 \x01(\t\"\r\n\x0bPingRequest\"\x1d\n\x0cPongResponse\x12\r\n\x05\x61live\x18\x01 \x01(\x08\x32\xf1\x03\n\x0f\x43loudSimService\x12M\n\x10\x63reateSimulation\x12\x1b.daislab.cspg.CreateRequest\x1a\x1c.daislab.cspg.CreateResponse\x12>\n\x05reset\x12\x1a.daislab.cspg.ResetRequest\x1a\x19.daislab.cspg.ResetResult\x12;\n\x04step\x12\x19.daislab.cspg.StepRequest\x1a\x18.daislab.cspg.StepResult\x12L\n\tbatchStep\x12\x1e.daislab.cspg.BatchStepRequest\x1a\x1f.daislab.cspg.BatchStepResponse\x12@\n\x05\x63lose\x12\x1a.daislab.cspg.CloseRequest\x1a\x1b.daislab.cspg.CloseResponse\x12\x43\n\x06render\x12\x1b.daislab.cspg.RenderRequest\x1a\x1c.daislab.cspg.RenderResponse\x12=\n\x04ping\x12\x19.daislab.cspg.PingRequest\x1a\x1a.daislab.cspg.PongResponseB$\n\x11\x64\x61islab.cspg.grpcB\rCloudSimProtoP\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x63loudsimplus.proto\x12\x0c\x64\x61islab.cspg\"P\n\x0bObservation\x12\"\n\x1ainfrastructure_observation\x18\x01 \x03(\x05\x12\x1d\n\x15secondary_observation\x18\x02 \x03(\x05\"\xf8\x04\n\x08StepInfo\x12\x17\n\x0fjob_wait_reward\x18\x01 \x01(\x01\x12\x1f\n\x17running_vm_cores_reward\x18\x02 \x01(\x01\x12\"\n\x1aunutilized_vm_cores_reward\x18\x03 \x01(\x01\x12\x16\n\x0einvalid_reward\x18\x04 \x01(\x01\x12\x10\n\x08is_valid\x18\x05 \x01(\x08\x12\x15\n\rjob_wait_time\x18\x06 \x03(\x01\x12 \n\x18unutilized_vm_core_ratio\x18\x07 \x01(\x01\x12\x1e\n\x16observation_tree_array\x18\x08 \x03(\x05\x12\x15\n\rhost_affected\x18\t \x01(\x05\x12\x15\n\rcores_changed\x18\n \x01(\x05\x12\x14\n\x0cjobs_waiting\x18\x0b \x01(\x05\x12\x13\n\x0bjobs_placed\x18\x0c \x01(\x05\x12\x19\n\x11jobs_placed_ratio\x18\r \x01(\x01\x12\x19\n\rquality_ratio\x18\x0e \x01(\x01\x42\x02\x18\x01\x12$\n\x18\x64\x65\x61\x64line_violation_ratio\x18\x0f \x01(\x01\x42\x02\x18\x01\x12\x1a\n\x12sla_value_realized\x18\x10 \x01(\x01\x12\x18\n\x10sla_penalty_paid\x18\x11 \x01(\x01\x12\x15\n\rresource_cost\x18\x12 \x01(\x01\x12\x10\n\x08jobs_met\x18\x13 \x01(\x05\x12\x15\n\rjobs_violated\x18\x14 \x01(\x05\x12\x1d\n\x15jobs_expired_unplaced\x18\x15 \x01(\x05\x12\x11\n\tpotential\x18\x16 \x01(\x01\x12\x15\n\roffered_value\x18\x17 \x01(\x01\x12\x17\n\x0funshaped_reward\x18\x18 \x01(\x01\"\x99\x01\n\nStepResult\x12.\n\x0bobservation\x18\x01 \x01(\x0b\x32\x19.daislab.cspg.Observation\x12\x0e\n\x06reward\x18\x02 \x01(\x01\x12\x12\n\nterminated\x18\x03 \x01(\x08\x12\x11\n\ttruncated\x18\x04 \x01(\x08\x12$\n\x04info\x18\x05 \x01(\x0b\x32\x16.daislab.cspg.StepInfo\"c\n\x0bResetResult\x12.\n\x0bobservation\x18\x01 \x01(\x0b\x32\x19.daislab.cspg.Observation\x12$\n\x04info\x18\x02 \x01(\x0b\x32\x16.daislab.cspg.StepInfo\"7\n\rCreateRequest\x12\x13\n\x0bparams_json\x18\x01 \x01(\t\x12\x11\n\tjobs_json\x18\x02 \x01(\t\" \n\x0e\x43reateResponse\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\"?\n\x0cResetRequest\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\x12\x0c\n\x04seed\x18\x02 \x01(\x03\x12\x11\n\tjobs_json\x18\x03 \x01(\t\"-\n\x0bStepRequest\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61\x63tion\x18\x02 \x03(\x05\"v\n\x10\x42\x61tchStepRequest\x12\x36\n\x05items\x18\x01 \x03(\x0b\x32\'.daislab.cspg.BatchStepRequest.StepItem\x1a*\n\x08StepItem\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61\x63tion\x18\x02 \x03(\x05\">\n\x11\x42\x61tchStepResponse\x12)\n\x07results\x18\x01 \x03(\x0b\x32\x18.daislab.cspg.StepResult\"\x1e\n\x0c\x43loseRequest\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\"\x0f\n\rCloseResponse\"\x1f\n\rRenderRequest\x12\x0e\n\x06sim_id\x18\x01 \x01(\t\"*\n\x0eRenderResponse\x12\x18\n\x10render_data_json\x18\x01 \x01(\t\"\r\n\x0bPingRequest\"\x1d\n\x0cPongResponse\x12\r\n\x05\x61live\x18\x01 \x01(\x08\x32\xf1\x03\n\x0f\x43loudSimService\x12M\n\x10\x63reateSimulation\x12\x1b.daislab.cspg.CreateRequest\x1a\x1c.daislab.cspg.CreateResponse\x12>\n\x05reset\x12\x1a.daislab.cspg.ResetRequest\x1a\x19.daislab.cspg.ResetResult\x12;\n\x04step\x12\x19.daislab.cspg.StepRequest\x1a\x18.daislab.cspg.StepResult\x12L\n\tbatchStep\x12\x1e.daislab.cspg.BatchStepRequest\x1a\x1f.daislab.cspg.BatchStepResponse\x12@\n\x05\x63lose\x12\x1a.daislab.cspg.CloseRequest\x1a\x1b.daislab.cspg.CloseResponse\x12\x43\n\x06render\x12\x1b.daislab.cspg.RenderRequest\x1a\x1c.daislab.cspg.RenderResponse\x12=\n\x04ping\x12\x19.daislab.cspg.PingRequest\x1a\x1a.daislab.cspg.PongResponseB$\n\x11\x64\x61islab.cspg.grpcB\rCloudSimProtoP\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,40 +32,44 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'cloudsimplus_pb2', _globals
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\021daislab.cspg.grpcB\rCloudSimProtoP\001'
+  _globals['_STEPINFO'].fields_by_name['quality_ratio']._loaded_options = None
+  _globals['_STEPINFO'].fields_by_name['quality_ratio']._serialized_options = b'\030\001'
+  _globals['_STEPINFO'].fields_by_name['deadline_violation_ratio']._loaded_options = None
+  _globals['_STEPINFO'].fields_by_name['deadline_violation_ratio']._serialized_options = b'\030\001'
   _globals['_OBSERVATION']._serialized_start=36
   _globals['_OBSERVATION']._serialized_end=116
   _globals['_STEPINFO']._serialized_start=119
-  _globals['_STEPINFO']._serialized_end=527
-  _globals['_STEPRESULT']._serialized_start=530
-  _globals['_STEPRESULT']._serialized_end=683
-  _globals['_RESETRESULT']._serialized_start=685
-  _globals['_RESETRESULT']._serialized_end=784
-  _globals['_CREATEREQUEST']._serialized_start=786
-  _globals['_CREATEREQUEST']._serialized_end=841
-  _globals['_CREATERESPONSE']._serialized_start=843
-  _globals['_CREATERESPONSE']._serialized_end=875
-  _globals['_RESETREQUEST']._serialized_start=877
-  _globals['_RESETREQUEST']._serialized_end=940
-  _globals['_STEPREQUEST']._serialized_start=942
-  _globals['_STEPREQUEST']._serialized_end=987
-  _globals['_BATCHSTEPREQUEST']._serialized_start=989
-  _globals['_BATCHSTEPREQUEST']._serialized_end=1107
-  _globals['_BATCHSTEPREQUEST_STEPITEM']._serialized_start=1065
-  _globals['_BATCHSTEPREQUEST_STEPITEM']._serialized_end=1107
-  _globals['_BATCHSTEPRESPONSE']._serialized_start=1109
-  _globals['_BATCHSTEPRESPONSE']._serialized_end=1171
-  _globals['_CLOSEREQUEST']._serialized_start=1173
-  _globals['_CLOSEREQUEST']._serialized_end=1203
-  _globals['_CLOSERESPONSE']._serialized_start=1205
-  _globals['_CLOSERESPONSE']._serialized_end=1220
-  _globals['_RENDERREQUEST']._serialized_start=1222
-  _globals['_RENDERREQUEST']._serialized_end=1253
-  _globals['_RENDERRESPONSE']._serialized_start=1255
-  _globals['_RENDERRESPONSE']._serialized_end=1297
-  _globals['_PINGREQUEST']._serialized_start=1299
-  _globals['_PINGREQUEST']._serialized_end=1312
-  _globals['_PONGRESPONSE']._serialized_start=1314
-  _globals['_PONGRESPONSE']._serialized_end=1343
-  _globals['_CLOUDSIMSERVICE']._serialized_start=1346
-  _globals['_CLOUDSIMSERVICE']._serialized_end=1843
+  _globals['_STEPINFO']._serialized_end=751
+  _globals['_STEPRESULT']._serialized_start=754
+  _globals['_STEPRESULT']._serialized_end=907
+  _globals['_RESETRESULT']._serialized_start=909
+  _globals['_RESETRESULT']._serialized_end=1008
+  _globals['_CREATEREQUEST']._serialized_start=1010
+  _globals['_CREATEREQUEST']._serialized_end=1065
+  _globals['_CREATERESPONSE']._serialized_start=1067
+  _globals['_CREATERESPONSE']._serialized_end=1099
+  _globals['_RESETREQUEST']._serialized_start=1101
+  _globals['_RESETREQUEST']._serialized_end=1164
+  _globals['_STEPREQUEST']._serialized_start=1166
+  _globals['_STEPREQUEST']._serialized_end=1211
+  _globals['_BATCHSTEPREQUEST']._serialized_start=1213
+  _globals['_BATCHSTEPREQUEST']._serialized_end=1331
+  _globals['_BATCHSTEPREQUEST_STEPITEM']._serialized_start=1289
+  _globals['_BATCHSTEPREQUEST_STEPITEM']._serialized_end=1331
+  _globals['_BATCHSTEPRESPONSE']._serialized_start=1333
+  _globals['_BATCHSTEPRESPONSE']._serialized_end=1395
+  _globals['_CLOSEREQUEST']._serialized_start=1397
+  _globals['_CLOSEREQUEST']._serialized_end=1427
+  _globals['_CLOSERESPONSE']._serialized_start=1429
+  _globals['_CLOSERESPONSE']._serialized_end=1444
+  _globals['_RENDERREQUEST']._serialized_start=1446
+  _globals['_RENDERREQUEST']._serialized_end=1477
+  _globals['_RENDERRESPONSE']._serialized_start=1479
+  _globals['_RENDERRESPONSE']._serialized_end=1521
+  _globals['_PINGREQUEST']._serialized_start=1523
+  _globals['_PINGREQUEST']._serialized_end=1536
+  _globals['_PONGRESPONSE']._serialized_start=1538
+  _globals['_PONGRESPONSE']._serialized_end=1567
+  _globals['_CLOUDSIMSERVICE']._serialized_start=1570
+  _globals['_CLOUDSIMSERVICE']._serialized_end=2067
 # @@protoc_insertion_point(module_scope)

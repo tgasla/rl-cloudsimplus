@@ -287,6 +287,14 @@ All domain-agnostic logic lives in `common/cloudsimplus-gateway-shared/`. Domain
 - `firstStep` flag: the first timestep uses `timestepInterval` as target time, not `clock() + interval`, because the clock starts at `minTimeBetweenEvents` not 0.
 - `VmAllocationPolicyCustom` is a no-op allocator — the RL agent drives placement via action decoding; CloudSim Plus itself never decides where to place VMs in RL mode.
 
+**Job-placement reward (net SLA value, `SlaLedger`):**
+- Each job resolves exactly once: `V − c` if it finishes by `arrival + deadline`, else `−P − c`; `c = cost_<tier> · pes · length / mips_ref`, 0 if never placed. A step's reward is that step's resolutions divided by `Z = ΣV`, so placing nothing scores exactly `−ΣP/ΣV`.
+- Every action path (RL and both heuristics) binds through `WrappedSimulation.bind()`, so all policies are scored by the same ledger.
+- Unplaced jobs past their due time are evicted from the queue. At `max_episode_length` the remaining unplaced jobs are violated and the simulation drains until every placed job resolves, so episodes always terminate (never truncate).
+- A full DC stays a legal action: the VM selector ignores free PEs and the job queues. Python's mask is `reach ∧ (DC has a VM with ≥ cores PEs)`; keep the two in lockstep.
+- Network delay counts from binding (in `tryToSubmitJobs`); jobs still in flight count as used PEs and backlog in the observation.
+- The benchmark metric is the sum of `info["unshaped_reward"]`. With `reward_shaping: true` the reward adds `γΦ' − Φ`, and `reward_shaping_gamma` must equal the algorithm's γ (checked in train/transfer).
+
 ---
 
 ## Python Architecture
@@ -484,7 +492,7 @@ Java file logging only activates when **both** `log.saveExperiment=true` and `lo
 ## Adding a New Domain
 
 1. Create `domain/<name>/` with `config.yml`, `topologies/`, `traces/`, `cloudsimplus-gateway/`, `rl-manager/entrypoint.py`
-2. In Java: extend `CloudSimProxyBase`, `WrappedSimulationBase`, `SimulationFactoryBase`, `CloudSimGrpcServiceBase`; implement `step()`, `extractInfrastructureObservation()`, `extractSecondaryObservation()`, `calculateReward()`
+2. In Java: extend `CloudSimProxyBase`, `WrappedSimulationBase`, `SimulationFactoryBase`, `CloudSimGrpcServiceBase`; implement `step()` (including the reward), `extractInfrastructureObservation()`, `extractSecondaryObservation()`
 3. In Python: extend `CloudSimBaseEnv`; implement `_get_observation()`, `_parse_step_info()`, `action_masks()`
 4. Add the domain to `common/rl-manager/gym_cloudsimplus/gym_cloudsimplus/cloud_sim_grpc_client.py`
 5. Register environment in `gym_cloudsimplus/__init__.py`

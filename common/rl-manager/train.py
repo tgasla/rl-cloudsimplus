@@ -10,6 +10,7 @@ from utils.misc import (
     create_kwargs_with_algorithm_params,
     create_correct_policy,
     vectorize_env,
+    check_reward_shaping_gamma,
 )
 
 
@@ -54,6 +55,7 @@ def train(params, jobs):
         **algorithm_kwargs,
     )
     maybe_freeze_weights(model, params)
+    check_reward_shaping_gamma(params, model)
 
     callback = create_callback(params["save_experiment"], params["log_dir"])
     logger = create_logger(params["save_experiment"], params["log_dir"])

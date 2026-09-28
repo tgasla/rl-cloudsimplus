@@ -1,5 +1,6 @@
 package daislab.cspg;
 
+import java.util.HashMap;
 import java.util.Map;
 import lombok.Value;
 import java.util.List;
@@ -12,6 +13,9 @@ import java.util.List;
  */
 @Value
 public class SimulationSettings implements ISimulationSettings {
+    static final List<String> SENSITIVITIES = List.of("tolerant", "moderate", "critical");
+    static final List<String> DC_TYPES = List.of("cloud", "edge", "micro");
+
     private final String mode;
     private final int numExperiments;
     private final double minTimeBetweenEvents;
@@ -32,11 +36,18 @@ public class SimulationSettings implements ISimulationSettings {
     private final int driftDcIndex;
     private final boolean clearCreatedLists;
     private final boolean printStats;
-    private final double rewardJobsPlacedCoef;
-    private final double rewardQualityCoef;
-    private final double rewardDeadlineViolationCoef;
     // PE speed that defines one unit of nominal runtime (the edge tier in RING-N).
     private final double mipsRef;
+    // Net-SLA reward, indexed by delay sensitivity (tolerant, moderate, critical): value earned
+    // when a job finishes by its due time, penalty paid when it does not.
+    private final double[] slaValue;
+    private final double[] slaPenalty;
+    // Per DC type: price per reference core-second, and network delay in timesteps.
+    private final Map<String, Double> costPerRefCoreSecond;
+    private final Map<String, Double> networkDelayTimesteps;
+    // Potential-based shaping; its gamma must equal the RL algorithm's (checked in Python).
+    private final boolean rewardShaping;
+    private final double rewardShapingGamma;
 
     public SimulationSettings(final Map<String, Object> params) {
         mode = ISimulationSettings.getStr(params, "mode");
@@ -52,9 +63,6 @@ public class SimulationSettings implements ISimulationSettings {
         driftDcIndex = ISimulationSettings.getIntOrDefault(params, "drift_dc_index", 0);
         clearCreatedLists = ISimulationSettings.getBool(params, "clear_created_lists");
         printStats = ISimulationSettings.getBoolOrDefault(params, "print_stats", true);
-        rewardJobsPlacedCoef = ISimulationSettings.getDouble(params, "reward_jobs_placed_coef");
-        rewardQualityCoef = ISimulationSettings.getDouble(params, "reward_quality_coef");
-        rewardDeadlineViolationCoef = ISimulationSettings.getDouble(params, "reward_deadline_violation_coef");
         maxEpisodeLength = ISimulationSettings.getInt(params, "max_episode_length");
         rlAlgorithm = ISimulationSettings.getStr(params, "rl_algorithm");
         cloudletToDcMapping = ISimulationSettings.getStr(params, "cloudlet_to_dc_mapping");
@@ -62,7 +70,40 @@ public class SimulationSettings implements ISimulationSettings {
         stateSpaceType = ISimulationSettings.getStr(params, "state_space_type");
         maxJobsWaiting = ISimulationSettings.getInt(params, "max_jobs_waiting");
         mipsRef = ISimulationSettings.getDouble(params, "mips_ref");
+        // Flat scalars: JSON arrays inside params do not survive SimulationFactoryBase's parsing.
+        slaValue = new double[SENSITIVITIES.size()];
+        slaPenalty = new double[SENSITIVITIES.size()];
+        for (int s = 0; s < SENSITIVITIES.size(); s++) {
+            slaValue[s] = ISimulationSettings.getDouble(params, "sla_value_" + SENSITIVITIES.get(s));
+            slaPenalty[s] = ISimulationSettings.getDouble(params, "sla_penalty_" + SENSITIVITIES.get(s));
+        }
+        costPerRefCoreSecond = new HashMap<>();
+        networkDelayTimesteps = new HashMap<>();
+        for (String dcType : DC_TYPES) {
+            costPerRefCoreSecond.put(dcType, ISimulationSettings.getDouble(params, "cost_" + dcType));
+            networkDelayTimesteps.put(dcType,
+                    ISimulationSettings.getDouble(params, "network_delay_" + dcType));
+        }
+        rewardShaping = ISimulationSettings.getBool(params, "reward_shaping");
+        rewardShapingGamma = ISimulationSettings.getDouble(params, "reward_shaping_gamma");
         datacenters = (List<Map<String, Object>>) params.get("datacenters");
     }
 
+
+    double slaValue(final int sensitivity) {
+        return slaValue[sensitivity];
+    }
+
+    double slaPenalty(final int sensitivity) {
+        return slaPenalty[sensitivity];
+    }
+
+    double costPerRefCoreSecond(final String dcType) {
+        return costPerRefCoreSecond.get(dcType);
+    }
+
+    /** Network delay of a DC type, in simulation seconds. */
+    double networkDelay(final String dcType) {
+        return networkDelayTimesteps.get(dcType) * timestepInterval;
+    }
 }

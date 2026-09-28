@@ -79,8 +79,11 @@ class ObservationSchemaTest {
         long busyCloudHosts = 0;
         for (int h = 0; h < nHosts; h++) {
             final int base = WrappedSimulation.HOST_OBS_FEATURES * h;
+            // Jobs still crossing the cloud's network delay already hold their PEs.
             final long usedPes = hosts.get(h).getVmList().stream()
-                    .flatMap(vm -> vm.getCloudletScheduler().getCloudletList().stream())
+                    .flatMap(vm -> java.util.stream.Stream.concat(
+                            vm.getCloudletScheduler().getCloudletList().stream(),
+                            proxy.getInFlight(vm).keySet().stream()))
                     .mapToLong(Cloudlet::getPesNumber).sum();
             assertEquals(Math.max(0, infra[base + 2] - usedPes), infra[base + 3], "free of host " + h);
             assertEquals(usedPes > 0, infra[base + 4] > 0, "backlog iff work is left on host " + h);
@@ -108,7 +111,9 @@ class ObservationSchemaTest {
         final Comparator<Cloudlet> byDue = Comparator.comparingDouble((Cloudlet c) ->
                 proxy.jobArrivalTimeMap.get(c.getId()) + ((CloudletWithLocation) c).getDeadline());
         final List<Cloudlet> backlog = proxy.getSimulationCloudletList().stream()
-                .filter(c -> proxy.jobArrivalTimeMap.get(c.getId()) < targetTime).toList();
+                .filter(c -> proxy.jobArrivalTimeMap.get(c.getId()) < targetTime)
+                .filter(c -> proxy.getDueTime(c) >= proxy.clock()) // expired ones are evicted
+                .toList();
         assertTrue(backlog.size() > K, "the scenario must overflow the visible head");
         final List<Cloudlet> head = backlog.stream()
                 .sorted(byDue.thenComparingDouble(c -> proxy.jobArrivalTimeMap.get(c.getId()))

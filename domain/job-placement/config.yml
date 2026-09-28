@@ -51,9 +51,22 @@ common:
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
   n_rollout_steps: 128
-  reward_jobs_placed_coef: 0.333
-  reward_quality_coef: 0.333
-  reward_deadline_violation_coef: 0.333
+  # Net-SLA reward: a job earns sla_value_<class> if it finishes by arrival + deadline,
+  # otherwise pays sla_penalty_<class>; placing it costs cost_<tier> per reference core-second.
+  sla_value_tolerant: 1.0
+  sla_value_moderate: 2.0
+  sla_value_critical: 4.0
+  sla_penalty_tolerant: 0.5
+  sla_penalty_moderate: 2.0
+  sla_penalty_critical: 6.0
+  cost_cloud: 0.005
+  cost_edge: 0.010
+  cost_micro: 0.020
+  network_delay_cloud: 3.0   # timesteps from binding until the job reaches the DC
+  network_delay_edge: 1.0
+  network_delay_micro: 0.0
+  reward_shaping: false
+  reward_shaping_gamma: 0.99  # must equal the algorithm's gamma (checked at startup)
   seed: 1234
   rl_algorithm: MaskablePPO
   gpu: true

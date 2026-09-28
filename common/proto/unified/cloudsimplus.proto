@@ -22,8 +22,8 @@ message Observation {
 //   VM_MANAGEMENT (main) fields: job_wait_reward(1), running_vm_cores_reward(2),
 //     unutilized_vm_cores_reward(3), invalid_reward(4), is_valid(5), job_wait_time(6),
 //     unutilized_vm_core_ratio(7), observation_tree_array(8), host_affected(9), cores_changed(10)
-//   JOB_PLACEMENT (euromlsys) fields: jobs_waiting(1), jobs_placed(2), jobs_placed_ratio(3),
-//     quality_ratio(4), deadline_violation_ratio(5), job_wait_time(6)
+//   JOB_PLACEMENT fields: jobs_waiting(11), jobs_placed(12), jobs_placed_ratio(13),
+//     job_wait_time(6), and the net-SLA reward breakdown (16-24)
 //
 // Both sets of fields are in the same StepInfo message. RL problem not relevant to
 // the current problem type gets 0/false/empty values.
@@ -45,8 +45,19 @@ message StepInfo {
   int32 jobs_waiting = 11;
   int32 jobs_placed = 12;
   double jobs_placed_ratio = 13;
-  double quality_ratio = 14;
-  double deadline_violation_ratio = 15;
+  double quality_ratio = 14 [deprecated = true];             // unused since the net-SLA reward
+  double deadline_violation_ratio = 15 [deprecated = true];  // unused since the net-SLA reward
+
+  // -- JOB_PLACEMENT net-SLA reward, for the jobs resolved this step --
+  double sla_value_realized = 16;    // sum of V over jobs that finished by their due time
+  double sla_penalty_paid = 17;      // sum of P over jobs that did not
+  double resource_cost = 18;         // sum of c over resolved jobs (0 for never-placed ones)
+  int32 jobs_met = 19;
+  int32 jobs_violated = 20;
+  int32 jobs_expired_unplaced = 21;  // violated because they were never placed
+  double potential = 22;             // shaping potential of the new state
+  double offered_value = 23;         // Z: total value on offer in the episode
+  double unshaped_reward = 24;       // (value - penalty - cost) / Z; the benchmark return sums this
 }
 
 message StepResult {

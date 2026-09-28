@@ -4,11 +4,15 @@ import org.cloudsimplus.datacenters.Datacenter;
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.cloudlets.Cloudlet;
+import org.cloudsimplus.cloudlets.CloudletExecution;
 import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.PriorityQueue;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -26,18 +30,25 @@ public class WrappedSimulation extends WrappedSimulationBase {
     private final SimulationSettings simSettings;
 
     // RL-level episode tracking (RL concepts; not present in CloudSimProxy)
-    private int bestEpisodeReward;
-    private int currentEpisodeReward;
+    private double bestEpisodeReward;
+    private double currentEpisodeReward;
     private double lastReward = 0.0;
 
-    // Action-phase placement counter: set by action methods, consumed in step info
+    // Net-SLA accounting of the current episode, and the shaping potential of the last state
+    private SlaLedger ledger;
+    private double lastPotential;
+    // Per DC index: the fastest PE, and the job origins (by DC index) each DC can serve
+    private double[] dcPeMips;
+    private List<List<Integer>> reachableDcsByLocation;
+
+    // Action-phase placement counter: set by bind(), consumed in step info
     private int jobsPlacedThisTimestep;
 
     public WrappedSimulation(final String identifier, final ISimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
         super(identifier, settings, jobs);
         this.simSettings = (SimulationSettings) settings;
-        bestEpisodeReward = -Integer.MAX_VALUE;
+        bestEpisodeReward = Double.NEGATIVE_INFINITY;
     }
 
     // ============== Abstract method implementations ==============
@@ -68,7 +79,12 @@ public class WrappedSimulation extends WrappedSimulationBase {
     @Override
     public SimulationResetResult reset(final long seed, final String jobsJson) {
         this.currentEpisodeReward = 0;
-        return super.reset(seed, jobsJson);
+        final SimulationResetResult result = super.reset(seed, jobsJson);
+        ledger = new SlaLedger(proxy().getSimulationCloudletList(), proxy().jobArrivalTimeMap,
+                simSettings);
+        cacheTopology();
+        lastPotential = potential();
+        return result;
     }
 
     // ============== Override step() for jp-specific action/reward flow ==============
@@ -87,24 +103,34 @@ public class WrappedSimulation extends WrappedSimulationBase {
             proxy.injectDrift(simSettings.getDriftDcIndex());
         }
 
-        final double[] ratios = executeCustomCloudletToDcAction(action);
+        jobsPlacedThisTimestep = 0;
+        executeCustomCloudletToDcAction(action);
 
         final double targetTime = proxy.calculateTargetTime();
         final int jobsWaiting = proxy.getJobsToSubmitAtThisTimestep(targetTime).size();
 
         proxy.runOneTimestep();
+        ledger.beginStep();
+        proxy.evict(ledger.resolve(clock()));
+        if (currentStep >= simSettings.getMaxEpisodeLength()) {
+            drainToResolution();
+        }
 
-        boolean terminated = !proxy.isRunning();
-        boolean truncated = !terminated && (currentStep >= simSettings.getMaxEpisodeLength());
-
-        double reward = calculateReward(ratios[0], ratios[1], ratios[2]);
+        // Every job resolves, so the episode ends when none is left, at the latest at the horizon.
+        final boolean terminated = !ledger.anyUnresolved();
+        final double unshapedReward = ledger.stepReward();
+        final double potential = terminated ? 0 : potential();
+        double reward = unshapedReward;
+        if (simSettings.isRewardShaping()) {
+            reward += simSettings.getRewardShapingGamma() * potential - lastPotential;
+        }
+        lastPotential = potential;
         this.lastReward = reward;
         this.currentEpisodeReward += reward;
 
-        LOGGER.info("Step {} finished", currentStep);
-        LOGGER.debug("Terminated: {}, Truncated: {}", terminated, truncated);
+        LOGGER.info("Step {} finished, reward {}", currentStep, reward);
         LOGGER.debug("Length of future events queue: {}", proxy.getNumberOfFutureEvents());
-        if (terminated || truncated) {
+        if (terminated) {
             LOGGER.info("Simulation ended. Jobs finished: {}/{}",
                     proxy.getBroker().getCloudletFinishedList().size(),
                     proxy.getSimulationCloudletList().size());
@@ -114,12 +140,40 @@ public class WrappedSimulation extends WrappedSimulationBase {
             }
         }
 
-        SimulationStepInfo info = new SimulationStepInfo(jobsWaiting, this.jobsPlacedThisTimestep,
-                ratios[0], ratios[1], ratios[2], proxy.getFinishedJobsWaitTimeLastTimestep());
+        SimulationStepInfo info = new SimulationStepInfo(jobsWaiting, jobsPlacedThisTimestep,
+                calculateJobsPlacedRatio(jobsPlacedThisTimestep, jobsWaiting),
+                proxy.getFinishedJobsWaitTimeLastTimestep(), ledger.getValueRealized(),
+                ledger.getPenaltyPaid(), ledger.getResourceCost(), ledger.getJobsMet(),
+                ledger.getJobsViolated(), ledger.getJobsExpiredUnplaced(), potential,
+                ledger.getOfferedValue(), unshapedReward);
 
         final Observation observation =
                 buildObservation(extractInfrastructureObservation(), extractSecondaryObservation());
-        return new SimulationStepResult(observation, reward, terminated, truncated, info);
+        return new SimulationStepResult(observation, reward, terminated, false, info);
+    }
+
+    /**
+     * At the horizon the agent stops deciding: every unplaced job is violated, and the simulation
+     * runs on until each placed job has finished or passed its due time, so a placement is
+     * scored by what actually happened to it rather than cut off mid-run.
+     */
+    private void drainToResolution() {
+        proxy().evict(ledger.expireAllUnplaced());
+        while (ledger.anyUnresolved()) {
+            proxy().runOneTimestep();
+            ledger.resolve(clock());
+        }
+    }
+
+    /** Binds a job to a VM. Every action path goes through here, so all policies are scored alike. */
+    private void bind(final Cloudlet job, final Vm vm) {
+        proxy().getBroker().bindCloudletToVm(job, vm);
+        final String dcType = CloudSimProxy.getDatacenterType(vm);
+        // Priced per reference core-second: the same job costs the same wherever it is fast.
+        final double cost = simSettings.costPerRefCoreSecond(dcType) * job.getPesNumber()
+                * job.getLength() / simSettings.getMipsRef();
+        ledger.onBind(job, cost);
+        jobsPlacedThisTimestep++;
     }
 
     // Casts the inherited cloudSimProxy field to the concrete type used by jp
@@ -127,8 +181,13 @@ public class WrappedSimulation extends WrappedSimulationBase {
         return (CloudSimProxy) cloudSimProxy;
     }
 
+    /**
+     * The VM of the DC with the most expected free PEs, even if that is fewer than the job needs:
+     * a full DC queues the job instead of refusing it, so congestion is a priced decision (a
+     * later finish) rather than a hard constraint. Only VMs too small to ever hold it are skipped.
+     */
     private Vm getMostFreeVmOfDcForCloudlet(final int targetDcId, final Cloudlet cloudlet) {
-        long maxExpectedFreePes = 0;
+        long maxExpectedFreePes = Long.MIN_VALUE;
         Vm mostFreeVm = Vm.NULL;
         final double targetTime = proxy().calculateTargetTime();
         List<Vm> vmList = proxy().getBroker().getVmExecList();
@@ -140,17 +199,18 @@ public class WrappedSimulation extends WrappedSimulationBase {
 
         for (Vm vm : vmList) {
             final int dcId = (int) vm.getHost().getDatacenter().getId();
+            if (dcId != targetDcId) {
+                continue;
+            }
             final long usedVmPes = vm.getCloudletScheduler().getCloudletList().stream()
-                    .mapToLong(Cloudlet::getPesNumber).sum();
-            // this may get negative but it is ok because it will also count the cloudlets
-            // that are in some vms queue, so we get an estimation of how much overloaded it
-            // is.
-            // We get the vm that will have maximum expected free cores
+                    .mapToLong(Cloudlet::getPesNumber).sum()
+                    + proxy().getInFlight(vm).keySet().stream()
+                            .mapToLong(Cloudlet::getPesNumber).sum();
+            // Negative once jobs queue on the VM: it then measures how overloaded the VM is.
             final long expectedFreePes =
                     vm.getPesNumber() - usedVmPes - expectedToUseVmPesMap.get(vm);
 
-            if (dcId == targetDcId && vm.isSuitableForCloudlet(cloudlet)
-                    && expectedFreePes >= cloudlet.getPesNumber()) {
+            if (vm.isSuitableForCloudlet(cloudlet)) {
                 if (expectedFreePes > maxExpectedFreePes) {
                     maxExpectedFreePes = expectedFreePes;
                     mostFreeVm = vm;
@@ -163,29 +223,14 @@ public class WrappedSimulation extends WrappedSimulationBase {
         return mostFreeVm;
     }
 
-    private double calculateQualityOfPlacement(final int dcId, final Cloudlet job) {
-        final String datacenterType =
-                ((DatacenterWithType) proxy().getDatacenterById(dcId)).getType();
-        // jobSensitivity - 0: tolerant, 1: moderate, 2: critical
-        final int jobSensitivity = ((CloudletWithLocation) job).getDelaySensitivity();
-        if (jobSensitivity == 0 | datacenterType.equals("micro")
-                | (datacenterType.equals("edge") && jobSensitivity == 1)) {
-            return 1.0;
-        }
-        if (datacenterType.equals("edge") && jobSensitivity == 2) {
-            return 0.5;
-        }
-        return 0.0;
-    }
-
-    private double[] executeCustomCloudletToDcAction(final int[] action) {
-        return switch (simSettings.getCloudletToDcMapping()) {
+    private void executeCustomCloudletToDcAction(final int[] action) {
+        switch (simSettings.getCloudletToDcMapping()) {
             case "rl" -> executeRlCloudletToDcAction(action);
             case "earliest-shortest-to-most-free-dc" -> executeEarliestShortestCloudletToMostFreeDcAction();
             case "earliest-most-critical-to-nearest-dc" -> executeEarliestMostCriticalCloudletToNearestDcAction();
             default -> throw new IllegalArgumentException("Unknown cloudlet_to_dc_mapping: "
                     + simSettings.getCloudletToDcMapping());
-        };
+        }
     }
 
     private Vm selectVmForCloudlet(final int dcId, final Cloudlet cloudlet) {
@@ -240,13 +285,10 @@ public class WrappedSimulation extends WrappedSimulationBase {
         return resultList;
     }
 
-    private double[] executeEarliestMostCriticalCloudletToNearestDcAction() {
+    private void executeEarliestMostCriticalCloudletToNearestDcAction() {
         final double targetTime = proxy().calculateTargetTime();
         final List<Cloudlet> jobsWaitingList = proxy().getJobsToSubmitAtThisTimestep(targetTime);
         final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
-
-        int jobsPlaced = 0;
-        int quality = 0;
 
         while (!jobsToProcessList.isEmpty()) {
             // Step 1: Find cloudlets with the earliest deadline
@@ -278,13 +320,8 @@ public class WrappedSimulation extends WrappedSimulationBase {
                 targetVm = selectVmForCloudlet((int) datacenter.getId(), selectedCloudlet);
 
                 if (targetVm != Vm.NULL) {
-                    // Found a suitable VM
-                    proxy().getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
+                    bind(selectedCloudlet, targetVm);
                     jobsToProcessList.remove(selectedCloudlet);
-                    jobsPlaced++;
-                    quality +=
-                            calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
-
                     break; // Stop searching once a suitable VM is found
                 }
             }
@@ -294,18 +331,9 @@ public class WrappedSimulation extends WrappedSimulationBase {
             }
         }
 
-        this.jobsPlacedThisTimestep = jobsPlaced;
-
-        final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaitingList.size());
-        final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
-        final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsWaitingList);
-        LOGGER.info("jobsPlacedRatio: {}, qualityRatio: {}, deadlineViolationRatio: {}",
-                jobsPlacedRatio, qualityRatio, deadlineViolationRatio);
-
-        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
     }
 
-    private double[] executeEarliestShortestCloudletToMostFreeDcAction() {
+    private void executeEarliestShortestCloudletToMostFreeDcAction() {
         final double targetTime = proxy().calculateTargetTime();
         final List<Cloudlet> jobsWaitingList = proxy().getJobsToSubmitAtThisTimestep(targetTime);
         final List<Cloudlet> jobsToProcessList = new ArrayList<>(jobsWaitingList);
@@ -318,8 +346,6 @@ public class WrappedSimulation extends WrappedSimulationBase {
                                     .mapToLong(cloudlet -> cloudlet.getPesNumber()).sum();
                             return vm.getPesNumber() - usedPes;
                         }).sum()));
-        int jobsPlaced = 0;
-        int quality = 0;
 
         while (!jobsToProcessList.isEmpty()) {
             // Step 1: Find cloudlets with the earliest deadline
@@ -352,12 +378,8 @@ public class WrappedSimulation extends WrappedSimulationBase {
                 targetVm = selectVmForCloudlet((int) datacenter.getId(), selectedCloudlet);
 
                 if (targetVm != Vm.NULL) {
-                    // Found a suitable VM
-                    proxy().getBroker().bindCloudletToVm(selectedCloudlet, targetVm);
+                    bind(selectedCloudlet, targetVm);
                     jobsToProcessList.remove(selectedCloudlet);
-                    jobsPlaced++;
-                    quality +=
-                            calculateQualityOfPlacement((int) datacenter.getId(), selectedCloudlet);
 
                     // Update the free PEs in dcFreePesMap
                     long updatedFreePes =
@@ -373,23 +395,11 @@ public class WrappedSimulation extends WrappedSimulationBase {
             }
         }
 
-        this.jobsPlacedThisTimestep = jobsPlaced;
-
-        final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaitingList.size());
-        final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
-        final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsWaitingList);
-        LOGGER.info("jobsPlacedRatio: {}, qualityRatio: {}, deadlineViolationRatio: {}",
-                jobsPlacedRatio, qualityRatio, deadlineViolationRatio);
-
-        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
     }
 
     // this action is if the agent performs cloudlet to DC mapping
-    private double[] executeRlCloudletToDcAction(final int[] action) {
-
+    private void executeRlCloudletToDcAction(final int[] action) {
         final double targetTime = proxy().calculateTargetTime();
-        final List<Cloudlet> jobsToSubmit = proxy().getJobsToSubmitAtThisTimestep(targetTime);
-        final int jobsWaiting = jobsToSubmit.size();
         // action[i] refers to observation slot i, i.e. the i-th visible job.
         final List<Cloudlet> visibleJobs = proxy().getVisibleJobs(targetTime);
         if (action.length < visibleJobs.size()) {
@@ -397,8 +407,6 @@ public class WrappedSimulation extends WrappedSimulationBase {
                     + visibleJobs.size() + " visible jobs; max_jobs_waiting must match the action space");
         }
 
-        int jobsPlaced = 0;
-        double quality = 0.0;
         for (int i = 0; i < visibleJobs.size(); i++) {
             final CloudletWithLocation job = (CloudletWithLocation) visibleJobs.get(i);
             final int dcId = action[i] + 1;
@@ -416,19 +424,8 @@ public class WrappedSimulation extends WrappedSimulationBase {
             }
             LOGGER.info("Binding Cloudlet {} to VM{}/H{}/DC{}", job.getId(), vm.getId(),
                     vm.getHost().getId(), dcId);
-            proxy().getBroker().bindCloudletToVm(job, vm);
-            // or simply job.setVm(vm);
-            LOGGER.info("Cloudlet {} getVm {} ", job.getId(), job.getVm().getId());
-            quality += calculateQualityOfPlacement(dcId, job);
-            jobsPlaced++;
+            bind(job, vm);
         }
-
-        this.jobsPlacedThisTimestep = jobsPlaced;
-
-        final double jobsPlacedRatio = calculateJobsPlacedRatio(jobsPlaced, jobsWaiting);
-        final double qualityRatio = calculateQualityRatio(quality, jobsPlaced);
-        final double deadlineViolationRatio = calculateDeadlineViolationRatio(jobsToSubmit);
-        return new double[] {jobsPlacedRatio, qualityRatio, deadlineViolationRatio};
     }
 
     private double calculateJobsPlacedRatio(final int jobsPlaced, final int jobsWaiting) {
@@ -438,25 +435,6 @@ public class WrappedSimulation extends WrappedSimulationBase {
         return (double) jobsPlaced / jobsWaiting;
     }
 
-    private double calculateQualityRatio(final double quality, final int jobsPlaced) {
-        if (jobsPlaced == 0) {
-            return 0.0;
-        }
-        return quality / jobsPlaced;
-    }
-
-    private double calculateDeadlineViolationRatio(final List<Cloudlet> jobsWaiting) {
-        if (jobsWaiting.size() == 0) {
-            return 0;
-        }
-        final double targetTime = proxy().calculateTargetTime();
-        final long deadlineViolations = jobsWaiting.stream()
-                .filter(job -> targetTime > job.getSubmissionDelay()
-                        + ((CloudletWithLocation) job).getDeadline() && job.getVm() == Vm.NULL)
-                .count();
-        return (double) deadlineViolations / jobsWaiting.size();
-    }
-
     /**
      * Per host, in datacenter order: [dc_id, dc_type, vm_capacity_pes, free_pes, backlog_core_ts].
      * <p>
@@ -464,7 +442,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
      * no-op, so dc_id = id - 1). vm_capacity_pes is the PE count of the host's VMs, which decides
      * whether a job can be held at all. free_pes is clipped at 0 once cloudlets queue, and
      * backlog_core_ts carries the depth that clipping hides: the core-timesteps of work still to
-     * run on the host's VMs, executing and waiting.
+     * run on the host's VMs, executing, waiting, and still crossing the network to them.
      */
     private int[] getInfraObsPerHost() {
         final int totalHosts = getTotalHosts();
@@ -488,6 +466,11 @@ public class WrappedSimulation extends WrappedSimulationBase {
                             .mapToDouble(ce -> ce.getCloudlet().getPesNumber()
                                     * ce.getRemainingCloudletLength() / vm.getMips())
                             .sum();
+                    for (Cloudlet inFlight : proxy().getInFlight(vm).keySet()) {
+                        usedPes += inFlight.getPesNumber();
+                        backlogCoreSeconds +=
+                                inFlight.getPesNumber() * inFlight.getLength() / vm.getMips();
+                    }
                 }
                 infrastructureObservation[currentIndex++] = (int) dc.getId() - 1;
                 infrastructureObservation[currentIndex++] =
@@ -512,6 +495,103 @@ public class WrappedSimulation extends WrappedSimulationBase {
         };
     }
 
+    // ============== Shaping potential ==============
+
+    private double potential() {
+        final double now = clock();
+        final Map<Cloudlet, Double> placed = estimatePlacedCompletionTimes(now);
+        return ledger.potential(now, job -> placed.containsKey(job) ? placed.get(job)
+                : bestCaseCompletionTime(job, now));
+    }
+
+    /**
+     * Completion time of every job placed on a VM, replaying each VM's space-shared FIFO:
+     * executing jobs hold their PEs until they finish, then waiting and in-flight jobs start
+     * in order, each when enough PEs are free and it has arrived.
+     */
+    private Map<Cloudlet, Double> estimatePlacedCompletionTimes(final double now) {
+        final Map<Cloudlet, Double> completion = new HashMap<>();
+        for (Vm vm : proxy().getBroker().getVmExecList()) {
+            final CloudletScheduler scheduler = vm.getCloudletScheduler();
+            final double mips = vm.getMips();
+            final PriorityQueue<Double> peFreeAt = new PriorityQueue<>();
+            for (int pe = 0; pe < vm.getPesNumber(); pe++) {
+                peFreeAt.add(now);
+            }
+            for (CloudletExecution ce : scheduler.getCloudletExecList()) {
+                final long pes = ce.getCloudlet().getPesNumber();
+                final double finish = takePes(peFreeAt, pes, now)
+                        + ce.getRemainingCloudletLength() / mips;
+                releasePes(peFreeAt, pes, finish);
+                completion.put(ce.getCloudlet(), finish);
+            }
+            final Map<Cloudlet, Double> queued = new LinkedHashMap<>();
+            scheduler.getCloudletWaitingList().forEach(ce -> queued.put(ce.getCloudlet(), now));
+            queued.putAll(proxy().getInFlight(vm));
+            queued.forEach((cloudlet, arrival) -> {
+                final long pes = cloudlet.getPesNumber();
+                final double finish = takePes(peFreeAt, pes, arrival) + cloudlet.getLength() / mips;
+                releasePes(peFreeAt, pes, finish);
+                completion.put(cloudlet, finish);
+            });
+        }
+        return completion;
+    }
+
+    /** Takes the pes earliest-free PEs: the job starts once all are free and it has arrived. */
+    private static double takePes(final PriorityQueue<Double> peFreeAt, final long pes,
+            final double arrival) {
+        double start = arrival;
+        for (long i = 0; i < pes; i++) {
+            start = Math.max(start, peFreeAt.poll());
+        }
+        return start;
+    }
+
+    private static void releasePes(final PriorityQueue<Double> peFreeAt, final long pes,
+            final double at) {
+        for (long i = 0; i < pes; i++) {
+            peFreeAt.add(at);
+        }
+    }
+
+    /** An unplaced job's completion time if it went now to the fastest DC it may use, idle. */
+    private double bestCaseCompletionTime(final Cloudlet job, final double now) {
+        double best = Double.POSITIVE_INFINITY;
+        for (int dc : reachableDcsByLocation.get(((CloudletWithLocation) job).getLocation())) {
+            final String dcType = ((DatacenterWithType) proxy().getDatacenterByIdx(dc)).getType();
+            best = Math.min(best, simSettings.networkDelay(dcType) + job.getLength() / dcPeMips[dc]);
+        }
+        return now + best;
+    }
+
+    /** Per DC index: fastest VM PE, and which DCs a job from that origin may use. */
+    @SuppressWarnings("unchecked")
+    private void cacheTopology() {
+        final List<Map<String, Object>> dcMaps = simSettings.getDatacenters();
+        dcPeMips = new double[dcMaps.size()];
+        reachableDcsByLocation = new ArrayList<>();
+        for (int dc = 0; dc < dcMaps.size(); dc++) {
+            for (Map<String, Object> host : (List<Map<String, Object>>) dcMaps.get(dc).get("hosts")) {
+                for (Map<String, Object> vm : (List<Map<String, Object>>) host.get("vms")) {
+                    dcPeMips[dc] = Math.max(dcPeMips[dc], ((Number) vm.get("pe_mips")).doubleValue());
+                }
+            }
+            final List<Integer> connectTo =
+                    ((DatacenterWithType) proxy().getDatacenterByIdx(dc)).getConnectTo();
+            final List<Integer> reachable = new ArrayList<>();
+            if (connectTo.isEmpty()) {
+                for (int other = 0; other < dcMaps.size(); other++) {
+                    reachable.add(other);
+                }
+            } else {
+                reachable.add(dc);
+                reachable.addAll(connectTo);
+            }
+            reachableDcsByLocation.add(reachable);
+        }
+    }
+
     private int getTotalHosts() {
         int totalHosts = 0;
         List<Datacenter> datacenterList = proxy().getSimulation().getCis().getDatacenterList();
@@ -520,28 +600,6 @@ public class WrappedSimulation extends WrappedSimulationBase {
             totalHosts += hostList.size();
         }
         return totalHosts;
-    }
-
-    private double calculateReward(final double jobsPlacedRatio, final double qualityRatio,
-            final double deadlineViolationRatio) {
-        /*
-         * reward is the negative cost of running the infrastructure minus any penalties from jobs
-         * waiting in the queue minus penalty if action was invalid
-         */
-
-        final double jobsPlacedCoef = simSettings.getRewardJobsPlacedCoef();
-        final double qualityCoef = simSettings.getRewardQualityCoef();
-        final double deadlineViolationCoef = simSettings.getRewardDeadlineViolationCoef();
-
-        final double reward = jobsPlacedCoef * jobsPlacedRatio + qualityCoef * qualityRatio
-                - deadlineViolationCoef * deadlineViolationRatio;
-
-        LOGGER.info("totalReward: {}", reward);
-        LOGGER.info("jobsPlacedReward: {}", jobsPlacedCoef * jobsPlacedRatio);
-        LOGGER.info("qualityReward: {}", qualityCoef * qualityRatio);
-        LOGGER.info("deadlineMissReward: {}", deadlineViolationCoef * deadlineViolationRatio);
-
-        return reward;
     }
 
     private int[] getJobsWaitingObservation() {

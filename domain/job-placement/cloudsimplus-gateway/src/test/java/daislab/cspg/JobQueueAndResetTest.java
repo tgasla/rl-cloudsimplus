@@ -55,13 +55,17 @@ class JobQueueAndResetTest {
         return (CloudSimProxy) sim.cloudSimProxy;
     }
 
-    /** Arrived (arrival < targetTime), unsubmitted jobs in (arrival, id) order. */
+    /**
+     * Arrived (arrival < targetTime), unsubmitted, not yet expired (an unplaced job is evicted
+     * once the clock passes its due time) jobs, in (arrival, id) order.
+     */
     private static List<Long> arrivedUnsubmitted(final CloudSimProxy proxy, final double targetTime) {
         final Set<Long> submitted = proxy.getBroker().getCloudletSubmittedList().stream()
                 .map(Cloudlet::getId).collect(Collectors.toSet());
         return proxy.getSimulationCloudletList().stream()
                 .filter(c -> proxy.jobArrivalTimeMap.get(c.getId()) < targetTime)
                 .filter(c -> !submitted.contains(c.getId()))
+                .filter(c -> proxy.getDueTime(c) >= proxy.clock())
                 .sorted(Comparator.comparingDouble((Cloudlet c) -> proxy.jobArrivalTimeMap.get(c.getId()))
                         .thenComparingLong(Cloudlet::getId))
                 .map(Cloudlet::getId).toList();

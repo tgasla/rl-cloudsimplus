@@ -83,39 +83,44 @@ def test_reach_mask_follows_the_topology_and_padding_takes_only_the_noop(make_en
     assert policy_jobs[1].tolist() == [8, 5, 7, 0, 0, 1]
 
 
-def test_action_mask_is_reach_restricted_by_free_pes(make_env):
-    n_ring = 6
-    env = make_env(datacenters=ring_topology(n_ring), **SPEC_SHAPE)
-    jobs = [_job(2, 1), _job(8, 2), _job(4, 6)]
+def _shrink_vms(topology, dc_indices, pes):
+    for idx in dc_indices:
+        for host in topology[idx]["hosts"]:
+            host["pes"] = pes
+            for vm in host["vms"]:
+                vm["pes"] = pes
+    return topology
 
-    # Every DC has room: the action mask is exactly the reach mask.
-    obs = env._get_observation(_raw_obs(env, jobs))
+
+def test_a_full_dc_stays_legal_because_the_job_queues_there(make_env):
+    env = make_env(datacenters=ring_topology(6), **SPEC_SHAPE)
+    jobs = [_job(2, 1), _job(8, 2), _job(4, 6)]
+    no_free_pes = [0] * len(env.params["datacenters"])
+    obs = env._get_observation(_raw_obs(env, jobs, free_by_dc=no_free_pes))
     mask = np.array(env.action_masks()).reshape(env.max_jobs_waiting, env.max_datacenters)
     assert (mask == obs["reach_mask"].reshape(mask.shape).astype(bool)).all()
 
-    # Cloud full, micro DC 2 has 4 free PEs: the 8-core job from DC 2 loses the cloud and its
-    # origin, and nothing outside reach ever becomes legal.
-    free = [dc["hosts"][0]["pes"] for dc in env.params["datacenters"]]
-    free[0], free[2] = 0, 4
-    obs = env._get_observation(_raw_obs(env, jobs, free_by_dc=free))
+
+def test_action_mask_is_reach_restricted_by_vm_capacity(make_env):
+    n_ring = 6
+    # DC 2 (micro) gets 4-PE VMs: an 8-core job can never run there.
+    env = make_env(datacenters=_shrink_vms(ring_topology(n_ring), [2], 4), **SPEC_SHAPE)
+    jobs = [_job(2, 1), _job(8, 2), _job(4, 6)]
+    obs = env._get_observation(_raw_obs(env, jobs))
     mask = np.array(env.action_masks()).reshape(env.max_jobs_waiting, env.max_datacenters)
     reach = obs["reach_mask"].reshape(mask.shape).astype(bool)
     assert not (mask & ~reach).any()
-    assert not mask[:len(jobs), 1].any()
-    assert set(np.flatnonzero(mask[1])) == _legal_actions(2, n_ring) - {1, 3}
+    assert set(np.flatnonzero(mask[1])) == _legal_actions(2, n_ring) - {3}
+    assert set(np.flatnonzero(mask[0])) == _legal_actions(1, n_ring)
     assert mask[:, 0].all()
     assert not mask[len(jobs):, 1:].any()
 
 
-def test_job_with_no_reachable_capacity_can_only_wait(make_env):
+def test_job_that_fits_no_reachable_dc_can_only_wait(make_env):
     # Used to fall back to "every action valid", which let the agent place the job on a DC
     # the topology forbids. The no-op already keeps MaskablePPO's sub-space non-empty.
-    n_ring = 6
-    env = make_env(datacenters=ring_topology(n_ring), **SPEC_SHAPE)
-    free = [dc["hosts"][0]["pes"] for dc in env.params["datacenters"]]
-    for dc_idx in (0, 3, 4, 5):  # cloud, then DC 4 and both its neighbours
-        free[dc_idx] = 4
-    env._get_observation(_raw_obs(env, [_job(8, 4)], free_by_dc=free))
+    env = make_env(datacenters=_shrink_vms(ring_topology(6), [0, 3, 4, 5], 4), **SPEC_SHAPE)
+    env._get_observation(_raw_obs(env, [_job(8, 4)]))
     mask = np.array(env.action_masks()).reshape(env.max_jobs_waiting, env.max_datacenters)
     assert set(np.flatnonzero(mask[0])) == {0}
 

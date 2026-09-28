@@ -11,6 +11,7 @@ from utils.misc import (
     get_suitable_device,
     maybe_load_replay_buffer,
     get_host_count_from_train_dir,
+    check_reward_shaping_gamma,
 )
 
 
@@ -50,6 +51,7 @@ def transfer(params, jobs):
 
     prev_host_count = get_host_count_from_train_dir(params["train_model_dir"])
     maybe_freeze_weights(model, params, prev_host_count=prev_host_count)
+    check_reward_shaping_gamma(params, model)
 
     callback = create_callback(params["save_experiment"], params["log_dir"])
     logger = create_logger(params["save_experiment"], params["log_dir"])

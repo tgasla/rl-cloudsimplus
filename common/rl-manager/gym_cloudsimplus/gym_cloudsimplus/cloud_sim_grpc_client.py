@@ -73,9 +73,16 @@ class CloudSimGrpcClient:
             "jobs_waiting": info.jobs_waiting if hasattr(info, 'jobs_waiting') else 0,
             "jobs_placed": info.jobs_placed if hasattr(info, 'jobs_placed') else 0,
             "jobs_placed_ratio": info.jobs_placed_ratio if hasattr(info, 'jobs_placed_ratio') else 0.0,
-            "quality_ratio": info.quality_ratio if hasattr(info, 'quality_ratio') else 0.0,
-            "deadline_violation_ratio": info.deadline_violation_ratio if hasattr(info, 'deadline_violation_ratio') else 0.0,
             "job_wait_time": list(info.job_wait_time) if hasattr(info, 'job_wait_time') else [],
+            "sla_value_realized": info.sla_value_realized,
+            "sla_penalty_paid": info.sla_penalty_paid,
+            "resource_cost": info.resource_cost,
+            "jobs_met": info.jobs_met,
+            "jobs_violated": info.jobs_violated,
+            "jobs_expired_unplaced": info.jobs_expired_unplaced,
+            "potential": info.potential,
+            "offered_value": info.offered_value,
+            "unshaped_reward": info.unshaped_reward,
         }
 
     def _obs_to_dict(self, obs) -> dict:

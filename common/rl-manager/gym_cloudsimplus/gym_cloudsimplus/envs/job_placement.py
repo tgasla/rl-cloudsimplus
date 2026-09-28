@@ -45,7 +45,12 @@ class JobPlacementEnv(CloudSimBaseEnv):
     JOB_OBS_FEATURES = 6      # policy-visible features per job: cores, nominal_runtime_ref, time_to_due, s0, s1, s2
     _JOB_WIRE_FEATURES = 7    # gRPC wire format: the policy features plus location at index 1 — must match Java CloudSimProxy.JOB_OBS_FEATURES
     _LOCATION_COL = 1         # location is stripped from the policy obs; it drives reach_mask
-    _FREE_PES_COL = 3
+    _VM_CAPACITY_COL = 2
+    _STEP_INFO_KEYS = (
+        "jobs_waiting", "jobs_placed", "jobs_placed_ratio", "job_wait_time",
+        "sla_value_realized", "sla_penalty_paid", "resource_cost", "jobs_met", "jobs_violated",
+        "jobs_expired_unplaced", "potential", "offered_value", "unshaped_reward",
+    )
 
     def __init__(
         self,
@@ -211,23 +216,24 @@ class JobPlacementEnv(CloudSimBaseEnv):
         """Return action mask for MaskablePPO.
 
         A (job, action) pair is valid when the topology allows it (reach_mask) and the
-        DC has a host with free PEs >= the job's cores. The no-op (action 0) is always
-        valid, so every sub-space keeps at least one valid action; a padding job slot
-        (cores == 0) can only take the no-op.
+        DC has a VM large enough to ever hold the job. A full DC stays valid: Java queues
+        the job there, and the later finish is priced by the reward. This must match
+        Java's VM selector. The no-op (action 0) is always valid, so every sub-space keeps
+        at least one valid action; a padding job slot (cores == 0) can only take the no-op.
 
         obs_dc_id = cloudSim_dc_id - 1, which equals the agent action for that DC.
         """
-        # Scatter-max: max free PEs per DC action index in one vectorized pass.
+        # Scatter-max: largest VM per DC action index in one vectorized pass.
         hosts = self._last_infr_obs.reshape(self.total_hosts, self.HOST_OBS_FEATURES)
         dc_ids = hosts[:, 0].astype(np.int64)
-        free_pes = hosts[:, self._FREE_PES_COL].astype(np.int64)
+        capacity = hosts[:, self._VM_CAPACITY_COL].astype(np.int64)
         real = dc_ids > 0
-        dc_max_free = np.zeros(self.max_datacenters, dtype=np.int64)
-        np.maximum.at(dc_max_free, dc_ids[real], free_pes[real])
+        dc_max_capacity = np.zeros(self.max_datacenters, dtype=np.int64)
+        np.maximum.at(dc_max_capacity, dc_ids[real], capacity[real])
 
         # Broadcast [max_jobs, 1] cores against [1, max_datacenters] capacity.
         cores = self._last_jobs_obs.reshape(self.max_jobs_waiting, self.JOB_OBS_FEATURES)[:, 0]
-        mask_matrix = self._last_reach & (dc_max_free[np.newaxis, :] >= cores[:, np.newaxis])
+        mask_matrix = self._last_reach & (dc_max_capacity[np.newaxis, :] >= cores[:, np.newaxis])
         mask_matrix[:, 0] = True  # no-op
         return mask_matrix.ravel().tolist()
 
@@ -269,13 +275,4 @@ class JobPlacementEnv(CloudSimBaseEnv):
 
     def _parse_step_info(self, raw_info: dict) -> dict:
         """Convert raw gRPC step info to job placement info dict."""
-        return {
-            "jobs_waiting": raw_info.get("jobs_waiting"),
-            "jobs_placed": raw_info.get("jobs_placed"),
-            "jobs_placed_ratio": raw_info.get("jobs_placed_ratio"),
-            "quality_ratio": raw_info.get("quality_ratio"),
-            "deadline_violation_ratio": raw_info.get("deadline_violation_ratio"),
-            "job_wait_time": raw_info.get("job_wait_time"),
-            "is_valid": raw_info.get("is_valid"),
-        }
-
+        return {key: raw_info.get(key) for key in self._STEP_INFO_KEYS}

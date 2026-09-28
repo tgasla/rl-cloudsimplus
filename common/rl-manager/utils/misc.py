@@ -701,6 +701,16 @@ def _is_rl_mode(params) -> bool:
     )
 
 
+def check_reward_shaping_gamma(params: dict, model) -> None:
+    """Potential-based shaping keeps the optimal policy only with the learner's own gamma;
+    with any other gamma training still runs, but towards a different objective."""
+    if params.get("reward_shaping") and params["reward_shaping_gamma"] != model.gamma:
+        raise ValueError(
+            f"reward_shaping_gamma={params['reward_shaping_gamma']} but "
+            f"{type(model).__name__} uses gamma={model.gamma}"
+        )
+
+
 def get_algorithm(rl_algorithm_name, params) -> sb3.common.base_class.BaseAlgorithm:
     # Non-RL modes (rule-based / fromfile): pick PPO as a placeholder so the
     # env-creation pipeline still works. The model is never actually trained.
