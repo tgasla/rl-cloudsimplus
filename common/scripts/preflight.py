@@ -2,8 +2,8 @@
 """Host-side preflight for an experiment queue.
 
 Prints what `make run` is about to do before the first container starts, and
-blocks on exactly one condition: a transfer/test whose source model neither
-exists on disk nor is produced by an earlier experiment in the same queue.
+blocks on exactly one condition: a transfer/test/evaluate whose source model
+neither exists on disk nor is produced by an earlier experiment in the same queue.
 
 Everything else is a warning. Occupied targets are reported as SKIP and the
 queue still runs — restarting a partially-finished queue is a normal operation,
@@ -22,8 +22,20 @@ import os
 import sys
 
 STATUS_FILENAME = "run_status.json"
-MODEL_FILENAME = "best_model.zip"
 PRODUCING_MODES = ("train", "transfer")
+
+
+def source_model_filename(exp):
+    # Same rule as utils/misc.py:source_checkpoint.
+    checkpoint = exp.get("checkpoint") or (
+        "best_val_model" if exp.get("benchmark_member") else "best_model")
+    return f"{checkpoint}.zip"
+
+
+def needs_source_model(exp):
+    mode = exp.get("mode")
+    return mode in ("transfer", "test") or (
+        mode == "evaluate" and exp.get("cloudlet_to_dc_mapping", "rl") == "rl")
 
 
 def classify(run_dir):
@@ -109,23 +121,24 @@ def run(config_path, logs_root):
         seen_targets[target] = idx
 
         note = ""
-        if mode in ("transfer", "test"):
+        if needs_source_model(exp):
+            model_file = source_model_filename(exp)
             src = str(exp.get("train_model_dir", "")).strip()
             if not src:
                 errors.append(f"#{idx} ({mode}) has no train_model_dir")
                 continue
-            src_on_disk = os.path.exists(os.path.join(logs_root, src, MODEL_FILENAME))
+            src_on_disk = os.path.exists(os.path.join(logs_root, src, model_file))
             produced = producers.get(src)
             if not src_on_disk and produced is None:
                 errors.append(
-                    f"#{idx} ({mode}) source {src} has no {MODEL_FILENAME} on disk and is not "
+                    f"#{idx} ({mode}) source {src} has no {model_file} on disk and is not "
                     f"produced by an earlier experiment in this queue"
                 )
                 continue
             if produced is not None:
                 if produced[1] and not src_on_disk:
                     errors.append(
-                        f"#{idx} ({mode}) source {src} has no {MODEL_FILENAME} on disk and its "
+                        f"#{idx} ({mode}) source {src} has no {model_file} on disk and its "
                         f"in-queue producer #{produced[0]} will itself be skipped — add "
                         f"'on_exists: archive' to #{produced[0]}, or delete its run directory"
                     )

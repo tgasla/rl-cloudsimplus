@@ -52,6 +52,8 @@ common:
   # (datacenters: !include topologies/ring/S.yml); every episode then plays a fresh level.
   ring_manifest: topologies/ring/manifest.json
   level_split: train    # train | val | test | lockbox
+  val_every: 100000     # RING-N training: val sweep interval (steps); best_val_model is kept
+  val_num_cpu: 8        # workers for the val sweeps, on their own JVMs
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
   n_rollout_steps: 128

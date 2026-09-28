@@ -11,6 +11,7 @@ from utils.misc import (
     create_correct_policy,
     vectorize_env,
     check_reward_shaping_gamma,
+    create_val_callback,
 )
 
 
@@ -58,6 +59,9 @@ def train(params, jobs):
     check_reward_shaping_gamma(params, model)
 
     callback = create_callback(params["save_experiment"], params["log_dir"])
+    val_env = None
+    if params.get("benchmark_member") and params["save_experiment"]:
+        callback, val_env = create_val_callback(params, num_cpu)
     logger = create_logger(params["save_experiment"], params["log_dir"])
     model.set_logger(logger)
 
@@ -66,6 +70,8 @@ def train(params, jobs):
 
     # Close the environment and free the resources
     env.close()
+    if val_env is not None:
+        val_env.close()
 
     # Delete the model from memory
     del model

@@ -12,6 +12,8 @@ from utils.misc import (
     maybe_load_replay_buffer,
     get_host_count_from_train_dir,
     check_reward_shaping_gamma,
+    create_val_callback,
+    source_checkpoint,
 )
 
 
@@ -19,7 +21,7 @@ def transfer(params, jobs):
     best_model_path = os.path.join(
         params["base_log_dir"],
         f"{params['train_model_dir']}",
-        "best_model",
+        source_checkpoint(params),
     )
 
     algorithm = get_algorithm(params["rl_algorithm"], params)
@@ -54,6 +56,9 @@ def transfer(params, jobs):
     check_reward_shaping_gamma(params, model)
 
     callback = create_callback(params["save_experiment"], params["log_dir"])
+    val_env = None
+    if params.get("benchmark_member") and params["save_experiment"]:
+        callback, val_env = create_val_callback(params, num_cpu)
     logger = create_logger(params["save_experiment"], params["log_dir"])
     model.set_logger(logger)
 
@@ -73,4 +78,6 @@ def transfer(params, jobs):
     )
 
     env.close()
+    if val_env is not None:
+        val_env.close()
     del model

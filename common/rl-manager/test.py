@@ -8,6 +8,7 @@ from utils.misc import (
     get_suitable_device,
     maybe_load_replay_buffer,
     _create_grpc_env_for_rank,
+    source_checkpoint,
 )
 
 
@@ -15,7 +16,7 @@ def test(params, jobs):
     best_model_path = os.path.join(
         params["base_log_dir"],
         params["train_model_dir"],
-        "best_model",
+        source_checkpoint(params),
     )
 
     algorithm = get_algorithm(params["rl_algorithm"], params)

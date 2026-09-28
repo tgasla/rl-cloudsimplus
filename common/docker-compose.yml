@@ -24,6 +24,7 @@ services:
       - ./rl-manager/train.py:/mgr/train.py
       - ./rl-manager/transfer.py:/mgr/transfer.py
       - ./rl-manager/test.py:/mgr/test.py
+      - ./rl-manager/evaluate.py:/mgr/evaluate.py
       - ./rl-manager/entrypoint.py:/mgr/entrypoint.py
       - ../common/${BASE_LOG_DIR:-logs}:/mgr/${BASE_LOG_DIR:-logs}
       - ./rl-manager/callbacks:/mgr/callbacks

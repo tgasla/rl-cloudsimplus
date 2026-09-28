@@ -19,6 +19,8 @@ from stable_baselines3.common.policies import ActorCriticPolicy
 from callbacks.save_on_best_training_reward_callback import (
     SaveOnBestTrainingRewardCallback,
 )
+from callbacks.best_on_val_callback import BestOnValCallback
+from utils.evaluation import eval_env_params, level_quotas
 from utils.levels import LevelSampler, LevelSource, SENSITIVITY_LEVELS
 from utils.rl_algorithm_support_flags import (
     ALGORITHMS_WITH_ENT_COEF,
@@ -203,6 +205,25 @@ def create_callback(save_experiment, log_dir) -> SaveOnBestTrainingRewardCallbac
     if save_experiment:
         return SaveOnBestTrainingRewardCallback(log_dir)
     return None
+
+
+def create_val_callback(params: dict, num_cpu: int) -> tuple[BestOnValCallback, object]:
+    """RING-N runs pick checkpoints on the val split instead of the training curve.
+    Returns the callback and the val env it plays on; close that env after learn()."""
+    workers = params.get("val_num_cpu", 8)
+    eval_env = vectorize_env(None, None, num_cpu=workers, jobs_json="[]",
+                             params=eval_env_params(params, "val", workers, port_offset=num_cpu))
+    callback = BestOnValCallback(eval_env, level_quotas("val", workers), params["log_dir"],
+                                 params.get("val_every", 100_000), verbose=1)
+    return callback, eval_env
+
+
+def source_checkpoint(params: dict) -> str:
+    """The saved model a transfer/test/evaluate run loads from train_model_dir: `checkpoint`
+    if set, else best_val_model for RING-N runs and the legacy best_model otherwise.
+    common/scripts/preflight.py applies the same rule."""
+    return params.get("checkpoint") or (
+        "best_val_model" if params.get("benchmark_member") else "best_model")
 
 
 # ─── Feature extractors ──────────────────────────────────────────────────────

@@ -210,3 +210,76 @@ def test_parallel_vec_env_matches_sequential_dummy_vec_env(level_env):
     assert any(dones.any() for _, _, dones, _ in sequential)
     for (o1, r1, d1, l1), (o2, r2, d2, l2) in zip(sequential, parallel):
         assert (o1 == o2).all() and (r1 == r2).all() and (d1 == d2).all() and l1 == l2
+
+
+def _free_port_block(n):
+    """The first port of n consecutive free ports."""
+    for base in range(52000, 60000, n):
+        socks = []
+        try:
+            for port in range(base, base + n):
+                s = socket.socket()
+                s.bind(("", port))
+                socks.append(s)
+            return base
+        except OSError:
+            continue
+        finally:
+            for s in socks:
+                s.close()
+    raise RuntimeError("no free port block")
+
+
+@pytest.fixture
+def spawned_params(monkeypatch, tmp_path):
+    """Params for runs that spawn their own JVMs through utils.misc (as in the container)."""
+    monkeypatch.setenv("CLOUDSIM_GATEWAY_JAR", JAR)
+    monkeypatch.setenv("JAVA_LOG_DESTINATION", "none")
+    datacenters, manifest = _ring_member("S")
+    params = json.load(open(os.path.join(
+        REPO, "domain", "job-placement", "cloudsimplus-gateway", "src", "test", "resources",
+        "env_b_params.json")))
+    params.update(SPEC_SHAPE, datacenters=datacenters, split_large_jobs=False, seed=3,
+                  max_episode_length=200, benchmark_member="S", ring_manifest=manifest,
+                  log_dir=str(tmp_path), save_experiment=True, grpc_base_port=_free_port_block(16))
+    return params
+
+
+def test_evaluate_plays_each_val_level_once(spawned_params, tmp_path):
+    from evaluate import evaluate
+    from utils import levels
+
+    spawned_params.update(level_split="val", num_cpu=4,
+                          cloudlet_to_dc_mapping="earliest-shortest-to-most-free-dc")
+    df = evaluate(spawned_params, [])
+    assert sorted(df["level_id"]) == list(levels.VAL_LEVELS)
+    assert (tmp_path / "evaluation.csv").exists()
+    assert df["unshaped_return"].std() > 0           # contexts differ
+    assert df["terminated"].all()
+
+
+def test_training_keeps_best_val_and_final_models(spawned_params, tmp_path):
+    from sb3_contrib import MaskablePPO
+    from utils.misc import create_val_callback, vectorize_env
+
+    spawned_params.update(level_split="train", num_cpu=1, val_num_cpu=2, val_every=64,
+                          cloudlet_to_dc_mapping="rl")
+    env = vectorize_env(None, MaskablePPO, num_cpu=1, params=spawned_params, jobs_json="[]")
+    callback, val_env = create_val_callback(spawned_params, num_cpu=1)
+    try:
+        model = MaskablePPO("MultiInputPolicy", env, n_steps=64, batch_size=64, n_epochs=1,
+                            seed=0, device="cpu")
+        model.learn(128, callback=callback)
+    finally:
+        env.close()
+        val_env.close()
+    import pandas as pd
+    from utils import levels
+
+    val = pd.read_csv(tmp_path / "val.csv")
+    assert sorted(val["timestep"].unique()) == [64, 128]
+    for _, sweep in val.groupby("timestep"):
+        assert sorted(sweep["level_id"]) == list(levels.VAL_LEVELS)
+    assert (tmp_path / "best_val_model.zip").exists() and (tmp_path / "final_model.zip").exists()
+    best = val.groupby("timestep")["unshaped_return"].mean().max()
+    assert callback.best_mean == pytest.approx(best)

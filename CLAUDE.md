@@ -350,7 +350,7 @@ train.py / transfer.py / test.py
 SB3 algorithm (PPO, MaskablePPO, A2C, …)
   │  rollout: env.step(action) ←→ Java step gRPC
   ▼
-callbacks: SaveOnBestTrainingRewardCallback
+callbacks: SaveOnBestTrainingRewardCallback (legacy traces) or BestOnValCallback (RING-N)
 loggers: stdout + CSV + TensorBoard (if save_experiment=true)
 ```
 
@@ -376,7 +376,12 @@ Read by `run_docker.sh` and `entrypoint.py`. Passed as environment variables.
 Merged into every experiment's params dict.
 
 ### `experiment_N:` — per-experiment overrides
-Keys: `mode` (`train`/`transfer`/`test`), `experiment_dir`, `experiment_name`, `datacenters`, `job_trace_filename`, `train_model_dir` (for transfer/test).
+Keys: `mode` (`train`/`transfer`/`test`/`evaluate`), `experiment_dir`, `experiment_name`, `datacenters`, `job_trace_filename`, `train_model_dir` (for transfer/test/evaluate).
+
+**RING-N experiments** (job-placement) set `benchmark_member` (a `common/topologies/ring/manifest.json` id) and `datacenters: !include topologies/ring/<id>.yml` instead of `job_trace_filename`: every episode, including SB3's auto-resets, plays a fresh level from `utils/levels.py`, drawn from `level_split` (`train`: a random level per worker seeded by `(seed, rank)`; `val`/`test`/`lockbox`: each worker's round-robin share).
+- Training keeps checkpoints by a deterministic sweep of the 24 val levels every `val_every` steps (`BestOnValCallback`, `val_num_cpu` workers on their own JVMs): `best_val_model` (best mean unshaped return), `final_model`, and one row per level per sweep in `val.csv`.
+- `transfer`/`test`/`evaluate` load `checkpoint` from `train_model_dir`, defaulting to `best_val_model` for RING-N and `best_model` otherwise; `preflight.py` applies the same rule.
+- `mode: evaluate` plays every level of `level_split` once (the deterministic policy, or a rule-based `cloudlet_to_dc_mapping` with no model) and writes `evaluation.csv`, one row per level with the unshaped return and its breakdown.
 
 **Run directories are write-once.** `log_dir` = `base_log_dir/experiment_dir/experiment_name`
 is created with no `exist_ok`, so a rerun can never merge into a previous run's output.
