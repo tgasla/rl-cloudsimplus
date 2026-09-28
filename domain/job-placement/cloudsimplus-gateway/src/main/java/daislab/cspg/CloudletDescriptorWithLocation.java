@@ -25,7 +25,8 @@ public class CloudletDescriptorWithLocation extends CloudletDescriptor {
 
     @Override
     protected Cloudlet createCloudlet() {
-        return new CloudletWithLocation(getJobId(), getMi(), getCores(),
+        return new CloudletWithLocation(getJobId(),
+                (long) (getMi() * SimulationSettings.MI_RESOLUTION), getCores(),
                 location, delaySensitivity, deadline)
                 .setFileSize(DataCloudTags.DEFAULT_MTU)
                 .setOutputSize(DataCloudTags.DEFAULT_MTU)

@@ -81,6 +81,14 @@ public class WrappedSimulation extends WrappedSimulationBase {
     public SimulationResetResult reset(final long seed, final String jobsJson) {
         this.currentEpisodeReward = 0;
         final SimulationResetResult result = super.reset(seed, jobsJson);
+        // A job arriving at or after the horizon could never be placed: it would only be charged.
+        final double horizon = simSettings.getMaxEpisodeLength() * simSettings.getTimestepInterval();
+        final double lastArrival = proxy().jobArrivalTimeMap.values().stream()
+                .mapToDouble(Double::doubleValue).max().orElse(0);
+        if (lastArrival >= horizon) {
+            throw new IllegalArgumentException("a job arrives at t=" + lastArrival
+                    + ", at or after the horizon t=" + horizon + " (max_episode_length)");
+        }
         ledger = new SlaLedger(proxy().getSimulationCloudletList(), proxy().jobArrivalTimeMap,
                 simSettings);
         cacheTopology();
@@ -519,54 +527,59 @@ public class WrappedSimulation extends WrappedSimulationBase {
     }
 
     /**
-     * Completion time of every job placed on a VM, replaying each VM's space-shared FIFO:
-     * executing jobs hold their PEs until they finish, then waiting and in-flight jobs start
-     * in order, each when enough PEs are free and it has arrived.
+     * Completion time of every job placed on a VM, replaying each VM's space-shared scheduler:
+     * running jobs hold their PEs until they finish; whenever PEs free up or a job arrives, the
+     * queued jobs are scanned in order (waiting list, then in-flight jobs by arrival) and every
+     * one that has arrived and fits starts, as CloudSim moves waiting cloudlets to execution.
      */
-    private Map<Cloudlet, Double> estimatePlacedCompletionTimes(final double now) {
+    Map<Cloudlet, Double> estimatePlacedCompletionTimes(final double now) {
         final Map<Cloudlet, Double> completion = new HashMap<>();
         for (Vm vm : proxy().getBroker().getVmExecList()) {
             final CloudletScheduler scheduler = vm.getCloudletScheduler();
             final double mips = vm.getMips();
-            final PriorityQueue<Double> peFreeAt = new PriorityQueue<>();
-            for (int pe = 0; pe < vm.getPesNumber(); pe++) {
-                peFreeAt.add(now);
-            }
+            final PriorityQueue<double[]> releases =                        // {time, pes}
+                    new PriorityQueue<>(Comparator.comparingDouble(r -> r[0]));
+            long freePes = vm.getPesNumber();
             for (CloudletExecution ce : scheduler.getCloudletExecList()) {
-                final long pes = ce.getCloudlet().getPesNumber();
-                final double finish = takePes(peFreeAt, pes, now)
-                        + remainingLength(ce, vm, now) / mips;
-                releasePes(peFreeAt, pes, finish);
+                final double finish = now + remainingLength(ce, vm, now) / mips;
                 completion.put(ce.getCloudlet(), finish);
+                releases.add(new double[] {finish, ce.getCloudlet().getPesNumber()});
+                freePes -= ce.getCloudlet().getPesNumber();
             }
-            final Map<Cloudlet, Double> queued = new LinkedHashMap<>();
+            final Map<Cloudlet, Double> queued = new LinkedHashMap<>();       // job -> arrival
             scheduler.getCloudletWaitingList().forEach(ce -> queued.put(ce.getCloudlet(), now));
-            queued.putAll(proxy().getInFlight(vm));
-            queued.forEach((cloudlet, arrival) -> {
-                final long pes = cloudlet.getPesNumber();
-                final double finish = takePes(peFreeAt, pes, arrival) + cloudlet.getLength() / mips;
-                releasePes(peFreeAt, pes, finish);
-                completion.put(cloudlet, finish);
-            });
+            proxy().getInFlight(vm).entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue())
+                    .forEach(e -> queued.put(e.getKey(), e.getValue()));
+            double t = now;
+            while (!queued.isEmpty()) {
+                for (Iterator<Map.Entry<Cloudlet, Double>> it = queued.entrySet().iterator(); it.hasNext();) {
+                    final Map.Entry<Cloudlet, Double> e = it.next();
+                    final long pes = e.getKey().getPesNumber();
+                    if (e.getValue() <= t && pes <= freePes) {
+                        final double finish = t + e.getKey().getLength() / mips;
+                        completion.put(e.getKey(), finish);
+                        releases.add(new double[] {finish, pes});
+                        freePes -= pes;
+                        it.remove();
+                    }
+                }
+                final double at = t;
+                final double nextArrival = queued.values().stream()
+                        .filter(a -> a > at).mapToDouble(Double::doubleValue).min()
+                        .orElse(Double.POSITIVE_INFINITY);
+                final double nextRelease = releases.isEmpty() ? Double.POSITIVE_INFINITY
+                        : releases.peek()[0];
+                if (Double.isInfinite(nextArrival) && Double.isInfinite(nextRelease)) {
+                    break; // a queued job larger than its VM; the selector never binds one
+                }
+                t = Math.min(nextArrival, nextRelease);
+                while (!releases.isEmpty() && releases.peek()[0] <= t) {
+                    freePes += (long) releases.poll()[1];
+                }
+            }
         }
         return completion;
-    }
-
-    /** Takes the pes earliest-free PEs: the job starts once all are free and it has arrived. */
-    private static double takePes(final PriorityQueue<Double> peFreeAt, final long pes,
-            final double arrival) {
-        double start = arrival;
-        for (long i = 0; i < pes; i++) {
-            start = Math.max(start, peFreeAt.poll());
-        }
-        return start;
-    }
-
-    private static void releasePes(final PriorityQueue<Double> peFreeAt, final long pes,
-            final double at) {
-        for (long i = 0; i < pes; i++) {
-            peFreeAt.add(at);
-        }
     }
 
     /** An unplaced job's completion time if it went now to the fastest DC it may use, idle. */
@@ -588,7 +601,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
         for (int dc = 0; dc < dcMaps.size(); dc++) {
             for (Map<String, Object> host : (List<Map<String, Object>>) dcMaps.get(dc).get("hosts")) {
                 for (Map<String, Object> vm : (List<Map<String, Object>>) host.get("vms")) {
-                    dcPeMips[dc] = Math.max(dcPeMips[dc], ((Number) vm.get("pe_mips")).doubleValue());
+                    dcPeMips[dc] = Math.max(dcPeMips[dc], CloudSimProxy.scaledMips(vm.get("pe_mips")));
                 }
             }
             final List<Integer> connectTo =

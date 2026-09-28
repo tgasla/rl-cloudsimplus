@@ -131,7 +131,7 @@ public class CloudSimProxy extends CloudSimProxyBase {
             final long hostStorage = parseLong(hostMap.get("storage"));
             final long hostBw = parseLong(hostMap.get("bw"));
             final List<Pe> peList =
-                    createPeList(parseLong(hostMap.get("pes")), parseLong(hostMap.get("pe_mips")));
+                    createPeList(parseLong(hostMap.get("pes")), scaledMips(hostMap.get("pe_mips")));
             final int hostAmount = parseInt(hostMap.get("amount"));
             for (int i = 0; i < hostAmount; i++) {
                 final Host host = new HostSimple(hostRam, hostBw, hostStorage, peList)
@@ -173,7 +173,7 @@ public class CloudSimProxy extends CloudSimProxyBase {
         for (Map<String, Object> vmMap : listOfVmMaps) {
             final int vmAmount = parseInt(vmMap.get("amount"));
             for (int i = 0; i < vmAmount; i++) {
-                vmList.add(createVm(parseLong(vmMap.get("pes")), parseLong(vmMap.get("pe_mips")),
+                vmList.add(createVm(parseLong(vmMap.get("pes")), scaledMips(vmMap.get("pe_mips")),
                         parseLong(vmMap.get("ram")), parseLong(vmMap.get("size")),
                         parseLong(vmMap.get("bw"))));
             }
@@ -335,6 +335,11 @@ public class CloudSimProxy extends CloudSimProxyBase {
     }
 
     // ============== Private helpers ==============
+
+    /** A PE's speed in simulator instructions per second (see SimulationSettings.MI_RESOLUTION). */
+    static long scaledMips(final Object peMips) {
+        return (long) (((Number) peMips).doubleValue() * SimulationSettings.MI_RESOLUTION);
+    }
 
     private long parseLong(Object obj) {
         return ((Number) obj).longValue();

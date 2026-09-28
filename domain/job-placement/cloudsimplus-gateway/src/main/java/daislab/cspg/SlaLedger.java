@@ -41,6 +41,7 @@ final class SlaLedger {
     private final List<Entry> unresolved = new ArrayList<>();
     private final Map<Long, Entry> byId = new HashMap<>();
     private final double offeredValue;
+    private final double finishTolerance;
 
     // Totals of the current step, cleared by beginStep().
     private double valueRealized;
@@ -65,6 +66,7 @@ final class SlaLedger {
             z += entry.value;
         }
         offeredValue = z;
+        finishTolerance = settings.finishTimeTolerance();
     }
 
     void onBind(final Cloudlet job, final double cost) {
@@ -93,8 +95,8 @@ final class SlaLedger {
         for (Iterator<Entry> it = unresolved.iterator(); it.hasNext();) {
             final Entry entry = it.next();
             if (entry.job.getStatus() == Cloudlet.Status.SUCCESS) {
-                settle(entry, entry.job.getFinishTime() <= entry.due);
-            } else if (now > entry.due) {
+                settle(entry, entry.job.getFinishTime() <= entry.due + finishTolerance);
+            } else if (now > entry.due + finishTolerance) {
                 settle(entry, false);
                 if (!entry.bound) {
                     jobsExpiredUnplaced++;

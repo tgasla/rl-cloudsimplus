@@ -175,7 +175,8 @@ class ObservationSchemaTest {
             final int base = CloudSimProxy.JOB_OBS_FEATURES * i;
             assertEquals(job.getPesNumber(), jobsObs[base], "cores of slot " + i);
             assertEquals(job.getLocation(), jobsObs[base + 1], "location of slot " + i);
-            assertEquals((int) Math.ceil(job.getLength() / (MIPS_REF * interval)), jobsObs[base + 2]);
+            assertEquals((int) Math.ceil(job.getLength()
+                    / (MIPS_REF * SimulationSettings.MI_RESOLUTION * interval)), jobsObs[base + 2]);
             assertEquals((int) Math.max(0, Math.floor((due - proxy.clock()) / interval)),
                     jobsObs[base + 3]);
             for (int s = 0; s < CloudSimProxy.SENSITIVITY_LEVELS; s++) {

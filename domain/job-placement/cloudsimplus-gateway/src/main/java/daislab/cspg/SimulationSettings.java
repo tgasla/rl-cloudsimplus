@@ -15,6 +15,13 @@ import java.util.List;
 public class SimulationSettings implements ISimulationSettings {
     static final List<String> SENSITIVITIES = List.of("tolerant", "moderate", "critical");
     static final List<String> DC_TYPES = List.of("cloud", "edge", "micro");
+    // CloudSim advances a running cloudlet by a whole number of instructions per update and
+    // drops the fraction, so recorded finishes drift late on busy DCs (seconds, per episode).
+    // Inside the simulator one MI of workload is counted as MI_RESOLUTION instructions, and
+    // every PE runs MI_RESOLUTION times as many per second: all times and ratios are unchanged.
+    static final double MI_RESOLUTION = 1000;
+    // CloudSim never schedules a DC update sooner than min_time_between_events + this.
+    static final double CLOUDSIM_UPDATE_MARGIN = 0.01;
 
     private final String mode;
     private final int numExperiments;
@@ -69,7 +76,7 @@ public class SimulationSettings implements ISimulationSettings {
         cloudletToVmMapping = ISimulationSettings.getStr(params, "cloudlet_to_vm_mapping");
         stateSpaceType = ISimulationSettings.getStr(params, "state_space_type");
         maxJobsWaiting = ISimulationSettings.getInt(params, "max_jobs_waiting");
-        mipsRef = ISimulationSettings.getDouble(params, "mips_ref");
+        mipsRef = ISimulationSettings.getDouble(params, "mips_ref") * MI_RESOLUTION;
         // Flat scalars: JSON arrays inside params do not survive SimulationFactoryBase's parsing.
         slaValue = new double[SENSITIVITIES.size()];
         slaPenalty = new double[SENSITIVITIES.size()];
@@ -89,6 +96,14 @@ public class SimulationSettings implements ISimulationSettings {
         datacenters = (List<Map<String, Object>>) params.get("datacenters");
     }
 
+
+    /**
+     * How late CloudSim can record a finish: it re-checks running work no sooner than this
+     * after the previous update. A job counts as on time within this granularity.
+     */
+    double finishTimeTolerance() {
+        return minTimeBetweenEvents + CLOUDSIM_UPDATE_MARGIN;
+    }
 
     double slaValue(final int sensitivity) {
         return slaValue[sensitivity];

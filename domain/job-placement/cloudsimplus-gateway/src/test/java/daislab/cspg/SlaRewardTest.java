@@ -46,6 +46,37 @@ class SlaRewardTest {
         return (CloudSimProxy) sim.cloudSimProxy;
     }
 
+    /** Fixture params with per-PE MI (no splitting) and optional overrides "key": value. */
+    private static String params(final String... overrides) {
+        String p = resource("env_b_params.json").replace("\"split_large_jobs\": true",
+                "\"split_large_jobs\": false");
+        for (int i = 0; i < overrides.length; i += 2) {
+            p = p.replaceFirst("\"" + overrides[i] + "\": [^,]+", "\"" + overrides[i] + "\": "
+                    + overrides[i + 1]);
+        }
+        return p;
+    }
+
+    private static String job(final int id, final int arrival, final int mi, final int cores,
+            final int location, final int sensitivity, final int deadline) {
+        return "{\"jobId\": " + id + ", \"submissionDelay\": " + arrival + ", \"mi\": " + mi
+                + ", \"cores\": " + cores + ", \"location\": " + location
+                + ", \"delaySensitivity\": " + sensitivity + ", \"deadline\": " + deadline + "}";
+    }
+
+    /** Every visible job to the DC with action index `dcAction`. */
+    private static java.util.function.Function<List<Cloudlet>, int[]> allTo(final int dcAction) {
+        return visible -> {
+            final int[] action = new int[K];
+            java.util.Arrays.fill(action, 0, visible.size(), dcAction);
+            return action;
+        };
+    }
+
+    private static final int EDGE_ACTION = 2;
+    private static final int MICRO_UCD_ACTION = 3;  // micro_dc_ucd: 3 hosts x 6 PE @ 60 MIPS
+    private static final int MICRO_DCU_ACTION = 4;  // micro_dc_dcu: 2 hosts x 6 PE @ 60 MIPS
+
     private static String oneJob(final int deadline) {
         // 1 core, 600 MI: 10 s on a 60-MIPS PE. Arrives at t=1 at micro_dc_ucd.
         return "[{\"jobId\": 0, \"submissionDelay\": 1, \"mi\": 600, \"cores\": 1, \"location\": 2,"
@@ -197,6 +228,155 @@ class SlaRewardTest {
         assertTrue(placed > 0);
         assertEquals(96, resolved);
         assertTrue(sum(steps, r -> r.getInfo().getResourceCost()) > 0, "placements are charged");
+    }
+
+    /**
+     * A zero-slack job must be met even when other jobs in its DC keep the simulator busy.
+     * CloudSim truncates executed work to whole units at every DC update and re-checks no
+     * sooner than min_time_between_events + 0.01, so recorded finishes used to lag by seconds.
+     */
+    @Test
+    void aZeroSlackJobIsMetDespiteOtherTrafficInItsDc() {
+        final StringBuilder jobs = new StringBuilder("[");
+        // 2 cores x 840 MI on a 60-MIPS PE: 14 s, bound at t=1, due 1 + 14 = 15, critical.
+        jobs.append(job(0, 1, 840, 2, 2, 2, 14));
+        final int[] traffic = {67, 131, 197, 263, 331, 397, 461};  // fractional finish times
+        for (int i = 0; i < traffic.length; i++) {
+            jobs.append(", ").append(job(i + 1, 1, traffic[i], 1, 2, 0, 40));
+        }
+        final List<SimulationStepResult> steps = runEpisode(
+                newSimulation(params(), jobs.append("]").toString()), allTo(MICRO_UCD_ACTION));
+        assertEquals(0, (int) sum(steps, r -> r.getInfo().getJobsViolated()));
+        assertEquals(1 + traffic.length, (int) sum(steps, r -> r.getInfo().getJobsMet()));
+    }
+
+    /** Late by half a timestep is late: the tolerance is the simulator's granularity only. */
+    @Test
+    void aJobFinishingHalfATimestepLateIsViolated() {
+        // 630 MI on micro (60 MIPS): 10.5 s from t=1, finishes 11.5 against due 1 + 10 = 11.
+        final List<SimulationStepResult> steps = runEpisode(
+                newSimulation(params(), "[" + job(0, 1, 630, 1, 2, 0, 10) + "]"),
+                allTo(MICRO_UCD_ACTION));
+        assertEquals((-0.5 - 0.02 * 630 / 60.0) / 1.0, sum(steps, SimulationStepResult::getReward), 1e-9);
+    }
+
+    @Test
+    void costScalesWithCoresAndTheTiersPrice() {
+        // 4 cores x 600 MI on the edge (price 0.01 per reference core-second): 0.01 * 4 * 10.
+        final List<SimulationStepResult> steps = runEpisode(
+                newSimulation(params(), "[" + job(0, 1, 600, 4, 2, 0, 40) + "]"),
+                allTo(EDGE_ACTION));
+        assertEquals(1.0 - 0.01 * 4 * 600 / 60.0, sum(steps, SimulationStepResult::getReward), 1e-9);
+    }
+
+    /** Placed jobs still running at the horizon are scored by what actually happens to them. */
+    @Test
+    void theHorizonDrainScoresPlacedJobsByTheirRealFinish() {
+        // 1200 MI on micro: runs 1 -> 21, due 41, but the horizon is step 5.
+        final List<SimulationStepResult> steps = runEpisode(
+                newSimulation(params("max_episode_length", "5"), "[" + job(0, 1, 1200, 1, 2, 0, 40) + "]"),
+                allTo(MICRO_UCD_ACTION));
+        assertEquals(5, steps.size());
+        assertEquals(1, steps.get(4).getInfo().getJobsMet());
+        assertEquals(1.0 - 0.02 * 1200 / 60.0, sum(steps, SimulationStepResult::getReward), 1e-9);
+    }
+
+    @Test
+    void aJobArrivingAtOrAfterTheHorizonIsRejected() {
+        final WrappedSimulation sim = (WrappedSimulation) new SimulationFactory().create(
+                params("max_episode_length", "5"), "[" + job(0, 5, 600, 1, 2, 0, 40) + "]");
+        final IllegalArgumentException error =
+                org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> sim.reset(0));
+        assertTrue(error.getMessage().contains("horizon"), error.getMessage());
+    }
+
+    /** A full DC stays usable: the job queues on the VM and starts when PEs free up. */
+    @Test
+    void jobsBeyondADcsFreePesQueueThere() {
+        final String jobs = "[" + job(0, 1, 600, 6, 3, 0, 40) + ", " + job(1, 1, 600, 6, 3, 0, 40)
+                + ", " + job(2, 1, 600, 6, 3, 0, 40) + "]";          // three 6-PE jobs, two hosts
+        final WrappedSimulation sim = newSimulation(params(), jobs);
+        final List<SimulationStepResult> steps = runEpisode(sim, allTo(MICRO_DCU_ACTION));
+        assertEquals(3, (int) sum(steps, r -> r.getInfo().getJobsPlaced()));
+        final List<Double> starts = proxy(sim).getSimulationCloudletList().stream()
+                .map(Cloudlet::getStartTime).sorted().toList();
+        assertEquals(1.0, starts.get(1), 0.2);
+        assertTrue(starts.get(2) >= 11.0 - 0.2, "the third job waits for a host: " + starts);
+        assertEquals(3, (int) sum(steps, r -> r.getInfo().getJobsMet()));
+    }
+
+    /** With gamma = 1 the shaping terms telescope to Phi(end) - Phi(start) = 0. */
+    @Test
+    void shapingTelescopesToZeroOverAnEpisodeAtGammaOne() {
+        // The fixture as is (split_large_jobs on): enough jobs can still meet their due time
+        // that the potential is not 0 everywhere.
+        final String shaped = resource("env_b_params.json")
+                .replace("\"reward_shaping\": false", "\"reward_shaping\": true")
+                .replace("\"reward_shaping_gamma\": 0.99", "\"reward_shaping_gamma\": 1.0");
+        final List<SimulationStepResult> steps = runEpisode(
+                newSimulation(shaped, resource("dense_jobs_b.json")), SlaRewardTest::allToCloud);
+        assertEquals(sum(steps, r -> r.getInfo().getUnshapedReward()),
+                sum(steps, SimulationStepResult::getReward), 1e-9);
+        assertTrue(steps.stream().mapToDouble(r -> r.getInfo().getPotential()).max().orElse(0) > 0);
+    }
+
+    @Test
+    void theEarliestMostCriticalHeuristicIsScoredByTheLedgerToo() {
+        final String p = resource("env_b_params.json").replace(
+                "\"cloudlet_to_dc_mapping\": \"rl\"",
+                "\"cloudlet_to_dc_mapping\": \"earliest-most-critical-to-nearest-dc\"");
+        final List<SimulationStepResult> steps = runEpisode(
+                newSimulation(p, resource("dense_jobs_b.json")), SlaRewardTest::noOp);
+        assertTrue(sum(steps, r -> r.getInfo().getJobsPlaced()) > 0);
+        assertTrue(sum(steps, r -> r.getInfo().getResourceCost()) > 0);
+        assertEquals(96, (int) sum(steps, r -> r.getInfo().getJobsMet() + r.getInfo().getJobsViolated()));
+    }
+
+    /**
+     * The shaping potential's completion-time replay must reproduce CloudSim's scheduler,
+     * including a small job starting ahead of a bigger one queued before it (backfilling).
+     */
+    @Test
+    void completionTimeReplayMatchesTheSimulator() {
+        final int[] cores = {6, 6, 5, 6, 1, 2, 6, 3, 1, 4, 6, 2};
+        final StringBuilder jobs = new StringBuilder("[");
+        for (int i = 0; i < cores.length; i++) {
+            jobs.append(i == 0 ? "" : ", ").append(job(i, 1, 300 + 97 * i, cores[i], 2, 0, 140));
+        }
+        final WrappedSimulation sim = newSimulation(params(), jobs.append("]").toString());
+        final CloudSimProxy proxy = proxy(sim);
+        sim.step(new int[K]);                                          // jobs arrive at t=1
+        sim.step(allTo(MICRO_UCD_ACTION).apply(proxy.getVisibleJobs(proxy.calculateTargetTime())));
+
+        final java.util.Map<Cloudlet, Double> predicted = sim.estimatePlacedCompletionTimes(proxy.clock());
+        final java.util.Map<Cloudlet, Integer> queuePosition = new java.util.HashMap<>();
+        for (org.cloudsimplus.vms.Vm vm : proxy.getBroker().getVmExecList()) {
+            final List<org.cloudsimplus.cloudlets.CloudletExecution> waiting =
+                    vm.getCloudletScheduler().getCloudletWaitingList();
+            for (int i = 0; i < waiting.size(); i++) {
+                queuePosition.put(waiting.get(i).getCloudlet(), i);
+            }
+        }
+        assertEquals(cores.length, predicted.size());
+        SimulationStepResult result;
+        do {
+            result = sim.step(new int[K]);
+        } while (!result.isTerminated());
+
+        boolean backfilled = false;
+        for (Cloudlet a : queuePosition.keySet()) {
+            for (Cloudlet b : queuePosition.keySet()) {
+                backfilled |= a.getVm() == b.getVm() && queuePosition.get(a) < queuePosition.get(b)
+                        && b.getStartTime() < a.getStartTime();
+            }
+        }
+        assertTrue(backfilled, "the scenario must exercise backfilling");
+        // CloudSim records each finish up to 0.11 s late and a queued job starts after that
+        // recorded finish, so the gap grows along a queue chain; a FIFO replay would instead be
+        // off by a whole job's runtime (>= 5 s here) for every backfilled job.
+        for (java.util.Map.Entry<Cloudlet, Double> e : predicted.entrySet()) {
+            assertEquals(e.getKey().getFinishTime(), e.getValue(), 1.0, "job " + e.getKey().getId());
+        }
     }
 
     @SuppressWarnings("unused")
