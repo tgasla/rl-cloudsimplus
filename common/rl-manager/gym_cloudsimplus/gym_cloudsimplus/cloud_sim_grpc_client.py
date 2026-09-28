@@ -29,6 +29,8 @@ def _detect_rl_problem(params: dict) -> str:
 from .protos.unified import cloudsimplus_pb2 as pb2
 from .protos.unified import cloudsimplus_pb2_grpc as pb2_grpc
 
+MAX_MESSAGE_BYTES = 64 * 1024 * 1024  # must match Java GrpcServer.MAX_MESSAGE_BYTES
+
 
 class CloudSimGrpcClient:
     """Wrapper around CloudSimServiceStub for CloudSim Plus gRPC communication.
@@ -39,7 +41,11 @@ class CloudSimGrpcClient:
     """
 
     def __init__(self, host="localhost", port=50051):
-        self.channel = grpc.insecure_channel(f"{host}:{port}")
+        # A reset carries a whole episode's jobs (~0.5 MB for the largest RING-N members).
+        self.channel = grpc.insecure_channel(f"{host}:{port}", options=[
+            ("grpc.max_send_message_length", MAX_MESSAGE_BYTES),
+            ("grpc.max_receive_message_length", MAX_MESSAGE_BYTES),
+        ])
         self.stub = pb2_grpc.CloudSimServiceStub(self.channel)
 
     def create_simulation(self, params_json: str, jobs_json: str, rl_problem: str = None) -> str:

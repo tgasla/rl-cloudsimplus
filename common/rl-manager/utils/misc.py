@@ -18,6 +18,7 @@ from stable_baselines3.common.policies import ActorCriticPolicy
 from callbacks.save_on_best_training_reward_callback import (
     SaveOnBestTrainingRewardCallback,
 )
+from utils.levels import LevelSampler, LevelSource, SENSITIVITY_LEVELS
 from utils.rl_algorithm_support_flags import (
     ALGORITHMS_WITH_ENT_COEF,
     ALGORITHMS_WITH_ACTION_NOISE,
@@ -141,7 +142,7 @@ def dict_from_config(experiment_id, config):
 
 # ─── Datacenter translation helpers (for euromlsys job_placement) ───────────
 
-_sensitivity_mapping = {"tolerant": 0, "moderate": 1, "critical": 2}
+_sensitivity_mapping = SENSITIVITY_LEVELS
 
 
 def _get_sensitivity_level(sensitivity_str: str) -> int:
@@ -496,10 +497,22 @@ def _create_grpc_env_for_rank(rank, params, jobs_json, base_port=50051):
     rl_problem = _detect_rl_problem(params)
     if rl_problem == "job_placement":
         env = JobPlacementEnv(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
+        if params.get("benchmark_member"):
+            env.set_level_stream(*level_stream(params, rank))
     else:
         env = VmManagementEnv(params=params, jobs_as_json=jobs_json, host="localhost", port=port)
     env._java_proc = proc
     return env
+
+
+def level_stream(params: dict, rank: int) -> tuple[LevelSource, LevelSampler]:
+    """Where worker `rank` gets its per-episode instances: the RING-N member's levels, drawn
+    from params["level_split"] (train: a random level from the worker's own stream seeded by
+    (seed, rank); val/test/lockbox: the worker's share of the split, round-robin)."""
+    source = LevelSource(params["ring_manifest"], params["benchmark_member"],
+                         [dc["name"] for dc in params["datacenters"]])
+    sampler = LevelSampler(params["level_split"], rank, params.get("num_cpu", 1), params["seed"])
+    return source, sampler
 
 
 def _make_grpc_env_for_subproc():

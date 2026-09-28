@@ -137,6 +137,11 @@ class JobPlacementEnv(CloudSimBaseEnv):
         self._last_jobs_obs = np.zeros(self.job_obs_length, dtype=np.int32)
         self._last_reach = np.zeros((self.max_jobs_waiting, self.max_datacenters), dtype=bool)
 
+        # ── Per-episode instances (set_level_stream); None replays the creation jobs ──
+        self._levels = None
+        self._level_sampler = None
+        self._level_id = None
+
         # ── Permutation stress-test flag ───────────────────────────────────────
         # When True, DC host groups are shuffled randomly at each observation.
         # Permutation-invariant extractors (type_stratified, hybrid, spane,
@@ -165,6 +170,21 @@ class JobPlacementEnv(CloudSimBaseEnv):
         self._sim_id = self._client.create_simulation(
             json.dumps(params), jobs_as_json
         )
+
+    def set_level_stream(self, levels, sampler) -> None:
+        """Play a new problem instance at every reset: `sampler.next()` picks a level id and
+        `levels.jobs_json(level_id)` its jobs. SB3's auto-reset passes no options, so the
+        environment has to own the stream rather than have the caller ship jobs."""
+        self._levels = levels
+        self._level_sampler = sampler
+
+    def reset(self, seed=None, options=None):
+        options = dict(options or {})
+        self._level_id = None
+        if "jobs_json" not in options and self._level_sampler is not None:
+            self._level_id = self._level_sampler.next()
+            options["jobs_json"] = self._levels.jobs_json(self._level_id)
+        return super().reset(seed=seed, options=options)
 
     # ── CloudSimBaseEnv abstract methods ───────────────────────────────────────
 
@@ -275,4 +295,6 @@ class JobPlacementEnv(CloudSimBaseEnv):
 
     def _parse_step_info(self, raw_info: dict) -> dict:
         """Convert raw gRPC step info to job placement info dict."""
-        return {key: raw_info.get(key) for key in self._STEP_INFO_KEYS}
+        info = {key: raw_info.get(key) for key in self._STEP_INFO_KEYS}
+        info["level_id"] = self._level_id
+        return info

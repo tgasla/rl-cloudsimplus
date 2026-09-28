@@ -95,3 +95,94 @@ def test_job_location_column_drives_reach_and_placement_uses_free_pes(live_env):
     in_dc = after[:, 0] == origin_action
     assert before[in_dc, 3].sum() - after[in_dc, 3].sum() == 2
     assert after[in_dc, 4].sum() > 0
+
+
+def _ring_member(member_id):
+    from utils import levels
+    from utils.misc import _translate_connect_to_names_to_idx
+
+    ring = os.path.join(REPO, "common", "topologies", "ring")
+    topology = levels.load_topology(os.path.join(ring, f"{member_id}.yml"))
+    for dc in topology:
+        dc["connect_to"] = levels._as_list(dc.get("connect_to", []))
+        dc["hosts"] = levels._as_list(dc["hosts"])
+        for host in dc["hosts"]:
+            host["vms"] = levels._as_list(host["vms"])
+    return _translate_connect_to_names_to_idx(topology), os.path.join(ring, "manifest.json")
+
+
+@pytest.fixture
+def level_env(gateway_port):
+    from gym_cloudsimplus.envs.job_placement import JobPlacementEnv
+    from utils.misc import level_stream
+
+    def make(member_id, split="train", rank=0):
+        datacenters, manifest = _ring_member(member_id)
+        params = json.load(open(os.path.join(
+            REPO, "domain", "job-placement", "cloudsimplus-gateway", "src", "test", "resources",
+            "env_b_params.json")))
+        params.update(SPEC_SHAPE, datacenters=datacenters, split_large_jobs=False, seed=3,
+                      max_episode_length=200, benchmark_member=member_id,
+                      ring_manifest=manifest, level_split=split, num_cpu=16)
+        env = JobPlacementEnv(params, jobs_as_json="[]", port=gateway_port)
+        env.set_level_stream(*level_stream(params, rank))
+        made.append(env)
+        return env
+
+    made = []
+    yield make
+    for env in made:
+        env.close()
+
+
+def _episode(env, policy):
+    """Unshaped return and level id of one episode from a fresh reset."""
+    obs, info = env.reset()
+    level, total, done = info["level_id"], 0.0, False
+    while not done:
+        obs, _, terminated, truncated, info = env.step(policy(env))
+        total += info["unshaped_reward"]
+        done = terminated or truncated
+    return level, total
+
+
+def _all_to_cloud(env):
+    mask = np.array(env.action_masks()).reshape(env.max_jobs_waiting, env.max_datacenters)
+    return np.where(mask[:, 1], 1, 0)
+
+
+def test_each_reset_plays_a_new_level_and_a_level_replays_exactly(level_env):
+    env = level_env("S")
+    first, first_return = _episode(env, _all_to_cloud)
+    second, second_return = _episode(env, _all_to_cloud)
+    assert first != second and first_return != second_return
+
+    replay = level_env("S")
+    replay._level_sampler.next = lambda: first
+    assert _episode(replay, _all_to_cloud) == (first, first_return)
+
+
+def test_sb3_auto_reset_moves_on_to_the_next_level(level_env):
+    from stable_baselines3.common.vec_env import DummyVecEnv
+
+    env = level_env("S")
+    vec = DummyVecEnv([lambda: env])
+    vec.reset()
+    start = vec.reset_infos[0]["level_id"]
+    done = [False]
+    while not done[0]:
+        _, _, done, infos = vec.step(np.array([np.zeros(env.max_jobs_waiting, dtype=int)]))
+    assert infos[0]["level_id"] == start          # the finished episode's level
+    assert vec.reset_infos[0]["level_id"] != start
+
+
+def test_largest_member_resets_fast_enough(level_env):
+    env = level_env("C1-N19", split="test")
+    payload = env._levels.jobs_json(env._level_sampler.next())
+    env.reset()                                    # warm the JVM and the cache
+    start = time.perf_counter()
+    env.reset(options={"jobs_json": payload})
+    elapsed = time.perf_counter() - start
+    n_jobs = payload.count('"jobId"')
+    print(f"C1-N19: {n_jobs} jobs, {len(payload) / 1024:.0f} KB, reset {1000 * elapsed:.1f} ms")
+    assert n_jobs > 2500 and elapsed < 0.25

@@ -13,6 +13,8 @@ Validate a manifest (exits 1 if any member fails a check):
     python3 common/rl-manager/utils/levels.py --validate --manifest common/topologies/ring/manifest.json
 """
 import argparse
+import functools
+import itertools
 import json
 import math
 import os
@@ -175,6 +177,61 @@ def sample_train_level(rng: np.random.Generator) -> int:
 def eval_levels(split: str, rank: int, num_workers: int) -> list[int]:
     """The ids worker `rank` of `num_workers` enumerates for an eval split."""
     return list(EVAL_SPLITS[split][rank::num_workers])
+
+
+# ─── Per-episode instances ──────────────────────────────────────────────────
+
+# The simulator's encoding of delay sensitivity (Java: 0 tolerant, 1 moderate, 2 critical).
+SENSITIVITY_LEVELS = {"tolerant": 0, "moderate": 1, "critical": 2}
+
+
+class LevelSource:
+    """The jobs of one member's levels, in the simulator's encoding, as a jobs_json payload.
+
+    Locations become indices into `datacenter_names`, the topology order the environment was
+    built with, and sensitivities become levels. Eval splits revisit the same few levels, so
+    the last `cache_size` payloads are kept.
+    """
+
+    def __init__(self, manifest_path: str, member_id: str, datacenter_names: list[str],
+                 anchor_path: str = REPO_ANCHOR_PATH, cache_size: int = 64):
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        with open(anchor_path) as f:
+            self._anchor = json.load(f)
+        self._member = {m["id"]: m for m in manifest["members"]}[member_id]
+        missing = sorted(set(self._member["origins"]) - set(datacenter_names))
+        if missing:
+            raise ValueError(f"member {member_id} has origins {missing} that are not in the topology")
+        self._lam = resolve_lambda(manifest, member_id, self._anchor)
+        self._index = {name: i for i, name in enumerate(datacenter_names)}
+        self.jobs_json = functools.lru_cache(maxsize=cache_size)(self._jobs_json)
+
+    def _jobs_json(self, level_id: int) -> str:
+        jobs = generate_level(self._member, level_id, self._anchor, self._lam)
+        for job in jobs:
+            job["location"] = self._index[job["location"]]
+            job["delaySensitivity"] = SENSITIVITY_LEVELS[job["delaySensitivity"]]
+        return json.dumps(jobs, separators=(",", ":"))
+
+
+class LevelSampler:
+    """Level ids for one worker: a random train level from the worker's own stream, or the
+    worker's share of an eval split in a fixed round-robin order."""
+
+    def __init__(self, split: str, rank: int, num_workers: int, seed: int):
+        if split == "train":
+            rng = np.random.default_rng([seed, rank])
+            self._next = lambda: sample_train_level(rng)
+        else:
+            ids = eval_levels(split, rank, num_workers)
+            if not ids:
+                raise ValueError(f"worker {rank} of {num_workers} gets no {split} level")
+            cycle = itertools.cycle(ids)
+            self._next = lambda: next(cycle)
+
+    def next(self) -> int:
+        return self._next()
 
 
 # ─── Validation ─────────────────────────────────────────────────────────────

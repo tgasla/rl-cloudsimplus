@@ -48,6 +48,10 @@ common:
   max_jobs_waiting: 32  # jobs decided per timestep (head by due time)
   max_job_pes: 8
   mips_ref: 60          # PE speed that defines one unit of nominal job runtime
+  # RING-N experiments set benchmark_member (a manifest id, e.g. S) and include its topology
+  # (datacenters: !include topologies/ring/S.yml); every episode then plays a fresh level.
+  ring_manifest: topologies/ring/manifest.json
+  level_split: train    # train | val | test | lockbox
   max_job_delay_sensitivity_levels: 3
   max_job_deadline: 20
   n_rollout_steps: 128

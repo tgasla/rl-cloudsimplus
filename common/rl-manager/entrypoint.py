@@ -48,9 +48,13 @@ def main():
 
     params = dict_from_config(experiment_id, CONFIG_FILE)
 
-    # Load job trace once, pass to train/transfer/test
-    job_trace_path = os.path.join("traces", params["job_trace_filename"])
-    jobs = csv_to_cloudlet_descriptor(job_trace_path)
+    # Load job trace once, pass to train/transfer/test. A RING-N experiment
+    # (benchmark_member) has no trace: every episode generates its own level.
+    if params.get("benchmark_member"):
+        jobs = []
+    else:
+        job_trace_path = os.path.join("traces", params["job_trace_filename"])
+        jobs = csv_to_cloudlet_descriptor(job_trace_path)
 
     params.update(num_experiments=num_experiments)
 

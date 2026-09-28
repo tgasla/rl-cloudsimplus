@@ -14,11 +14,15 @@ public class GrpcServer {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(GrpcServer.class.getSimpleName());
 
+    // A reset can carry a whole episode's jobs; must match Python's MAX_MESSAGE_BYTES.
+    static final int MAX_MESSAGE_BYTES = 64 * 1024 * 1024;
+
     private final Server server;
 
     public GrpcServer(int port, BindableService service) {
         server = NettyServerBuilder
                 .forPort(port)
+                .maxInboundMessageSize(MAX_MESSAGE_BYTES)
                 .addService(service)
                 .build();
     }

@@ -318,3 +318,33 @@ def test_validate_cli_finds_the_anchor_in_the_container_layout(tmp_path):
     )
     assert "Traceback" not in result.stderr, result.stderr
     assert "12 members pass" in result.stdout.splitlines()[-1]
+
+
+# ─── Per-episode instances ──────────────────────────────────────────────────
+
+def test_train_workers_draw_distinct_levels_and_eval_workers_partition_the_split():
+    first = [levels.LevelSampler("train", rank, 16, seed=7).next() for rank in range(16)]
+    assert len(set(first)) == 16
+    assert all(level in levels.TRAIN_LEVELS for level in first)
+    assert first == [levels.LevelSampler("train", rank, 16, seed=7).next() for rank in range(16)]
+    assert first != [levels.LevelSampler("train", rank, 16, seed=8).next() for rank in range(16)]
+
+    shares = [levels.eval_levels("val", rank, 16) for rank in range(16)]
+    assert sorted(i for share in shares for i in share) == list(levels.VAL_LEVELS)
+    sampler = levels.LevelSampler("val", 3, 16, seed=7)
+    assert [sampler.next() for _ in range(4)] == shares[3] * 2
+
+
+def test_level_source_emits_the_simulator_encoding(ring_manifest):
+    topology = levels.load_topology(os.path.join(os.path.dirname(RING_MANIFEST), "S.yml"))
+    names = [dc["name"] for dc in topology]
+    source = levels.LevelSource(RING_MANIFEST, "S", names)
+    jobs = json.loads(source.jobs_json(5))
+    member = {m["id"]: m for m in ring_manifest["members"]}["S"]
+    raw = levels.generate_level(member, 5, json.load(open(levels.REPO_ANCHOR_PATH)),
+                                levels.resolve_lambda(ring_manifest, "S", json.load(open(levels.REPO_ANCHOR_PATH))))
+    assert [j["location"] for j in jobs] == [names.index(j["location"]) for j in raw]
+    assert [j["delaySensitivity"] for j in jobs] == [levels.SENSITIVITY_LEVELS[j["delaySensitivity"]] for j in raw]
+    assert source.jobs_json(5) is source.jobs_json(5)  # cached
+    with pytest.raises(ValueError, match="not in the topology"):
+        levels.LevelSource(RING_MANIFEST, "C1-N19", names)
