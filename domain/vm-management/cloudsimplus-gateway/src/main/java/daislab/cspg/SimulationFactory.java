@@ -28,7 +28,7 @@ public class SimulationFactory extends SimulationFactoryBase {
     }
 
     @Override
-    protected IWrappedSimulation buildSimulation(
+    protected WrappedSimulationBase buildSimulation(
             final String id, final ISimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
         return new WrappedSimulation(id, settings, jobs);

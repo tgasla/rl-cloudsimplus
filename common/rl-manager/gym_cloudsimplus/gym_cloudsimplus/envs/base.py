@@ -99,7 +99,9 @@ class CloudSimBaseEnv(gym.Env, ABC):
         self._current_step = 0
         if seed is None:
             seed = 0
-        raw_result = self._client.reset(self._sim_id, seed, rl_problem=self._rl_problem)
+        jobs_json = (options or {}).get("jobs_json", "")
+        raw_result = self._client.reset(self._sim_id, seed, rl_problem=self._rl_problem,
+                                        jobs_json=jobs_json)
         obs = self._get_observation(raw_result.get("observation", {}))
         raw_info = raw_result.get("info", {})
         info = self._parse_step_info(raw_info)

@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ""))
 
 import importlib
 from utils.misc import dict_from_config, _check_datacenters_unique, _register_yaml_constructors
+from utils.misc import _check_datacenter_amounts_are_one
 from utils.misc import _translate_connect_to_names_to_idx
 from utils.misc import _translate_job_location_names_to_idx
 from utils.misc import _translate_sensitivity_str_to_levels
@@ -68,6 +69,7 @@ def main():
     if domain == "job-placement" and "datacenters" in params:
         datacenters = [dc.to_dict() for dc in params["datacenters"]]
         _check_datacenters_unique(datacenters)
+        _check_datacenter_amounts_are_one(datacenters)
         datacenters = _translate_connect_to_names_to_idx(datacenters)
         params["datacenters"] = datacenters
         jobs = _translate_job_location_names_to_idx(jobs, params["datacenters"])

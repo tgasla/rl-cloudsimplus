@@ -53,7 +53,7 @@ public abstract class CloudSimGrpcServiceBase extends CloudSimServiceGrpc.CloudS
         LOGGER.info("gRPC reset called for {}", simId);
         try {
             IWrappedSimulation simulation = delegate.getValidSimulation(simId);
-            SimulationResetResult javaResult = simulation.reset(request.getSeed());
+            SimulationResetResult javaResult = simulation.reset(request.getSeed(), request.getJobsJson());
             responseObserver.onNext(ResetResult.newBuilder()
                     .setObservation(convertObservation(javaResult.getObservation()))
                     .setInfo(convertStepInfo(javaResult.getInfo()))

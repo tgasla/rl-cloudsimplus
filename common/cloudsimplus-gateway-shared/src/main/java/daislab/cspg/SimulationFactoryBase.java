@@ -46,7 +46,7 @@ public abstract class SimulationFactoryBase {
 
     /** Deserializes jobs JSON using the domain-specific descriptor type. */
     protected List<CloudletDescriptor> loadJobsFromJson(final String jobsAsJson) {
-        LOGGER.info(jobsAsJson);
+        LOGGER.debug(jobsAsJson);
         List<CloudletDescriptor> result = gson.fromJson(jobsAsJson, getCloudletDescriptorsType());
         LOGGER.info("Deserialized {} jobs", result.size());
         return result;
@@ -84,19 +84,28 @@ public abstract class SimulationFactoryBase {
     protected abstract ISimulationSettings buildSettings(Map<String, Object> params);
 
     /** Constructs the domain-specific WrappedSimulation instance. */
-    protected abstract IWrappedSimulation buildSimulation(
+    protected abstract WrappedSimulationBase buildSimulation(
             String id, ISimulationSettings settings, List<CloudletDescriptor> jobs);
+
+    /** Parses and (if configured) splits a jobs JSON string. Shared by create() and reset(). */
+    private List<CloudletDescriptor> prepareJobs(final String jobsAsJson,
+            final ISimulationSettings settings) {
+        List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
+        if (settings.isSplitLargeJobs()) {
+            LOGGER.info("Splitting large jobs");
+            jobs = splitLargeJobs(jobs, settings.getMaxJobPes());
+        }
+        return new ArrayList<>(jobs);
+    }
 
     public synchronized IWrappedSimulation create(
             final String paramsAsJson, final String jobsAsJson) {
         String identifier = "Sim" + simulationsRunning++;
         ISimulationSettings settings = buildSettings(parseParamsJson(paramsAsJson));
         LOGGER.info("Simulation settings dump:\n{}", settings);
-        List<CloudletDescriptor> jobs = loadJobsFromJson(jobsAsJson);
-        if (settings.isSplitLargeJobs()) {
-            LOGGER.info("Splitting large jobs");
-            jobs = splitLargeJobs(jobs, settings.getMaxJobPes());
-        }
-        return buildSimulation(identifier, settings, new ArrayList<>(jobs));
+        WrappedSimulationBase simulation =
+                buildSimulation(identifier, settings, prepareJobs(jobsAsJson, settings));
+        simulation.setJobsLoader(json -> prepareJobs(json, settings));
+        return simulation;
     }
 }

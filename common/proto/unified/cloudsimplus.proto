@@ -84,6 +84,9 @@ message CreateResponse {
 message ResetRequest {
   string sim_id = 1;
   int64 seed = 2;
+  // Optional job list for this episode, same format as CreateRequest.jobs_json.
+  // Empty = replay the jobs the simulation was created with.
+  string jobs_json = 3;
 }
 
 message StepRequest {

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -191,8 +192,18 @@ public abstract class CloudSimProxyBase implements ICloudSimProxy {
         });
     }
 
+    /**
+     * All queued jobs that have arrived before targetTime, ordered by arrival then id.
+     *
+     * A PriorityQueue's stream iterates its backing heap array, which is only partially
+     * ordered, so takeWhile over it stops at the first not-yet-arrived job in heap order and
+     * silently drops eligible jobs behind it. Filter and sort explicitly instead.
+     */
     List<Cloudlet> getJobsToSubmitAtThisTimestep(final double targetTime) {
-        return jobQueue.stream().takeWhile(cloudlet -> cloudlet.getSubmissionDelay() < targetTime)
+        return jobQueue.stream()
+                .filter(cloudlet -> cloudlet.getSubmissionDelay() < targetTime)
+                .sorted(Comparator.comparingDouble(Cloudlet::getSubmissionDelay)
+                        .thenComparingLong(Cloudlet::getId))
                 .collect(Collectors.toList());
     }
 

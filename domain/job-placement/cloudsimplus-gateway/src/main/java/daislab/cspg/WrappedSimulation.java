@@ -63,9 +63,9 @@ public class WrappedSimulation extends WrappedSimulationBase {
     // ============== Override reset() to reset episode counters ==============
 
     @Override
-    public SimulationResetResult reset(final long seed) {
+    public SimulationResetResult reset(final long seed, final String jobsJson) {
         this.currentEpisodeReward = 0;
-        return super.reset(seed);
+        return super.reset(seed, jobsJson);
     }
 
     // ============== Override step() for jp-specific action/reward flow ==============
@@ -104,7 +104,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
         if (terminated || truncated) {
             LOGGER.info("Simulation ended. Jobs finished: {}/{}",
                     proxy.getBroker().getCloudletFinishedList().size(),
-                    initialJobsDescriptors.size());
+                    proxy.getSimulationCloudletList().size());
             if (currentEpisodeReward > bestEpisodeReward) {
                 bestEpisodeReward = currentEpisodeReward;
                 LOGGER.info("New best episode reward: {}", bestEpisodeReward);

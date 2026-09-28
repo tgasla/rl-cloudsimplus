@@ -161,6 +161,14 @@ def _check_datacenters_unique(datacenters: list[dict]) -> None:
         raise ValueError("Datacenters must have unique names.")
 
 
+def _check_datacenter_amounts_are_one(datacenters: list[dict]) -> None:
+    # Python indexes datacenters by YAML position but Java expands `amount` into several DCs,
+    # which would desynchronise the action mask from the simulator.
+    multi = [dc["name"] for dc in datacenters if int(dc.get("amount", 1)) != 1]
+    if multi:
+        raise ValueError(f"datacenter amount must be 1 in job-placement, got >1 for {multi}")
+
+
 def _translate_connect_to_names_to_idx(datacenters: list[dict]) -> list[dict]:
     for dc in datacenters:
         connect_to_idx = [_get_dc_idx_by_name(c, datacenters) for c in dc.get("connect_to", [])]

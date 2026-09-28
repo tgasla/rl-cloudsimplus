@@ -116,6 +116,14 @@ class JobPlacementEnv(CloudSimBaseEnv):
         # action 'action' (1-based, 0 = no-op).
         # Action k corresponds to datacenters[k-1]. Built once from connect_to
         # after name→index translation in entrypoint.py.
+        # Action 0 is the no-op, so only max_datacenters - 1 real DCs are addressable.
+        # A bigger topology would have its last DCs silently unmaskable (dead).
+        n_dcs = len(params.get("datacenters", []))
+        if n_dcs > self.max_datacenters - 1:
+            raise ValueError(
+                f"topology has {n_dcs} datacenters but max_datacenters={self.max_datacenters} "
+                f"addresses only {self.max_datacenters - 1} (action 0 is the no-op)"
+            )
         self._location_valid_dc_mask = self._build_location_mask(
             params.get("datacenters", [])
         )

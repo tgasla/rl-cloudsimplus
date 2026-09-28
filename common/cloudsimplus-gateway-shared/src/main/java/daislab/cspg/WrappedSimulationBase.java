@@ -1,6 +1,7 @@
 package daislab.cspg;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.cloudsimplus.cloudlets.Cloudlet;
@@ -31,6 +32,11 @@ public abstract class WrappedSimulationBase implements IWrappedSimulation {
     protected ICloudSimProxy cloudSimProxy;
     protected int currentStep;
 
+    /** Parses a jobs JSON string exactly as createSimulation does (including job splitting). */
+    private Function<String, List<CloudletDescriptor>> jobsLoader = json -> {
+        throw new IllegalStateException("No jobs loader set; build simulations via SimulationFactoryBase");
+    };
+
     protected WrappedSimulationBase(
             final String identifier,
             final ISimulationSettings settings,
@@ -58,15 +64,22 @@ public abstract class WrappedSimulationBase implements IWrappedSimulation {
         }
     }
 
+    void setJobsLoader(final Function<String, List<CloudletDescriptor>> jobsLoader) {
+        this.jobsLoader = jobsLoader;
+    }
+
     @Override
-    public SimulationResetResult reset(final long seed) {
-        // seed is ignored (used only for reproducibility in distributed training)
-        LOGGER.info("Reset initiated");
-        LOGGER.info("job count: {}", initialJobsDescriptors.size());
+    public SimulationResetResult reset(final long seed, final String jobsJson) {
+        // The simulator is deterministic given its job list, so the seed is not used here.
+        // Episode-to-episode variety comes from the caller shipping a different job list.
+        final List<CloudletDescriptor> episodeJobs = (jobsJson == null || jobsJson.isEmpty())
+                ? initialJobsDescriptors
+                : jobsLoader.apply(jobsJson);
+        LOGGER.info("Reset initiated with {} jobs", episodeJobs.size());
 
         currentStep = 0;
 
-        List<Cloudlet> cloudlets = initialJobsDescriptors.stream()
+        List<Cloudlet> cloudlets = episodeJobs.stream()
                 .map(CloudletDescriptor::toCloudlet).collect(Collectors.toList());
         cloudSimProxy = createCloudSimProxy(cloudlets);
 

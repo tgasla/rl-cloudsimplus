@@ -38,6 +38,10 @@ def csv_to_cloudlet_descriptor(filename):
         # Handle optional delay_sensitivity field
         if "delay_sensitivity" in df.columns:
             cloudlet["delaySensitivity"] = df.delay_sensitivity[i]
+        # Handle optional deadline field. Without this the Java descriptor's deadline
+        # defaults to 0 for every job.
+        if "deadline" in df.columns:
+            cloudlet["deadline"] = int(df.deadline[i])
         jobs.append(cloudlet)
     return jobs
 

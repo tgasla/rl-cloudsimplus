@@ -85,9 +85,14 @@ class CloudSimGrpcClient:
             "secondary_observation": list(obs.secondary_observation),
         }
 
-    def reset(self, sim_id: str, seed: int = None, rl_problem: str = None) -> dict:
-        """Reset simulation, returns observation dict."""
-        request = pb2.ResetRequest(sim_id=sim_id, seed=seed if seed else 0)
+    def reset(self, sim_id: str, seed: int = None, rl_problem: str = None,
+              jobs_json: str = "") -> dict:
+        """Reset simulation, returns observation dict.
+
+        jobs_json, when non-empty, replaces the episode's job list (same format as
+        create_simulation); empty replays the jobs the simulation was created with.
+        """
+        request = pb2.ResetRequest(sim_id=sim_id, seed=seed if seed else 0, jobs_json=jobs_json)
         response = self.stub.reset(request)
         return {
             "observation": self._obs_to_dict(response.observation),
