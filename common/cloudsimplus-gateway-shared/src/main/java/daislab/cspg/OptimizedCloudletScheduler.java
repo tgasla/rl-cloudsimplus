@@ -49,6 +49,16 @@ class OptimizedCloudletScheduler extends CloudletSchedulerSpaceShared {
         return nextSimulationTime;
     }
 
+    /**
+     * Space-shared scheduling only runs a cloudlet when its PEs are free, so the running
+     * cloudlets never hold more PEs than the VM and each gets a full PE. The parent sums the
+     * running cloudlets' PEs on every call to find that out, once per cloudlet per update.
+     */
+    @Override
+    public double getAvailableMipsByPe() {
+        return getCurrentMipsShare().mips();
+    }
+
     private List<?> getModifiableCloudletReturnedList()
             throws IllegalAccessException, NoSuchFieldException {
 

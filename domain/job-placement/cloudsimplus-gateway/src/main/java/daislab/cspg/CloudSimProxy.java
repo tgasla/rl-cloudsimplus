@@ -263,9 +263,13 @@ public class CloudSimProxy extends CloudSimProxyBase {
         jobQueue.removeAll(jobs);
     }
 
+    /** Forgets jobs that have reached their VM; call after the clock advances. */
+    void pruneInFlight() {
+        inFlight.keySet().removeIf(c -> c.getStatus() != Cloudlet.Status.INSTANTIATED);
+    }
+
     /** Jobs submitted to vm that have not reached it yet, with their arrival time at it. */
     Map<Cloudlet, Double> getInFlight(final Vm vm) {
-        inFlight.keySet().removeIf(c -> c.getStatus() != Cloudlet.Status.INSTANTIATED);
         final Map<Cloudlet, Double> toVm = new LinkedHashMap<>();
         inFlight.forEach((cloudlet, arrival) -> {
             if (cloudlet.getVm() == vm) {

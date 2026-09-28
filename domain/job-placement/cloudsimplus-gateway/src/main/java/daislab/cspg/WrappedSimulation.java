@@ -42,6 +42,8 @@ public class WrappedSimulation extends WrappedSimulationBase {
 
     // Action-phase placement counter: set by bind(), consumed in step info
     private int jobsPlacedThisTimestep;
+    // PEs bound to each VM this step, not yet submitted to it (for the VM selector)
+    private final Map<Vm, Long> pesBoundThisTimestep = new HashMap<>();
 
     public WrappedSimulation(final String identifier, final ISimulationSettings settings,
             final List<CloudletDescriptor> jobs) {
@@ -82,7 +84,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
         ledger = new SlaLedger(proxy().getSimulationCloudletList(), proxy().jobArrivalTimeMap,
                 simSettings);
         cacheTopology();
-        lastPotential = potential();
+        lastPotential = simSettings.isRewardShaping() ? potential() : 0;
         return result;
     }
 
@@ -103,12 +105,14 @@ public class WrappedSimulation extends WrappedSimulationBase {
         }
 
         jobsPlacedThisTimestep = 0;
+        pesBoundThisTimestep.clear();
         executeCustomCloudletToDcAction(action);
 
         final double targetTime = proxy.calculateTargetTime();
         final int jobsWaiting = proxy.getJobsToSubmitAtThisTimestep(targetTime).size();
 
         proxy.runOneTimestep();
+        proxy.pruneInFlight();
         ledger.beginStep();
         proxy.evict(ledger.resolve(clock()));
         if (currentStep >= simSettings.getMaxEpisodeLength()) {
@@ -118,7 +122,8 @@ public class WrappedSimulation extends WrappedSimulationBase {
         // Every job resolves, so the episode ends when none is left, at the latest at the horizon.
         final boolean terminated = !ledger.anyUnresolved();
         final double unshapedReward = ledger.stepReward();
-        final double potential = terminated ? 0 : potential();
+        // The potential is only needed, and only computed, when shaping is on.
+        final double potential = terminated || !simSettings.isRewardShaping() ? 0 : potential();
         double reward = unshapedReward;
         if (simSettings.isRewardShaping()) {
             reward += simSettings.getRewardShapingGamma() * potential - lastPotential;
@@ -160,6 +165,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
         proxy().evict(ledger.expireAllUnplaced());
         while (ledger.anyUnresolved()) {
             proxy().runOneTimestep();
+            proxy().pruneInFlight();
             ledger.resolve(clock());
         }
     }
@@ -172,6 +178,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
         final double cost = simSettings.costPerRefCoreSecond(dcType) * job.getPesNumber()
                 * job.getLength() / simSettings.getMipsRef();
         ledger.onBind(job, cost);
+        pesBoundThisTimestep.merge(vm, job.getPesNumber(), Long::sum);
         jobsPlacedThisTimestep++;
     }
 
@@ -188,15 +195,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
     private Vm getMostFreeVmOfDcForCloudlet(final int targetDcId, final Cloudlet cloudlet) {
         long maxExpectedFreePes = Long.MIN_VALUE;
         Vm mostFreeVm = Vm.NULL;
-        final double targetTime = proxy().calculateTargetTime();
-        List<Vm> vmList = proxy().getBroker().getVmExecList();
-        List<Cloudlet> cloudletList = proxy().getJobsToSubmitAtThisTimestep(targetTime);
-
-        Map<Vm, Long> expectedToUseVmPesMap =
-                vmList.stream().collect(Collectors.toMap(vm -> vm, vm -> cloudletList.stream()
-                        .filter(c -> c.getVm() == vm).mapToLong(Cloudlet::getPesNumber).sum()));
-
-        for (Vm vm : vmList) {
+        for (Vm vm : proxy().getBroker().getVmExecList()) {
             final int dcId = (int) vm.getHost().getDatacenter().getId();
             if (dcId != targetDcId) {
                 continue;
@@ -207,7 +206,7 @@ public class WrappedSimulation extends WrappedSimulationBase {
                             .mapToLong(Cloudlet::getPesNumber).sum();
             // Negative once jobs queue on the VM: it then measures how overloaded the VM is.
             final long expectedFreePes =
-                    vm.getPesNumber() - usedVmPes - expectedToUseVmPesMap.get(vm);
+                    vm.getPesNumber() - usedVmPes - pesBoundThisTimestep.getOrDefault(vm, 0L);
 
             if (vm.isSuitableForCloudlet(cloudlet)) {
                 if (expectedFreePes > maxExpectedFreePes) {
