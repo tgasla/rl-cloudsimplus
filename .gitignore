@@ -240,3 +240,6 @@ domain/**/src/main/proto/
 session_logs/
 nohup.out
 docs/analysis/
+
+# Downloaded public traces used to calibrate the workload generator (large)
+benchmark/data/

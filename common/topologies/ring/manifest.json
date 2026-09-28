@@ -1,0 +1,380 @@
+{
+  "members": [
+    {
+      "id": "S",
+      "yaml": "ring/S.yml",
+      "n_dcs": 11,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10"
+      ],
+      "capacity_pes": 608,
+      "tier_pe_share": {
+        "cloud": 0.2105,
+        "edge": 0.5263,
+        "micro": 0.2632
+      },
+      "load": {
+        "rho": 1.0
+      },
+      "relabel_of": null,
+      "permutation_seed": null,
+      "isolates": "anchor"
+    },
+    {
+      "id": "C1-N7",
+      "yaml": "ring/C1-N7.yml",
+      "n_dcs": 7,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06"
+      ],
+      "capacity_pes": 352,
+      "tier_pe_share": {
+        "cloud": 0.1818,
+        "edge": 0.5455,
+        "micro": 0.2727
+      },
+      "load": {
+        "rho": 1.0
+      },
+      "relabel_of": null,
+      "permutation_seed": null,
+      "isolates": "count @ fixed per-DC size"
+    },
+    {
+      "id": "C1-N15",
+      "yaml": "ring/C1-N15.yml",
+      "n_dcs": 15,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10",
+        "edge_dc_11",
+        "micro_dc_12",
+        "edge_dc_13",
+        "micro_dc_14"
+      ],
+      "capacity_pes": 832,
+      "tier_pe_share": {
+        "cloud": 0.1923,
+        "edge": 0.5385,
+        "micro": 0.2692
+      },
+      "load": {
+        "rho": 1.0
+      },
+      "relabel_of": null,
+      "permutation_seed": null,
+      "isolates": "count @ fixed per-DC size"
+    },
+    {
+      "id": "C1-N19",
+      "yaml": "ring/C1-N19.yml",
+      "n_dcs": 19,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10",
+        "edge_dc_11",
+        "micro_dc_12",
+        "edge_dc_13",
+        "micro_dc_14",
+        "edge_dc_15",
+        "micro_dc_16",
+        "edge_dc_17",
+        "micro_dc_18"
+      ],
+      "capacity_pes": 1088,
+      "tier_pe_share": {
+        "cloud": 0.2059,
+        "edge": 0.5294,
+        "micro": 0.2647
+      },
+      "load": {
+        "rho": 1.0
+      },
+      "relabel_of": null,
+      "permutation_seed": null,
+      "isolates": "count @ fixed per-DC size"
+    },
+    {
+      "id": "C2-N7",
+      "yaml": "ring/C2-N7.yml",
+      "n_dcs": 7,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06"
+      ],
+      "capacity_pes": 632,
+      "tier_pe_share": {
+        "cloud": 0.2025,
+        "edge": 0.5316,
+        "micro": 0.2658
+      },
+      "load": {
+        "lambda_of": "S"
+      },
+      "relabel_of": null,
+      "permutation_seed": null,
+      "isolates": "count @ fixed total capacity"
+    },
+    {
+      "id": "C2-N15",
+      "yaml": "ring/C2-N15.yml",
+      "n_dcs": 15,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10",
+        "edge_dc_11",
+        "micro_dc_12",
+        "edge_dc_13",
+        "micro_dc_14"
+      ],
+      "capacity_pes": 632,
+      "tier_pe_share": {
+        "cloud": 0.2025,
+        "edge": 0.5316,
+        "micro": 0.2658
+      },
+      "load": {
+        "lambda_of": "S"
+      },
+      "relabel_of": null,
+      "permutation_seed": null,
+      "isolates": "count @ fixed total capacity"
+    },
+    {
+      "id": "C2-N19",
+      "yaml": "ring/C2-N19.yml",
+      "n_dcs": 19,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10",
+        "edge_dc_11",
+        "micro_dc_12",
+        "edge_dc_13",
+        "micro_dc_14",
+        "edge_dc_15",
+        "micro_dc_16",
+        "edge_dc_17",
+        "micro_dc_18"
+      ],
+      "capacity_pes": 632,
+      "tier_pe_share": {
+        "cloud": 0.2025,
+        "edge": 0.4557,
+        "micro": 0.3418
+      },
+      "load": {
+        "lambda_of": "S"
+      },
+      "relabel_of": null,
+      "permutation_seed": null,
+      "isolates": "count @ fixed total capacity; edge:micro mix shifted (integer floor)"
+    },
+    {
+      "id": "GAM-lo",
+      "yaml": "ring/GAM-lo.yml",
+      "n_dcs": 11,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10"
+      ],
+      "capacity_pes": 456,
+      "tier_pe_share": {
+        "cloud": 0.2105,
+        "edge": 0.5263,
+        "micro": 0.2632
+      },
+      "load": {
+        "lambda_of": "S"
+      },
+      "relabel_of": null,
+      "permutation_seed": null,
+      "isolates": "capacity regime (less capacity)"
+    },
+    {
+      "id": "GAM-hi",
+      "yaml": "ring/GAM-hi.yml",
+      "n_dcs": 11,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10"
+      ],
+      "capacity_pes": 912,
+      "tier_pe_share": {
+        "cloud": 0.2105,
+        "edge": 0.5263,
+        "micro": 0.2632
+      },
+      "load": {
+        "lambda_of": "S"
+      },
+      "relabel_of": null,
+      "permutation_seed": null,
+      "isolates": "capacity regime (more capacity)"
+    },
+    {
+      "id": "PI-S",
+      "yaml": "ring/PI-S.yml",
+      "n_dcs": 11,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10"
+      ],
+      "capacity_pes": 608,
+      "tier_pe_share": {
+        "cloud": 0.2105,
+        "edge": 0.5263,
+        "micro": 0.2632
+      },
+      "load": {
+        "lambda_of": "S"
+      },
+      "relabel_of": "S",
+      "permutation_seed": 1,
+      "isolates": "relabelling control (isomorphic to S)"
+    },
+    {
+      "id": "PI-N19",
+      "yaml": "ring/PI-N19.yml",
+      "n_dcs": 19,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10",
+        "edge_dc_11",
+        "micro_dc_12",
+        "edge_dc_13",
+        "micro_dc_14",
+        "edge_dc_15",
+        "micro_dc_16",
+        "edge_dc_17",
+        "micro_dc_18"
+      ],
+      "capacity_pes": 1088,
+      "tier_pe_share": {
+        "cloud": 0.2059,
+        "edge": 0.5294,
+        "micro": 0.2647
+      },
+      "load": {
+        "lambda_of": "C1-N19"
+      },
+      "relabel_of": "C1-N19",
+      "permutation_seed": 2,
+      "isolates": "relabelling control (isomorphic to C1-N19)"
+    },
+    {
+      "id": "LOCK",
+      "yaml": "ring/LOCK.yml",
+      "n_dcs": 15,
+      "origins": [
+        "edge_dc_01",
+        "micro_dc_02",
+        "edge_dc_03",
+        "micro_dc_04",
+        "edge_dc_05",
+        "micro_dc_06",
+        "edge_dc_07",
+        "micro_dc_08",
+        "edge_dc_09",
+        "micro_dc_10",
+        "edge_dc_11",
+        "micro_dc_12",
+        "edge_dc_13",
+        "micro_dc_14"
+      ],
+      "capacity_pes": 488,
+      "tier_pe_share": {
+        "cloud": 0.1967,
+        "edge": 0.459,
+        "micro": 0.3443
+      },
+      "load": {
+        "rho": 1.22
+      },
+      "relabel_of": null,
+      "permutation_seed": 3,
+      "isolates": "lockbox: compound count+capacity+tier-mix+load+relabel"
+    }
+  ]
+}

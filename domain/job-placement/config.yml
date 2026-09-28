@@ -28,7 +28,7 @@ common:
   timestep_interval: 1.0
   min_time_between_events: 0.1
   max_episode_length: 150
-  split_large_jobs: true
+  split_large_jobs: false  # RING-N jobs carry per-PE MI; splitting would divide it by cores
   clear_created_lists: false
   vm_startup_delay: 0.0
   vm_shutdown_delay: 0.0
