@@ -272,7 +272,7 @@ def test_positional_head_is_not_equivariant(make_env):
         assert not np.allclose(q[0][:, new_id], p[0][order], atol=1e-3), name
 
 
-@pytest.mark.parametrize("name", ["a5", "deepsets"])
+@pytest.mark.parametrize("name", ["a5", "deepsets", "turret"])
 def test_finetune_scope_trains_exactly_the_chosen_part(name, make_env):
     from utils.misc import apply_finetune_scope
 
@@ -311,3 +311,42 @@ def test_pointer_policy_survives_save_and_load(make_env, tmp_path):
     assert isinstance(loaded.policy, PointerPolicy) and loaded.policy.reach_input is False
     obs = _random_obs(env.observation_space, np.random.default_rng(6), batch=2)
     np.testing.assert_allclose(_probs(model.policy.eval(), obs), _probs(loaded.policy.eval(), obs))
+
+
+def test_turret_head_is_equivariant_in_jobs_and_positional_in_dcs(make_env):
+    env = make_env(datacenters=ring_topology(N_RING), **SPEC_SHAPE)
+    rng = np.random.default_rng(7)
+    obs = _random_obs(env.observation_space, rng)
+    policy = _policy("turret", env)
+    n_jobs = SPEC_SHAPE["max_jobs_waiting"]
+
+    # Job slots permuted, DCs untouched: the per-job rows permute with them.
+    order = rng.permutation(n_jobs)
+    jobs_only = {key: value.copy() for key, value in obs.items()}
+    for key, width in (("jobs_waiting_state", 6), ("reach_mask", SPEC_SHAPE["max_datacenters"])):
+        rows = obs[key].reshape(-1, n_jobs, width)
+        jobs_only[key] = rows[:, order].reshape(obs[key].shape)
+    np.testing.assert_allclose(_probs(policy, jobs_only), _probs(policy, obs)[:, order], atol=1e-5)
+
+    relabelled, maps = _relabel_with_maps(obs, rng)
+    p, q = _probs(policy, obs), _probs(policy, relabelled)
+    new_id, order = maps[0]
+    assert not np.allclose(q[0][:, new_id], p[0][order], atol=1e-3)
+
+
+def test_turret_policy_survives_save_and_load(make_env, tmp_path):
+    from sb3_contrib import MaskablePPO
+    from extractors import build_extractor_kwargs, build_policy_head_kwargs, get_extractor_class
+    from extractors.pointer_policy import PerJobPolicy
+
+    env = make_env(datacenters=ring_topology(N_RING), **SPEC_SHAPE)
+    model = MaskablePPO(PerJobPolicy, env, device="cpu", seed=0, policy_kwargs=dict(
+        features_extractor_class=get_extractor_class("turret"),
+        features_extractor_kwargs=build_extractor_kwargs("turret", SPEC_SHAPE),
+        **build_policy_head_kwargs("turret", SPEC_SHAPE)))
+    model.save(tmp_path / "m")
+    loaded = MaskablePPO.load(tmp_path / "m", device="cpu")
+    assert isinstance(loaded.policy, PerJobPolicy)
+    obs = _random_obs(env.observation_space, np.random.default_rng(8), batch=2)
+    np.testing.assert_allclose(_probs(model.policy.eval(), obs), _probs(loaded.policy.eval(), obs),
+                               atol=1e-6)

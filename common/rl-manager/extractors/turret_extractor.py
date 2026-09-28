@@ -9,6 +9,7 @@ try:
 except ImportError:
     _HAS_TORCH_GEOMETRIC = False
 
+from extractors.token_encoder import Tokens
 from extractors.featurize import (
     HOST_INPUT_DIM,
     JOB_INPUT_DIM,
@@ -34,8 +35,9 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
       P       num_layers GATConv layers with gnn_heads heads (concat), LayerNorm per node
       F_read  one learned seed query attending over the real nodes (set-transformer pooling)
 
-    Not included: TURRET's per-node action outputs (the action head is the policy's) and
-    its multi-source transfer weighting (transfer here is single-source).
+    TURRET's per-node action outputs are extractors.pointer_policy.PerJobPolicy, which reads
+    the job nodes' final representations through tokens(). Not included: TURRET's multi-source
+    transfer weighting (transfer here is single-source).
 
     Config params (via features_extractor_kwargs):
       features_dim, gnn_hidden, gnn_heads, num_layers, dropout
@@ -71,6 +73,7 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
             )
             self.norms.append(nn.LayerNorm(gnn_hidden * gnn_heads))
         out_ch = gnn_hidden * gnn_heads
+        self.token_dim = out_ch
 
         # ── Readout model F_read ─────────────────────────────────────────────
         self.pool_query = nn.Parameter(torch.randn(1, 1, out_ch))
@@ -103,7 +106,8 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         job_host = torch.stack([b * n_nodes + n_hosts + j, b * n_nodes + h])
         return torch.cat([host_host, job_host, job_host.flip(0)], dim=1)
 
-    def forward(self, observations) -> torch.Tensor:
+    def tokens(self, observations) -> Tokens:
+        """Job nodes' final representations and the readout (DC tokens are not formed)."""
         device = next(self.parameters()).device
         hosts, jobs, reach = split_observation(observations, device)
         dc_ids, host_mask, host_x = host_inputs(hosts)
@@ -124,4 +128,9 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         padding[padding.all(dim=1)] = False  # an all-padding sample would give NaN weights
         q = self.pool_query.expand(batch, -1, -1)
         pooled, _ = self.pool_attn(q, h, h, key_padding_mask=padding)
-        return self.readout(pooled.squeeze(1))
+        n_hosts = host_mask.shape[1]
+        return Tokens(dc=None, dc_mask=None, job=h[:, n_hosts:], job_mask=job_mask, reach=reach,
+                      context=self.readout(pooled.squeeze(1)))
+
+    def forward(self, observations) -> torch.Tensor:
+        return self.tokens(observations).context

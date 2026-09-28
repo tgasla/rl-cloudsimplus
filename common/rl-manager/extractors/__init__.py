@@ -16,7 +16,7 @@ from extractors.aria_extractor import ARIAExtractor
 from extractors.tsar_extractor import TSARExtractor
 from extractors.deepsets_extractor import DeepSetsExtractor
 from extractors.token_encoder import TokenEncoder
-from extractors.pointer_policy import PointerPolicy
+from extractors.pointer_policy import PerJobPolicy, PointerPolicy
 from extractors.featurize import HOST_FEATURES, JOB_FEATURES
 
 EXTRACTOR_REGISTRY = {
@@ -67,14 +67,17 @@ POINTER_HEAD_REACH_INPUT = {"a5": True, "a5_no_cross_attention": True, "spane": 
 
 
 def get_policy_class(name: str, default):
-    """The pointer head replaces SB3's positional head for the architectures that use it."""
-    return PointerPolicy if name in POINTER_HEAD_REACH_INPUT else default
+    """Token heads replace SB3's positional head: the pointer head (A3, A5) and TURRET's
+    per-job-node head (A4)."""
+    if name in POINTER_HEAD_REACH_INPUT:
+        return PointerPolicy
+    return PerJobPolicy if name == "turret" else default
 
 
 def build_policy_head_kwargs(name: str, params: dict) -> dict:
-    if name not in POINTER_HEAD_REACH_INPUT:
-        return {}
-    return {"head_dim": params.get("head_dim", 64), "reach_input": POINTER_HEAD_REACH_INPUT[name]}
+    if name in POINTER_HEAD_REACH_INPUT:
+        return {"head_dim": params.get("head_dim", 64), "reach_input": POINTER_HEAD_REACH_INPUT[name]}
+    return {"head_dim": params.get("head_dim", 64)} if name == "turret" else {}
 
 
 def get_extractor_class(name: str):
