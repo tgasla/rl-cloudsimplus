@@ -12,12 +12,15 @@ import java.util.function.ToDoubleFunction;
 /**
  * Net-SLA-value accounting for one episode.
  * <p>
- * Every job resolves exactly once: to V - c if it finishes by its due time, to -P - c if it does
- * not (c = 0 for a job that was never placed). A step's reward is the sum of that step's
+ * Every job resolves exactly once: to V - c if its execution ends by its due time, to -P - c if
+ * it does not (c = 0 for a job that was never placed). A step's reward is the sum of that step's
  * resolutions divided by Z, the total value on offer in the episode, so a policy that places
  * nothing scores exactly -sum(P) / Z and the best possible return is below 1.
  */
 final class SlaLedger {
+
+    // Floating-point slack when comparing an execution's end with a due time.
+    static final double ON_TIME_EPSILON = 1e-9;
 
     private static final class Entry {
         final Cloudlet job;
@@ -41,7 +44,6 @@ final class SlaLedger {
     private final List<Entry> unresolved = new ArrayList<>();
     private final Map<Long, Entry> byId = new HashMap<>();
     private final double offeredValue;
-    private final double finishTolerance;
 
     // Totals of the current step, cleared by beginStep().
     private double valueRealized;
@@ -66,7 +68,22 @@ final class SlaLedger {
             z += entry.value;
         }
         offeredValue = z;
-        finishTolerance = settings.finishTimeTolerance();
+    }
+
+    /**
+     * When the job's execution ends: its start plus its length at its VM's per-PE MIPS, exact for
+     * space-shared execution on full PEs (in the simulator's MI_RESOLUTION units); infinite until
+     * it starts. CloudSim records a finish only at a later DC update (up to about 0.12 s late),
+     * so the recorded finish time is not used.
+     */
+    static double executionEnd(final Cloudlet job) {
+        return job.getStartTime() > Cloudlet.NOT_ASSIGNED
+                ? job.getStartTime() + job.getLength() / job.getVm().getMips()
+                : Double.POSITIVE_INFINITY;
+    }
+
+    private static boolean onTime(final Entry entry) {
+        return executionEnd(entry.job) <= entry.due + ON_TIME_EPSILON;
     }
 
     void onBind(final Cloudlet job, final double cost) {
@@ -86,7 +103,8 @@ final class SlaLedger {
 
     /**
      * Resolves every job that finished or is overdue at time now. Placed jobs that are late keep
-     * running (they still hold capacity) but are charged once, at their due time.
+     * running (they still hold capacity) but are charged once, when now passes their due time.
+     * A running job whose execution ends by its due waits for CloudSim to record its finish.
      *
      * @return the unplaced jobs that just expired; the caller evicts them from the job queue
      */
@@ -95,8 +113,8 @@ final class SlaLedger {
         for (Iterator<Entry> it = unresolved.iterator(); it.hasNext();) {
             final Entry entry = it.next();
             if (entry.job.getStatus() == Cloudlet.Status.SUCCESS) {
-                settle(entry, entry.job.getFinishTime() <= entry.due + finishTolerance);
-            } else if (now > entry.due + finishTolerance) {
+                settle(entry, onTime(entry));
+            } else if (now > entry.due && !onTime(entry)) {
                 settle(entry, false);
                 if (!entry.bound) {
                     jobsExpiredUnplaced++;

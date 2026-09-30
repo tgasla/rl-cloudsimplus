@@ -250,7 +250,86 @@ class SlaRewardTest {
         assertEquals(1 + traffic.length, (int) sum(steps, r -> r.getInfo().getJobsMet()));
     }
 
-    /** Late by half a timestep is late: the tolerance is the simulator's granularity only. */
+    /**
+     * A busy micro DC (3 hosts x 6 PEs), found with benchmark/cloudsim_port.py: job 7's execution
+     * ends at 9.99995, 0.05 ms before its due (5 + 5 = 10), but CloudSim, which truncates executed
+     * work at every DC update and re-checks no sooner than min_time_between_events + 0.01 later,
+     * records the finish at 10.110017, past due + 0.11.
+     */
+    private static final String BUSY_MICRO_JOBS = "[" + String.join(", ",
+            job(0, 1, 1452, 3, 2, 0, 100), job(4, 2, 239, 3, 2, 0, 100), job(6, 4, 245, 3, 2, 0, 100),
+            job(7, 5, 233, 3, 2, 0, 5), job(10, 3, 191, 3, 2, 0, 100), job(12, 2, 99, 3, 2, 0, 100),
+            job(16, 1, 298, 1, 2, 0, 100), job(17, 4, 113, 2, 2, 0, 100),
+            job(19, 2, 51, 2, 2, 0, 100)) + "]";
+
+    private static Cloudlet jobById(final WrappedSimulation sim, final long id) {
+        return proxy(sim).getSimulationCloudletList().stream().filter(c -> c.getId() == id)
+                .findFirst().orElseThrow();
+    }
+
+    /** When the job's execution ends: start + length / per-PE MIPS (space-shared, full PEs). */
+    private static double executionEnd(final Cloudlet job) {
+        return job.getStartTime() + job.getLength() / job.getVm().getMips();
+    }
+
+    /** On time is judged from the execution, not from when CloudSim gets round to record it. */
+    @Test
+    void aJobWhoseExecutionEndsJustBeforeItsDueIsMetThoughItsFinishIsRecordedLate() {
+        final WrappedSimulation sim = newSimulation(params(), BUSY_MICRO_JOBS);
+        final List<SimulationStepResult> steps = runEpisode(sim, allTo(MICRO_UCD_ACTION));
+        final Cloudlet late = jobById(sim, 7);
+        assertTrue(executionEnd(late) < 10.0 && executionEnd(late) > 10.0 - 1e-4,
+                "execution ends at " + executionEnd(late));
+        assertTrue(late.getFinishTime() > 10.0 + 0.11, "recorded at " + late.getFinishTime());
+        assertEquals(0, (int) sum(steps, r -> r.getInfo().getJobsViolated()));
+        assertEquals(9, (int) sum(steps, r -> r.getInfo().getJobsMet()));
+    }
+
+    /** Late by 50 ms is late, although CloudSim records that finish within 0.11 s of the due. */
+    @Test
+    void aJobWhoseExecutionEndsJustAfterItsDueIsViolated() {
+        // 603 MI on micro (60 MIPS) from t=1: the execution ends at 11.05 against due 1 + 10 = 11.
+        final WrappedSimulation sim = newSimulation(params(), "[" + job(0, 1, 603, 1, 2, 0, 10) + "]");
+        final List<SimulationStepResult> steps = runEpisode(sim, allTo(MICRO_UCD_ACTION));
+        assertEquals(11.05, jobById(sim, 0).getFinishTime(), 1e-9);
+        assertEquals((-0.5 - 0.02 * 603 / 60.0) / 1.0, sum(steps, SimulationStepResult::getReward), 1e-9);
+    }
+
+    /**
+     * A running job whose execution ends by its due is never charged before CloudSim records its
+     * finish, however late the ledger looks (here past its due by more than an update interval).
+     */
+    @Test
+    void aRunningJobThatWillMeetItsDueIsNotChargedBeforeItFinishes() {
+        // 600 MI on micro (60 MIPS), bound at t=1: executes from 1 to 11, due 1 + 10 = 11.
+        final WrappedSimulation sim = newSimulation(params(), "[" + job(0, 1, 600, 1, 2, 0, 10) + "]");
+        final CloudSimProxy proxy = proxy(sim);
+        final SlaLedger ledger = new SlaLedger(proxy.getSimulationCloudletList(),
+                proxy.jobArrivalTimeMap, sim.getSettings());
+        sim.step(new int[K]);
+        sim.step(allTo(MICRO_UCD_ACTION).apply(proxy.getVisibleJobs(proxy.calculateTargetTime())));
+        assertEquals(Cloudlet.Status.INEXEC, jobById(sim, 0).getStatus());
+        ledger.beginStep();
+        assertTrue(ledger.resolve(12.0).isEmpty());
+        assertEquals(0, ledger.getJobsViolated());
+        assertTrue(ledger.anyUnresolved());
+    }
+
+    /** The shaping potential takes a started job's completion from its execution as well. */
+    @Test
+    void theCompletionEstimateOfAStartedJobIsItsExecutionEnd() {
+        final WrappedSimulation sim = newSimulation(params(), BUSY_MICRO_JOBS);
+        final CloudSimProxy proxy = proxy(sim);
+        while (proxy.clock() < 10.0) {
+            sim.step(allTo(MICRO_UCD_ACTION).apply(proxy.getVisibleJobs(proxy.calculateTargetTime())));
+        }
+        final Cloudlet late = jobById(sim, 7);
+        assertEquals(Cloudlet.Status.INEXEC, late.getStatus(), "ended at 9.99995, not yet recorded");
+        assertEquals(executionEnd(late),
+                sim.estimatePlacedCompletionTimes(proxy.clock()).get(late), 0.0);
+    }
+
+    /** Late by half a timestep is late. */
     @Test
     void aJobFinishingHalfATimestepLateIsViolated() {
         // 630 MI on micro (60 MIPS): 10.5 s from t=1, finishes 11.5 against due 1 + 10 = 11.

@@ -218,10 +218,17 @@ public class CloudSimProxy extends CloudSimProxyBase {
                 + ((CloudletWithLocation) job).getDeadline() * settings.getTimestepInterval();
     }
 
+    /**
+     * The observation's nominal_runtime_ref: timesteps the job runs on a reference-speed PE,
+     * rounded up. Cloudlet length is per PE.
+     */
+    int nominalRuntime(final Cloudlet job) {
+        return (int) Math.ceil(job.getLength() / (simSettings.getMipsRef() * settings.getTimestepInterval()));
+    }
+
     int[] getJobsWaitingObservation() {
         final List<Cloudlet> visibleJobs = getVisibleJobs(calculateTargetTime());
         final double interval = settings.getTimestepInterval();
-        final double refMiPerTimestep = simSettings.getMipsRef() * interval;
         final int[] jobsWaitingObs = new int[JOB_OBS_FEATURES * visibleJobs.size()];
         for (int i = 0; i < visibleJobs.size(); i++) {
             final CloudletWithLocation job = (CloudletWithLocation) visibleJobs.get(i);
@@ -234,8 +241,7 @@ public class CloudSimProxy extends CloudSimProxyBase {
             final int base = JOB_OBS_FEATURES * i;
             jobsWaitingObs[base] = (int) job.getPesNumber();
             jobsWaitingObs[base + 1] = job.getLocation();
-            // Cloudlet length is per PE, so this is the runtime on a reference-speed PE.
-            jobsWaitingObs[base + 2] = (int) Math.ceil(job.getLength() / refMiPerTimestep);
+            jobsWaitingObs[base + 2] = nominalRuntime(job);
             jobsWaitingObs[base + 3] =
                     (int) Math.max(0, Math.floor((getDueTime(job) - clock()) / interval));
             jobsWaitingObs[base + 4 + sensitivity] = 1;

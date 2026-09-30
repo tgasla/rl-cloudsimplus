@@ -16,6 +16,8 @@ import java.util.PriorityQueue;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Optional;
+import java.util.stream.IntStream;
 
 
 public class WrappedSimulation extends WrappedSimulationBase {
@@ -23,6 +25,9 @@ public class WrappedSimulation extends WrappedSimulationBase {
     // Must match Python JobPlacementEnv.HOST_OBS_FEATURES:
     // [dc_id, dc_type, vm_capacity_pes, free_pes, backlog_core_ts]
     static final int HOST_OBS_FEATURES = 5;
+    private static final int DC_ID_COL = 0;
+    private static final int FREE_PES_COL = 3;
+    private static final int BACKLOG_COL = 4;
 
     // Concrete settings reference for domain-specific access
     private final SimulationSettings simSettings;
@@ -35,8 +40,9 @@ public class WrappedSimulation extends WrappedSimulationBase {
     // Net-SLA accounting of the current episode, and the shaping potential of the last state
     private SlaLedger ledger;
     private double lastPotential;
-    // Per DC index: the fastest PE, and the job origins (by DC index) each DC can serve
+    // Per DC index: the fastest PE, the largest VM, and the job origins (by DC index) each DC can serve
     private double[] dcPeMips;
+    private long[] maxVmPes;
     private List<List<Integer>> reachableDcsByLocation;
     // Ties between DC indices in the rule-based policies: tier, capacity, name
     private Comparator<Integer> canonicalDcOrder;
@@ -254,54 +260,130 @@ public class WrappedSimulation extends WrappedSimulationBase {
         };
     }
 
+    // The two rule-based policies decide as the agent does: on its window (the visible jobs), its
+    // observation (each host's free_pes, clipped at 0, and backlog_core_ts) and its action mask
+    // (legalDcs), and they place through its action path, one DC per slot. A job a rule places
+    // counts as using its PEs on the DC's host with the most free PEs (the first such host) for
+    // the rest of the step. benchmark/reference_policies.py R1/R2 are the same two rules, played
+    // from the Python side of the observation.
+
     /**
-     * R2: the job due first (then the most critical) goes to the nearest DC it may use that has
-     * the PEs free now: its own DC, then its neighbours, then the cloud. When none has, it waits
-     * and is tried again next step, until it is placed or evicted at its due time.
+     * R2: the job due first (then the most critical) goes to the nearest DC it may use with a
+     * host that has the PEs free: its own DC, then its neighbours, then the cloud, ties by tier,
+     * capacity and name. A job that finds none waits and is tried again next step, until it is
+     * placed or evicted at its due time.
      */
     private void executeEarliestMostCriticalCloudletToNearestDcAction() {
-        final List<Cloudlet> jobs = new ArrayList<>(
-                proxy().getJobsToSubmitAtThisTimestep(proxy().calculateTargetTime()));
-        jobs.sort(Comparator.comparingDouble((Cloudlet c) -> proxy().getDueTime(c))
+        final List<Cloudlet> window = proxy().getVisibleJobs(proxy().calculateTargetTime());
+        final List<List<long[]>> hosts = observedHosts();
+        final int[] action = new int[window.size()];
+        for (int slot : slotsInOrder(window, Comparator.comparingDouble((Cloudlet c) -> proxy().getDueTime(c))
                 .thenComparingInt(c -> -((CloudletWithLocation) c).getDelaySensitivity())
                 .thenComparingDouble(c -> proxy().jobArrivalTimeMap.get(c.getId()))
-                .thenComparingLong(Cloudlet::getId));
-        for (Cloudlet job : jobs) {
-            reachableDcs(job).stream()
+                .thenComparingLong(Cloudlet::getId))) {
+            final Cloudlet job = window.get(slot);
+            final List<Integer> nearestFirst = legalDcs(job).stream()
                     .sorted(Comparator.comparingInt((Integer dc) -> hops(job, dc))
                             .thenComparing(canonicalDcOrder))
-                    .map(dc -> selectVmForCloudlet(dcId(dc), job))
-                    .filter(vm -> vm != Vm.NULL && expectedFreePes(vm) >= job.getPesNumber())
-                    .findFirst()
-                    .ifPresent(vm -> bind(job, vm));
+                    .toList();
+            for (int dc : nearestFirst) {
+                final long[] host = hosts.get(dc).get(mostFreeHost(hosts.get(dc)));
+                if (host[FREE_PES_COL] >= job.getPesNumber()) {
+                    host[FREE_PES_COL] -= job.getPesNumber();
+                    action[slot] = dc + 1;
+                    break;
+                }
+            }
         }
+        executeRlCloudletToDcAction(action);
     }
 
     /**
-     * R1: the job due first (then the shortest) goes to the DC it may use with the most free PEs,
-     * and queues there if even that DC is full.
+     * R1: the job due first (then the shortest) goes to the DC it may use with the most free PEs
+     * (the sum of its hosts' free_pes), then the least backlog (the sum of its hosts'
+     * backlog_core_ts plus the core-timesteps placed there this step, at the host's speed), then
+     * by tier, capacity and name. It always places: a full DC queues the job.
      */
     private void executeEarliestShortestCloudletToMostFreeDcAction() {
-        final List<Cloudlet> jobs = new ArrayList<>(
-                proxy().getJobsToSubmitAtThisTimestep(proxy().calculateTargetTime()));
-        jobs.sort(Comparator.comparingDouble((Cloudlet c) -> proxy().getDueTime(c))
+        final List<Cloudlet> window = proxy().getVisibleJobs(proxy().calculateTargetTime());
+        final List<List<long[]>> hosts = observedHosts();
+        final double[] placedWork = new double[hosts.size()];
+        final int[] action = new int[window.size()];
+        for (int slot : slotsInOrder(window, Comparator.comparingDouble((Cloudlet c) -> proxy().getDueTime(c))
                 .thenComparingLong(Cloudlet::getLength)
                 .thenComparingDouble(c -> proxy().jobArrivalTimeMap.get(c.getId()))
-                .thenComparingLong(Cloudlet::getId));
-        for (Cloudlet job : jobs) {
-            reachableDcs(job).stream()
-                    .sorted(Comparator.comparingLong((Integer dc) -> -expectedFreePesOfDc(dc))
-                            .thenComparing(canonicalDcOrder))
-                    .map(dc -> selectVmForCloudlet(dcId(dc), job))
-                    .filter(vm -> vm != Vm.NULL)
-                    .findFirst()
-                    .ifPresent(vm -> bind(job, vm));
+                .thenComparingLong(Cloudlet::getId))) {
+            final Cloudlet job = window.get(slot);
+            final Optional<Integer> mostFree = legalDcs(job).stream()
+                    .min(Comparator.comparingLong((Integer dc) -> -sum(hosts.get(dc), FREE_PES_COL))
+                            .thenComparingDouble(dc -> sum(hosts.get(dc), BACKLOG_COL) + placedWork[dc])
+                            .thenComparing(canonicalDcOrder));
+            if (mostFree.isEmpty()) {
+                continue;
+            }
+            final int dc = mostFree.get();
+            final int h = mostFreeHost(hosts.get(dc));
+            final long[] host = hosts.get(dc).get(h);
+            host[FREE_PES_COL] = Math.max(0, host[FREE_PES_COL] - job.getPesNumber());
+            placedWork[dc] += job.getPesNumber() * proxy().nominalRuntime(job) * simSettings.getMipsRef()
+                    / hostMips(dc, h);
+            action[slot] = dc + 1;
         }
+        executeRlCloudletToDcAction(action);
+    }
+
+    /** The infrastructure observation's host rows, by DC index, in host order. */
+    private List<List<long[]>> observedHosts() {
+        final int[] obs = getInfraObsPerHost();
+        final List<List<long[]>> byDc = new ArrayList<>();
+        for (int dc = 0; dc < maxVmPes.length; dc++) {
+            byDc.add(new ArrayList<>());
+        }
+        for (int row = 0; row < obs.length; row += HOST_OBS_FEATURES) {
+            final long[] host = Arrays.stream(obs, row, row + HOST_OBS_FEATURES).asLongStream().toArray();
+            byDc.get((int) host[DC_ID_COL] - 1).add(host);    // dc_id is the DC index + 1
+        }
+        return byDc;
+    }
+
+    private static long sum(final List<long[]> hosts, final int column) {
+        long total = 0;
+        for (long[] host : hosts) {
+            total += host[column];
+        }
+        return total;
+    }
+
+    /** The first host with the most free PEs. */
+    private static int mostFreeHost(final List<long[]> hosts) {
+        int best = 0;
+        for (int h = 1; h < hosts.size(); h++) {
+            if (hosts.get(h)[FREE_PES_COL] > hosts.get(best)[FREE_PES_COL]) {
+                best = h;
+            }
+        }
+        return best;
+    }
+
+    /** Per-PE MIPS of host h of DC index dc (one VM per host, as JobPlacementEnv requires). */
+    private double hostMips(final int dc, final int h) {
+        return proxy().getDatacenterByIdx(dc).getHostList().get(h).getVmList().get(0).getMips();
+    }
+
+    /** Slot indices of the window, ordered by their jobs. */
+    private static List<Integer> slotsInOrder(final List<Cloudlet> window, final Comparator<Cloudlet> order) {
+        return IntStream.range(0, window.size()).boxed()
+                .sorted(Comparator.comparing(window::get, order)).toList();
     }
 
     /** DC indices a job may be placed on: its origin and the DCs the origin connects to. */
     private List<Integer> reachableDcs(final Cloudlet job) {
         return reachableDcsByLocation.get(((CloudletWithLocation) job).getLocation());
+    }
+
+    /** The DCs the agent's action mask allows for a job: within reach, with a VM that can hold it. */
+    private List<Integer> legalDcs(final Cloudlet job) {
+        return reachableDcs(job).stream().filter(dc -> maxVmPes[dc] >= job.getPesNumber()).toList();
     }
 
     /** Hops from the job's origin to DC index dc: 0 itself, 1 a neighbour, 2 the cloud. */
@@ -310,17 +392,6 @@ public class WrappedSimulation extends WrappedSimulationBase {
             return 0;
         }
         return "cloud".equals(((DatacenterWithType) proxy().getDatacenterByIdx(dc)).getType()) ? 2 : 1;
-    }
-
-    /** CloudSim id of the DC at index dc (CloudSim numbers datacenters from 2). */
-    private int dcId(final int dc) {
-        return (int) proxy().getDatacenterByIdx(dc).getId();
-    }
-
-    private long expectedFreePesOfDc(final int dc) {
-        return proxy().getDatacenterByIdx(dc).getHostList().stream()
-                .flatMap(host -> host.getVmList().stream())
-                .mapToLong(this::expectedFreePes).sum();
     }
 
     // this action is if the agent performs cloudlet to DC mapping
@@ -448,9 +519,11 @@ public class WrappedSimulation extends WrappedSimulationBase {
 
     /**
      * Completion time of every job placed on a VM, replaying each VM's space-shared scheduler:
-     * running jobs hold their PEs until they finish; whenever PEs free up or a job arrives, the
-     * queued jobs are scanned in order (waiting list, then in-flight jobs by arrival) and every
-     * one that has arrived and fits starts, as CloudSim moves waiting cloudlets to execution.
+     * a running job completes when its execution ends (SlaLedger.executionEnd, as the ledger
+     * judges it) and holds its PEs until then, or until now if CloudSim has yet to record it;
+     * whenever PEs free up or a job arrives, the queued jobs are scanned in order (waiting list,
+     * then in-flight jobs by arrival) and every one that has arrived and fits starts, as CloudSim
+     * moves waiting cloudlets to execution.
      */
     Map<Cloudlet, Double> estimatePlacedCompletionTimes(final double now) {
         final Map<Cloudlet, Double> completion = new HashMap<>();
@@ -461,9 +534,9 @@ public class WrappedSimulation extends WrappedSimulationBase {
                     new PriorityQueue<>(Comparator.comparingDouble(r -> r[0]));
             long freePes = vm.getPesNumber();
             for (CloudletExecution ce : scheduler.getCloudletExecList()) {
-                final double finish = now + remainingLength(ce, vm, now) / mips;
-                completion.put(ce.getCloudlet(), finish);
-                releases.add(new double[] {finish, ce.getCloudlet().getPesNumber()});
+                final double end = SlaLedger.executionEnd(ce.getCloudlet());
+                completion.put(ce.getCloudlet(), end);
+                releases.add(new double[] {Math.max(now, end), ce.getCloudlet().getPesNumber()});
                 freePes -= ce.getCloudlet().getPesNumber();
             }
             final Map<Cloudlet, Double> queued = new LinkedHashMap<>();       // job -> arrival
@@ -512,17 +585,19 @@ public class WrappedSimulation extends WrappedSimulationBase {
         return now + best;
     }
 
-    /** Per DC index: fastest VM PE, and which DCs a job from that origin may use. */
+    /** Per DC index: fastest VM PE, largest VM, and which DCs a job from that origin may use. */
     @SuppressWarnings("unchecked")
     private void cacheTopology() {
         final List<Map<String, Object>> dcMaps = simSettings.getDatacenters();
         dcPeMips = new double[dcMaps.size()];
+        maxVmPes = new long[dcMaps.size()];
         final long[] capacityPes = new long[dcMaps.size()];
         reachableDcsByLocation = new ArrayList<>();
         for (int dc = 0; dc < dcMaps.size(); dc++) {
             for (Map<String, Object> host : (List<Map<String, Object>>) dcMaps.get(dc).get("hosts")) {
                 for (Map<String, Object> vm : (List<Map<String, Object>>) host.get("vms")) {
                     dcPeMips[dc] = Math.max(dcPeMips[dc], CloudSimProxy.scaledMips(vm.get("pe_mips")));
+                    maxVmPes[dc] = Math.max(maxVmPes[dc], ((Number) vm.get("pes")).longValue());
                     capacityPes[dc] += ((Number) host.get("amount")).longValue()
                             * ((Number) vm.get("amount")).longValue() * ((Number) vm.get("pes")).longValue();
                 }

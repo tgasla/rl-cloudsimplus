@@ -288,8 +288,8 @@ All domain-agnostic logic lives in `common/cloudsimplus-gateway-shared/`. Domain
 - `VmAllocationPolicyCustom` is a no-op allocator — the RL agent drives placement via action decoding; CloudSim Plus itself never decides where to place VMs in RL mode.
 
 **Job-placement reward (net SLA value, `SlaLedger`):**
-- Each job resolves exactly once: `V − c` if it finishes by `arrival + deadline`, else `−P − c`; `c = cost_<tier> · pes · length / mips_ref`, 0 if never placed. A step's reward is that step's resolutions divided by `Z = ΣV`, so placing nothing scores exactly `−ΣP/ΣV`.
-- "Finishes by" allows `min_time_between_events + 0.01`, CloudSim's update granularity. Inside the simulator work is counted in 1/`MI_RESOLUTION` MI (job MI, every PE's MIPS and `mips_ref` are scaled by 1000), because CloudSim truncates executed work to whole units at every update and recorded finishes otherwise drift seconds late on busy DCs.
+- Each job resolves exactly once: `V − c` if its execution ends by `arrival + deadline`, else `−P − c`; `c = cost_<tier> · pes · length / mips_ref`, 0 if never placed. A step's reward is that step's resolutions divided by `Z = ΣV`, so placing nothing scores exactly `−ΣP/ΣV`.
+- On time is judged from the execution itself: `start + length / per-PE MIPS ≤ due` (1e-9 float slack; `SlaLedger.executionEnd`, full-PE space-shared), never from the recorded finish, which CloudSim sets only at a later DC update (up to ~0.12 s late). A running job that will end on time is never charged before that record. Inside the simulator work is counted in 1/`MI_RESOLUTION` MI (job MI, every PE's MIPS and `mips_ref` are scaled by 1000), because CloudSim truncates executed work to whole units at every update and recorded times otherwise drift seconds late on busy DCs.
 - A job arriving at or after `max_episode_length · timestep_interval` is rejected at reset (it could only be charged). RING-N runs need `max_episode_length ≥ 200` (arrivals end at t=160); `level_stream` enforces it.
 - Every action path (RL and both heuristics) binds through `WrappedSimulation.bind()`, so all policies are scored by the same ledger.
 - Unplaced jobs past their due time are evicted from the queue. At `max_episode_length` the remaining unplaced jobs are violated and the simulation drains until every placed job resolves, so episodes always terminate (never truncate).
@@ -451,6 +451,10 @@ Job placement is a **two-stage decision pipeline**, mirroring how real cloud orc
 The RL agent operates on **stage 1 only** (when `cloudlet_to_dc_mapping: rl`). Stage 2 is always rule-based — a tactical decision better handled by a simple rule than learning.
 
 CloudSim Plus has no native "cloudlet → DC" concept (cloudlets bind to VMs via `bindCloudletToVm`); this two-stage model is a higher-level abstraction layered on top, with VM selection happening inside the chosen DC. VM-to-host placement is hardcoded to bestfit in job-placement (not configurable — the RL agent never controls it).
+
+The two stage-1 rules decide as the agent does: on its window (the first `max_jobs_waiting` jobs by due time), its observation and its action mask, and they place through its action path (`WrappedSimulation`). A job a rule places counts as using its cores on the DC's most-free host (clipped at 0) for the rest of the step. `benchmark/reference_policies.py` R1/R2 are the same rules on the Python side; a live test checks identical returns.
+- `earliest-shortest-to-most-free-dc` (R1): jobs by (due, length); each goes to the legal DC with the most free PEs (the sum of its hosts' `free_pes`), then the least backlog (the sum of its hosts' `backlog_core_ts` plus the core-timesteps placed there this step), then (tier, capacity desc, name). It always places.
+- `earliest-most-critical-to-nearest-dc` (R2): jobs by (due, criticality desc); each goes to the nearest legal DC (origin, then ring neighbours, then cloud; ties by tier, capacity desc, name) whose most-free host has the job's PEs free; otherwise it waits.
 
 `rl_algorithm` is read only when `cloudlet_to_dc_mapping: rl`.
 
