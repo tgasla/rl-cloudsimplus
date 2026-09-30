@@ -23,7 +23,6 @@ class Tokens(NamedTuple):
     dc_mask: torch.Tensor   # [B, D] real DCs
     job: torch.Tensor       # [B, J, H]
     job_mask: torch.Tensor  # [B, J] real jobs
-    reach: torch.Tensor     # [B, J, D] float, 1 where the topology lets job j use action k
     context: torch.Tensor   # [B, 2H] masked means of the DC and job tokens
 
 
@@ -62,7 +61,7 @@ class MaskedCrossAttention(nn.Module):
 
 class TokenEncoder(BaseFeaturesExtractor):
     """
-    Per-DC and per-job tokens for the pointer head (extractors/pointer_policy.py).
+    Per-DC and per-job tokens for the token heads (extractors/pointer_policy.py).
 
     A DC token is a shared MLP over the DC's aggregated host features (featurize.dc_inputs),
     a job token a shared MLP over the job's features. With cross_attention, each job then
@@ -75,16 +74,23 @@ class TokenEncoder(BaseFeaturesExtractor):
 
     Config params (via features_extractor_kwargs):
       token_dim:        token width H (features_dim is 2H)
-      cross_attention:  the job <-> DC attention layers (A5: on; A3 SPANE: off)
-    Ablations, each reintroducing one red flag of the transfer checklist (default off):
-      unmasked_pool:    context averages over padding slots too (V2)
+      cross_attention:  the reach-masked job <-> DC attention layers, the only difference
+                        between A5 (on) and A3 SPANE (off), which share the pointer head
+    Ablations of A5, each undoing one of its design choices (default off; V1 changes the head
+    instead, pointer_policy.PositionalHeadPolicy):
+      unmasked_pool:    the DC half of the context is a plain mean over the DC slots, padding
+                        included: checklist red flag 3 (slot 0, which holds no DC, stays out,
+                        and the job half stays masked) (V2)
       scalar_dc_type:   dc_type enters as one ordinal number instead of one-hot (V3)
       dc_id_embedding:  a learned embedding per DC slot is added to each DC token (V4)
+      no_reach:         the cross-attention ignores reach_mask: every real job attends over
+                        every real DC and every real DC over every real job (V5)
     """
 
     def __init__(self, observation_space: spaces.Dict, token_dim: int = 64,
                  cross_attention: bool = True, unmasked_pool: bool = False,
-                 scalar_dc_type: bool = False, dc_id_embedding: bool = False):
+                 scalar_dc_type: bool = False, dc_id_embedding: bool = False,
+                 no_reach: bool = False):
         super().__init__(observation_space, features_dim=2 * token_dim)
         n_jobs = observation_space.spaces["jobs_waiting_state"].shape[0] // JOB_FEATURES
         self.n_dc_slots = observation_space.spaces["reach_mask"].shape[0] // n_jobs
@@ -95,6 +101,7 @@ class TokenEncoder(BaseFeaturesExtractor):
         self.dc_id_embed = nn.Embedding(self.n_dc_slots, token_dim) if dc_id_embedding else None
         self.job_mlp = _mlp(JOB_INPUT_DIM, token_dim)
         self.cross_attention = cross_attention
+        self.no_reach = no_reach
         if cross_attention:
             self.job_to_dc = MaskedCrossAttention(token_dim)
             self.dc_to_job = MaskedCrossAttention(token_dim)
@@ -111,14 +118,16 @@ class TokenEncoder(BaseFeaturesExtractor):
         if self.dc_id_embed is not None:
             dc_tok = dc_tok + self.dc_id_embed.weight.unsqueeze(0)
         if self.cross_attention:
-            usable = (reach > 0) & dc_mask.unsqueeze(1) & job_mask.unsqueeze(2)   # [B, J, D]
+            usable = dc_mask.unsqueeze(1) & job_mask.unsqueeze(2)                  # [B, J, D]
+            if not self.no_reach:
+                usable = usable & (reach > 0)
             job_tok, dc_tok = (self.job_to_dc(job_tok, dc_tok, usable),
                                self.dc_to_job(dc_tok, job_tok, usable.transpose(1, 2)))
-        if self.unmasked_pool:
-            context = torch.cat([dc_tok.mean(dim=1), job_tok.mean(dim=1)], dim=-1)
+        if self.unmasked_pool:      # DC slot 0 only collects the padding host rows
+            context = torch.cat([dc_tok[:, 1:].mean(dim=1), masked_mean(job_tok, job_mask)], dim=-1)
         else:
             context = torch.cat([masked_mean(dc_tok, dc_mask), masked_mean(job_tok, job_mask)], dim=-1)
-        return Tokens(dc_tok, dc_mask, job_tok, job_mask, reach, context)
+        return Tokens(dc_tok, dc_mask, job_tok, job_mask, context)
 
     def forward(self, observations) -> torch.Tensor:
         return self.tokens(observations).context

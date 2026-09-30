@@ -51,6 +51,21 @@ def ring_topology(n_ring: int) -> list:
     return dcs
 
 
+def ring_member(member_id):
+    """A RING-N member's topology as entrypoint hands it to the env, and the manifest path."""
+    from utils import levels
+    from utils.misc import _translate_connect_to_names_to_idx
+
+    ring = os.path.join(REPO, "common", "topologies", "ring")
+    topology = levels.load_topology(os.path.join(ring, f"{member_id}.yml"))
+    for dc in topology:
+        dc["connect_to"] = levels._as_list(dc.get("connect_to", []))
+        dc["hosts"] = levels._as_list(dc["hosts"])
+        for host in dc["hosts"]:
+            host["vms"] = levels._as_list(host["vms"])
+    return _translate_connect_to_names_to_idx(topology), os.path.join(ring, "manifest.json")
+
+
 @pytest.fixture
 def make_env(monkeypatch):
     """Build a JobPlacementEnv from the Env B fixture params without a Java gateway."""

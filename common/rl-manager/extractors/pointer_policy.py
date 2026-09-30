@@ -76,74 +76,70 @@ class TokenHeadPolicy(MaskableActorCriticPolicy):
 
 class PointerPolicy(TokenHeadPolicy):
     """
-    A5: a pointer head over (job, DC) pairs, on the tokens of a TokenEncoder.
+    The pointer head over (job, DC) pairs, on the tokens of a TokenEncoder. A3 (SPANE) and A5
+    share it unchanged and differ only in the encoder: A5 = A3 + the reach-masked job <-> DC
+    cross-attention. On an encoder without cross-attention it is SPANE's advantage module: a
+    shared network scoring each machine from its own embedding, the cluster embedding and the
+    request.
 
-    SB3's head is nn.Linear(features, 32 * 24): a fixed map from job slot and DC slot to logit,
+    SB3's head is nn.Linear(features, J * D): a fixed map from job slot and DC slot to logit,
     so renumbering DCs or reordering jobs changes the policy. Here the logit of placing job j
     on DC k is one shared scorer applied to every pair (pointer-network form),
 
-        logit[j, k] = v . tanh(W_job job_j + W_dc dc_k + W_ctx context + w_reach reach_jk),
+        logit[j, k] = v . tanh(W_job job_j + W_dc dc_k + W_ctx context),
 
     the no-op logit is one shared scorer applied to every job, and the critic reads only the
     pooled context. Permuting DCs or job slots therefore permutes the action distribution
-    exactly, and the head's cost is linear in jobs + DCs, not in their product.
+    exactly, and the head's parameter count does not depend on J or D. Its compute does:
+    scoring every pair costs O(J * D * head_dim), the same order as the positional head.
 
-    reach_input=False drops the w_reach term; with a TokenEncoder without cross-attention
-    that is SPANE's advantage module (A3): a shared network scoring each machine from its own
-    embedding, the cluster embedding and the request.
+    Reach is not a head input. The action mask keeps only pairs with reach 1, so a reach term
+    would add the same constant to every legal pair's score.
     """
-
-    def __init__(self, *args, reach_input: bool = True, **kwargs):
-        self.reach_input = reach_input
-        super().__init__(*args, **kwargs)
 
     def _build_head(self) -> dict:
         token_dim = self.features_extractor.token_dim
         self.job_proj = nn.Linear(token_dim, self.head_dim)
         self.dc_proj = nn.Linear(token_dim, self.head_dim, bias=False)
         self.ctx_proj = nn.Linear(self.features_extractor.features_dim, self.head_dim, bias=False)
-        self.reach_proj = nn.Linear(1, self.head_dim, bias=False) if self.reach_input else None
         self.pair_out = nn.Linear(self.head_dim, 1)
         self.noop_head = nn.Sequential(
             nn.Linear(token_dim + self.features_extractor.features_dim, self.head_dim),
             nn.Tanh(), nn.Linear(self.head_dim, 1))
-        gains = {self.job_proj: np.sqrt(2), self.dc_proj: np.sqrt(2), self.ctx_proj: np.sqrt(2),
-                 self.noop_head: np.sqrt(2)}
-        if self.reach_proj is not None:
-            gains[self.reach_proj] = np.sqrt(2)
         # Small last layers, as SB3 does for action_net (0.01).
-        gains[self.pair_out] = 0.01
-        gains[self.noop_head[-1]] = 0.01
-        return gains
-
-    def _get_constructor_parameters(self) -> dict:
-        return {**super()._get_constructor_parameters(), "reach_input": self.reach_input}
+        return {self.job_proj: np.sqrt(2), self.dc_proj: np.sqrt(2), self.ctx_proj: np.sqrt(2),
+                self.noop_head: np.sqrt(2), self.pair_out: 0.01, self.noop_head[-1]: 0.01}
 
     def _logits(self, t: Tokens) -> torch.Tensor:
         """Flat [B, J * D] logits; slot 0 of each job is the no-op (DC slot 0 holds no DC)."""
         pre = (self.job_proj(t.job).unsqueeze(2) + self.dc_proj(t.dc).unsqueeze(1)
                + self.ctx_proj(t.context)[:, None, None, :])
-        if self.reach_proj is not None:
-            pre = pre + self.reach_proj(t.reach.unsqueeze(-1))
         pair = self.pair_out(torch.tanh(pre)).squeeze(-1)                     # [B, J, D]
         context = t.context.unsqueeze(1).expand(-1, t.job.shape[1], -1)
         noop = self.noop_head(torch.cat([t.job, context], dim=-1))            # [B, J, 1]
         return torch.cat([noop, pair[:, :, 1:]], dim=-1).flatten(1)
 
 
-class PerJobPolicy(TokenHeadPolicy):
+class PositionalHeadPolicy(TokenHeadPolicy):
     """
-    TURRET's per-node action output (Yang et al., AAAI-24): each job node's final graph
-    representation is mapped by one shared network to its own logits over the DC slots. The
-    policy is therefore equivariant in the job axis, as TURRET's per-actuator outputs are, but
-    positional in the DC axis.
+    V1: A5's tokens under a positional head. The job tokens, the DC tokens and the context are
+    flattened and mapped by an MLP with one hidden layer of head_dim units to the J * D logits,
+    so every (job slot, DC slot) pair has its own output weights, as in SB3's head, and
+    renumbering DCs or reordering job slots changes the policy. The head reads what the pointer
+    head reads, per slot, and the critic is TokenHeadPolicy's: V1 differs from A5 only in the
+    head's symmetry. Padding tokens are zeroed first; in the pointer head they only reach
+    logits the action mask removes.
     """
 
     def _build_head(self) -> dict:
-        n_actions = int(self.action_space.nvec[0])
-        self.job_head = nn.Sequential(nn.Linear(self.features_extractor.token_dim, self.head_dim),
-                                      nn.Tanh(), nn.Linear(self.head_dim, n_actions))
-        return {self.job_head: np.sqrt(2), self.job_head[-1]: 0.01}
+        encoder = self.features_extractor
+        n_jobs, n_actions = len(self.action_space.nvec), int(self.action_space.nvec[0])
+        flat = (n_jobs + encoder.n_dc_slots) * encoder.token_dim + encoder.features_dim
+        self.flat_head = nn.Sequential(nn.Linear(flat, self.head_dim), nn.Tanh(),
+                                       nn.Linear(self.head_dim, n_jobs * n_actions))
+        return {self.flat_head: np.sqrt(2), self.flat_head[-1]: 0.01}
 
     def _logits(self, t: Tokens) -> torch.Tensor:
-        return self.job_head(t.job).flatten(1)
+        job = t.job * t.job_mask.unsqueeze(-1)
+        dc = t.dc * t.dc_mask.unsqueeze(-1)
+        return self.flat_head(torch.cat([job.flatten(1), dc.flatten(1), t.context], dim=-1))

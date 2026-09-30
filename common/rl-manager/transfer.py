@@ -19,6 +19,10 @@ from utils.misc import (
 
 
 def transfer(params, jobs):
+    if params.get("benchmark_member") and params.get("level_split") != "train":
+        raise ValueError("RING-N transfer runs play level_split train, got "
+                         f"{params.get('level_split')!r}: val selects checkpoints, "
+                         "test and lockbox are held out")
     best_model_path = os.path.join(
         params["base_log_dir"],
         f"{params['train_model_dir']}",

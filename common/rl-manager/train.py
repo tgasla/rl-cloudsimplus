@@ -16,6 +16,10 @@ from utils.misc import (
 
 
 def train(params, jobs):
+    if params.get("benchmark_member") and params.get("level_split") != "train":
+        raise ValueError("RING-N train runs play level_split train, got "
+                         f"{params.get('level_split')!r}: val selects checkpoints, "
+                         "test and lockbox are held out")
     # Select the appropriate algorithm
     algorithm = get_algorithm(params["rl_algorithm"], params)
 

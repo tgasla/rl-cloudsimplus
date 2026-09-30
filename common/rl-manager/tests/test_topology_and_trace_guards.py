@@ -91,6 +91,45 @@ def test_test_mode_refuses_ring_runs():
         run_test({"benchmark_member": "S"}, [])
 
 
+class _SimulatorsStarted(Exception):
+    pass
+
+
+def _run_until_the_simulators_start(monkeypatch, mode, params):
+    """Call train() or transfer(); stop where it would start the JVMs."""
+    import train
+    import transfer
+
+    module = {"train": train, "transfer": transfer}[mode]
+
+    def start(*args, **kwargs):
+        raise _SimulatorsStarted
+
+    monkeypatch.setattr(module, "vectorize_env", start)
+    getattr(module, mode)(params, [])
+
+
+RL_PARAMS = {"rl_algorithm": "MaskablePPO", "cloudlet_to_dc_mapping": "rl", "base_log_dir": "logs",
+             "train_model_dir": "src/run", "benchmark_member": "S"}
+
+
+@pytest.mark.parametrize("mode", ["train", "transfer"])
+@pytest.mark.parametrize("split", ["val", "test", "lockbox", None])
+def test_ring_training_refuses_held_out_levels(monkeypatch, mode, split):
+    # val selects checkpoints and test/lockbox are scored: training on them is never a protocol arm.
+    params = {**RL_PARAMS, "level_split": split} if split else dict(RL_PARAMS)
+    with pytest.raises(ValueError, match="level_split train"):
+        _run_until_the_simulators_start(monkeypatch, mode, params)
+
+
+@pytest.mark.parametrize("mode", ["train", "transfer"])
+def test_ring_training_on_train_levels_and_legacy_runs_pass_the_guard(monkeypatch, mode):
+    legacy = {key: value for key, value in RL_PARAMS.items() if key != "benchmark_member"}
+    for params in ({**RL_PARAMS, "level_split": "train"}, legacy):
+        with pytest.raises(_SimulatorsStarted):
+            _run_until_the_simulators_start(monkeypatch, mode, params)
+
+
 def test_topologies_the_action_mask_cannot_describe_are_rejected(make_env):
     template = json.load(open(ENV_B_PARAMS))["datacenters"]
     two_vms = json.loads(json.dumps(template))

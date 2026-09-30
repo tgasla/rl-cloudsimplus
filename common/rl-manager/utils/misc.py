@@ -225,19 +225,33 @@ def create_val_callback(params: dict, num_cpu: int) -> tuple[BaseCallback, objec
     return callback, eval_env
 
 
+FINETUNE_SCOPES = {"full": ("extractor", "critic", "actor head"), "head": ("actor head", "critic"),
+                   "extractor": ("extractor", "critic")}
+
+
 def apply_finetune_scope(model, scope: str) -> None:
-    """Which part of a loaded policy keeps training: `full` (default), `head` (everything
-    after the features extractor: SB3's MLP/action/value nets, or the pointer head and critic)
-    or `extractor` (only the features extractor)."""
-    if scope == "full":
-        return
-    if scope not in ("head", "extractor"):
+    """Which parts of a loaded policy keep training, out of three: the extractor (the features
+    extractors), the critic (value_head, or SB3's mlp_extractor.value_net and value_net) and
+    the actor head (the rest). `full` (default) trains all three, `head` the actor head and the
+    critic, `extractor` the extractor and the critic: each scoped arm is full fine-tuning minus
+    one part of the actor.
+
+    Every scope then gets a fresh optimizer, as training from scratch does, instead of the
+    source run's Adam moments that SB3's load restores. It is built over all parameters, which
+    keeps the checkpoints loadable; frozen ones get no gradient, so Adam never moves them."""
+    if scope not in FINETUNE_SCOPES:
         raise ValueError(f"finetune must be full, head or extractor, got {scope!r}")
     policy = model.policy
     extractor = {id(p) for module in (policy.features_extractor, policy.pi_features_extractor,
                                       policy.vf_features_extractor) for p in module.parameters()}
+    critic_modules = ((policy.value_head,) if hasattr(policy, "value_head")
+                      else (policy.mlp_extractor.value_net, policy.value_net))
+    critic = {id(p) for module in critic_modules for p in module.parameters()}
     for p in policy.parameters():
-        p.requires_grad_((id(p) in extractor) == (scope == "extractor"))
+        group = "extractor" if id(p) in extractor else "critic" if id(p) in critic else "actor head"
+        p.requires_grad_(group in FINETUNE_SCOPES[scope])
+    policy.optimizer = policy.optimizer_class(policy.parameters(), lr=model.lr_schedule(1),
+                                              **policy.optimizer_kwargs)
 
 
 def source_checkpoint(params: dict) -> str:

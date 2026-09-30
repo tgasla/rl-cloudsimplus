@@ -13,7 +13,7 @@ import time
 import numpy as np
 import pytest
 
-from conftest import REPO, SPEC_SHAPE, ring_topology
+from conftest import REPO, SPEC_SHAPE, ring_member, ring_topology
 
 JAR = os.path.join(REPO, "domain", "job-placement", "cloudsimplus-gateway", "build", "libs",
                    "cloudsimplus-gateway-0.1.0.jar")
@@ -97,27 +97,13 @@ def test_job_location_column_drives_reach_and_placement_uses_free_pes(live_env):
     assert after[in_dc, 4].sum() > 0
 
 
-def _ring_member(member_id):
-    from utils import levels
-    from utils.misc import _translate_connect_to_names_to_idx
-
-    ring = os.path.join(REPO, "common", "topologies", "ring")
-    topology = levels.load_topology(os.path.join(ring, f"{member_id}.yml"))
-    for dc in topology:
-        dc["connect_to"] = levels._as_list(dc.get("connect_to", []))
-        dc["hosts"] = levels._as_list(dc["hosts"])
-        for host in dc["hosts"]:
-            host["vms"] = levels._as_list(host["vms"])
-    return _translate_connect_to_names_to_idx(topology), os.path.join(ring, "manifest.json")
-
-
 @pytest.fixture
 def level_env(gateway_port):
     from gym_cloudsimplus.envs.job_placement import JobPlacementEnv
     from utils.misc import level_stream
 
     def make(member_id, split="train", rank=0):
-        datacenters, manifest = _ring_member(member_id)
+        datacenters, manifest = ring_member(member_id)
         params = json.load(open(os.path.join(
             REPO, "domain", "job-placement", "cloudsimplus-gateway", "src", "test", "resources",
             "env_b_params.json")))
@@ -235,7 +221,7 @@ def spawned_params(monkeypatch, tmp_path):
     """Params for runs that spawn their own JVMs through utils.misc (as in the container)."""
     monkeypatch.setenv("CLOUDSIM_GATEWAY_JAR", JAR)
     monkeypatch.setenv("JAVA_LOG_DESTINATION", "none")
-    datacenters, manifest = _ring_member("S")
+    datacenters, manifest = ring_member("S")
     params = json.load(open(os.path.join(
         REPO, "domain", "job-placement", "cloudsimplus-gateway", "src", "test", "resources",
         "env_b_params.json")))
@@ -285,22 +271,27 @@ def test_training_keeps_best_val_and_final_models(spawned_params, tmp_path):
     assert callback.best_mean == pytest.approx(best)
 
 
-def _deterministic_return(env, policy, level):
+def _deterministic_episode(env, policy, level):
+    """(unshaped return, decisions settled by the tie rule) of one episode of `level` under
+    deterministic evaluation, played as evaluate and the val sweeps play it."""
+    from types import SimpleNamespace
+    from stable_baselines3.common.vec_env import DummyVecEnv
+    from utils.evaluation import model_predictor, play_levels
+
     env._level_sampler.next = lambda: level
-    obs, _ = env.reset()
-    total, done = 0.0, False
-    while not done:
-        mask = np.array(env.action_masks())
-        action, _ = policy.predict(obs, deterministic=True, action_masks=mask)
-        obs, _, terminated, truncated, info = env.step(action)
-        total += info["unshaped_reward"]
-        done = terminated or truncated
-    return total
+    vec = DummyVecEnv([lambda: env])
+    (row,) = play_levels(vec, model_predictor(SimpleNamespace(policy=policy), vec), [1])
+    assert row["level_id"] == level
+    return row["unshaped_return"], row["tie_breaks"]
 
 
-def test_pointer_policy_scores_a_relabelled_topology_identically(level_env):
+def test_equivariant_policies_score_a_relabelled_topology_identically(level_env):
     # H0 on the live simulator: PI-S is S with its DCs renumbered, so an equivariant policy
-    # must play every level exactly as on S; a positional one does not.
+    # must play every level exactly as on S; a positional one does not. The no-op is made
+    # unattractive so that the pointer policies place nearly every job: SPANE then meets DCs
+    # in identical states, which it scores exactly alike, and deterministic evaluation must
+    # break those ties by DC name, not by action index.
+    import torch
     from sb3_contrib.common.maskable.policies import MaskableMultiInputActorCriticPolicy
     from extractors import (build_extractor_kwargs, build_policy_head_kwargs,
                             get_extractor_class, get_policy_class)
@@ -308,7 +299,6 @@ def test_pointer_policy_scores_a_relabelled_topology_identically(level_env):
     s_env, pi_env = level_env("S", split="test"), level_env("PI-S", split="test")
 
     def policy(name):
-        import torch
         torch.manual_seed(0)
         cls = get_policy_class(name, MaskableMultiInputActorCriticPolicy)
         return cls(s_env.observation_space, s_env.action_space, lambda _: 3e-4,
@@ -317,10 +307,16 @@ def test_pointer_policy_scores_a_relabelled_topology_identically(level_env):
                    **build_policy_head_kwargs(name, SPEC_SHAPE)).eval()
 
     levels_ = [2000000, 2000001]
-    a5 = policy("a5")
-    for level in levels_:
-        assert _deterministic_return(s_env, a5, level) == pytest.approx(
-            _deterministic_return(pi_env, a5, level), abs=1e-9)
+    for name in ("spane", "a5"):
+        pointer = policy(name)
+        with torch.no_grad():
+            pointer.noop_head[-1].bias.fill_(-5.0)
+        episodes = [(_deterministic_episode(s_env, pointer, level),
+                     _deterministic_episode(pi_env, pointer, level)) for level in levels_]
+        for on_s, on_pi in episodes:
+            assert on_s[0] == pytest.approx(on_pi[0], abs=1e-9) and on_s[1] == on_pi[1], name
+        if name == "spane":
+            assert any(on_s[1] > 0 for on_s, _ in episodes)     # the tie rule was needed
     a1 = policy("euromlsys")
-    assert any(_deterministic_return(s_env, a1, level) != pytest.approx(
-        _deterministic_return(pi_env, a1, level), abs=1e-6) for level in levels_)
+    assert any(_deterministic_episode(s_env, a1, level)[0] != pytest.approx(
+        _deterministic_episode(pi_env, a1, level)[0], abs=1e-6) for level in levels_)

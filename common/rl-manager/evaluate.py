@@ -90,7 +90,7 @@ def evaluate(params, jobs):
         checkpoint = source_checkpoint(params)
         path = os.path.join(params["base_log_dir"], params["train_model_dir"], checkpoint)
         model = algorithm.load(path, env=env, device=get_suitable_device(params["rl_algorithm"]))
-        predict, policy = model_predictor(model), f"{params['train_model_dir']}/{checkpoint}"
+        predict, policy = model_predictor(model, env), f"{params['train_model_dir']}/{checkpoint}"
     else:
         predict, policy = noop_predictor(params["max_jobs_waiting"]), params["cloudlet_to_dc_mapping"]
 

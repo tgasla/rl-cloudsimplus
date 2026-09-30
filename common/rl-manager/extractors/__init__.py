@@ -16,7 +16,7 @@ from extractors.aria_extractor import ARIAExtractor
 from extractors.tsar_extractor import TSARExtractor
 from extractors.deepsets_extractor import DeepSetsExtractor
 from extractors.token_encoder import TokenEncoder
-from extractors.pointer_policy import PerJobPolicy, PointerPolicy
+from extractors.pointer_policy import PointerPolicy, PositionalHeadPolicy
 from extractors.featurize import HOST_FEATURES, JOB_FEATURES
 
 EXTRACTOR_REGISTRY = {
@@ -24,7 +24,7 @@ EXTRACTOR_REGISTRY = {
     "custom": CustomFeatureExtractor,  # backward-compat alias
     "attention": AttentionPoolingFeatureExtractor,  # alias; mean-pool variant removed
     "attention_pooling": AttentionPoolingFeatureExtractor,
-    # A3: SPANE's shared per-machine embedding and advantage module (pointer head, no reach).
+    # A3: SPANE's shared per-machine embedding and advantage module (the pointer head).
     "spane": TokenEncoder,
     "hybrid": HybridPoolingExtractor,
     "hybrid_pre_head": HybridPoolingPreHeadExtractor,
@@ -42,11 +42,11 @@ EXTRACTOR_REGISTRY = {
     "tsar": TSARExtractor,
     "deepsets": DeepSetsExtractor,
     "a5": TokenEncoder,
-    "a5_positional_head": TokenEncoder,     # ablation V1: A5's encoder, SB3's positional head
+    "a5_positional_head": TokenEncoder,     # ablation V1: A5's tokens, a positional head
     "a5_unmasked_pool": TokenEncoder,       # ablation V2
     "a5_scalar_dc_type": TokenEncoder,      # ablation V3
     "a5_dc_id_embedding": TokenEncoder,     # ablation V4
-    "a5_no_cross_attention": TokenEncoder,  # ablation V5
+    "a5_no_reach": TokenEncoder,            # ablation V5
 }
 
 
@@ -61,32 +61,27 @@ def _register_turret() -> None:
 _register_turret()
 
 
-# Architectures built on TokenEncoder: whether the encoder uses job <-> DC cross-attention,
-# and, for those with the pointer head, whether the pair scorer sees reach.
+# Architectures built on TokenEncoder: whether the encoder uses job <-> DC cross-attention.
 TOKEN_ENCODER_CROSS_ATTENTION = {
     "a5": True, "a5_positional_head": True, "a5_unmasked_pool": True, "a5_scalar_dc_type": True,
-    "a5_dc_id_embedding": True, "a5_no_cross_attention": False, "spane": False,
+    "a5_dc_id_embedding": True, "a5_no_reach": True, "spane": False,
 }
 # The ablation flag each A5 variant turns on (TokenEncoder kwargs).
 TOKEN_ENCODER_ABLATION = {"a5_unmasked_pool": "unmasked_pool", "a5_scalar_dc_type": "scalar_dc_type",
-                          "a5_dc_id_embedding": "dc_id_embedding"}
-POINTER_HEAD_REACH_INPUT = {"a5": True, "a5_unmasked_pool": True, "a5_scalar_dc_type": True,
-                            "a5_dc_id_embedding": True, "a5_no_cross_attention": True,
-                            "spane": False}
+                          "a5_dc_id_embedding": "dc_id_embedding", "a5_no_reach": "no_reach"}
+# Their action heads: A3, A5 and V2-V5 share the pointer head; V1 is positional.
+TOKEN_HEAD = {name: PointerPolicy for name in TOKEN_ENCODER_CROSS_ATTENTION}
+TOKEN_HEAD["a5_positional_head"] = PositionalHeadPolicy
 
 
 def get_policy_class(name: str, default):
-    """Token heads replace SB3's positional head: the pointer head (A3, A5) and TURRET's
-    per-job-node head (A4)."""
-    if name in POINTER_HEAD_REACH_INPUT:
-        return PointerPolicy
-    return PerJobPolicy if name == "turret" else default
+    """The TokenEncoder architectures act through a head on the tokens (TOKEN_HEAD); the others,
+    A4 (TURRET's output network on its readout) included, keep SB3's head."""
+    return TOKEN_HEAD.get(name, default)
 
 
 def build_policy_head_kwargs(name: str, params: dict) -> dict:
-    if name in POINTER_HEAD_REACH_INPUT:
-        return {"head_dim": params.get("head_dim", 64), "reach_input": POINTER_HEAD_REACH_INPUT[name]}
-    return {"head_dim": params.get("head_dim", 64)} if name == "turret" else {}
+    return {"head_dim": params.get("head_dim", 64)} if name in TOKEN_HEAD else {}
 
 
 def get_extractor_class(name: str):

@@ -5,11 +5,11 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 try:
     from torch_geometric.nn import GATConv
+    from torch_geometric.nn.aggr import SetTransformerAggregation
     _HAS_TORCH_GEOMETRIC = True
 except ImportError:
     _HAS_TORCH_GEOMETRIC = False
 
-from extractors.token_encoder import Tokens
 from extractors.featurize import (
     HOST_INPUT_DIM,
     JOB_INPUT_DIM,
@@ -25,19 +25,27 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
 
     TURRET builds its graph from the system's morphology, gives every node its own input
     vector through type-specific input networks (no node identities), propagates with
-    multi-head graph attention and reads the graph out with a set transformer. Here:
+    multi-head graph attention, reads the graph out with a set transformer and maps that
+    state representation to the action distribution of all nodes, mu = F_out(S_emb). Here:
 
-      nodes   real hosts and real waiting jobs; padding slots stay isolated and are masked
-              out of the readout
+      nodes   real hosts and real waiting jobs; padding slots stay isolated and are left out
+              of the readout
       edges   host <-> host within the same datacenter, and job <-> host wherever reach_mask
               lets the job use that host's datacenter
       F_in    one MLP for host nodes, one for job nodes (featurize.py inputs)
       P       num_layers GATConv layers with gnn_heads heads (concat), LayerNorm per node
-      F_read  one learned seed query attending over the real nodes (set-transformer pooling)
+      F_read  S_emb = 1/K sum_k [DECODER(ENCODER(H))]_k, the set-transformer readout of
+              Buterez et al. (NeurIPS-22) that TURRET adopts, as PyG's
+              SetTransformerAggregation: one SAB over the real nodes as encoder, PMA with
+              K = 1 seed and one SAB as decoder, with LayerNorm (Lee et al.'s MAB), then a
+              projection to features_dim; forward() returns this readout
+      F_out   the policy's default head on the readout (SB3's actor MLP and action_net), so
+              the action distribution is positional over job slots and DC slots
 
-    TURRET's per-node action outputs are extractors.pointer_policy.PerJobPolicy, which reads
-    the job nodes' final representations through tokens(). Not included: TURRET's multi-source
-    transfer weighting (transfer here is single-source).
+    Deviations: TURRET's multi-source transfer weighting is not included (transfer here is
+    single-source). TURRET zero-pads H to the largest graph's node count and feeds the padding
+    rows to the readout; here they are left out, so that the readout does not move with the
+    number of padding slots (unmasked pooling, a transfer hazard across topologies).
 
     Config params (via features_extractor_kwargs):
       features_dim, gnn_hidden, gnn_heads, num_layers, dropout
@@ -73,12 +81,10 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
             )
             self.norms.append(nn.LayerNorm(gnn_hidden * gnn_heads))
         out_ch = gnn_hidden * gnn_heads
-        self.token_dim = out_ch
 
         # ── Readout model F_read ─────────────────────────────────────────────
-        self.pool_query = nn.Parameter(torch.randn(1, 1, out_ch))
-        self.pool_attn = nn.MultiheadAttention(
-            out_ch, gnn_heads, dropout=dropout, batch_first=True
+        self.set_transformer = SetTransformerAggregation(
+            out_ch, heads=gnn_heads, concat=False, layer_norm=True, dropout=dropout
         )
         self.readout = nn.Sequential(
             nn.Linear(out_ch, features_dim),
@@ -106,8 +112,7 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         job_host = torch.stack([b * n_nodes + n_hosts + j, b * n_nodes + h])
         return torch.cat([host_host, job_host, job_host.flip(0)], dim=1)
 
-    def tokens(self, observations) -> Tokens:
-        """Job nodes' final representations and the readout (DC tokens are not formed)."""
+    def forward(self, observations) -> torch.Tensor:
         device = next(self.parameters()).device
         hosts, jobs, reach = split_observation(observations, device)
         dc_ids, host_mask, host_x = host_inputs(hosts)
@@ -121,16 +126,9 @@ class TurretGNNExtractor(BaseFeaturesExtractor):
         h = x.reshape(batch * n_nodes, -1)
         for layer, norm in zip(self.gnn_layers, self.norms):
             h = torch.relu(norm(layer(h, edge_index)))
-        h = h.view(batch, n_nodes, -1)
 
-        # Set-transformer readout over the real nodes: [B, N, D] -> [B, D]
-        padding = ~torch.cat([host_mask, job_mask], dim=1)
-        padding[padding.all(dim=1)] = False  # an all-padding sample would give NaN weights
-        q = self.pool_query.expand(batch, -1, -1)
-        pooled, _ = self.pool_attn(q, h, h, key_padding_mask=padding)
-        n_hosts = host_mask.shape[1]
-        return Tokens(dc=None, dc_mask=None, job=h[:, n_hosts:], job_mask=job_mask, reach=reach,
-                      context=self.readout(pooled.squeeze(1)))
-
-    def forward(self, observations) -> torch.Tensor:
-        return self.tokens(observations).context
+        # Set-transformer readout over the real nodes (node i of sample b is row b*N + i)
+        real = torch.cat([host_mask, job_mask], dim=1).flatten()
+        sample = torch.arange(batch, device=device).repeat_interleave(n_nodes)
+        pooled = self.set_transformer(h[real], sample[real], dim_size=batch)  # [B, D]
+        return self.readout(pooled)
