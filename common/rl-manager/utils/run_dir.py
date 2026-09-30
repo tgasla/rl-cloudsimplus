@@ -150,6 +150,13 @@ def write_run_status(log_dir: str, params, status: str) -> None:
         "feature_extractor": params.get("feature_extractor"),
         "timesteps": params.get("timesteps"),
         "seed": params.get("seed"),
+        # lineage, for the analysis (evaluate.py provenance): what the run trained on, and for a
+        # transfer the run and checkpoint it started from (None: misc.source_checkpoint's default)
+        "benchmark_member": params.get("benchmark_member"),
+        "train_model_dir": params.get("train_model_dir"),
+        "checkpoint": params.get("checkpoint"),
+        "finetune": params.get("finetune"),
+        "cloudlet_to_dc_mapping": params.get("cloudlet_to_dc_mapping"),
         "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     path = os.path.join(log_dir, STATUS_FILENAME)

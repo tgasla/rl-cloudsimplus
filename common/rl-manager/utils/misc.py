@@ -10,6 +10,7 @@ from gymnasium import spaces
 import stable_baselines3 as sb3
 import sb3_contrib
 from stable_baselines3.common.logger import configure
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
@@ -20,6 +21,7 @@ from callbacks.save_on_best_training_reward_callback import (
     SaveOnBestTrainingRewardCallback,
 )
 from callbacks.best_on_val_callback import BestOnValCallback
+from callbacks.save_at_steps_callback import SaveAtStepsCallback
 from utils.evaluation import eval_env_params, level_quotas
 from utils import levels
 from utils.levels import LevelSampler, LevelSource, SENSITIVITY_LEVELS
@@ -208,14 +210,18 @@ def create_callback(save_experiment, log_dir) -> SaveOnBestTrainingRewardCallbac
     return None
 
 
-def create_val_callback(params: dict, num_cpu: int) -> tuple[BestOnValCallback, object]:
-    """RING-N runs pick checkpoints on the val split instead of the training curve.
+def create_val_callback(params: dict, num_cpu: int) -> tuple[BaseCallback, object]:
+    """RING-N runs pick checkpoints on the val split instead of the training curve, and save
+    model_at_<k> at each k in save_at_steps (few-shot budgets).
     Returns the callback and the val env it plays on; close that env after learn()."""
     workers = params.get("val_num_cpu", 8)
     eval_env = vectorize_env(None, None, num_cpu=workers, jobs_json="[]",
                              params=eval_env_params(params, "val", workers, port_offset=num_cpu))
     callback = BestOnValCallback(eval_env, level_quotas("val", workers), params["log_dir"],
                                  params.get("val_every", 100_000), verbose=1)
+    if params.get("save_at_steps"):
+        callback = CallbackList([callback,
+                                 SaveAtStepsCallback(params["log_dir"], params["save_at_steps"])])
     return callback, eval_env
 
 
