@@ -243,3 +243,6 @@ docs/analysis/
 
 # Downloaded public traces used to calibrate the workload generator (large)
 benchmark/data/
+
+# Downloaded public traces used to calibrate the workload generator (large)
+benchmark/cache/
