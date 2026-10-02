@@ -42,14 +42,17 @@ class CloudSimBaseEnv(gym.Env, ABC):
         host: str = "localhost",
         port: int = 50051,
         render_mode: str = None,
+        client=None,
     ):
         super().__init__()
         self.params = params
         self.render_mode = render_mode
         self._current_step = 0
 
-        # gRPC client — no paper= parameter, uses unified proto
-        self._client = CloudSimGrpcClient(host=host, port=port)
+        # gRPC client — no paper= parameter, uses unified proto. `client` injects a work-alike
+        # instead (benchmark/port_client.PortClient runs the Python port in-process, no JVM);
+        # only the six methods used below are required.
+        self._client = client if client is not None else CloudSimGrpcClient(host=host, port=port)
         self._sim_id = None
 
         # RL problem type MUST be set by subclass before reset/step are called

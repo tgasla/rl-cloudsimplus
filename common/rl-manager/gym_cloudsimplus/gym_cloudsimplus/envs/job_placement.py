@@ -78,9 +78,10 @@ class JobPlacementEnv(CloudSimBaseEnv):
         host: str = "localhost",
         port: int = 50051,
         render_mode: str = None,
+        client=None,
     ):
         # Initialize base class (sets up _client, _sim_id=None, _rl_problem=None)
-        super().__init__(params, jobs_as_json, host, port, render_mode)
+        super().__init__(params, jobs_as_json, host, port, render_mode, client=client)
 
         # Domain-specific RL problem type
         self._rl_problem = "job_placement"

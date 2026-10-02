@@ -84,6 +84,36 @@ common:
 
 experiments:
 
+# ── RING-N headroom: longer run (2026-10-02) ─────────────────────────────────
+# A longer run on the anchor member S: a5_S_600k was still improving when it ended,
+# so this asks whether the val curve closes on the reference ladder or plateaus.
+# val_every 200k keeps the curve readable (15 sweeps) without 30 sweeps of overhead.
+# The ladder it is scored against is produced by benchmark/run_references.py.
+- mode: train
+  benchmark_member: S
+  datacenters: !include topologies/ring/S.yml
+  experiment_dir: ringn/headroom
+  experiment_name: a5_S_3M
+  feature_extractor: a5
+  timesteps: 3000000
+  val_every: 200000
+
+
+# ── RING-N headroom check (2026-10-02) ───────────────────────────────────────
+# One training run on the anchor member S, to place a learned policy against the
+# reference ladder measured on the SAME val split (benchmark/run_references.py:
+# R0 random, R1-R3 the deployable rules, R4-CDLS the clairvoyant, and the
+# zero-contention ceiling). val_every = 100000, so a 600k run is scored by six
+# deterministic val sweeps and best_val_model is kept.
+- mode: train
+  benchmark_member: S
+  datacenters: !include topologies/ring/S.yml
+  experiment_dir: ringn/headroom
+  experiment_name: a5_S_600k
+  feature_extractor: a5
+  timesteps: 600000
+
+
 # ── P2 Ablation Study ────────────────────────────────────────────────────────
 # All ablations train on Env B (the paper's primary training environment).
 # PPO-X full is the baseline; each variant isolates one architectural component.
